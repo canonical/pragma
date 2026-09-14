@@ -17,7 +17,6 @@ The part takes presentation choices — a name, the page sizes — and never a s
 import {
   createArraySource,
   createDataViewsProvider,
-  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import {
   DataTable,
@@ -43,7 +42,7 @@ export function Machines() {
         collection: machineCollection,
         searchFields: ["name", "owner"],
       }),
-      seed: { window: { ...DEFAULT_WINDOW, size: 5 } },
+      snapshot: { query: "page=1&size=5", presentation: {} },
     }),
   );
   return (
@@ -59,14 +58,12 @@ export function Machines() {
 
 ## A filtered total
 
-The summary and the page total describe the current query. Filter the collection and both follow the source's new count; while the new count is on its way, they say nothing rather than repeat the old one. A query the collection should open on is the provider's `seed`: the story below starts on failed machines only.
+The summary and the page total describe the current query. Filter the collection and both follow the source's new count; while the new count is on its way, they say nothing rather than repeat the old one. A query the collection should open on is in the provider's `snapshot`: the story below starts on failed machines only.
 
 ```tsx
 import {
   createArraySource,
   createDataViewsProvider,
-  DEFAULT_WINDOW,
-  EMPTY_SLICE,
 } from "@canonical/dataviews-core";
 
 const [provider] = useState(() =>
@@ -77,13 +74,7 @@ const [provider] = useState(() =>
       collection: machineCollection,
       searchFields: ["name", "owner"],
     }),
-    seed: {
-      slice: {
-        ...EMPTY_SLICE,
-        filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
-      },
-      window: { ...DEFAULT_WINDOW, size: 5 },
-    },
+    snapshot: { query: "status=failed&size=5", presentation: {} },
   }),
 );
 ```

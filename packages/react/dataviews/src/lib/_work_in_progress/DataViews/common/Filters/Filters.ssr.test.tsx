@@ -1,13 +1,13 @@
 /**
  * A server render of the filters: the GET form, its named controls and its
- * hidden destination come from the seeded query through the same encoder
- * the browser uses, and nothing observes — the source is never asked.
+ * hidden destination come from the query the location carries, read when
+ * the provider is built, through the same encoder the browser uses; and
+ * nothing observes — the source is never asked.
  */
 import {
   createCollection,
   createDataViewsProvider,
   createMemoryLocation,
-  DEFAULT_WINDOW,
   declareCapabilities,
 } from "@canonical/dataviews-core";
 import { renderToString } from "react-dom/server";
@@ -40,7 +40,7 @@ const everything = declareCapabilities(collection, {
 });
 
 describe("DataViews.Filters SSR", () => {
-  it("renders the form on the server, its controls and destination from the seeded query", () => {
+  it("renders the form on the server, its controls and destination from the query the location carries", () => {
     const location = createMemoryLocation({
       href: "/machines?status=failed&cpu__gte=4&q=yak&page=2&size=50",
     });
@@ -49,18 +49,6 @@ describe("DataViews.Filters SSR", () => {
       collection,
       source: source.source,
       location,
-      seed: {
-        slice: {
-          filter: [
-            { field: "status", operator: "eq", operands: ["failed"] },
-            { field: "cpu", operator: "gte", operands: [4] },
-          ],
-          search: "yak",
-          sort: [],
-          group: [],
-        },
-        window: { ...DEFAULT_WINDOW, page: 2 },
-      },
     });
     const html = renderToString(
       <DataViews provider={provider}>

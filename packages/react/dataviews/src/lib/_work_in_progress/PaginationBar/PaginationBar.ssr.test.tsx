@@ -1,11 +1,8 @@
-import {
-  createMemoryLocation,
-  createPage,
-  DEFAULT_WINDOW,
-} from "@canonical/dataviews-core";
+import { createMemoryLocation, createPage } from "@canonical/dataviews-core";
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createStandInViewStore } from "../../../../testing/createStandInStores.js";
 import {
   createMachineProvider,
   machine,
@@ -39,14 +36,11 @@ describe("PaginationBar SSR", () => {
     expect(provider.state.get().pendingRequestId).toBe(null);
   });
 
-  it("renders the baseline's links and forms from the seeded query and the location", () => {
+  it("renders the baseline's links and forms from the query the location carries", () => {
     const location = createMemoryLocation({
       href: "/machines?tab=overview&page=2&size=2",
     });
-    const { provider, source } = createMachineProvider({
-      location,
-      seed: { window: { ...DEFAULT_WINDOW, page: 2, size: 2 } },
-    });
+    const { provider, source } = createMachineProvider({ location });
     const host = readProviderHost(provider);
     host.complete(host.refresh(), {
       status: "succeeded",
@@ -68,9 +62,31 @@ describe("PaginationBar SSR", () => {
     expect(source.calls).toHaveLength(0);
   });
 
+  it("carries the open view in every link and form it spells", () => {
+    const location = createMemoryLocation({
+      href: "/machines?view=x&page=2&size=2",
+    });
+    const { provider } = createMachineProvider({
+      location,
+      views: createStandInViewStore(),
+    });
+    const host = readProviderHost(provider);
+    host.complete(host.refresh(), {
+      status: "succeeded",
+      page: createPage({
+        rows: [machine("m3", "three"), machine("m4", "four")],
+        matched: 6,
+        total: 6,
+      }),
+    });
+    const html = renderToString(<PaginationBar provider={provider} />);
+    expect(html).toContain('href="?view=x&amp;page=1&amp;size=2"');
+    expect(html).toContain('type="hidden" name="view" value="x"');
+  });
+
   it("renders results the provider already holds", () => {
     const { provider, source } = createMachineProvider({
-      seed: { window: { ...DEFAULT_WINDOW, page: 1, size: 2 } },
+      snapshot: { query: "page=1&size=2", presentation: {} },
     });
     // Fed through the host by hand: nothing observes the provider here.
     const host = readProviderHost(provider);

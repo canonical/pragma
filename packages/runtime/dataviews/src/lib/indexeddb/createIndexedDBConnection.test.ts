@@ -13,7 +13,12 @@ describe("createIndexedDBConnection", () => {
       partition: null,
     });
     onTestFinished(store.dispose);
-    await store.create({ id: "v1", name: "One", query: "as=table" });
+    await store.create({
+      id: "v1",
+      name: "One",
+      query: "as=table",
+      presentation: {},
+    });
     // The default arrangement locks the preferences alone; a view's asks
     // for both. A store outside the lock is a fault, not a silent miss.
     const { transact, dispose } = createIndexedDBConnection({

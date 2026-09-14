@@ -1,7 +1,4 @@
-import {
-  createMemoryLocation,
-  DEFAULT_WINDOW,
-} from "@canonical/dataviews-core";
+import { createMemoryLocation } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ReactElement, useState } from "react";
 import { expect, userEvent, waitFor } from "storybook/test";
@@ -67,7 +64,7 @@ function MachinesPage({
   readonly options?: MachineProviderConfig | undefined;
 }): ReactElement {
   const provider = useMachineProvider({
-    window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+    query: "page=1&size=5",
     ...options,
   });
   return (
@@ -114,7 +111,7 @@ export const FirstPage: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "PaginationBar", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     render: pageCode,
   }),
   render: renderWith(),
@@ -134,7 +131,7 @@ export const MiddlePage: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "PaginationBar", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     prepare: "provider.navigateWindow({ page: 2 });",
     render: pageCode,
   }),
@@ -157,7 +154,7 @@ export const LastPage: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "PaginationBar", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     prepare: "provider.navigateWindow({ page: 3 });",
     render: pageCode,
   }),
@@ -189,7 +186,7 @@ export const RealDestinations: Story = {
 import { platform } from "./router.js";`,
     declarations: columnsCode,
     location: "createPlatformLocation(platform)",
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     render: pageCode,
   }),
   render: function Render(args) {
@@ -242,7 +239,7 @@ export const WithoutACount: Story = {
 // count "unknown": each page arrives with no total, as from a backend that
 // pages without counting.`,
     source: "machinesApi",
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     render: pageCode,
   }),
   render: renderWith({ source: createUncountedSource }),
@@ -265,7 +262,7 @@ export const Loading: Story = {
     declarations: `${columnsCode}
 
 // Shown while the source has not answered its first request.`,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     render: pageCode,
   }),
   render: renderWith({ source: createPendingSource }),
@@ -299,7 +296,7 @@ export const StickyInAScrollingFrame: Story = {
 </div>`,
   }),
   decorators: [withScrollingFrame("16rem")],
-  render: renderWith({ window: { ...DEFAULT_WINDOW, page: 1, size: 25 } }),
+  render: renderWith({ query: "page=1&size=25" }),
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(

@@ -851,10 +851,14 @@ describe("virtualized DataTable", () => {
     const root = await act(async () => hydrateRoot(container, table));
     expect(errors).not.toHaveBeenCalled();
     // The hydrated table observes the provider: the server's rows stay on
-    // screen while the source, live for the first time on the client, is
-    // asked for the same query once.
+    // screen, ready, while the source, live for the first time on the
+    // client, is taken up under the request they answer — no new request,
+    // so the table never turns busy.
     expect(source.calls).toHaveLength(1);
-    expect(provider.state.get().result.status).toBe("refreshing");
+    expect(source.latest().request.requestId).toBe(
+      provider.state.get().result.provenance?.requestId,
+    );
+    expect(provider.state.get().result.status).toBe("ready");
     expect(container.querySelectorAll('[role="row"]')).toHaveLength(16);
     // A row hydrated from the server's markup is measured like any other.
     const hydrated = container.querySelector('[aria-rowindex="4"]');

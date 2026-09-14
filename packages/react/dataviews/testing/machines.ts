@@ -96,7 +96,10 @@ export type MachineProviderConfig = Omit<
   readonly location?: QueryLocation | undefined;
   readonly views?: ViewStore | undefined;
   readonly presentation?: PresentationStore | undefined;
-  readonly seed?: DataViewsProviderConfig<MachineFields, Machine>["seed"];
+  readonly snapshot?: DataViewsProviderConfig<
+    MachineFields,
+    Machine
+  >["snapshot"];
 };
 
 /** The provider every test drives, over the machine collection. */
@@ -121,7 +124,7 @@ export const createMachineProvider = ({
   location,
   views,
   presentation,
-  seed,
+  snapshot,
   ...rest
 }: MachineProviderConfig = {}): MachineFixture => {
   const source = createManualSource<Machine>({
@@ -135,7 +138,23 @@ export const createMachineProvider = ({
     ...(location === undefined ? {} : { location }),
     ...(views === undefined ? {} : { views }),
     ...(presentation === undefined ? {} : { presentation }),
-    ...(seed === undefined ? {} : { seed }),
+    ...(snapshot === undefined ? {} : { snapshot }),
   });
   return { provider, collection: machines, source };
 };
+
+/**
+ * A fleet of `count` machines numbered from one, named `host-001` onward:
+ * every third one failed, each with as many cores as its number, so an
+ * ordering by cores is an ordering by number.
+ */
+export const buildFleet = (count: number): readonly Machine[] =>
+  Array.from({ length: count }, (_unused, at) => {
+    const number = String(at + 1).padStart(3, "0");
+    return machine(
+      `m-${number}`,
+      `host-${number}`,
+      (at + 1) % 3 === 0 ? "failed" : "running",
+      at + 1,
+    );
+  });

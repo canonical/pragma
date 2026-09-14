@@ -30,6 +30,7 @@ import type {
   CountSupport,
   DataViewsProvider,
   DataViewsProviderConfig,
+  DataViewsSnapshot,
   DataViewsState,
   DateField,
   DecodedQuery,
@@ -193,6 +194,7 @@ type EveryPublicType = [
   CountSupport,
   DataViewsProvider,
   DataViewsProviderConfig<readonly SchemaFieldDefinition[]>,
+  DataViewsSnapshot,
   DataViewsState,
   DateField,
   DecodedQuery,
@@ -409,7 +411,8 @@ describe("public surface types", () => {
   it("keeps the provider's owned records off every entry point", () => {
     // What the provider builds and owns is not exported: the coordinator,
     // the filter input, the action run, the row model and the selection
-    // factories, the slice algebra, and the request check.
+    // factories, the slice algebra, the request check, the snapshot writer
+    // and the wire's reading of the open view.
     for (const owned of [
       "createQueryCoordinator",
       "createFilterInput",
@@ -426,6 +429,7 @@ describe("public surface types", () => {
       "createPreferenceWriter",
       "createSavedViews",
       "createViewCommands",
+      "createSnapshot",
       "createCommandQueue",
       "createIndexedDBConnection",
       "applyWindow",
@@ -434,6 +438,8 @@ describe("public surface types", () => {
       "executeSlice",
       "refusalsOf",
       "readField",
+      "readOpenView",
+      "VIEW_KEY",
       "isCalendarDate",
     ]) {
       expect(dataviews).not.toHaveProperty(owned);
@@ -625,7 +631,7 @@ describe("public surface types", () => {
       .toHaveProperty("complete")
       .parameters.toEqualTypeOf<[string, Completion<Machine>]>();
     expectTypeOf<ProviderHost["adopt"]>().parameters.toEqualTypeOf<
-      [Query, "adopt" | "view"]
+      [Query, "adopt" | "view" | "revert", string | null]
     >();
     expectTypeOf<ProviderHost["refresh"]>().returns.toEqualTypeOf<string>();
     expectTypeOf<DataViewsProvider["refresh"]>().returns.toEqualTypeOf<void>();
@@ -647,6 +653,20 @@ describe("public surface types", () => {
     expectTypeOf<ProviderConfig["source"]>().toEqualTypeOf<Source>();
     expectTypeOf<ProviderConfig["location"]>().toEqualTypeOf<
       QueryLocation | undefined
+    >();
+    // One snapshot is where a provider starts from; there is no seed beside it.
+    expectTypeOf<ProviderConfig>().not.toHaveProperty("seed");
+    expectTypeOf<ProviderConfig["snapshot"]>().toEqualTypeOf<
+      DataViewsSnapshot | undefined
+    >();
+    expectTypeOf<
+      DataViewsProvider["readSnapshot"]
+    >().returns.toEqualTypeOf<DataViewsSnapshot>();
+    expectTypeOf<Source["readDelivery"]>().toEqualTypeOf<
+      ((request: SourceRequest) => SourceDelivery | null) | undefined
+    >();
+    expectTypeOf<ProviderHost["view"]>().toEqualTypeOf<
+      ReadonlyChannel<string | null>
     >();
     // A decode outside any host may pass nothing, or null.
     expectTypeOf<DecodeQueryConfig["capabilities"]>().toEqualTypeOf<

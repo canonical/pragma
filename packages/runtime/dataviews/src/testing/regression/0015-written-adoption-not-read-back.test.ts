@@ -36,6 +36,7 @@ describe("regression 0015 — a written adoption is read back", () => {
     readProviderHost(provider).adopt(
       { slice: { ...EMPTY_SLICE, search: "abc" }, window: DEFAULT_WINDOW },
       "view",
+      null,
     );
     expect(provider.issues.get()).toEqual([
       {

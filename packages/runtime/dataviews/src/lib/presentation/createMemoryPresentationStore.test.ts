@@ -2,6 +2,26 @@ import { describe, expect, it, vi } from "vitest";
 import createMemoryPresentationStore from "./createMemoryPresentationStore.js";
 
 describe("createMemoryPresentationStore", () => {
+  it("starts holding a restored arrangement at the view it was drawn under, or as the default", async () => {
+    const presentation = { "table.width.name": 240 };
+    const store = createMemoryPresentationStore({
+      restored: { view: null, presentation },
+    });
+    expect(await store.readPresentation("default")).toEqual(presentation);
+    expect(await store.readPresentation({ view: "v1" })).toEqual({});
+    await store.patchPresentation("default", { "table.width.name": undefined });
+    expect(await store.readPresentation("default")).toEqual({});
+    // The arrangement given is copied, never written through.
+    expect(presentation).toEqual({ "table.width.name": 240 });
+    const underView = createMemoryPresentationStore({
+      restored: { view: "v1", presentation },
+    });
+    expect(await underView.readPresentation({ view: "v1" })).toEqual(
+      presentation,
+    );
+    expect(await underView.readPresentation("default")).toEqual({});
+  });
+
   it("reads nothing at a target until something is written there", async () => {
     const store = createMemoryPresentationStore();
     expect(await store.readPresentation("default")).toEqual({});

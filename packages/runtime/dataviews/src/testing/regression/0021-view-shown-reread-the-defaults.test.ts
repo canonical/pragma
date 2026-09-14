@@ -21,7 +21,7 @@ describe("regression 0021 — a view shown re-read the defaults", () => {
     });
     const release = presentation.observe();
     readPresentation.mockClear();
-    presentation.show({ id: "v1", presentation: null });
+    presentation.show({ id: "v1", presentation: {} });
     expect(readPresentation.mock.calls).toEqual([[{ view: "v1" }]]);
     presentation.show(null);
     expect(readPresentation).toHaveBeenCalledTimes(1);

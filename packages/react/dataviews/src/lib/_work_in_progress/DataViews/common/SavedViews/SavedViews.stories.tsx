@@ -1,6 +1,5 @@
 import {
   createMemoryLocation,
-  DEFAULT_WINDOW,
   type QueryLocation,
   type ViewDraft,
   type ViewStore,
@@ -60,13 +59,14 @@ const failedMachines: ViewDraft = {
   id: "failed-machines",
   name: "Failed machines",
   query: "as=table&status=failed",
+  presentation: {},
 };
 
 /** The store's scope as every story's consumer code declares it. */
 const parameters = consumerCode({
   parts: ["DataTable", "DataViews", "type DataTableColumn"],
   declarations: columnsCode,
-  window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+  query: "page=1&size=5",
   store: true,
   render: composition,
 });
@@ -100,7 +100,7 @@ function SavedMachines({
 }): ReactElement {
   const { store } = useStoryViewStore({ seed, indexedDB });
   const provider = useMachineProvider({
-    window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+    query: "page=1&size=5",
     views: store,
     presentation: store,
   });
@@ -219,7 +219,7 @@ export const AConflictBetweenTabs: Story = {
       seed: [failedMachines],
     });
     const provider = useMachineProvider({
-      window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+      query: "page=1&size=5",
       views: store,
       presentation: store,
     });
@@ -370,9 +370,10 @@ export const WithTheQueryInTheUrl: Story = {
 import { platform } from "./router.js";`,
     declarations: columnsCode,
     // The router's platform surface: anything with getLocation, navigate
-    // and subscribe. Opening a view writes its query there.
+    // and subscribe. Opening a view writes its query there, with
+    // `view=<id>` beside it.
     location: "createPlatformLocation(platform)",
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     store: true,
     render: composition,
   }),
@@ -384,7 +385,7 @@ import { platform } from "./router.js";`,
     );
     const { store } = useStoryViewStore({ seed: [failedMachines] });
     const provider = useMachineProvider({
-      window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+      query: "page=1&size=5",
       views: store,
       presentation: store,
       location,
@@ -399,7 +400,7 @@ import { platform } from "./router.js";`,
     await open(canvas, "Failed machines");
     await waitFor(() =>
       expect(canvas.getByLabelText("Location")).toHaveTextContent(
-        "/machines?status=failed&page=1&size=5",
+        "/machines?view=failed-machines&status=failed&page=1&size=5",
       ),
     );
   },

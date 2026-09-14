@@ -1,17 +1,21 @@
-import type { JsonValue, PreferenceLayer } from "./types.js";
+import { NO_PRESENTATION } from "./constants.js";
+import type { JsonValue, PreferenceLayer, ViewPresentation } from "./types.js";
 
 /**
  * Create one target's preference layer: its values, the change that last
  * wrote each key, the keys sent and not yet answered, and the keys whose
  * last write failed. A read is settled into it key by key, so a change not
  * yet sent when the read began, one still in flight, or one whose write
- * failed keeps its value: the read cannot know it.
+ * failed keeps its value: the read cannot know it. It holds `initial` until
+ * the first read or change, and a read replaces what it held.
  *
  * @note Impure by design: the layer holds the values and the bookkeeping
  * of one target's preferences, and every method changes them in place.
  */
-export default function createPreferenceLayer(): PreferenceLayer {
-  let values: Record<string, JsonValue> = {};
+export default function createPreferenceLayer(
+  initial: ViewPresentation = NO_PRESENTATION,
+): PreferenceLayer {
+  let values: Record<string, JsonValue> = { ...initial };
   const changed = new Map<string, number>();
   const sent = new Set<string>();
   const failed = new Set<string>();

@@ -14,26 +14,24 @@ import type {
 } from "../presentation/index.js";
 import type { Query, ResultWindow, Slice } from "../query/index.js";
 import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
+import type { DataViewsSnapshot } from "../snapshot/index.js";
 import type { SourceCapabilities } from "../source/index.js";
 import type { QueryIssue } from "../wire/index.js";
 
 /**
- * One saved view, resolved for this viewer.
+ * One saved view, resolved for this viewer: a snapshot of the collection —
+ * its query stored verbatim as text written with `encodeQuery` and a null
+ * window, canonical and with its renderer (`as=table&status=failed`), so
+ * comparing texts tells whether the live query differs from the view; and
+ * the arrangement in force when it was created, empty for none — with the
+ * view's identity and revision.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type SavedView = {
+export type SavedView = DataViewsSnapshot & {
   readonly id: string;
   readonly name: string;
-  /**
-   * The query text, stored verbatim. Write it with `encodeQuery` and a null
-   * window — canonical, with its renderer: `as=table&status=failed` — so
-   * comparing texts tells whether the live query differs from the view.
-   */
-  readonly query: string;
-  /** Presentation saved with the view, or null. */
-  readonly presentation: ViewPresentation | null;
   /** Grows with every saved change; the precondition of the next one. */
   readonly revision: number;
   /** Whether this viewer pinned the view. */
@@ -53,23 +51,20 @@ export type SavedView = {
 export type ViewRevision = Pick<SavedView, "id" | "revision">;
 
 /**
- * A view to create. The caller mints the id, so retrying a creation whose
- * response was lost finds the view instead of duplicating it.
+ * A view to create: its identity and the snapshot it keeps. The caller
+ * mints the id, so retrying a creation whose response was lost finds the
+ * view instead of duplicating it.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type ViewDraft = {
-  readonly id: string;
-  readonly name: string;
-  readonly query: string;
-  /** Presentation saved with the view; left out for none. */
-  readonly presentation?: ViewPresentation | undefined;
-};
+export type ViewDraft = Pick<SavedView, "id" | "name"> & DataViewsSnapshot;
 
 /**
  * Changes to a saved view; a field left out keeps its value. Strict on
- * purpose: a field written `undefined` would be applied, not skipped.
+ * purpose: a field written `undefined` would be applied, not skipped. The
+ * arrangement a view was created with is never changed: saving writes the
+ * query alone.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -77,8 +72,6 @@ export type ViewDraft = {
 export type ViewChanges = {
   readonly name?: string;
   readonly query?: string;
-  /** Null removes the saved presentation. */
-  readonly presentation?: ViewPresentation | null;
 };
 
 /**
@@ -297,7 +290,11 @@ export type SavedViews = {
    * observes from an effect.
    */
   readonly observe: () => () => void;
-  /** Read the views again. */
+  /**
+   * Read the views again. While they cannot be listed, a view the URL names
+   * stays named and unopened; the listing that succeeds opens it, or drops an
+   * id no view answers to.
+   */
   readonly refresh: () => void;
   /**
    * Apply a view's query on the first page and make it the open view. A
@@ -328,6 +325,12 @@ export type SavedViews = {
   readonly remove: () => Promise<ViewOutcome>;
 };
 
+/**
+ * How the saved views move their host: a view opened, which is a step Back
+ * returns from; a view reverted to; or a view left, its id dropped.
+ */
+export type ViewAdoptionCause = "view" | "revert";
+
 /** The query authority the views read and drive: their provider's. */
 export type SavedViewsHost = {
   /** The schema a stored query is read against. */
@@ -336,8 +339,26 @@ export type SavedViewsHost = {
   readonly capabilities: SourceCapabilities;
   /** The live query and window, which "modified" is derived from. */
   readonly state: ReadonlyChannel<DataViewsState<object>>;
-  /** Adopt a view's query and window together. */
-  readonly adopt: (query: Query) => void;
+  /**
+   * The saved view the host has open — the location's `view` — or null: on
+   * load, and after Back, the id the session opens from its listing.
+   */
+  readonly view: ReadonlyChannel<string | null>;
+  /**
+   * Every move of the host's query and open view, heard once each move has
+   * landed whole: what the session follows, so a move of both is one
+   * notification and never two.
+   */
+  readonly transitions: Pick<ReadonlyChannel<unknown>, "subscribe">;
+  /**
+   * Adopt a query and window together with the open view, null for none, as
+   * one move: one write, one entry of history at most.
+   */
+  readonly adopt: (
+    query: Query,
+    cause: ViewAdoptionCause,
+    view: string | null,
+  ) => void;
 };
 
 /** Configuration of one provider's saved views. */
@@ -350,7 +371,7 @@ export type SavedViewsConfig = {
 
 /** The provider's views, with what only the provider calls. */
 export type OwnedSavedViews = SavedViews & {
-  /** Forget the open view, as a reset returns the query to its seed. */
+  /** Forget the open view, as a reset returns the query to where the provider started. */
   readonly forget: () => void;
 };
 
@@ -408,8 +429,8 @@ export type ViewCommandsConfig = Pick<
   readonly setBaseline: (slice: Slice | null) => void;
   /** The listed views with this one in them, as the store now has it. */
   readonly listWith: (view: SavedView) => readonly SavedView[];
-  /** Drop a view: its identity goes; the query stays. */
-  readonly leave: (id: string) => Partial<ViewsState>;
+  /** Drop a view: its identity goes, from the host too; the query stays. */
+  readonly dropView: (id: string) => Partial<ViewsState>;
   /** The first page of the current page size. */
   readonly readFirstPage: () => ResultWindow;
 };

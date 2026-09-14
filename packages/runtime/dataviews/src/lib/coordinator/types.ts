@@ -9,8 +9,6 @@ import type {
   Query,
   QueryCommand,
   QueryCommandResult,
-  ResultWindow,
-  Slice,
 } from "../query/index.js";
 import type {
   Completion,
@@ -68,10 +66,22 @@ export type ResultState<TRow extends object = RowRecord> = {
   readonly problem: ResultProblem | null;
 };
 
-/** Coordinator configuration; `slice` and `window` seed every generation. */
+/**
+ * Coordinator configuration; `start` is where every generation starts, and
+ * `initial` is where the first generation stands instead, when given.
+ */
 export type QueryCoordinatorConfig = {
-  readonly slice?: Slice | undefined;
-  readonly window?: ResultWindow | undefined;
+  /**
+   * The query every generation starts on and a reset returns to; the empty
+   * slice and the default window for whatever it leaves out.
+   */
+  readonly start?: Partial<Query> | undefined;
+  /**
+   * The query the first generation stands on, with no request issued for
+   * it: what an authority read before anything observed carried. Left out,
+   * the first generation stands on the start; a reset always returns to it.
+   */
+  readonly initial?: Query | undefined;
 };
 
 /** Result of dispatching one command through the coordinator. */
@@ -92,7 +102,7 @@ export type DispatchResult = QueryCommandResult & {
 export type DataViewsState<TRow extends object = RowRecord> = Query & {
   /**
    * Which generation this snapshot belongs to. `reset()` begins the next
-   * one: query, window, result and pending request return to the seed, and
+   * one: query, window, result and pending request return to the start, and
    * a completion issued under an earlier generation never publishes into
    * it. Observers detach what they hold for an old generation on seeing a
    * new one.
@@ -147,7 +157,7 @@ export type QueryCoordinator<TRow extends object = RowRecord> = {
   ) => boolean;
   /**
    * Begin the next generation: query, window and result return to the
-   * configured seed and the pending request dies. Completions from the
+   * configured start and the pending request dies. Completions from the
    * old generation never publish into the new one.
    */
   readonly reset: () => void;

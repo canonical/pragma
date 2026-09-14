@@ -154,6 +154,7 @@ describe("DataViews.Search", () => {
           window: DEFAULT_WINDOW,
         },
         "view",
+        null,
       );
     });
     expect(rendered).toHaveBeenCalledTimes(mounted + 1);

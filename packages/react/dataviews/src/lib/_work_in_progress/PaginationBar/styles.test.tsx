@@ -13,7 +13,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createPage, DEFAULT_WINDOW } from "@canonical/dataviews-core";
+import { createPage } from "@canonical/dataviews-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
@@ -80,7 +80,7 @@ const twoOfThree = createPage({
  */
 const loaded = (): HTMLElement => {
   const { provider, source } = createMachineProvider({
-    seed: { window: { ...DEFAULT_WINDOW, page: 1, size: 2 } },
+    snapshot: { query: "page=1&size=2", presentation: {} },
   });
   const { container } = render(<PaginationBar provider={provider} />);
   act(() => {

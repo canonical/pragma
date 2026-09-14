@@ -23,7 +23,7 @@ describe("regression 0022 — a left view's read reported late", () => {
       }),
     });
     const release = presentation.observe();
-    presentation.show({ id: "v1", presentation: null });
+    presentation.show({ id: "v1", presentation: {} });
     presentation.show(null);
     late.reject(new Error("view storage failed: too late"));
     await new Promise((settle) => setTimeout(settle));

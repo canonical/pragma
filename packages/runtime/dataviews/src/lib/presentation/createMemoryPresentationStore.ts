@@ -1,5 +1,19 @@
 import spellTargetKey from "./spellTargetKey.js";
-import type { JsonValue, PresentationStore } from "./types.js";
+import type {
+  JsonValue,
+  PresentationStore,
+  RestoredArrangement,
+} from "./types.js";
+
+/** Configuration of one memory presentation store. */
+type MemoryPresentationStoreConfig = {
+  /**
+   * The arrangement a snapshot put back, which the store starts holding at
+   * the view it was drawn under, or as the default arrangement; none when
+   * left out.
+   */
+  readonly restored?: RestoredArrangement | undefined;
+};
 
 /**
  * Create a presentation store in memory: what the provider keeps the
@@ -8,12 +22,22 @@ import type { JsonValue, PresentationStore } from "./types.js";
  * atomically; its own writes announced before they resolve — and lasts for
  * the session only, which nothing here labels as saved. It knows no views,
  * so a view's target is never `missing` and a removed view's keys are kept
- * until the session ends.
+ * until the session ends. It starts holding the arrangement a snapshot put
+ * back, at the view it was drawn under or as the default arrangement.
  *
  * @note Impure by design: the store is the memory the preferences live in.
  */
-export default function createMemoryPresentationStore(): PresentationStore {
+export default function createMemoryPresentationStore(
+  config: MemoryPresentationStoreConfig = {},
+): PresentationStore {
   const targets = new Map<string, Map<string, JsonValue>>();
+  if (config.restored !== undefined) {
+    const { view, presentation } = config.restored;
+    targets.set(
+      spellTargetKey(view === null ? "default" : { view }),
+      new Map(Object.entries(presentation)),
+    );
+  }
   const listeners = new Set<() => void>();
 
   return {

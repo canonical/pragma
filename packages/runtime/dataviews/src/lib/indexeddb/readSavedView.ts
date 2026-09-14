@@ -10,7 +10,7 @@ export default function readSavedView(
     id: record.id,
     name: record.name,
     query: record.query,
-    presentation: record.presentation ?? null,
+    presentation: record.presentation,
     revision: record.revision,
     pinned,
     createdAt: record.createdAt,

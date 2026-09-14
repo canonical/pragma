@@ -5,6 +5,7 @@
  * place for them.
  */
 
+import type { Mock } from "vitest";
 import type { HistoryMode, QueryLocation } from "../src/lib/location/index.js";
 import type { Query } from "../src/lib/query/index.js";
 import type {
@@ -84,6 +85,11 @@ export type RecordingLocation = {
   readonly writes: RecordedWrite[];
   /** What the location read at each notification its subscribers received. */
   readonly notifications: string[];
+  /** The port's read and subscribe, as spies a test asserts calls against. */
+  readonly spies: {
+    readonly read: Mock<QueryLocation["read"]>;
+    readonly subscribe: Mock<QueryLocation["subscribe"]>;
+  };
   /** Move the location from outside the loop, as the browser would. */
   readonly move: (params: string) => void;
 };

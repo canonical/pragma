@@ -53,7 +53,12 @@ const openStoreOver = (
 /** The scope the default test store writes its records under. */
 const machinesScope = JSON.stringify(["machines", null]);
 
-const failed = { id: "failed", name: "Failed", query: "status=failed" };
+const failed = {
+  id: "failed",
+  name: "Failed",
+  query: "status=failed",
+  presentation: {},
+};
 
 /** The saved view, or a failure naming what came back instead. */
 const readSaved = (outcome: { readonly status: string }): SavedView => {
@@ -135,7 +140,7 @@ describe("createIndexedDBViewStore", () => {
         id: "failed",
         name: "Failed",
         query: "status=failed",
-        presentation: null,
+        presentation: {},
         revision: 1,
         pinned: false,
         createdAt: "2026-09-11T08:00:00.000Z",
@@ -234,27 +239,23 @@ describe("createIndexedDBViewStore", () => {
       });
     });
 
-    it("replaces, keeps or removes the saved presentation", async () => {
+    it("keeps the arrangement a view was created with through every change", async () => {
       const store = openStoreOver(new IDBFactory());
       await store.create({ ...failed, presentation: { density: "compact" } });
-      const kept = readSaved(
+      const renamed = readSaved(
         await store.update({ id: "failed", revision: 1 }, { name: "Kept" }),
       );
-      expect(kept.presentation).toEqual({ density: "compact" });
-      const replaced = readSaved(
+      expect(renamed.presentation).toEqual({ density: "compact" });
+      const requeried = readSaved(
         await store.update(
           { id: "failed", revision: 2 },
-          { presentation: { density: "open" } },
+          { query: "status=running" },
         ),
       );
-      expect(replaced.presentation).toEqual({ density: "open" });
-      const removed = readSaved(
-        await store.update(
-          { id: "failed", revision: 3 },
-          { presentation: null },
-        ),
-      );
-      expect(removed.presentation).toBeNull();
+      expect(requeried).toMatchObject({
+        query: "status=running",
+        presentation: { density: "compact" },
+      });
     });
 
     it("refuses a change made against a stale revision", async () => {
@@ -983,6 +984,7 @@ describe("createIndexedDBViewStore", () => {
       v: 1,
       name: "Stored",
       query: "status=failed",
+      presentation: {},
       revision: 1,
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
@@ -1002,12 +1004,18 @@ describe("createIndexedDBViewStore", () => {
         buildRecord({ id: "fraction", revision: 1.5 }),
         buildRecord({ id: "zeroth", revision: 0 }),
         buildRecord({ id: "undated", createdAt: 7 }),
+        // Written before a view carried its arrangement: not this format.
+        buildRecord({ id: "bare", presentation: undefined }),
         buildRecord({ id: "ok" }),
       ]);
 
       const { views, unreadable } = await store.list();
       expect(views.map(({ id }) => id)).toEqual(["ok"]);
       expect(unreadable).toEqual([
+        {
+          id: "bare",
+          reason: "the record does not have the shape of a saved view",
+        },
         {
           id: "fraction",
           reason: "the record does not have the shape of a saved view",

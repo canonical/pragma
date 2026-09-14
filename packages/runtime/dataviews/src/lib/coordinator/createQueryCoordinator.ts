@@ -37,7 +37,7 @@ const idleResult: ResultState<never> = Object.freeze({
 
 /**
  * Copy a caller-supplied slice so later mutations of the original cannot
- * corrupt adopted or seeded state, including nested predicate, sort-term
+ * corrupt adopted or starting state, including nested predicate, sort-term
  * and group-term objects.
  */
 const copySlice = (slice: Slice): Slice =>
@@ -92,11 +92,11 @@ const copyWindow = (window: ResultWindow): ResultWindow => {
 export default function createQueryCoordinator<TRow extends object = RowRecord>(
   config: QueryCoordinatorConfig = {},
 ): QueryCoordinator<TRow> {
-  const seedSlice =
-    config.slice === undefined ? EMPTY_SLICE : copySlice(config.slice);
-  const seedWindow = copyWindow(
-    config.window === undefined ? DEFAULT_WINDOW : config.window,
-  );
+  const startSlice =
+    config.start?.slice === undefined
+      ? EMPTY_SLICE
+      : copySlice(config.start.slice);
+  const startWindow = copyWindow(config.start?.window ?? DEFAULT_WINDOW);
 
   let generation = 1;
   // Instance-unique request ids: a completion routed to the wrong
@@ -106,8 +106,12 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
   let lastRequestId: string | null = null;
   /** The key of the query and window that produced the displayed rows. */
   let publishedKey: string | null = null;
-  let slice: Slice = seedSlice;
-  let window: ResultWindow = seedWindow;
+  let slice: Slice =
+    config.initial === undefined ? startSlice : copySlice(config.initial.slice);
+  let window: ResultWindow =
+    config.initial === undefined
+      ? startWindow
+      : copyWindow(config.initial.window);
   let currentKey = spellQueryKey({ slice, window });
   let result: ResultState<TRow> = idleResult;
 
@@ -246,8 +250,8 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
     reset(): void {
       generation += 1;
       lastRequestId = null;
-      slice = seedSlice;
-      window = seedWindow;
+      slice = startSlice;
+      window = startWindow;
       currentKey = spellQueryKey({ slice, window });
       publishedKey = null;
       publish(idleResult);

@@ -17,7 +17,6 @@ import {
   type QueryLocation,
 } from "../../lib/location/index.js";
 import { createDataViewsProvider } from "../../lib/provider/index.js";
-import { EMPTY_SLICE } from "../../lib/query/index.js";
 
 const machines = createCollection({
   identify: byId,
@@ -37,8 +36,8 @@ const notifyingOnSubscribe = (href: string): QueryLocation => {
   };
 };
 
-describe("regression 0010 — a location notifying on subscribe keeps the seed", () => {
-  it("writes the seed and adopts nothing from the notification", () => {
+describe("regression 0010 — a location notifying on subscribe erased the snapshot's query", () => {
+  it("writes the snapshot's query and adopts nothing from the notification", () => {
     const location = notifyingOnSubscribe("/machines");
     const provider = createDataViewsProvider({
       collection: machines,
@@ -46,12 +45,7 @@ describe("regression 0010 — a location notifying on subscribe keeps the seed",
         capabilities: declare({ filter: { status: ["eq"] } }),
       }).source,
       location,
-      seed: {
-        slice: {
-          ...EMPTY_SLICE,
-          filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
-        },
-      },
+      snapshot: { query: "status=failed", presentation: {} },
     });
     const release = provider.observe();
     expect(provider.state.get().slice.filter).toEqual([

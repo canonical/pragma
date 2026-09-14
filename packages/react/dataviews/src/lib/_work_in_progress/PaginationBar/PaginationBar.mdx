@@ -19,13 +19,12 @@ The page size and page selects are the design system's `SelectInput`, and the pa
 
 ## A table and its pagination bar
 
-Build the provider once, in state, over the module-scope collection and its source, and hand it to both parts. Nothing runs until one of them observes it: the table and the bar each observe the provider for as long as they are mounted, the first observer runs the source and asks for the first page, and the last to leave stops it. The two read the same provider: the bar asks for a window, and the table shows the rows that answer it. The window the provider starts on is its `seed`.
+Build the provider once, in state, over the module-scope collection and its source, and hand it to both parts. Nothing runs until one of them observes it: the table and the bar each observe the provider for as long as they are mounted, the first observer runs the source and asks for the first page, and the last to leave stops it. The two read the same provider: the bar asks for a window, and the table shows the rows that answer it. The window the provider starts on is in its `snapshot`.
 
 ```tsx
 import {
   createArraySource,
   createDataViewsProvider,
-  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import {
   DataTable,
@@ -52,7 +51,7 @@ export function Machines() {
         collection: machineCollection,
         searchFields: ["name", "owner"],
       }),
-      seed: { window: { ...DEFAULT_WINDOW, size: 5 } },
+      snapshot: { query: "page=1&size=5", presentation: {} },
     }),
   );
   return (

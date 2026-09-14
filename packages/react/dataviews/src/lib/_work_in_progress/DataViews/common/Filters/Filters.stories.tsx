@@ -1,4 +1,3 @@
-import { EMPTY_SLICE, type Slice } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement } from "react";
 import { expect, userEvent, waitFor } from "storybook/test";
@@ -73,26 +72,10 @@ const recordRows = (canvas: {
 }) => canvas.getAllByRole("row").length - 1;
 
 /** The query the provider starts on: only failed machines. */
-const onlyFailed: Slice = {
-  ...EMPTY_SLICE,
-  filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
-};
-
-const onlyFailedCode = `{
-    ...EMPTY_SLICE,
-    filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
-  }`;
+const onlyFailed = "status=failed";
 
 /** The query the provider starts on: machines with at least sixteen cores. */
-const atLeastSixteenCores: Slice = {
-  ...EMPTY_SLICE,
-  filter: [{ field: "cores", operator: "gte", operands: [16] }],
-};
-
-const atLeastSixteenCoresCode = `{
-    ...EMPTY_SLICE,
-    filter: [{ field: "cores", operator: "gte", operands: [16] }],
-  }`;
+const atLeastSixteenCores = "cores__gte=16";
 
 /**
  * Default: one control per filterable field in the collection's schema — a
@@ -122,10 +105,10 @@ export const ChoiceApplied: Story = {
   parameters: consumerCode({
     parts,
     declarations: columnsCode,
-    slice: onlyFailedCode,
+    query: onlyFailed,
     render: composition,
   }),
-  render: renderWith({ slice: onlyFailed }),
+  render: renderWith({ query: onlyFailed }),
   play: async ({ canvas }) => {
     await expect(
       canvas.getByRole("checkbox", { name: "failed" }),
@@ -139,10 +122,10 @@ export const BoundApplied: Story = {
   parameters: consumerCode({
     parts,
     declarations: columnsCode,
-    slice: atLeastSixteenCoresCode,
+    query: atLeastSixteenCores,
     render: composition,
   }),
-  render: renderWith({ slice: atLeastSixteenCores }),
+  render: renderWith({ query: atLeastSixteenCores }),
   play: async ({ canvas }) => {
     await expect(canvas.getByLabelText("Cores from")).toHaveValue(16);
     await waitFor(() => expect(recordRows(canvas)).toBe(4));
@@ -169,10 +152,10 @@ export const InvalidEditKeepsTheRestriction: Story = {
   parameters: consumerCode({
     parts,
     declarations: columnsCode,
-    slice: atLeastSixteenCoresCode,
+    query: atLeastSixteenCores,
     render: composition,
   }),
-  render: renderWith({ slice: atLeastSixteenCores }),
+  render: renderWith({ query: atLeastSixteenCores }),
   play: async ({ canvas }) => {
     const bound = canvas.getByLabelText<HTMLInputElement>("Cores from");
     await expect(bound).toHaveValue(16);

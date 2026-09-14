@@ -1,8 +1,6 @@
 import {
   createMemoryLocation,
-  EMPTY_SLICE,
   type QueryLocation,
-  type Slice,
 } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ReactElement, useState, useSyncExternalStore } from "react";
@@ -96,9 +94,7 @@ const recordRows = (canvas: {
 }) => canvas.getAllByRole("row").length - 1;
 
 /** The query the provider starts on: hosts and owners matching "ex:a". */
-const searchingAna: Slice = { ...EMPTY_SLICE, search: "ex:a" };
-
-const searchingAnaCode = `{ ...EMPTY_SLICE, search: "ex:a" }`;
+const searchingAna = "q=ex:a";
 
 /**
  * Default: one labelled search input over the collection's search, which
@@ -135,10 +131,10 @@ export const SearchApplied: Story = {
   parameters: consumerCode({
     parts,
     declarations: columnsCode,
-    slice: searchingAnaCode,
+    query: searchingAna,
     render: composition,
   }),
-  render: renderWith({ slice: searchingAna }),
+  render: renderWith({ query: searchingAna }),
   play: async ({ canvas }) => {
     await expect(
       canvas.getByRole("searchbox", { name: "Search machines" }),

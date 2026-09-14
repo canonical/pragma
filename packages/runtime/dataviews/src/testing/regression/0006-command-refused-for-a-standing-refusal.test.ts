@@ -47,6 +47,7 @@ describe("regression 0006 — a command is refused only for what it incurs", () 
         window: DEFAULT_WINDOW,
       },
       "view",
+      null,
     );
     expect(host.removePredicate("status", "eq")).toEqual([]);
     expect(provider.state.get().slice.filter).toEqual([

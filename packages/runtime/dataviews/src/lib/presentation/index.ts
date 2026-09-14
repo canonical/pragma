@@ -1,5 +1,9 @@
 export { default as arePresentationsEqual } from "./arePresentationsEqual.js";
-export { WRITE_DEADLINE, WRITE_DELAY } from "./constants.js";
+export {
+  NO_PRESENTATION,
+  WRITE_DEADLINE,
+  WRITE_DELAY,
+} from "./constants.js";
 export { default as createPresentation } from "./createPresentation.js";
 export { default as diffPresentations } from "./diffPresentations.js";
 export { default as resolveColumnArrangement } from "./resolveColumnArrangement.js";

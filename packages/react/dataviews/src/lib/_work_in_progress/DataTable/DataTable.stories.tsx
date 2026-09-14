@@ -1,4 +1,3 @@
-import { DEFAULT_WINDOW } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement, ReactNode } from "react";
 import { expect, userEvent, waitFor } from "storybook/test";
@@ -482,13 +481,13 @@ export const SelectAllActsOnDisplayedRows: Story = {
   parameters: consumerCode({
     parts: tableParts,
     declarations: plainColumnsCode,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     prepare: `provider.selection.add(["m-02", "m-09"]);`,
     render: selectableTableCode,
   }),
   args: { selectable: true },
   render: renderMachines(plainColumns, {
-    window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+    query: "page=1&size=5",
     prepare: selectOnAndOffThePage,
   }),
   play: async ({ canvas }) => {
@@ -1022,7 +1021,7 @@ const virtualization = virtualizeRows({ estimatedRowHeight: 24 });
 /** Ten thousand machines, all in one window. */
 const tenThousand = {
   source: () => createMachineSource({ rows: manyMachines(10_000) }),
-  window: { ...DEFAULT_WINDOW, page: 1, size: 10_000 },
+  query: "page=1&size=10000",
 } as const;
 
 /** A virtualized story's render: its args, virtualized, over ten thousand machines. */
@@ -1038,8 +1037,8 @@ const renderVirtualized =
   );
 
 /**
- * A virtualized story's consumer code: the table, virtualized, in a capped frame,
- * over a provider whose window holds every one of ten thousand machines.
+ * A virtualized story's consumer code: the table, virtualized, in a capped
+ * frame, over a provider whose window holds every one of ten thousand machines.
  */
 const virtualizedConsumer = (
   columns: string,
@@ -1054,7 +1053,7 @@ import { machineCollection, machines } from "./machines.js";`,
 const virtualization = virtualizeRows({ estimatedRowHeight: 24 });
 
 ${columns}`,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 10_000 }",
+    query: "page=1&size=10000",
     render: `<DataTable
   provider={provider}
   columns={columns}

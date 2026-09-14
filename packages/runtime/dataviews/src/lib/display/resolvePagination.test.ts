@@ -37,7 +37,7 @@ const settled = (
   window: ResultWindow,
   page?: Parameters<typeof buildSettledPage>[0],
 ): QueryCoordinator<SettledRow> => {
-  const coordinator = createQueryCoordinator<SettledRow>({ window });
+  const coordinator = createQueryCoordinator<SettledRow>({ start: { window } });
   if (page !== undefined) {
     coordinator.complete(coordinator.refresh(), {
       status: "succeeded",

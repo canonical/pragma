@@ -1,10 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 import createCountingViewStore from "../../../testing/createCountingViewStore.js";
 import createManualSource from "../../../testing/createManualSource.js";
-import { NOTHING_DECLARED, pageOf } from "../../../testing/fixtures.js";
+import createRecordingLocation from "../../../testing/createRecordingLocation.js";
+import {
+  createStandInPresentationStore,
+  createStandInViewStore,
+} from "../../../testing/createStandInStores.js";
+import {
+  answering,
+  NOTHING_DECLARED,
+  pageOf,
+} from "../../../testing/fixtures.js";
 import type { ActionOutcome } from "../action/index.js";
 import { createCollection } from "../collection/index.js";
 import { createMemoryLocation, type QueryLocation } from "../location/index.js";
+import type { PresentationStore } from "../presentation/index.js";
 import {
   DEFAULT_WINDOW,
   EMPTY_SLICE,
@@ -13,11 +23,14 @@ import {
 } from "../query/index.js";
 import type { Completion, SourceDelivery } from "../result/index.js";
 import type { RowIdentifier } from "../rows/index.js";
+import type { DataViewsSnapshot } from "../snapshot/index.js";
 import {
+  createArraySource,
   declareCapabilities,
   type SourceActionRunner,
   type SourceCapabilities,
 } from "../source/index.js";
+import type { ViewStore } from "../views/index.js";
 import createDataViewsProvider from "./createDataViewsProvider.js";
 import isDataViewsProvider from "./isDataViewsProvider.js";
 import readProviderHost from "./readProviderHost.js";
@@ -85,8 +98,8 @@ const machineProvider = (capabilities: SourceCapabilities = permissive) => {
   return { ...manual, provider, host: readProviderHost(provider) };
 };
 
-/** The seed the machines provider writes into a location carrying no query. */
-const SEED_PARAMS = `page=${DEFAULT_WINDOW.page}&size=${DEFAULT_WINDOW.size}`;
+/** What a provider with no snapshot writes into a location carrying no query. */
+const DEFAULT_PARAMS = `page=${DEFAULT_WINDOW.page}&size=${DEFAULT_WINDOW.size}`;
 
 const STATUS_FAILED: Predicate = {
   field: "status",
@@ -119,6 +132,7 @@ describe("createDataViewsProvider", () => {
       "navigateWindow",
       "observe",
       "presentation",
+      "readSnapshot",
       "refresh",
       "refusals",
       "reset",
@@ -214,9 +228,7 @@ describe("createDataViewsProvider", () => {
     const { source, calls } = createManualSource<Machine>({
       capabilities: permissive,
     });
-    const memory = createMemoryLocation();
-    const subscribe = vi.fn(memory.subscribe);
-    const location: QueryLocation = { ...memory, subscribe };
+    const { location, spies } = createRecordingLocation({ href: "/" });
     const views = createCountingViewStore();
     const provider = createDataViewsProvider({
       collection: machines,
@@ -225,11 +237,186 @@ describe("createDataViewsProvider", () => {
       views: views.store,
     });
     expect(calls).toHaveLength(0);
-    expect(subscribe).not.toHaveBeenCalled();
+    expect(spies.subscribe).not.toHaveBeenCalled();
     expect(views.subscribers).toBe(0);
     expect(provider.state.get().result.status).toBe("idle");
     expect(provider.state.get().pendingRequestId).toBeNull();
     expect(location.read().toString()).toBe("");
+  });
+});
+
+describe("createDataViewsProvider construction", () => {
+  it("stands on the location's query, read once, subscribing to and requesting nothing", () => {
+    const { source, calls } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const recorded = createRecordingLocation({
+      href: "/machines?tab=inventory&status=failed&sort=cpu__desc&page=2&size=10&owner__isSet=1",
+    });
+    const views = createCountingViewStore();
+    const readPresentation = vi.fn<PresentationStore["readPresentation"]>();
+    const hearPresentation = vi.fn<PresentationStore["subscribe"]>();
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: recorded.location,
+      views: views.store,
+      presentation: createStandInPresentationStore({
+        readPresentation,
+        subscribe: hearPresentation,
+      }),
+    });
+    expect(readPresentation).not.toHaveBeenCalled();
+    expect(hearPresentation).not.toHaveBeenCalled();
+    expect(recorded.spies.read).toHaveBeenCalledTimes(1);
+    expect(recorded.spies.subscribe).not.toHaveBeenCalled();
+    expect(recorded.writes).toEqual([]);
+    expect(views.subscribers).toBe(0);
+    expect(calls).toHaveLength(0);
+    const state = provider.state.get();
+    expect(state.slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["failed"] },
+    ]);
+    expect(state.slice.sort).toEqual([{ field: "cpu", direction: "desc" }]);
+    expect(state.window).toMatchObject({ page: 2, size: 10 });
+    expect(state.result.status).toBe("idle");
+    expect(state.pendingRequestId).toBeNull();
+    // The clause the source cannot filter by is left out and reported.
+    expect(provider.issues.get().map((issue) => issue.parameter)).toEqual([
+      "owner__isSet",
+    ]);
+  });
+
+  it("reads no store when built from a snapshot naming an open view", () => {
+    const { source, calls } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const list = vi.fn<ViewStore["list"]>();
+    const listen = vi.fn<ViewStore["subscribe"]>();
+    const readPresentation = vi.fn<PresentationStore["readPresentation"]>();
+    const hear = vi.fn<PresentationStore["subscribe"]>();
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      views: createStandInViewStore({ list, subscribe: listen }),
+      presentation: createStandInPresentationStore({
+        readPresentation,
+        subscribe: hear,
+      }),
+      snapshot: {
+        query: "view=v1&status=failed",
+        presentation: { "table.hidden": ["cpu"] },
+      },
+    });
+    expect(list).not.toHaveBeenCalled();
+    expect(listen).not.toHaveBeenCalled();
+    expect(readPresentation).not.toHaveBeenCalled();
+    expect(hear).not.toHaveBeenCalled();
+    expect(calls).toHaveLength(0);
+    // What it stands on, read from the snapshot alone.
+    expect(readProviderHost(provider).view.get()).toBe("v1");
+    expect(provider.presentation.state.get().presentation).toEqual({
+      "table.hidden": ["cpu"],
+    });
+  });
+
+  it("stands on the snapshot's query when the location carries no query", () => {
+    const { source } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: createMemoryLocation({ href: "/machines?tab=inventory" }),
+      snapshot: { query: "q=web", presentation: {} },
+    });
+    expect(provider.state.get().slice.search).toBe("web");
+    expect(provider.issues.get()).toEqual([]);
+  });
+
+  it("asks once for the query it stood on, writing nothing back", () => {
+    const { source, calls } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const recorded = createRecordingLocation({
+      href: "/machines?status=failed&page=2&size=10",
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: recorded.location,
+    });
+    const constructed = provider.state.get();
+    const release = provider.observe();
+    expect(calls).toHaveLength(1);
+    expect(calls.at(0)?.request.slice).toBe(constructed.slice);
+    expect(calls.at(0)?.request.window.page).toBe(2);
+    expect(recorded.writes).toEqual([]);
+    release();
+  });
+
+  it("adopts a location moved before the first observer before taking up rows drawn for the old query", () => {
+    const { source, calls } = createManualSource<Machine>({
+      capabilities: permissive,
+      answer: answering([{ id: "m-1" }]),
+    });
+    const recorded = createRecordingLocation({
+      href: "/machines?status=failed&page=1&size=50",
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: recorded.location,
+    });
+    provider.refresh();
+    expect(calls).toHaveLength(0);
+    recorded.move("status=cancelled&page=1&size=50");
+    const release = provider.observe();
+    // One execution, of the query the location moved to: the rows drawn for
+    // the old one are never asked for again.
+    expect(calls).toHaveLength(1);
+    expect(calls.at(0)?.request.slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["cancelled"] },
+    ]);
+    release();
+  });
+
+  it("lets a location moved before the first observer win", () => {
+    const { source, calls } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const recorded = createRecordingLocation({
+      href: "/machines?status=failed&page=2&size=10",
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: recorded.location,
+    });
+    recorded.move("status=cancelled&size=10");
+    const release = provider.observe();
+    expect(calls).toHaveLength(1);
+    expect(calls.at(0)?.request.slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["cancelled"] },
+    ]);
+    expect(calls.at(0)?.request.window.page).toBe(1);
+    expect(provider.state.get().slice.filter.at(0)?.operands).toEqual([
+      "cancelled",
+    ]);
+    release();
+  });
+
+  it("resets to where it started, never to the query the location carried", () => {
+    const { source } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: createMemoryLocation({ href: "/machines?status=failed" }),
+    });
+    provider.reset();
+    expect(provider.state.get().slice).toEqual(EMPTY_SLICE);
   });
 });
 
@@ -272,7 +459,7 @@ describe("createDataViewsProvider observe", () => {
     expect(callAt(1).releases).toBe(1);
 
     // The location loop is stopped too: an external change is not adopted.
-    location.write(new URLSearchParams(`status=failed&${SEED_PARAMS}`));
+    location.write(new URLSearchParams(`status=failed&${DEFAULT_PARAMS}`));
     expect(provider.state.get().slice.filter).toEqual([]);
     expect(calls).toHaveLength(2);
   });
@@ -288,7 +475,8 @@ describe("createDataViewsProvider observe", () => {
       location,
     });
     const release = provider.observe();
-    // No seed request followed by a second fetch for the location.
+    // No request for the default query followed by a second fetch for the
+    // location.
     expect(calls).toHaveLength(1);
     expect(callAt(0).request.slice.filter).toEqual([STATUS_FAILED]);
     expect(callAt(0).request.window).toEqual(DEFAULT_WINDOW);
@@ -296,11 +484,11 @@ describe("createDataViewsProvider observe", () => {
     expect(provider.state.get().pendingRequestId).toBe(
       callAt(0).request.requestId,
     );
-    expect(location.read().toString()).toBe(`status=failed&${SEED_PARAMS}`);
+    expect(location.read().toString()).toBe(`status=failed&${DEFAULT_PARAMS}`);
     release();
   });
 
-  it("writes the seed into a location carrying no query, and asks once", () => {
+  it("writes the default query into a location carrying no query, and asks once", () => {
     const { source, calls, callAt } = createManualSource<Machine>({
       capabilities: permissive,
     });
@@ -313,8 +501,8 @@ describe("createDataViewsProvider observe", () => {
     const release = provider.observe();
     expect(calls).toHaveLength(1);
     expect(callAt(0).request.slice).toEqual(EMPTY_SLICE);
-    // The host's own parameter survives beside the seed.
-    expect(location.read().toString()).toBe(`tab=machines&${SEED_PARAMS}`);
+    // The host's own parameter survives beside the default query.
+    expect(location.read().toString()).toBe(`tab=machines&${DEFAULT_PARAMS}`);
     release();
   });
 
@@ -355,18 +543,342 @@ describe("createDataViewsProvider observe", () => {
       source,
       location,
     });
-    expect(provider.issues.get()).toEqual([]);
-    const release = provider.observe();
-    expect(provider.issues.get()).toEqual([
+    const refused = [
       {
         parameter: "status",
         code: "undeclared-field",
         reason: 'field "status" cannot be filtered',
       },
-    ]);
+    ];
+    // Reported from the read at construction, and again once observed.
+    expect(provider.issues.get()).toEqual(refused);
+    const release = provider.observe();
+    expect(provider.issues.get()).toEqual(refused);
     // The refused clause never reaches the source; the rest of the query does.
     expect(callAt(0).request.slice.filter).toEqual([]);
     release();
+  });
+});
+
+describe("createDataViewsProvider open view", () => {
+  it("reads the open view with the query it stands on: the location's, or else the snapshot's", () => {
+    const { source } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const snapshot = { query: "view=v2&status=cancelled", presentation: {} };
+    const located = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: createMemoryLocation({
+        href: "/machines?view=v1&status=failed",
+      }),
+      views: createStandInViewStore(),
+      snapshot,
+    });
+    const host = readProviderHost(located);
+    expect(host.view.get()).toBe("v1");
+    // Carried in what a server hands the client, and in every destination.
+    expect(located.readSnapshot().query).toBe(
+      "view=v1&status=failed&page=1&size=50",
+    );
+    expect(
+      host
+        .spellQuery({ slice: EMPTY_SLICE, window: DEFAULT_WINDOW })
+        ?.toString(),
+    ).toBe("view=v1&page=1&size=50");
+    const restored = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: createMemoryLocation({ href: "/machines" }),
+      views: createStandInViewStore(),
+      snapshot,
+    });
+    expect(readProviderHost(restored).view.get()).toBe("v2");
+    expect(
+      readProviderHost(
+        createDataViewsProvider({ collection: machines, source }),
+      ).view.get(),
+    ).toBeNull();
+    // Handed outward read-only, and gone with a reset.
+    expect(Object.isFrozen(host.view)).toBe(true);
+    expect(host.view).not.toHaveProperty("set");
+    located.reset();
+    expect(host.view.get()).toBeNull();
+  });
+
+  it("publishes the adopted query before the open view moves", () => {
+    const { host } = machineProvider();
+    const heard: (readonly Predicate[])[] = [];
+    host.view.subscribe(() => {
+      heard.push(host.state.get().slice.filter);
+    });
+    host.adopt(
+      {
+        slice: { ...EMPTY_SLICE, filter: [STATUS_FAILED] },
+        window: DEFAULT_WINDOW,
+      },
+      "view",
+      "v1",
+    );
+    expect(heard).toEqual([[STATUS_FAILED]]);
+  });
+
+  it("announces a move of the open view alone, and nothing when neither moves", () => {
+    const { host } = machineProvider();
+    const heard: string[] = [];
+    host.transitions.subscribe(() => {
+      const transition = host.transitions.get();
+      heard.push(
+        `${transition?.cause}:${host.view.get()}:${transition?.history}`,
+      );
+    });
+    const query = { slice: EMPTY_SLICE, window: DEFAULT_WINDOW };
+    // Nothing requested for a name: the query stands where it stood.
+    expect(host.adopt(query, "view", "v1")).toBeNull();
+    host.adopt(query, "view", "v1");
+    host.adopt(query, "revert", "v1");
+    host.adopt(query, "revert", null);
+    expect(heard).toEqual(["view:v1:push", "revert:null:replace"]);
+    expect(host.view.get()).toBeNull();
+  });
+});
+
+describe("createDataViewsProvider snapshot", () => {
+  it("reads the query, its window and the arrangement in force, never the selection", () => {
+    const { source } = createManualSource<Machine>({
+      capabilities: permissive,
+      answer: answering([{ id: "m-1" }, { id: "m-2" }]),
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: createMemoryLocation({
+        href: "/machines?tab=inventory&status=failed&sort=cpu__desc&page=2&size=10",
+      }),
+    });
+    provider.refresh();
+    provider.selection.set(["m-1"]);
+    provider.presentation.arrange({ "table.width.cpu": 120 });
+    const snapshot = provider.readSnapshot();
+    expect(snapshot).toEqual({
+      query: "status=failed&sort=cpu__desc&page=2&size=10",
+      presentation: { "table.width.cpu": 120 },
+    });
+    // Two members, both plain JSON: nothing of the selection rides along.
+    expect(Object.keys(snapshot).sort()).toEqual(["presentation", "query"]);
+    expect(JSON.stringify(snapshot)).not.toContain("m-1");
+  });
+
+  it("starts from a snapshot's query and arrangement, and resets to its query", () => {
+    const { source } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const snapshot = {
+      query: "status=failed&page=3&size=10",
+      presentation: { "table.hidden": ["cpu"] },
+    };
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      snapshot,
+    });
+    const started = provider.state.get();
+    expect(started.slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["failed"] },
+    ]);
+    expect(started.window).toMatchObject({ page: 3, size: 10 });
+    expect(started.result.status).toBe("idle");
+    expect(provider.presentation.state.get().presentation).toEqual({
+      "table.hidden": ["cpu"],
+    });
+    expect(provider.issues.get()).toEqual([]);
+    // What it reads back is what it was handed.
+    expect(provider.readSnapshot()).toEqual(snapshot);
+    provider.setSearch("web");
+    provider.reset();
+    expect(provider.state.get().slice).toEqual(started.slice);
+    expect(provider.state.get().window).toEqual(started.window);
+  });
+
+  it("reports what a snapshot's query was refused for, and leaves it out", () => {
+    const { source } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      snapshot: { query: "status=failed&owner__isSet=1", presentation: {} },
+    });
+    expect(provider.state.get().slice.filter.map(({ field }) => field)).toEqual(
+      ["status"],
+    );
+    expect(provider.issues.get().map(({ parameter }) => parameter)).toEqual([
+      "owner__isSet",
+    ]);
+    expect(Object.isFrozen(provider.issues.get())).toBe(true);
+    // Reported through the location sync when there is a location instead.
+    const located = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: createMemoryLocation({ href: "/machines" }),
+      snapshot: { query: "owner__isSet=1", presentation: {} },
+    });
+    expect(located.issues.get().map(({ parameter }) => parameter)).toEqual([
+      "owner__isSet",
+    ]);
+  });
+
+  it("reports what the location carrying the query refused, never the snapshot's refusals", () => {
+    const { source } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: createMemoryLocation({ href: "/machines?status=failed" }),
+      snapshot: { query: "owner__isSet=1", presentation: {} },
+    });
+    expect(provider.issues.get()).toEqual([]);
+  });
+
+  it("lets a location carrying a query win over the snapshot's, keeping its arrangement", () => {
+    const { source } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location: createMemoryLocation({ href: "/machines?status=cancelled" }),
+      snapshot: {
+        query: "status=failed",
+        presentation: { "table.width.cpu": 80 },
+      },
+    });
+    expect(provider.state.get().slice.filter.at(0)?.operands).toEqual([
+      "cancelled",
+    ]);
+    expect(provider.presentation.state.get().presentation).toEqual({
+      "table.width.cpu": 80,
+    });
+  });
+
+  it("puts a provider back as another left it", () => {
+    const build = (snapshot?: DataViewsSnapshot) =>
+      createDataViewsProvider({
+        collection: machines,
+        source: createManualSource<Machine>({ capabilities: permissive })
+          .source,
+        ...(snapshot === undefined ? {} : { snapshot }),
+      });
+    const first = build();
+    first.setSort([{ field: "updated", direction: "asc" }]);
+    first.navigateWindow({ page: 4 });
+    first.presentation.arrange({ "table.order": ["cpu", "status"] });
+    const second = build(JSON.parse(JSON.stringify(first.readSnapshot())));
+    expect(second.state.get().slice).toEqual(first.state.get().slice);
+    expect(second.state.get().window).toEqual(first.state.get().window);
+    expect(second.presentation.state.get()).toEqual(
+      first.presentation.state.get(),
+    );
+  });
+});
+
+describe("createDataViewsProvider refresh", () => {
+  it("publishes a page the source answers within the call, and holds nothing after", () => {
+    const { location, spies } = createRecordingLocation({
+      href: "/machines?cpu__gte=4",
+    });
+    const views = createCountingViewStore();
+    const source = createArraySource<Machine>({
+      rows: [
+        { id: "m-1", cpu: 2 },
+        { id: "m-2", cpu: 8 },
+      ],
+      collection: machines,
+    });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source,
+      location,
+      views: views.store,
+    });
+    provider.refresh();
+    const state = provider.state.get();
+    expect(state.result.status).toBe("ready");
+    expect(state.result.rows).toEqual([{ id: "m-2", cpu: 8 }]);
+    expect(state.resultMatchesQuery).toBe(true);
+    expect(state.pendingRequestId).toBeNull();
+    expect(provider.rows.get().ids).toEqual(["m-2"]);
+    expect(spies.subscribe).not.toHaveBeenCalled();
+    expect(views.subscribers).toBe(0);
+    // The execution was released: rows changing in the source reach no one.
+    source.setRows([{ id: "m-3", cpu: 16 }]);
+    expect(provider.state.get()).toBe(state);
+  });
+
+  it("starts nothing for a source that must wait, leaving the request to the first observer", () => {
+    const { source, calls, callAt } = createManualSource<Machine>({
+      capabilities: permissive,
+    });
+    const provider = createDataViewsProvider({ collection: machines, source });
+    provider.refresh();
+    expect(calls).toHaveLength(0);
+    const { pendingRequestId, result } = provider.state.get();
+    expect(result.status).toBe("pending");
+    expect(pendingRequestId).not.toBeNull();
+    // The first observer executes the request still pending, once.
+    const release = provider.observe();
+    expect(calls).toHaveLength(1);
+    expect(callAt(0).request.requestId).toBe(pendingRequestId);
+    callAt(0).deliver(delivered([{ id: "m-1" }]));
+    expect(provider.state.get().result.status).toBe("ready");
+    release();
+  });
+
+  it("is taken up by the first observer over the rows it drew, asking for nothing new", () => {
+    const { source, calls } = createManualSource<Machine>({
+      capabilities: permissive,
+      answer: answering([{ id: "m-1" }]),
+    });
+    const provider = createDataViewsProvider({ collection: machines, source });
+    provider.refresh();
+    expect(calls).toHaveLength(0);
+    const drawn = provider.state.get();
+    const release = provider.observe();
+    // Observed, the source is live again under the drawn rows' request.
+    expect(calls).toHaveLength(1);
+    expect(calls.at(0)?.releases).toBe(0);
+    expect(calls.at(0)?.request.requestId).toBe(
+      drawn.result.provenance?.requestId,
+    );
+    expect(provider.state.get()).toBe(drawn);
+    provider.refresh();
+    // Observed, a refresh goes through the live run alone.
+    expect(calls).toHaveLength(2);
+    expect(calls.at(0)?.releases).toBe(1);
+    expect(calls.at(1)?.releases).toBe(0);
+    release();
+  });
+
+  it("publishes the refusal of a query the source cannot run, asking nothing", () => {
+    const { source, calls } = createManualSource<Machine>({
+      capabilities: permissive,
+      // The source's own check: what a declaration cannot say.
+      refusals: () => [
+        {
+          part: "window",
+          code: "unreachable-page",
+          field: null,
+          operator: null,
+          reason: "page 1 cannot be reached",
+        },
+      ],
+    });
+    const provider = createDataViewsProvider({ collection: machines, source });
+    provider.refresh();
+    expect(calls).toHaveLength(0);
+    expect(provider.state.get().result.status).toBe("failed");
+    expect(provider.state.get().result.problem?.status).toBe("refused");
   });
 });
 
@@ -461,7 +973,7 @@ describe("createDataViewsProvider commands", () => {
     expect(calls).toHaveLength(1);
     expect(location.read().has("group")).toBe(false);
     expect(location.read().has("sort")).toBe(false);
-    expect(location.read().toString()).toBe(SEED_PARAMS);
+    expect(location.read().toString()).toBe(DEFAULT_PARAMS);
 
     // An accepted command moves everything.
     expect(provider.setSort([{ field: "cpu", direction: "asc" }])).toEqual([]);
@@ -532,6 +1044,7 @@ describe("createDataViewsProvider host", () => {
     const requestId = host.adopt(
       { slice: adopted, window: DEFAULT_WINDOW },
       "adopt",
+      null,
     );
     expect(requestId).not.toBeNull();
     expect(provider.state.get().pendingRequestId).toBe(requestId);
@@ -547,7 +1060,7 @@ describe("createDataViewsProvider host", () => {
       notifications += 1;
     });
     expect(
-      host.adopt({ slice: EMPTY_SLICE, window: DEFAULT_WINDOW }, "adopt"),
+      host.adopt({ slice: EMPTY_SLICE, window: DEFAULT_WINDOW }, "adopt", null),
     ).toBeNull();
     expect(notifications).toBe(0);
   });
@@ -578,10 +1091,11 @@ describe("createDataViewsProvider host", () => {
     provider.setGroup([{ field: "status" }]);
     provider.setCollapsed([["failed"]]);
     provider.setGroup([]);
-    host.adopt({ slice: EMPTY_SLICE, window: DEFAULT_WINDOW }, "adopt");
+    host.adopt({ slice: EMPTY_SLICE, window: DEFAULT_WINDOW }, "adopt", null);
     host.adopt(
       { slice: { ...EMPTY_SLICE, search: "web" }, window: DEFAULT_WINDOW },
       "view",
+      null,
     );
     provider.reset();
     // A refused command and a move to the same place announce nothing.
@@ -820,17 +1334,14 @@ describe("createDataViewsProvider rows", () => {
 });
 
 describe("createDataViewsProvider reset", () => {
-  it("returns to the seed and asks for the new generation's first page", () => {
+  it("returns to the snapshot's query and asks for the new generation's first page", () => {
     const { source, calls, callAt } = createManualSource<Machine>({
       capabilities: permissive,
     });
     const provider = createDataViewsProvider({
       collection: machines,
       source,
-      seed: {
-        slice: { ...EMPTY_SLICE, search: "yak" },
-        window: DEFAULT_WINDOW,
-      },
+      snapshot: { query: "q=yak", presentation: {} },
     });
     const release = provider.observe();
     expect(callAt(0).request.slice.search).toBe("yak");

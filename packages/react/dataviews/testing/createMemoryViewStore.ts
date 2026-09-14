@@ -30,7 +30,7 @@ export default function createMemoryViewStore(
         id: draft.id,
         name: draft.name,
         query: draft.query,
-        presentation: draft.presentation ?? null,
+        presentation: draft.presentation,
       });
       records.set(view.id, view);
       notify();

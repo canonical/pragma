@@ -1,8 +1,3 @@
-import {
-  DEFAULT_WINDOW,
-  EMPTY_SLICE,
-  type Slice,
-} from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement } from "react";
 import { expect, waitFor } from "storybook/test";
@@ -54,7 +49,7 @@ function ComposedMachines({
   readonly options?: MachineProviderConfig | undefined;
 }): ReactElement {
   const provider = useMachineProvider({
-    window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+    query: "page=1&size=5",
     ...options,
   });
   return (
@@ -66,10 +61,7 @@ function ComposedMachines({
 }
 
 /** The query the filtered story starts on: failed machines only. */
-const onlyFailed: Slice = {
-  ...EMPTY_SLICE,
-  filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
-};
+const onlyFailed = "status=failed&page=1&size=5";
 
 /**
  * In a composition: the part pages the root's provider and takes no provider
@@ -80,7 +72,7 @@ export const InAComposition: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "DataViews", "type DataTableColumn"],
     declarations: columnsCode,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     render: composition,
   }),
   render: (args) => <ComposedMachines {...args} />,
@@ -103,15 +95,11 @@ export const AFilteredTotal: Story = {
   parameters: consumerCode({
     parts: ["DataTable", "DataViews", "type DataTableColumn"],
     declarations: columnsCode,
-    slice: `{
-    ...EMPTY_SLICE,
-    filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
-  }`,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: onlyFailed,
     render: composition,
   }),
   render: (args) => (
-    <ComposedMachines {...args} options={{ slice: onlyFailed }} />
+    <ComposedMachines {...args} options={{ query: onlyFailed }} />
   ),
   play: async ({ canvas }) => {
     await waitFor(() =>

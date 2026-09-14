@@ -5,11 +5,7 @@
  * to.
  */
 
-import {
-  createMemoryLocation,
-  DEFAULT_WINDOW,
-  decodeQuery,
-} from "@canonical/dataviews-core";
+import { createMemoryLocation, decodeQuery } from "@canonical/dataviews-core";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
@@ -21,24 +17,19 @@ import {
 import DataViews from "../../Provider.js";
 import SortPanel from "./SortPanel.js";
 
-const statusThenCores = [
-  { field: "status", direction: "asc" },
-  { field: "cores", direction: "desc" },
-] as const;
-
 /**
  * Server markup of a root holding the panel, over a provider already sorted
- * by status then cores and on the third page of 25: seeded, because a sort
- * command would itself reset the page the links must reset.
+ * by status then cores and on the third page of 25: started from a snapshot,
+ * because a sort command would itself reset the page the links must reset.
  */
 const renderPanel = (href: string | null): string => {
   const { provider } = createMachineProvider({
     rows: [machine("m-1", "alpha")],
     capabilities: declareMachineOrdering(null),
     ...(href === null ? {} : { location: createMemoryLocation({ href }) }),
-    seed: {
-      slice: { filter: [], search: null, sort: statusThenCores, group: [] },
-      window: { ...DEFAULT_WINDOW, page: 3, size: 25 },
+    snapshot: {
+      query: "sort=status__asc&sort=cores__desc&page=3&size=25",
+      presentation: {},
     },
   });
   return renderToString(
@@ -68,7 +59,12 @@ describe("DataViews.SortPanel SSR", () => {
   });
 
   it("links each move and removal to the ordering it leads to, from page one", () => {
-    const links = listPanelLinks(renderPanel("/machines?tab=inventory&page=3"));
+    // The location carries the query, so it is where the provider stands.
+    const links = listPanelLinks(
+      renderPanel(
+        "/machines?tab=inventory&sort=status__asc&sort=cores__desc&page=3&size=25",
+      ),
+    );
     // The first term cannot move up, nor the last down.
     expect([...links.keys()]).toEqual([
       "status:down",

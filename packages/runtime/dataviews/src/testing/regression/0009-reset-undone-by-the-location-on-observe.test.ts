@@ -20,7 +20,7 @@ const machines = createCollection({
 });
 
 describe("regression 0009 — a reset nothing observed wins over the location", () => {
-  it("writes the seed to the location on the next observe instead of adopting the old query", () => {
+  it("writes the query reset to, to the location on the next observe instead of adopting the old query", () => {
     const location = createMemoryLocation({ href: "/machines" });
     const provider = createDataViewsProvider({
       collection: machines,

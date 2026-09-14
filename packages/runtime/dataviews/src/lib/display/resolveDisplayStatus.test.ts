@@ -144,10 +144,10 @@ describe("resolveDisplayStatus", () => {
   });
 
   it("reads an empty search as no search when deciding no data", () => {
-    // A seeded or adopted slice may carry the empty string where a command
+    // A starting or adopted slice may carry the empty string where a command
     // would have written null; both mean the collection is unfiltered.
     const coordinator = createQueryCoordinator<Machine>({
-      slice: { ...EMPTY_SLICE, search: "" },
+      start: { slice: { ...EMPTY_SLICE, search: "" } },
     });
     coordinator.complete(coordinator.refresh(), delivery([]));
     expect(resolveDisplayStatus(coordinator.state)).toEqual({

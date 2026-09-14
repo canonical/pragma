@@ -28,14 +28,14 @@ describe("DataViews.Pagination", () => {
 
   it("pages the root's provider and takes the bar's props", () => {
     const { provider, source } = createMachineProvider({
-      seed: { window: firstOfTwo },
+      snapshot: { query: "page=1&size=2", presentation: {} },
     });
     render(
       <DataViews provider={provider}>
         <Pagination label="Machines pagination" className="footer" />
       </DataViews>,
     );
-    // The root observed the provider, which asked for the seeded window.
+    // The root observed the provider, which asked for the window it started on.
     expect(source.latest().request.window).toEqual(firstOfTwo);
     act(() => {
       source.latest().deliver({

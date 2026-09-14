@@ -69,7 +69,7 @@ export function Machines() {
 
 ## The applied query, not a draft
 
-A checked status or a filled bound is the restriction in force. A query the provider starts on — a `seed.slice`, a view it opens, a URL it adopts — shows in the controls the same way, and from inside the root the same edits are made in code through this root's filter handles: `useDataViews(machineCollection).filters.status.eq.set(["failed"])`. The handles are the root's, not the provider's: two roots over one provider share the applied query and never each other's half-typed input.
+A checked status or a filled bound is the restriction in force. A query the provider starts on — a `snapshot`, a view it opens, a URL it adopts — shows in the controls the same way, and from inside the root the same edits are made in code through this root's filter handles: `useDataViews(machineCollection).filters.status.eq.set(["failed"])`. The handles are the root's, not the provider's: two roots over one provider share the applied query and never each other's half-typed input.
 
 <Canvas of={Stories.ChoiceApplied} sourceState="none" />
 

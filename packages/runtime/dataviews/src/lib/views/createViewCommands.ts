@@ -4,6 +4,7 @@ import {
   type ViewPresentation,
 } from "../presentation/index.js";
 import type { Slice } from "../query/index.js";
+import { createSnapshot, type DataViewsSnapshot } from "../snapshot/index.js";
 import { encodeQuery } from "../wire/index.js";
 import { NO_VIEW_OPEN, RENDERER } from "./constants.js";
 import describeNameIssue from "./describeNameIssue.js";
@@ -17,9 +18,6 @@ import type {
   ViewSettlement,
   ViewUpdateResult,
 } from "./types.js";
-
-/** A creation as this client makes it: always with its presentation. */
-type Attempt = ViewDraft & { readonly presentation: ViewPresentation };
 
 /**
  * Create the five saved-view commands over one session: open, save, save
@@ -41,19 +39,27 @@ export default function createViewCommands(
     run,
     setBaseline,
     listWith,
-    leave,
+    dropView,
     readFirstPage,
   } = config;
   /** A creation whose outcome never arrived, kept to be retried under its id. */
-  let draft: Attempt | null = null;
+  let draft: ViewDraft | null = null;
 
-  const spellQuery = (slice: Slice): string =>
+  /** A view's query: no window, no annotation, its renderer. */
+  const spellViewQuery = (slice: Slice): URLSearchParams =>
     encodeQuery({
       schema: host.schema,
       slice,
       window: null,
       preserve: new URLSearchParams({ as: RENDERER }),
-    }).toString();
+    });
+
+  /** A view's snapshot of a query and the arrangement it keeps. */
+  const createViewSnapshot = (
+    slice: Slice,
+    arrangement: ViewPresentation,
+  ): DataViewsSnapshot =>
+    createSnapshot({ query: spellViewQuery(slice), presentation: arrangement });
 
   /**
    * The stored view becomes the open one: saving again overwrites it with a
@@ -94,7 +100,7 @@ export default function createViewCommands(
       case "conflict":
         return settleConflict(result.view);
       case "missing":
-        return { outcome: result, apply: () => leave(view.id) };
+        return { outcome: result, apply: () => dropView(view.id) };
       case "unreadable":
         return { outcome: result };
     }
@@ -119,7 +125,12 @@ export default function createViewCommands(
           apply: () => {
             // In place before the query moves, so it never reads as modified.
             setBaseline(stored.slice);
-            host.adopt({ slice: stored.slice, window: readFirstPage() });
+            // The query and the view's name together: one entry of history.
+            host.adopt(
+              { slice: stored.slice, window: readFirstPage() },
+              "view",
+              view.id,
+            );
             return { current: view, views: listWith(view) };
           },
         };
@@ -133,12 +144,11 @@ export default function createViewCommands(
           return NO_VIEW_OPEN;
         }
         const { slice } = host.state.get();
+        // The query alone is saved: the view keeps the arrangement it was
+        // created with.
+        const query = spellViewQuery(slice).toString();
         return async () =>
-          settleUpdate(
-            await store.update(current, { query: spellQuery(slice) }),
-            current,
-            slice,
-          );
+          settleUpdate(await store.update(current, { query }), current, slice);
       });
     },
 
@@ -146,13 +156,15 @@ export default function createViewCommands(
       return run("save-as", () => {
         const trimmed = name.trim();
         const { slice } = host.state.get();
-        const query = spellQuery(slice);
-        const snapshot = presentation.state.get().presentation;
+        const snapshot = createViewSnapshot(
+          slice,
+          presentation.state.get().presentation,
+        );
         const retried =
           draft !== null &&
           draft.name === trimmed &&
-          draft.query === query &&
-          arePresentationsEqual(draft.presentation, snapshot)
+          draft.query === snapshot.query &&
+          arePresentationsEqual(draft.presentation, snapshot.presentation)
             ? draft
             : null;
         // A retried creation may have landed: its own view takes no name.
@@ -160,11 +172,10 @@ export default function createViewCommands(
         if (issue !== null) {
           return { status: "invalid", reason: issue };
         }
-        const attempt: Attempt = {
+        const attempt: ViewDraft = {
           id: retried?.id ?? mintViewId(),
           name: trimmed,
-          query,
-          presentation: snapshot,
+          ...snapshot,
         };
         return async () => {
           draft = attempt;
@@ -183,7 +194,7 @@ export default function createViewCommands(
               const moved = Object.fromEntries(
                 Object.entries(
                   diffPresentations(
-                    snapshot,
+                    snapshot.presentation,
                     presentation.state.get().presentation,
                   ),
                 ).map(([key, value]) => [key, value ?? null]),
@@ -193,6 +204,13 @@ export default function createViewCommands(
               if (Object.keys(moved).length > 0) {
                 presentation.arrange(moved);
               }
+              // Then to the new identity, over the query as it stands.
+              const live = host.state.get();
+              host.adopt(
+                { slice: live.slice, window: live.window },
+                "view",
+                result.view.id,
+              );
               return {
                 current: result.view,
                 views: listWith(result.view),
@@ -231,7 +249,7 @@ export default function createViewCommands(
         return async () => {
           const result = await store.remove(current);
           if (result.status === "removed") {
-            return { outcome: result, apply: () => leave(current.id) };
+            return { outcome: result, apply: () => dropView(current.id) };
           }
           return result.status === "conflict"
             ? settleConflict(result.view)
