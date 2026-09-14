@@ -81,6 +81,20 @@
       flex: 1 1 auto;
     }
 
+    > .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      inline-size: var(--dimension-200, 16px);
+      block-size: var(--dimension-300, 24px);
+
+      > svg {
+        inline-size: var(--dimension-200, 16px);
+        block-size: var(--dimension-200, 16px);
+      }
+    }
+
     /* The slot (badge / keyboard shortcut) sits right-aligned. */
     > .slot {
       flex: 0 0 auto;
@@ -119,6 +133,15 @@
         color: inherit;
       }
     }
+  }
+
+  .ds.contextual-menu-panel {
+    padding-block: var(--contextual-menu-item-padding-block);
+    padding-inline: var(--contextual-menu-item-padding-inline);
+    color: var(--contextual-menu-item-color-text);
+    background-color: transparent;
+    cursor: default;
+    user-select: text;
   }
 
   /* Mirror the `›` caret glyph to `‹` for right-to-left reading. Keyed on any

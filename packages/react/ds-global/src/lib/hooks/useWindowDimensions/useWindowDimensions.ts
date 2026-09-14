@@ -9,6 +9,8 @@ import type {
  * Hook to get the window dimensions and scroll position.
  */
 export default function useWindowDimensions({
+  enabled = true,
+  listenToScroll = true,
   onResize,
   onScroll,
   resizeDelay = 100,
@@ -37,7 +39,7 @@ export default function useWindowDimensions({
   );
 
   useEffect(() => {
-    if (isServer) return;
+    if (isServer || !enabled) return;
     const handleResize = debounce(() => {
       setWindowWidth(window.innerWidth);
       setWindowHeight(window.innerHeight);
@@ -51,7 +53,7 @@ export default function useWindowDimensions({
     }, scrollDelay);
 
     window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll);
+    if (listenToScroll) window.addEventListener("scroll", handleScroll);
 
     // The visual viewport changes on pinch-zoom (and on-screen keyboards) WITHOUT
     // firing a window `resize`, so anything positioned from viewport bounds would
@@ -59,21 +61,30 @@ export default function useWindowDimensions({
     // page zoom already fires the window `resize` above, so it is covered too.)
     const viewport = window.visualViewport;
     viewport?.addEventListener("resize", handleResize);
-    viewport?.addEventListener("scroll", handleScroll);
+    if (listenToScroll) viewport?.addEventListener("scroll", handleScroll);
 
     // Initial trigger in case the values need to be passed immediately after mount
     void handleResize();
-    void handleScroll();
+    if (listenToScroll) void handleScroll();
 
     return () => {
       handleResize.cancel();
       handleScroll.cancel();
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll);
+      if (listenToScroll) window.removeEventListener("scroll", handleScroll);
       viewport?.removeEventListener("resize", handleResize);
-      viewport?.removeEventListener("scroll", handleScroll);
+      if (listenToScroll) viewport?.removeEventListener("scroll", handleScroll);
     };
-  }, [onResize, onScroll, resizeDelay, scrollDelay, result, isServer]);
+  }, [
+    enabled,
+    listenToScroll,
+    onResize,
+    onScroll,
+    resizeDelay,
+    scrollDelay,
+    result,
+    isServer,
+  ]);
 
   return result;
 }

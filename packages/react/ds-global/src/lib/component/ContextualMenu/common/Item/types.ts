@@ -15,4 +15,6 @@ export interface ItemProps {
   itemProps: Record<string, unknown>;
   /** Called when the item is activated (click or Enter/Space). */
   onSelect: () => void;
+  /** Opens this item's submenu when it has child entries. */
+  onOpenSubmenu?: () => void;
 }

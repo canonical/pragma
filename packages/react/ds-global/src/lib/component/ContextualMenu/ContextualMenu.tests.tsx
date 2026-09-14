@@ -1,4 +1,12 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { createRef, type MouseEvent } from "react";
 import { describe, expect, it, vi } from "vitest";
 import ContextualMenu from "./ContextualMenu.js";
 import type { MenuEntry, MenuItem } from "./types.js";
@@ -39,6 +47,125 @@ describe("ContextualMenu", () => {
     );
   });
 
+  it("renders a Pragma Button trigger and composes its custom class", () => {
+    const onClick = vi.fn();
+    renderMenu({
+      triggerProps: {
+        className: "custom-trigger",
+        importance: "secondary",
+        onClick,
+      },
+    });
+    const trigger = screen.getByRole("button", { name: "Actions" });
+
+    expect(trigger).toHaveClass(
+      "ds",
+      "button",
+      "trigger",
+      "custom-trigger",
+      "secondary",
+    );
+    fireEvent.click(trigger);
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("composes triggerProps.ref onto the native button", () => {
+    const triggerRef = createRef<HTMLButtonElement>();
+    renderMenu({ triggerProps: { ref: triggerRef } });
+    const trigger = screen.getByRole("button", { name: "Actions" });
+
+    expect(triggerRef.current).toBe(trigger);
+    fireEvent.click(trigger);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(trigger).toHaveFocus();
+  });
+
+  it("does not open when the consumer click handler prevents default", () => {
+    renderMenu({
+      triggerProps: {
+        onClick: (event: MouseEvent<HTMLButtonElement>) =>
+          event.preventDefault(),
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    expect(screen.getByRole("menu", { hidden: true })).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+  });
+
+  it("keeps the native trigger when triggerProps is absent", () => {
+    renderMenu();
+    expect(screen.getByRole("button", { name: "Actions" })).toHaveClass(
+      "trigger",
+    );
+    expect(screen.getByRole("button", { name: "Actions" })).not.toHaveClass(
+      "ds",
+      "button",
+    );
+  });
+
+  it("reports uncontrolled open changes", () => {
+    const onOpenChange = vi.fn();
+    renderMenu({ onOpenChange });
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Copy" }));
+    expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it("supports controlled open state", () => {
+    const onOpenChange = vi.fn();
+    const { rerender } = render(
+      <ContextualMenu
+        trigger="Actions"
+        items={items}
+        open={false}
+        onOpenChange={onOpenChange}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: "Actions" });
+    fireEvent.click(trigger);
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    expect(screen.getByRole("menu", { hidden: true })).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+
+    rerender(
+      <ContextualMenu
+        trigger="Actions"
+        items={items}
+        open
+        onOpenChange={onOpenChange}
+      />,
+    );
+    expect(screen.getByRole("menu")).toHaveAttribute("aria-hidden", "false");
+    fireEvent.click(trigger);
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  describe("accessible menu labels", () => {
+    it("uses a string label directly", () => {
+      renderMenu({ label: "Action menu" });
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      expect(screen.getByRole("menu", { name: "Action menu" })).toHaveAttribute(
+        "aria-label",
+        "Action menu",
+      );
+    });
+
+    it("falls back to the trigger when no label is supplied", () => {
+      renderMenu();
+      const trigger = screen.getByRole("button", { name: "Actions" });
+      fireEvent.click(trigger);
+      expect(screen.getByRole("menu", { name: "Actions" })).toHaveAttribute(
+        "aria-labelledby",
+        trigger.id,
+      );
+    });
+  });
+
   it("renders items and separators", () => {
     renderMenu();
     expect(screen.getByText("Cut")).toBeInTheDocument();
@@ -72,7 +199,8 @@ describe("ContextualMenu", () => {
     expect(screen.getByText("⌘S")).toHaveClass("slot");
   });
 
-  it("renders a custom item component", () => {
+  it("renders a custom item as a selectable menuitem", () => {
+    const onSelect = vi.fn();
     const custom: MenuEntry[] = [
       {
         key: "custom",
@@ -81,8 +209,24 @@ describe("ContextualMenu", () => {
         Component: () => <span data-testid="custom-render">Custom!</span>,
       },
     ];
-    render(<ContextualMenu trigger="More" items={custom} />);
+    render(
+      <ContextualMenu trigger="More" items={custom} onSelect={onSelect} />,
+    );
+    const item = screen.getByRole("menuitem", {
+      hidden: true,
+      name: "Custom!",
+    });
     expect(screen.getByTestId("custom-render")).toBeInTheDocument();
+    expect(item).toHaveClass("contextual-menu-item");
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    fireEvent.click(item);
+    expect(onSelect).toHaveBeenCalledWith(
+      expect.objectContaining({ key: "custom" }),
+    );
+    expect(screen.getByRole("menu", { hidden: true })).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
   });
 
   it("closes on Escape", () => {
@@ -94,6 +238,24 @@ describe("ContextualMenu", () => {
       "aria-hidden",
       "true",
     );
+  });
+
+  it("stays open on Escape when closeOnEscape is false", () => {
+    renderMenu({ closeOnEscape: false });
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByRole("menu")).toHaveAttribute("aria-hidden", "false");
+  });
+
+  it("keeps menuitem focus on Escape when closeOnEscape is false", async () => {
+    renderMenu({ closeOnEscape: false });
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    const cut = screen.getByRole("menuitem", { name: "Cut" });
+    await waitFor(() => expect(cut).toHaveFocus());
+    fireEvent.keyDown(cut, { key: "Escape" });
+    expect(screen.getByRole("menu")).toHaveAttribute("aria-hidden", "false");
+    expect(cut).toHaveFocus();
+    expect(cut).toHaveAttribute("data-highlighted", "true");
   });
 
   it("returns focus to the trigger on Escape", () => {
@@ -171,11 +333,118 @@ describe("ContextualMenu", () => {
       expect(screen.getByText("Sub one")).toBeInTheDocument();
       expect(parent).toHaveAttribute("aria-expanded", "true");
 
-      fireEvent.pointerLeave(anchor as HTMLElement);
-      expect(screen.queryByText("Sub one")).not.toBeInTheDocument();
-      expect(parent).toHaveAttribute("aria-expanded", "false");
-      // Closed popup: no dangling aria-controls IDREF.
-      expect(parent).not.toHaveAttribute("aria-controls");
+      vi.useFakeTimers();
+      try {
+        fireEvent.pointerLeave(anchor as HTMLElement);
+        expect(screen.getByText("Sub one")).toBeInTheDocument();
+        act(() => vi.advanceTimersByTime(120));
+        expect(screen.queryByText("Sub one")).not.toBeInTheDocument();
+        expect(parent).toHaveAttribute("aria-expanded", "false");
+        // Closed popup: no dangling aria-controls IDREF.
+        expect(parent).not.toHaveAttribute("aria-controls");
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("positions a keyboard-opened submenu and restores focus on ArrowLeft", async () => {
+      const rect = {
+        x: 100,
+        y: 100,
+        top: 100,
+        right: 200,
+        bottom: 132,
+        left: 100,
+        width: 100,
+        height: 32,
+        toJSON: () => ({}),
+      } as DOMRect;
+      const rectSpy = vi
+        .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+        .mockReturnValue(rect);
+
+      try {
+        const { menu, parent } = openSubmenuMenu();
+        fireEvent.keyDown(menu, { key: "ArrowDown" });
+        fireEvent.keyDown(menu, { key: "ArrowRight" });
+
+        const submenu = screen.getByRole("menu", { name: "Parent" });
+        const firstChild = within(submenu).getByRole("menuitem", {
+          name: "Sub one",
+        });
+        await waitFor(() =>
+          expect(submenu).toHaveAttribute("data-positioned", "true"),
+        );
+        await waitFor(() => expect(firstChild).toHaveFocus());
+
+        fireEvent.keyDown(firstChild, { key: "ArrowLeft" });
+        await waitFor(() => expect(parent).toHaveFocus());
+        expect(screen.queryByRole("menu", { name: "Parent" })).toBeNull();
+      } finally {
+        rectSpy.mockRestore();
+      }
+    });
+
+    it("places a keyboard-opened submenu toward inline-end, mirrored in RTL", async () => {
+      const originalDir = document.documentElement.dir;
+      const parentRect = {
+        x: 200,
+        y: 80,
+        top: 80,
+        right: 320,
+        bottom: 112,
+        left: 200,
+        width: 120,
+        height: 32,
+        toJSON: () => ({}),
+      } as DOMRect;
+      const submenuRect = {
+        x: 0,
+        y: 0,
+        top: 0,
+        right: 160,
+        bottom: 80,
+        left: 0,
+        width: 160,
+        height: 80,
+        toJSON: () => ({}),
+      } as DOMRect;
+      const rectSpy = vi
+        .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+        .mockImplementation(function (this: HTMLElement) {
+          return this.getAttribute("role") === "menu" &&
+            this.classList.contains("submenu")
+            ? submenuRect
+            : parentRect;
+        });
+
+      try {
+        const { menu } = openSubmenuMenu();
+        fireEvent.keyDown(menu, { key: "ArrowDown" });
+        fireEvent.keyDown(menu, { key: "ArrowRight" });
+        const ltrSubmenu = await screen.findByRole("menu", { name: "Parent" });
+        await waitFor(() =>
+          expect(ltrSubmenu).toHaveAttribute("data-positioned", "true"),
+        );
+        expect(ltrSubmenu).toHaveClass("right");
+
+        act(() => {
+          document.documentElement.dir = "rtl";
+        });
+        fireEvent.keyDown(
+          within(ltrSubmenu).getByRole("menuitem", { name: "Sub one" }),
+          { key: "ArrowLeft" },
+        );
+        fireEvent.keyDown(menu, { key: "ArrowRight" });
+        const rtlSubmenu = await screen.findByRole("menu", { name: "Parent" });
+        await waitFor(() =>
+          expect(rtlSubmenu).toHaveAttribute("data-positioned", "true"),
+        );
+        expect(rtlSubmenu).toHaveClass("left");
+      } finally {
+        document.documentElement.dir = originalDir;
+        rectSpy.mockRestore();
+      }
     });
   });
 
@@ -225,15 +494,21 @@ describe("ContextualMenu", () => {
       expect(screen.queryByText("Sub")).not.toBeInTheDocument();
     });
 
-    it("does not fire onSelect for a submenu parent (opens its submenu instead)", () => {
+    it("opens the first submenu child without selecting the parent", () => {
       // A parent is a submenu trigger, not a choosable leaf: activating it must
       // open the submenu and never call onSelect (WAI-ARIA menu pattern).
       const onSelect = vi.fn();
       openMenu(onSelect);
       fireEvent.click(screen.getByRole("menuitem", { name: "Parent" }));
       expect(onSelect).not.toHaveBeenCalled();
-      // The menu stays open (a parent click does not dismiss like a leaf).
-      expect(screen.getByRole("menu")).toHaveAttribute("aria-hidden", "false");
+      expect(screen.getAllByRole("menu")[0]).toHaveAttribute(
+        "aria-hidden",
+        "false",
+      );
+      expect(screen.getByRole("menuitem", { name: "Sub" })).toHaveAttribute(
+        "tabindex",
+        "0",
+      );
     });
 
     it("does not fire onSelect for a disabled item", () => {
@@ -241,6 +516,55 @@ describe("ContextualMenu", () => {
       openMenu(onSelect);
       fireEvent.click(screen.getByRole("menuitem", { name: "Disabled" }));
       expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("runs item onSelect before menu onSelect and closes once", () => {
+      const calls: string[] = [];
+      const onOpenChange = vi.fn();
+      const selectable: MenuEntry[] = [
+        {
+          key: "leaf",
+          label: "Leaf",
+          "aria-label": "Select leaf",
+          onSelect: () => calls.push("item"),
+        },
+      ];
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          items={selectable}
+          onSelect={() => calls.push("menu")}
+          onOpenChange={onOpenChange}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      fireEvent.click(screen.getByRole("menuitem", { name: "Select leaf" }));
+
+      expect(calls).toEqual(["item", "menu"]);
+      expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+    });
+
+    it("does not invoke item callbacks for disabled items", () => {
+      const itemOnSelect = vi.fn();
+      const menuOnSelect = vi.fn();
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          items={[
+            {
+              key: "disabled",
+              label: "Disabled",
+              disabled: true,
+              onSelect: itemOnSelect,
+            },
+          ]}
+          onSelect={menuOnSelect}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      fireEvent.click(screen.getByRole("menuitem", { name: "Disabled" }));
+      expect(itemOnSelect).not.toHaveBeenCalled();
+      expect(menuOnSelect).not.toHaveBeenCalled();
     });
 
     it("marks a disabled item aria-disabled", () => {
@@ -294,6 +618,270 @@ describe("ContextualMenu", () => {
       // The leaf last: Space activates it, which closes the menu.
       const leaf = screen.getByRole("menuitem", { name: "Leaf" });
       expect(fireEvent.keyDown(leaf, { key: " " })).toBe(false);
+    });
+  });
+
+  describe("interactive panels", () => {
+    const FilterPanel = () => (
+      <form onSubmit={(event) => event.preventDefault()}>
+        <input aria-label="Filter instances" />
+        <input type="checkbox" aria-label="Running" />
+        <button type="submit">Apply</button>
+      </form>
+    );
+    const panelItems: MenuEntry[] = [
+      {
+        key: "filter",
+        label: "Filter",
+        displayItemsType: "panel",
+        Component: FilterPanel,
+      },
+    ];
+
+    it("renders a non-selectable group, not a menuitem", () => {
+      render(<ContextualMenu trigger="Actions" items={panelItems} />);
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      const panel = screen.getByRole("group", { name: "Filter" });
+      expect(panel).toHaveClass("contextual-menu-panel");
+      expect(panel).toHaveAttribute("data-contextual-menu-panel");
+      expect(panel).not.toHaveClass("contextual-menu-item");
+      expect(
+        screen.queryByRole("menuitem", { name: "Filter" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("focuses the first panel control by default", async () => {
+      render(<ContextualMenu trigger="Actions" items={panelItems} />);
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      await waitFor(() =>
+        expect(
+          screen.getByRole("textbox", { name: "Filter instances" }),
+        ).toHaveFocus(),
+      );
+    });
+
+    it("focuses the menu container when highlightFirstItem is false", async () => {
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          items={panelItems}
+          highlightFirstItem={false}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      await waitFor(() => expect(screen.getByRole("menu")).toHaveFocus());
+      expect(
+        screen.getByRole("textbox", { name: "Filter instances" }),
+      ).not.toHaveFocus();
+    });
+
+    it("lets controls handle clicks and keys without selecting or closing", () => {
+      const onSelect = vi.fn();
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          items={panelItems}
+          onSelect={onSelect}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      const input = screen.getByRole("textbox", { name: "Filter instances" });
+      fireEvent.click(input);
+      fireEvent.keyDown(input, { key: "a" });
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(screen.getByRole("menu")).toHaveAttribute("aria-hidden", "false");
+      expect(input.closest(".contextual-menu-panel")).not.toHaveClass(
+        "contextual-menu-item",
+      );
+      expect(input.closest("[role='group']")).toHaveAttribute(
+        "aria-label",
+        "Filter",
+      );
+    });
+
+    it("keeps Tab inside the panel as native form navigation", () => {
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          items={panelItems}
+          highlightFirstItem={false}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      const search = screen.getByRole("textbox", { name: "Filter instances" });
+      const running = screen.getByRole("checkbox", { name: "Running" });
+      const apply = screen.getByRole("button", { name: "Apply" });
+
+      search.focus();
+      expect(fireEvent.keyDown(search, { key: "Tab", bubbles: true })).toBe(
+        true,
+      );
+      running.focus();
+      expect(fireEvent.keyDown(running, { key: "Tab", bubbles: true })).toBe(
+        true,
+      );
+      apply.focus();
+
+      expect(screen.getByRole("menu")).toHaveAttribute("aria-hidden", "false");
+      expect(apply).toHaveFocus();
+    });
+
+    it("closes on Escape and returns focus to the trigger", () => {
+      const onOpenChange = vi.fn();
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          items={panelItems}
+          onOpenChange={onOpenChange}
+        />,
+      );
+      const trigger = screen.getByRole("button", { name: "Actions" });
+      fireEvent.click(trigger);
+      const input = screen.getByRole("textbox", { name: "Filter instances" });
+      input.focus();
+      fireEvent.keyDown(input, { key: "Escape" });
+
+      expect(screen.getByRole("menu", { hidden: true })).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
+      expect(trigger).toHaveFocus();
+      expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+    });
+
+    it("keeps a panel open on Escape when closeOnEscape is false", () => {
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          items={panelItems}
+          closeOnEscape={false}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      const input = screen.getByRole("textbox", { name: "Filter instances" });
+      input.focus();
+      fireEvent.keyDown(input, { key: "Escape" });
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      expect(screen.getByRole("menu")).toHaveAttribute("aria-hidden", "false");
+      expect(input).toHaveFocus();
+    });
+  });
+
+  describe("portalled submenu ownership", () => {
+    const nestedItems: MenuEntry[] = [
+      {
+        key: "parent",
+        label: "Parent",
+        items: [{ key: "child", label: "Child" }],
+      },
+    ];
+
+    it("opens the first enabled child when the parent is keyboard-activated", () => {
+      render(<ContextualMenu trigger="Actions" items={nestedItems} />);
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      const parent = screen.getByRole("menuitem", { name: "Parent" });
+      fireEvent.keyDown(parent, { key: "Enter" });
+      expect(screen.getByRole("menuitem", { name: "Child" })).toHaveAttribute(
+        "tabindex",
+        "0",
+      );
+    });
+
+    it("closes a nested panel from its input on ArrowLeft", async () => {
+      const interactiveNestedItems: MenuEntry[] = [
+        {
+          key: "parent",
+          label: "Parent",
+          items: [
+            {
+              key: "filter",
+              label: "Filter",
+              displayItemsType: "panel",
+              Component: () => <input aria-label="Nested filter" />,
+            },
+          ],
+        },
+      ];
+      render(
+        <ContextualMenu trigger="Actions" items={interactiveNestedItems} />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      const parent = screen.getByRole("menuitem", { name: "Parent" });
+      fireEvent.keyDown(parent, { key: "Enter" });
+      const input = screen.getByRole("textbox", { name: "Nested filter" });
+      input.focus();
+
+      fireEvent.keyDown(input, { key: "ArrowLeft" });
+      await waitFor(() => expect(parent).toHaveFocus());
+      expect(screen.queryByRole("menu", { name: "Parent" })).toBeNull();
+    });
+
+    it("keeps the submenu open while the pointer crosses into its portal", () => {
+      render(<ContextualMenu trigger="Actions" items={nestedItems} />);
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      const anchor = screen
+        .getByRole("menuitem", { name: "Parent" })
+        .closest(".submenu-anchor") as HTMLElement;
+      fireEvent.pointerEnter(anchor);
+      const submenu = screen.getByRole("menu", { name: "Parent" });
+
+      vi.useFakeTimers();
+      try {
+        fireEvent.pointerLeave(anchor);
+        fireEvent.pointerEnter(submenu);
+        act(() => vi.advanceTimersByTime(120));
+        expect(submenu).toBeInTheDocument();
+
+        fireEvent.pointerLeave(submenu);
+        act(() => vi.advanceTimersByTime(120));
+        expect(screen.queryByRole("menu", { name: "Parent" })).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("treats nested surfaces as inside and closes once on a genuine outside pointer", () => {
+      const onOpenChange = vi.fn();
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          items={nestedItems}
+          onOpenChange={onOpenChange}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      const anchor = screen
+        .getByRole("menuitem", { name: "Parent" })
+        .closest(".submenu-anchor") as HTMLElement;
+      fireEvent.pointerEnter(anchor);
+      const child = screen.getByRole("menuitem", { name: "Child" });
+
+      fireEvent.pointerDown(child);
+      expect(screen.getByRole("button", { name: "Actions" })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+      fireEvent.pointerDown(document.body);
+      expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+    });
+
+    it("keeps the menu open on outside pointer-down when opted out", () => {
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          items={nestedItems}
+          closeOnOutsideClick={false}
+        />,
+      );
+      const trigger = screen.getByRole("button", { name: "Actions" });
+      fireEvent.click(trigger);
+      fireEvent.pointerDown(document.body);
+
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByRole("menu")).toHaveAttribute("aria-hidden", "false");
     });
   });
 

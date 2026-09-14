@@ -1,4 +1,8 @@
 export interface UseWindowDimensionProps {
+  /** Whether viewport listeners should be installed. Defaults to true. */
+  enabled?: boolean;
+  /** Whether window and visual viewport scroll listeners are needed. Defaults to true. */
+  listenToScroll?: boolean;
   /** Delay in milliseconds before the resize event is triggered */
   resizeDelay?: number;
   /** Delay in milliseconds before the scroll event is triggered */

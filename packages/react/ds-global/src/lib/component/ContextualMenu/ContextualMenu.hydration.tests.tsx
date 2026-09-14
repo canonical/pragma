@@ -40,4 +40,28 @@ describe("ContextualMenu (hydration)", () => {
     // replaced by a mismatch recovery.
     expect(container.querySelector(".trigger")?.textContent).toBe("Actions");
   });
+
+  it("hydrates a Button trigger from triggerProps with no recoverable error", () => {
+    const ui = (
+      <ContextualMenu
+        trigger="Filters"
+        triggerProps={{ importance: "secondary", className: "ssr-trigger" }}
+        items={items}
+      />
+    );
+
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(ui);
+    document.body.appendChild(container);
+
+    const onRecoverableError = vi.fn();
+    act(() => {
+      hydrateRoot(container, ui, { onRecoverableError });
+    });
+
+    expect(onRecoverableError).not.toHaveBeenCalled();
+    expect(container.querySelector(".ssr-trigger")?.textContent).toBe(
+      "Filters",
+    );
+  });
 });
