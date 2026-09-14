@@ -6,6 +6,9 @@
  */
 
 import * as fs from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { dryRun, dryRunWith, type Effect, type Task } from "@canonical/task";
 import { describe, expect, it, vi } from "vitest";
 import pkg from "../package.json" with { type: "json" };
@@ -585,15 +588,24 @@ describe("component-exists guard", () => {
 // =============================================================================
 
 describe("generated stylesheet layer", () => {
-  const generateStyles = (
-    cwd: string,
+  /**
+   * The layer comes from the package being generated into, and the generator
+   * holds no opinion about the name. These tests write a real manifest into a
+   * temporary directory, because that manifest is the whole input.
+   */
+  const inPackage = (
+    summon: Record<string, string> | undefined,
     generatorName: keyof typeof generators,
-    componentPath: string,
-  ) => {
+  ): string => {
+    const cwd = mkdtempSync(join(tmpdir(), "summon-layer-"));
+    writeFileSync(
+      join(cwd, "package.json"),
+      JSON.stringify({ name: "@acme/widgets", ...(summon ? { summon } : {}) }),
+    );
     const spy = vi.spyOn(process, "cwd").mockReturnValue(cwd);
     try {
       const task = generators[generatorName].generate({
-        componentPath,
+        componentPath: "src/lib/Banner",
         withStyles: true,
         withStories: false,
         useTsStories: false,
@@ -608,88 +620,41 @@ describe("generated stylesheet layer", () => {
       return (file as { content: string }).content;
     } finally {
       spy.mockRestore();
+      rmSync(cwd, { recursive: true, force: true });
     }
   };
 
-  it("wraps a global-tier component in ds.components.global", () => {
-    const content = generateStyles(
-      "/repo/packages/react/ds-global",
+  it("wraps the stylesheet in the layer the package states", () => {
+    const content = inPackage(
+      { componentLayer: "acme.widgets" },
       "component/react",
-      "src/lib/component/Banner",
     );
 
-    expect(content).toContain("@layer ds.components.global {");
-    expect(content).not.toContain("ds.components.apps");
+    expect(content).toContain("@layer acme.widgets {");
+    expect(content).toContain(".ds.banner {");
   });
 
-  it("wraps a second-level tier component in that tier's layer", () => {
-    const content = generateStyles(
-      "/repo/packages/react/ds-app",
-      "component/react",
-      "src/lib/Banner",
-    );
+  it("leaves the stylesheet unwrapped when the package states no layer", () => {
+    // No default: there is no layer name that would be right for every house,
+    // and a package outside any layered system wants its sheet left alone.
+    const content = inPackage(undefined, "component/react");
 
-    expect(content).toContain("@layer ds.components.apps {");
-    expect(content).not.toContain("ds.components.global");
+    expect(content).not.toContain("@layer");
+    expect(content).toContain(".ds.banner {");
   });
 
-  it("wraps a sub-tier component in a layer named after the product", () => {
-    const content = generateStyles(
-      "/repo/packages/react/ds-app-lxd",
-      "component/react",
-      "src/lib/Banner",
-    );
-
-    expect(content).toContain("@layer ds.components.apps-lxd {");
-    expect(content).not.toContain("ds.components.global");
-  });
-
-  it("follows the target package for svelte too", () => {
+  it("takes the name as written, whatever it says", () => {
+    // The generator copies the string. A house that names its layers after
+    // something else entirely gets what it asked for.
     expect(
-      generateStyles(
-        "/repo/packages/svelte/ds-app-wpe",
-        "component/svelte",
-        "src/lib/components/Banner",
-      ),
-    ).toContain("@layer ds.components.apps-wpe {");
-    expect(
-      generateStyles(
-        "/repo/packages/svelte/ds-global",
-        "component/svelte",
-        "src/lib/components/Banner",
-      ),
-    ).toContain("@layer ds.components.global {");
-  });
-
-  it("follows the tier tree for the other second-level tiers", () => {
-    expect(
-      generateStyles(
-        "/repo/packages/react/ds-site-ubuntu",
-        "component/react",
-        "src/lib/Banner",
-      ),
-    ).toContain("@layer ds.components.sites-ubuntu {");
-    expect(
-      generateStyles(
-        "/repo/packages/react/ds-docs",
-        "component/react",
-        "src/lib/Banner",
-      ),
-    ).toContain("@layer ds.components.documentation {");
-    expect(
-      generateStyles(
-        "/repo/packages/react/ds-store-snap",
-        "component/react",
-        "src/lib/Banner",
-      ),
-    ).toContain("@layer ds.components.stores-snap {");
+      inPackage({ componentLayer: "theme.late" }, "component/react"),
+    ).toContain("@layer theme.late {");
   });
 
   it("leaves the lit stylesheet unlayered: a shadow tree has its own cascade", () => {
-    const content = generateStyles(
-      "/repo/packages/lit/ds-app-wpe",
+    const content = inPackage(
+      { componentLayer: "acme.widgets" },
       "component/lit",
-      "src/lib/Banner",
     );
 
     expect(content).not.toContain("@layer");

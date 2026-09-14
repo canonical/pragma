@@ -1,7 +1,9 @@
-/* Layer: <%= componentLayer %> (@canonical/styles README, "Cascade layers"). */
-
-@layer <%= componentLayer %> {
+<% if (componentLayer) { %>@layer <%= componentLayer %> {
   .ds.<%= kebabName %> {
     /* Component styles */
   }
 }
+<% } else { %>.ds.<%= kebabName %> {
+  /* Component styles */
+}
+<% } %>

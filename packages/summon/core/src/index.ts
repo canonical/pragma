@@ -23,14 +23,13 @@ export type {
 } from "./types/index.js";
 
 // =============================================================================
-// Cascade layers (which component tier a package's stylesheets sit in)
+// Cascade layers (what a package says about the layer its stylesheets go in)
 // =============================================================================
 
 export {
-  COMPONENT_TIER_LAYERS,
-  componentLayerFor,
-  GLOBAL_COMPONENT_LAYER,
-  isSubTierLayer,
+  layerSettingsFrom,
+  type ManifestWithLayer,
+  type SummonLayerSettings,
 } from "./layer/index.js";
 
 // =============================================================================
