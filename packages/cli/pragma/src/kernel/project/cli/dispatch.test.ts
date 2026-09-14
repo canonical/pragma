@@ -379,6 +379,93 @@ describe("dispatch — errors", () => {
   });
 });
 
+describe("a positional the spec cannot hold is refused, not dropped", () => {
+  const savedExit = process.exitCode;
+  afterEach(() => {
+    process.exitCode = savedExit;
+  });
+
+  /** Run `verb` with `positionals` and collect what stderr was told. */
+  async function stderrOf(
+    verb: VerbSpec,
+    positionals: string[],
+  ): Promise<string> {
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+    // The verb that is NOT refused runs and prints; keep it out of the report.
+    const out = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    await dispatch(verb, positionals, {}, PLAIN);
+    spy.mockRestore();
+    out.mockRestore();
+    return errs.join("");
+  }
+
+  /** A verb addressed by a flag, the shape `variable chain` has. */
+  const chain: VerbSpec = {
+    path: ["gizmo", "chain"],
+    summary: "Walk a gizmo.",
+    params: [
+      { kind: "string", name: "gizmo", doc: "The gizmo." },
+      { kind: "number", name: "limit", doc: "Rows." },
+    ],
+    output: { formatters: passthroughFormatters },
+    capability: { needsStore: false, mutates: false, mcp: { expose: true } },
+    run: async () => ({ walked: true }),
+  };
+
+  it("names the flag the value belonged to, and exits 2", async () => {
+    const out = await stderrOf(chain, ["color-text"]);
+
+    expect(out).toContain(
+      '`pragma gizmo chain` takes no positional argument, but received "color-text".',
+    );
+    expect(out).toContain("Did you mean `--gizmo color-text`?");
+    expect(process.exitCode).toBe(2);
+  });
+
+  it("points at --help when no flag could have held it", async () => {
+    const bare: VerbSpec = { ...chain, params: [] };
+
+    const out = await stderrOf(bare, ["color-text"]);
+
+    expect(out).toContain("takes no positional argument");
+    expect(out).toContain("run `pragma gizmo chain --help`");
+  });
+
+  it("refuses one MORE than the spec declares", async () => {
+    const out = await stderrOf(echo, ["hello", "spare"]);
+
+    expect(out).toContain(
+      '`pragma probe echo` takes 1 positional argument, but received an extra "spare".',
+    );
+  });
+
+  it("leaves a variadic verb alone — its tail is the point", async () => {
+    const many: VerbSpec = {
+      ...echo,
+      params: [
+        {
+          kind: "string[]",
+          name: "name",
+          doc: "Names.",
+          positional: true,
+          required: true,
+        },
+      ],
+      run: async (p) => (p as { name: string[] }).name,
+    };
+
+    expect(await stderrOf(many, ["one", "two", "three"])).toBe("");
+  });
+});
+
 describe("--dry-run is honest (PRA-104)", () => {
   const savedExit = process.exitCode;
   afterEach(() => {

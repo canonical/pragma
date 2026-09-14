@@ -212,14 +212,22 @@ describe("empty ≠ silence on the machine surfaces", () => {
     // an agent received `{"ok":true,"data":[],"meta":{}}` and nothing else. The
     // search path is the honest way to reach an empty list without a bad
     // argument.
+    //
+    // What the guidance SAYS depends on which question was answered. A search
+    // that matched nothing is a statement about the search: the story's own
+    // `emptyRecovery` ("read the category slugs out of the graph") answers a
+    // question nobody asked, and its `sources update` siblings tell a reader
+    // with a populated store to rebuild it.
     const result = await mcp.callTool("standard_list", {
       search: "zzz-nothing-matches-this",
     });
     expect(result.ok).toBe(true);
     expect(result.data).toEqual([]);
     const notice = (result.meta as { notice?: string }).notice ?? "";
-    expect(notice).toContain("No standard entries found.");
-    expect(notice).toContain("pragma standard categories");
+    expect(notice).toContain(
+      "No standard matches `--search zzz-nothing-matches-this`.",
+    );
+    expect(notice).not.toContain("pragma standard categories");
   });
 });
 

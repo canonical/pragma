@@ -26,8 +26,10 @@ import {
   renderLookupPlain,
 } from "../render/renderers.js";
 import type { Formatters } from "../spec/index.js";
+import { kebabCase } from "../spec/index.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import type {
+  PackAppliedFilter,
   PackChildRow,
   PackEntity,
   PackList,
@@ -67,6 +69,14 @@ const DEFAULT_EMPTY_HINT = `Either nothing matched — try a wider filter — or
  * `notice` seam — the channel that already exists for what the data cannot say
  * about itself, and which both machine surfaces project into `meta.notice`.
  *
+ * EVERY format says it, though, because a truncation nobody is told about is a
+ * wrong answer in any dialect. The seam alone did not reach `llm`: the
+ * dispatcher routes a notice to stderr in `plain` and into `meta.notice` in
+ * `json`, but the `llm` branch renders the body and nothing else — and `llm`
+ * is what an agent (or any piped invocation, which auto-detects it) actually
+ * reads. So the condensed form carries the sentence in its own body, as a final
+ * line, and its heading admits the page is a page.
+ *
  * A page that is the whole answer says nothing, which is why declaring the
  * default page size above every story's population left every existing answer
  * untouched, notice included.
@@ -98,15 +108,63 @@ export function listFormatters(
   };
   return {
     plain: (page, context) => renderListPlain(page.rows, options, context),
-    llm: (page) => renderListLlm(page.rows, options),
+    llm: (page) => {
+      const body = renderListLlm(page.rows, emptyCopy(page, meta, options), {
+        more: page.nextAfter !== undefined,
+      });
+      const notice = pageNotice(page, meta);
+      return notice ? `${body}\n\n${notice}` : body;
+    },
     json: (page) => JSON.stringify(page.rows, null, 2),
     // Zero rows: the dispatcher routes this to stderr (exit 0) so the plain
     // stdout stream stays pure data; llm/json keep their own empty shapes.
     notice: (page) =>
       page.rows.length === 0
-        ? renderListEmptyNotice(options)
+        ? renderListEmptyNotice(emptyCopy(page, meta, options))
         : pageNotice(page, meta),
   };
+}
+
+/**
+ * The empty-state copy this page deserves.
+ *
+ * A story's `emptyRecovery` answers ONE question — "why is the population
+ * empty?" — and `token list --search zzzznotreal` is not asking it. Answering
+ * it there ("No token symbols in the store … run `pragma sources update`")
+ * tells a reader with 745 symbols in the store that the store is empty and
+ * prescribes a write that changes nothing. So a page narrowed by at least one
+ * filter reports the NARROWING instead, naming the arguments the caller typed;
+ * an unfiltered empty page keeps the story's recovery, which is the case it was
+ * written for.
+ *
+ * @param page - The rendered page (its rows and the filters that cut them).
+ * @param meta - The noun, for the sentence.
+ * @param base - The story's own empty copy.
+ * @returns `base` unchanged, or filter-shaped copy with no population hint.
+ */
+function emptyCopy(
+  page: PackPage,
+  meta: RenderMeta,
+  base: RenderListOptions<PackRow>,
+): RenderListOptions<PackRow> {
+  const applied = page.filters ?? [];
+  if (page.rows.length > 0 || applied.length === 0) return base;
+  const { emptyHint: _population, ...rest } = base;
+  return {
+    ...rest,
+    emptyMessage: `No ${meta.noun} matches ${listFilters(applied)}.`,
+  };
+}
+
+/** The filters in force, as flags a reader can edit: `\`--kind input\`` … */
+function listFilters(applied: readonly PackAppliedFilter[]): string {
+  const flags = applied.map(
+    (filter) => `\`--${kebabCase(filter.param)} ${filter.value}\``,
+  );
+  const last = flags.at(-1) as string;
+  return flags.length === 1
+    ? last
+    : `${flags.slice(0, -1).join(", ")} and ${last}`;
 }
 
 /**
@@ -143,6 +201,7 @@ export function lookupOptions(
       key: section.name,
       heading: section.label ?? section.name,
       kind: section.kind ?? "field",
+      ...(section.note ? { note: section.note } : {}),
     }),
   );
   const expandSections: SectionDef<PackEntity>[] = (lookup.expand ?? []).map(

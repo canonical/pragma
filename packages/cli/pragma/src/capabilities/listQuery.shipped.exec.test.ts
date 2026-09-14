@@ -44,6 +44,7 @@ import {
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { bootRuntime } from "../kernel/runtime/boot.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
+import { kebabCase } from "../kernel/spec/emitSurface.js";
 import type { VerbSpec } from "../kernel/spec/types.js";
 import { TEST_FLAGS } from "../testing/helpers/projectCli.js";
 import { declaredStories } from "./distribution.js";
@@ -385,9 +386,14 @@ describe("a refusal and a calm empty answer stay distinguishable (PROTECTED)", (
       const answered = await page(body, { [param]: value });
       expect(answered.rows).toEqual([]);
       expect(answered.nextAfter).toBeUndefined();
-      // And the calm sentence rides the same seam it always did.
+      // And the calm sentence rides the same seam it always did — naming the
+      // filter that narrowed to nothing, since a filtered empty answer is a
+      // statement about the filter and not about the population.
       expect(body.verb.output.formatters.notice?.(answered as never)).toContain(
-        "entries found.",
+        // In the flag's own spelling: a story's `channelOf` param is typed
+        // `--channel-of`, and an answer that named the param would be naming
+        // something no caller can pass.
+        `matches \`--${kebabCase(param)} ${value}\`.`,
       );
     }
   }, 120_000);

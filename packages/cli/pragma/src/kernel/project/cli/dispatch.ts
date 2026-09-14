@@ -13,6 +13,7 @@
 
 import { describeEffect, type Effect, type Task } from "@canonical/task";
 import { runPreview, runTask, runUndo } from "@canonical/task/node";
+import { BIN_NAME } from "../../../constants.js";
 import {
   asPragmaError,
   CANCELLED_MESSAGE,
@@ -34,7 +35,7 @@ import type {
   InteractionRuntime,
   PragmaRuntime,
 } from "../../runtime/types.js";
-import type { ParamSpec, VerbSpec } from "../../spec/index.js";
+import { kebabCase, type ParamSpec, type VerbSpec } from "../../spec/index.js";
 import { EXIT, mapExitCode } from "./exitCodes.js";
 
 /** The CLI-only mutation flags auto-injected onto every mutating verb. */
@@ -530,11 +531,90 @@ export async function dispatch(
   };
   await runPrepared(
     verb,
-    () => extractParams(verb.params, positionals, opts),
+    () => {
+      refuseExcessPositionals(verb, positionals);
+      return extractParams(verb.params, positionals, opts);
+    },
     mutation,
     globalFlags,
   );
 }
+
+/**
+ * Refuse a positional the verb's spec has nowhere to put.
+ *
+ * `extractParams` maps positionals onto DECLARED positional params and drops
+ * the rest, so `pragma variable chain color-text` — whose story takes its
+ * subject as `--variable` — ran the unfiltered chain and printed 300 unrelated
+ * rows, having silently discarded the one word the user cared about. A wrong
+ * answer with no diagnostic is worse than a refusal.
+ *
+ * The refusal names the flag the value most likely belongs to: the verb's own
+ * noun as a flag (`variable chain` → `--variable`), else its first
+ * value-taking flag. That is the identity filter for every story shaped like
+ * this one, and where it is not, the flag list is one `--help` away.
+ *
+ * @param verb - The verb the user invoked.
+ * @param positionals - The operands Commander collected for it.
+ * @throws PragmaError INVALID_INPUT when more operands arrived than the spec
+ *   declares (a variadic positional absorbs the tail, so it never trips).
+ */
+function refuseExcessPositionals(
+  verb: VerbSpec,
+  positionals: readonly string[],
+): void {
+  const declared = verb.params.filter((param) => param.positional);
+  if (declared.some((param) => param.kind === "string[]")) return;
+  const excess = positionals[declared.length];
+  if (excess === undefined) return;
+  const command = `${BIN_NAME} ${verb.path.join(" ")}`;
+  const flag = suggestedFlag(verb);
+  throw new PragmaError({
+    code: "INVALID_INPUT",
+    message:
+      declared.length === 0
+        ? `\`${command}\` takes no positional argument, but received "${excess}".`
+        : `\`${command}\` takes ${declared.length} positional argument${
+            declared.length === 1 ? "" : "s"
+          }, but received an extra "${excess}".`,
+    recovery: {
+      message: flag
+        ? `Did you mean \`--${flag} ${excess}\`?`
+        : `Pass values as flags — run \`${command} --help\` to see them.`,
+    },
+  });
+}
+
+/**
+ * The flag a stray positional most likely belonged to.
+ *
+ * The verb's NOUN first (`variable chain` declares `--variable`, which is the
+ * identity filter every such story is addressed by), then the first flag that
+ * takes a value at all. Paging and disclosure flags are never the answer — a
+ * bare word is not a cursor.
+ *
+ * @param verb - The verb the user invoked.
+ * @returns The flag name (without dashes), or undefined when none fits.
+ */
+function suggestedFlag(verb: VerbSpec): string | undefined {
+  const candidates = verb.params.filter(
+    (param) =>
+      !param.positional &&
+      param.kind !== "boolean" &&
+      !GENERIC_FLAGS.has(param.name),
+  );
+  const identity = candidates.find((param) => param.name === verb.path[0]);
+  const flag = identity ?? candidates[0];
+  return flag ? kebabCase(flag.name) : undefined;
+}
+
+/** Flags that answer no question a stray word could be the answer to. */
+const GENERIC_FLAGS: ReadonlySet<string> = new Set([
+  "limit",
+  "after",
+  "detail",
+  "count",
+]);
 
 /**
  * Dispatch a verb whose params were ALREADY extracted by the caller — the

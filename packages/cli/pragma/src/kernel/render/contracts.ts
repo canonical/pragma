@@ -51,6 +51,8 @@ export interface SectionDef<T> {
   readonly heading: string;
   readonly kind: SectionKind;
   readonly showWhenEmpty?: boolean;
+  /** One sentence on how to READ the body, rendered under the heading. */
+  readonly note?: string;
 }
 
 /** A single inline field rendered in a lookup heading block. */

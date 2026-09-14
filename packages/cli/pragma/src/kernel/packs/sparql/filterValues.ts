@@ -26,7 +26,6 @@
  */
 
 import { PragmaError } from "../../error/index.js";
-import { formatValidOptions } from "../../error/validOptions.js";
 import type { PackFilter } from "../types.js";
 import type { ListPredicate } from "./buildListQuery.js";
 
@@ -139,13 +138,13 @@ function rejectUnknownValue(
   const index = terms.findIndex((term) => !admissible.has(term.toLowerCase()));
   if (index === -1) return;
   const validOptions = [...admissible.values()].sort();
+  // The VALUES ride `validOptions`, which every renderer already prints (and
+  // truncates, and counts). Repeating them in the recovery printed the same
+  // 40-name, 1.4KB list twice on one error — see `error/validOptions.ts`.
   throw PragmaError.invalidInput(filter.param, String(occurrences[index]), {
     validOptions,
     recovery: {
-      message: `${formatValidOptions(
-        validOptions,
-        `Values allowed for --${filter.param}`,
-      )}.`,
+      message: `Pick one of the ${validOptions.length} values --${filter.param} accepts.`,
     },
   });
 }
@@ -177,7 +176,7 @@ function canonicalizeFilterValue(
   throw PragmaError.invalidInput(filter.param, String(provided), {
     validOptions: [...values],
     recovery: {
-      message: `Allowed values for --${filter.param}: ${values.join(", ")}.`,
+      message: `Pick one of the ${values.length} values --${filter.param} accepts.`,
     },
   });
 }

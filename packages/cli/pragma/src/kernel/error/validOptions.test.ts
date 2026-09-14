@@ -41,9 +41,11 @@ describe("formatValidOptions", () => {
     expect(line.length).toBeLessThan(2000);
   });
 
-  it("carries the caller's own prefix", () => {
-    // The recovery line and the options line describe the same vocabulary, so
-    // they must agree on length as well as on content.
+  it("carries a caller's own prefix", () => {
+    // The prefix seam is how a caller that renders its OWN options line names
+    // the flag. Nothing in the error path passes one any more: the renderers
+    // print the vocabulary once, from `validOptions`, and a recovery that
+    // enumerated it too printed the same catalogue twice.
     const line = formatValidOptions(
       options(1156),
       "Values allowed for --variable",

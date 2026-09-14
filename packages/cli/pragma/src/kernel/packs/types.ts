@@ -89,6 +89,17 @@ export interface PackField {
 export interface PackSection extends PackField {
   /** Rendering kind (inline field or fenced code block). */
   readonly kind?: "field" | "code";
+  /**
+   * One sentence rendered under the section's heading, above its body: how to
+   * READ what follows, when the body's own notation does not say.
+   *
+   * For a section whose body is a document the graph authored, the label is
+   * enough. For one whose body is a NOTATION — a block's anatomy is a YAML
+   * document in which `background.color: [a, b]` is a fallback chain, first
+   * value that resolves winning — the reader has to be told, and the place to
+   * tell them is where they are looking.
+   */
+  readonly note?: string;
 }
 
 /** A field read from each child node of a {@link PackExpand}. */
@@ -493,12 +504,34 @@ export interface PackPage {
   /** This page's rows, in the story's own order. */
   readonly rows: readonly PackRow[];
   /**
+   * The filters this read was narrowed by, as the caller spelled them — absent
+   * when the read was unfiltered.
+   *
+   * Carried because ZERO ROWS means two different things and the rows cannot
+   * tell them apart. An unfiltered empty list is a statement about the
+   * POPULATION, which is what a story's `emptyRecovery` answers ("build the
+   * store"). A filtered empty list is a statement about the FILTER, and
+   * answering it with the population's recovery tells a reader with 745 symbols
+   * in the store that the store is empty, then prescribes a write. The renderer
+   * cannot re-derive this — it sees a page, not the arguments — so the run body
+   * records what it narrowed by.
+   */
+  readonly filters?: readonly PackAppliedFilter[];
+  /**
    * The cursor that asks for the rows after this page, absent when this page is
    * the last. Its presence IS the "more rows exist" answer.
    */
   readonly nextAfter?: string;
   /** The limit this page was cut to, for the notice that reports it. */
   readonly limit: number;
+}
+
+/** One filter a list read was narrowed by, as the caller spelled it. */
+export interface PackAppliedFilter {
+  /** The parameter name (its CLI flag is `--<param>`). */
+  readonly param: string;
+  /** The value(s) supplied, already joined for display. */
+  readonly value: string;
 }
 
 /**

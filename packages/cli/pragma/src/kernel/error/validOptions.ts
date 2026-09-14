@@ -1,9 +1,11 @@
 /**
  * Naming a filter's admissible values without printing a catalogue.
  *
- * Shared by the error renderers and by the filter layer that builds a recovery
- * message, so one mistyped value cannot be described at two different lengths
- * depending on which line the reader happens to see.
+ * ONE error, ONE list. The vocabulary rides an error's `validOptions`, and the
+ * renderers here are the only place it is spelled out — a filter that also
+ * enumerated it in its `recovery` message printed the same 40 names twice,
+ * about 1.4KB of duplicate terminal output on a single mistyped `--symbol`. A
+ * recovery says what to DO; the options line says what the values ARE.
  */
 
 /**

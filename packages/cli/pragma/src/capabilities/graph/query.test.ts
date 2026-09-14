@@ -116,6 +116,23 @@ describe("graph query — errors & boot", () => {
     ).toMatchObject({ tool: "ontology_list" });
   });
 
+  it("a syntax error is positioned in the CALLER's text, on one line", async () => {
+    // The facade prepends one PREFIX line per registered namespace, so the
+    // parser's "16:41" named a line the caller never wrote — and its expected-
+    // token dump ran to five lines of Unicode ranges.
+    let message = "";
+    try {
+      await queryVerb.run(
+        { sparql: "SELECT ?x\nWHERE { this is not valid sparql" },
+        fixture.runtime,
+      );
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message.split("\n")).toHaveLength(1);
+    expect(message).toMatch(/error at line 2/);
+  });
+
   it("needsStore boots the store before the query runs", async () => {
     const fresh = await bootFixtureRuntime({
       ttl: CANONICAL_TTL,

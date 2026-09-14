@@ -276,6 +276,10 @@ const designSystemStories: readonly PackDefinition[] = [
           label: "Anatomy (DSL)",
           kind: "code",
           level: "detailed",
+          // The one piece of the notation that cannot be guessed from reading
+          // it: a bracketed value looks like a set of alternatives with no
+          // stated order of preference, and it is an ORDERED chain.
+          note: "A list value is the fallback chain the implementation reads, first wins.",
         },
         {
           name: "anatomyClassic",

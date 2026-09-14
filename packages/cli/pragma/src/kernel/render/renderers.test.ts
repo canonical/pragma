@@ -440,3 +440,46 @@ describe("section-body nesting follows CommonMark, not a near-enough reading", (
     expect(out).toMatch(/^### also inside$/m);
   });
 });
+
+describe("a section can say how to read its body", () => {
+  const entity = { anatomy: "background.color: [a, b]" };
+  const options = {
+    title: () => "Button",
+    fields: [],
+    sections: [
+      {
+        key: "anatomy" as const,
+        heading: "Anatomy (DSL)",
+        kind: "code" as const,
+        note: "A list value is the fallback chain, first wins.",
+      },
+    ],
+  };
+
+  it("puts the note between the heading and the body, once", () => {
+    const llm = renderLookupLlm(entity, options);
+    expect(llm).toContain(
+      "### Anatomy (DSL)\nA list value is the fallback chain, first wins.",
+    );
+    expect(llm.split("first wins")).toHaveLength(2);
+
+    const plain = renderLookupPlain(entity, options, styleFor(false));
+    expect(plain).toContain(
+      "Anatomy (DSL):\n  A list value is the fallback chain, first wins.",
+    );
+  });
+
+  it("renders nothing extra for a section that declares none", () => {
+    const bare = {
+      ...options,
+      sections: [
+        {
+          key: "anatomy" as const,
+          heading: "Anatomy (DSL)",
+          kind: "code" as const,
+        },
+      ],
+    };
+    expect(renderLookupLlm(entity, bare)).not.toContain("fallback chain");
+  });
+});
