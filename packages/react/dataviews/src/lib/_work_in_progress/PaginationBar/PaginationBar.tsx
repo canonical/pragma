@@ -14,13 +14,11 @@ import { SelectInput } from "@canonical/react-ds-global-form";
 import {
   type FocusEvent,
   type ReactElement,
-  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
   useMemo,
   useRef,
-  useSyncExternalStore,
 } from "react";
 import { useDataViewsValue } from "../../hooks/index.js";
 import {
@@ -29,6 +27,7 @@ import {
   pluralizeNoun,
 } from "../../utils/index.js";
 import { PageControl } from "./common/index.js";
+import { useRedrawOnDestinationInputs } from "./hooks/index.js";
 import type { PaginationBarProps } from "./types.js";
 import "./styles.css";
 
@@ -87,9 +86,6 @@ const renderHiddenFields = (
       value={field.value}
     />
   ));
-
-/** What a bar without a location subscribes to: nothing moves its destinations. */
-const subscribeToNothing = (): (() => void) => () => {};
 
 /**
  * The pagination bar is the navigation bar anchored to the bottom of the
@@ -151,18 +147,11 @@ export default function PaginationBar<
   const baseId = useId();
   const sizeId = `${baseId}-size`;
   const totalId = `${baseId}-total`;
-  const { spellQuery, location } = readProviderHost(provider);
-  // The destinations carry the location's other parameters too, which can
-  // move without the query: the bar redraws when the location does.
-  const readLocation = useCallback(
-    () => location?.read().toString() ?? null,
-    [location],
-  );
-  useSyncExternalStore(
-    location?.subscribe ?? subscribeToNothing,
-    readLocation,
-    readLocation,
-  );
+  const { spellQuery } = readProviderHost(provider);
+  // The destinations carry the saved view open beside the query and the
+  // location's other parameters, either of which can move without the
+  // query: the bar redraws when either does.
+  useRedrawOnDestinationInputs({ provider });
   /** A window of the current query, spelled as the location carries it. */
   const spell = (moved: Partial<ResultWindow>): URLSearchParams | null =>
     spellQuery({
