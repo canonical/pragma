@@ -1,4 +1,5 @@
 import type { Predicate, PredicateOperand } from "../query/index.js";
+import compareByCodeUnit from "./compareByCodeUnit.js";
 import isCalendarDate from "./isCalendarDate.js";
 import readInstant from "./readInstant.js";
 import type {
@@ -15,9 +16,6 @@ import type {
 } from "./types.js";
 
 const createKey = (rank: number, text = ""): OrderKey => ({ rank, text });
-
-const compareByCodePoint = (a: string, b: string): number =>
-  a < b ? -1 : a > b ? 1 : 0;
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
@@ -46,7 +44,7 @@ const compareScalars = (
       : Math.sign(value - bound);
   }
   if (typeof value === "string" && typeof bound === "string") {
-    return compareByCodePoint(value, bound);
+    return compareByCodeUnit(value, bound);
   }
   return null;
 };
@@ -135,14 +133,14 @@ const CHOICES: FieldKindRules<ChoicesField> = {
           ? createKey(ranks.size, text)
           : createKey(rank);
       },
-      compareText: compareByCodePoint,
+      compareText: compareByCodeUnit,
     };
   },
 };
 
 const NUMBER_ORDER: KindOrder = {
   readKey: (value) => (isFiniteNumber(value) ? createKey(value) : null),
-  compareText: compareByCodePoint,
+  compareText: compareByCodeUnit,
 };
 
 const NUMBER: FieldKindRules<NumberField> = {
@@ -197,7 +195,7 @@ const FLAG_ORDER: KindOrder = {
     value === null || value === undefined
       ? null
       : createKey(value === false ? 0 : 1),
-  compareText: compareByCodePoint,
+  compareText: compareByCodeUnit,
 };
 
 const FLAG: FieldKindRules<FlagField> = {
@@ -219,7 +217,7 @@ const DATE_ORDER: KindOrder = {
     const at = readInstant(value);
     return at === null ? null : createKey(at);
   },
-  compareText: compareByCodePoint,
+  compareText: compareByCodeUnit,
 };
 
 const DATE: FieldKindRules<DateField> = {
@@ -255,15 +253,16 @@ const TEXT: FieldKindRules<TextField> = {
   areAppliedEqual: isSameValue,
   compareToBound: compareScalars,
   /**
-   * Text orders through the source's collator. An empty string carries
-   * nothing to order by, so it is empty rather than a value: two blank cells
-   * a reader cannot tell apart must not order differently, and one of them
-   * must not move with the direction while the other stays last.
+   * Text orders by the comparison the source's collation resolves to. An
+   * empty string carries nothing to order by, so it is empty rather than a
+   * value: two blank cells a reader cannot tell apart must not order
+   * differently, and one of them must not move with the direction while the
+   * other stays last.
    */
-  createOrder: (_definition, collator) => ({
+  createOrder: (_definition, compareText) => ({
     readKey: (value) =>
       typeof value === "string" && value !== "" ? createKey(0, value) : null,
-    compareText: collator === null ? compareByCodePoint : collator.compare,
+    compareText,
   }),
 };
 

@@ -255,12 +255,12 @@ export type FieldKindRules<
     bound: PredicateOperand,
   ) => number | null;
   /**
-   * How rows order by a field of the kind, given the collator the source
-   * declares for text.
+   * How rows order by a field of the kind, given how text compares under the
+   * collation the source declares. Only text reads it.
    */
   readonly createOrder: (
     definition: TDefinition,
-    collator: Intl.Collator | null,
+    compareText: (a: string, b: string) => number,
   ) => KindOrder;
 };
 

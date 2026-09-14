@@ -121,6 +121,7 @@ export type {
   CapabilityDeclaration,
   CountCapabilities,
   CountSupport,
+  EmptyPlacement,
   GroupCapabilities,
   PageConfig,
   PaginationCapabilities,

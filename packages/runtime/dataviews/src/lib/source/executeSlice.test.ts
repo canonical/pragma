@@ -379,6 +379,25 @@ describe("executeSlice", () => {
     ).toEqual(["b", "d", "c", "a"]);
   });
 
+  it("places a field's empties where the source declares them, in both directions", () => {
+    const rows = [{ id: "a", cpu: 2 }, { id: "b" }, { id: "c", cpu: 1 }];
+    const config = buildExecuteConfig({
+      sort: { ...declareSort(schema.fieldNames), empties: { cpu: "first" } },
+    });
+    const listIds = (terms: readonly SortTerm[]) =>
+      executeSlice(rows, slice({ sort: terms }), config).map((row) => row.id);
+    expect(listIds([{ field: "cpu", direction: "asc" }])).toEqual([
+      "b",
+      "c",
+      "a",
+    ]);
+    expect(listIds([{ field: "cpu", direction: "desc" }])).toEqual([
+      "b",
+      "a",
+      "c",
+    ]);
+  });
+
   it("collapses a field spelled twice, so the first term is the ordering", () => {
     expect(
       ids(

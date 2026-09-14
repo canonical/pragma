@@ -61,6 +61,7 @@ export const declareSort = (
   terms,
   default: [],
   tiebreak: "opaque",
+  empties: {},
   collation: null,
 });
 

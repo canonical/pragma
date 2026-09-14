@@ -2,7 +2,12 @@ import type { Collection } from "../collection/index.js";
 import type { PredicateOperator } from "../query/index.js";
 import type { SchemaFieldDefinition } from "../schema/index.js";
 import copyCapabilities from "./copyCapabilities.js";
-import type { CapabilityDeclaration, SourceCapabilities } from "./types.js";
+import createBareRecord from "./createBareRecord.js";
+import type {
+  CapabilityDeclaration,
+  EmptyPlacement,
+  SourceCapabilities,
+} from "./types.js";
 
 /**
  * Build the complete, frozen capability record a source publishes from
@@ -67,6 +72,28 @@ export default function declareCapabilities<
       );
     }
   }
+  // Optional keys again, read as a record; an entry left undefined is left out.
+  const declaredEmpties = (sort?.empties ?? {}) as Readonly<
+    Record<string, EmptyPlacement | undefined>
+  >;
+  // Prototype-free, as the record the source publishes is.
+  const empties = createBareRecord<EmptyPlacement>();
+  for (const [field, placement] of Object.entries(declaredEmpties)) {
+    if (placement === undefined) {
+      continue;
+    }
+    if (placement !== "first" && placement !== "last") {
+      throw new Error(
+        `empty values of "${field}" are placed "${String(placement)}", which is neither first nor last`,
+      );
+    }
+    if (!sortable.includes(field)) {
+      throw new Error(
+        `empty values of "${field}" are placed, which is not sortable`,
+      );
+    }
+    empties[field] = placement;
+  }
   return copyCapabilities({
     filter,
     search:
@@ -78,6 +105,7 @@ export default function declareCapabilities<
       terms: sort === undefined ? 0 : sort.terms,
       default: sort?.default ?? [],
       tiebreak: sort?.tiebreak ?? "none",
+      empties,
       collation: sort?.collation ?? null,
     },
     group: { fields: [], levels: 0, summaries: "none", collapse: false },

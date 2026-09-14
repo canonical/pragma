@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import compareByCodeUnit from "./compareByCodeUnit.js";
 import resolveFieldKind from "./resolveFieldKind.js";
 import type { FieldKind, SchemaFieldDefinition } from "./types.js";
 
@@ -102,14 +103,20 @@ describe("resolveFieldKind", () => {
     const text = rulesOf("text");
     const collated = text.rules.createOrder(
       text.definition,
-      new Intl.Collator("en-u-kn-true"),
+      new Intl.Collator("en-u-kn-true").compare,
     );
     expect(collated.compareText("item2", "item10")).toBeLessThan(0);
-    const byCodePoint = text.rules.createOrder(text.definition, null);
+    const byCodePoint = text.rules.createOrder(
+      text.definition,
+      compareByCodeUnit,
+    );
     expect(byCodePoint.compareText("item2", "item10")).toBeGreaterThan(0);
     expect(byCodePoint.readKey("")).toBeNull();
     const choices = rulesOf("choices");
-    const order = choices.rules.createOrder(choices.definition, null);
+    const order = choices.rules.createOrder(
+      choices.definition,
+      compareByCodeUnit,
+    );
     expect(order.readKey(2)).toEqual({ rank: 1, text: "" });
     expect(order.readKey("ready")).toEqual({ rank: 2, text: "ready" });
     expect(order.readKey(true)).toBeNull();

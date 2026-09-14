@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { declare, declareSort } from "../../../testing/fixtures.js";
 import type { PredicateOperator, SortTerm } from "../query/index.js";
 import copyCapabilities from "./copyCapabilities.js";
-import type { SourceCapabilities } from "./types.js";
+import type { EmptyPlacement, SourceCapabilities } from "./types.js";
 
 const declared = (
   overrides: Partial<SourceCapabilities> = {},
@@ -42,6 +42,7 @@ describe("copyCapabilities", () => {
   it("copies the whole ordering block, terms and all", () => {
     const fields = ["cpu"];
     const tiebreak: SortTerm[] = [{ field: "id", direction: "asc" }];
+    const empties: Record<string, EmptyPlacement> = { cpu: "first" };
     const copy = copyCapabilities(
       declared({
         sort: {
@@ -49,20 +50,28 @@ describe("copyCapabilities", () => {
           terms: 2,
           default: [{ field: "cpu", direction: "desc" }],
           tiebreak,
+          empties,
           collation: "en-GB",
         },
       }),
     );
     fields.push("zone");
     tiebreak.push({ field: "name", direction: "asc" });
+    empties["cpu"] = "last";
+    empties["zone"] = "first";
     expect(copy.sort).toEqual({
       fields: ["cpu"],
       terms: 2,
       default: [{ field: "cpu", direction: "desc" }],
       tiebreak: [{ field: "id", direction: "asc" }],
+      empties: { cpu: "first" },
       collation: "en-GB",
     });
     expect(Object.isFrozen(copy.sort.tiebreak)).toBe(true);
+    expect(Object.isFrozen(copy.sort.empties)).toBe(true);
+    // Prototype-free, so a field named for an `Object.prototype` member
+    // reads as unplaced rather than as a function.
+    expect(Object.getPrototypeOf(copy.sort.empties)).toBeNull();
   });
 
   it("keeps a named tiebreak as the word it was declared with", () => {
@@ -73,6 +82,7 @@ describe("copyCapabilities", () => {
       terms: null,
       default: [],
       tiebreak: "opaque",
+      empties: {},
       collation: null,
     });
   });

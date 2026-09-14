@@ -62,9 +62,19 @@ export type CountSupport = Count["kind"];
 export type SortTiebreak = readonly SortTerm[] | "opaque" | "none";
 
 /**
+ * Where a field's empty values order, the same in both directions: before
+ * every value, or after.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type EmptyPlacement = "first" | "last";
+
+/**
  * Everything a source declares about ordering, in one block, so a header
- * reads its whole contract from one place. `effectiveOrdering` resolves the
- * three of them against a query into the order rows are actually in.
+ * reads its whole contract from one place. `resolveEffectiveOrdering`
+ * resolves the three of them against a query into the order rows are
+ * actually in.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -90,11 +100,22 @@ export type SortCapabilities = {
   readonly default: readonly SortTerm[];
   readonly tiebreak: SortTiebreak;
   /**
+   * Where a field's empty values order — `first` or `last`, the same in both
+   * directions — keyed by field, for the fields the source placed. A field
+   * absent here keeps its empties last. Empty means absent, null, or outside
+   * the field kind's domain, and a value that does not apply to a record's
+   * type orders with them. Local execution reads this, so a backend that
+   * places empties first can say so and a local order agrees with it.
+   */
+  readonly empties: Readonly<Record<string, EmptyPlacement>>;
+  /**
    * The locale text compares under, as a BCP-47 tag with any collation
    * extension — `en-u-kn-true` is the root collation with numeric ordering
-   * — or null when the source names none and text compares by code point.
+   * — or null when the source names none and text compares by code unit.
    * The source's locale, never the viewer's, so a server render and a local
-   * execution agree.
+   * execution agree. A runtime without the data for the tag — most tags on a
+   * small-ICU build — still orders digit runs by the number they spell, and
+   * everything else by code point.
    */
   readonly collation: string | null;
 };
@@ -335,7 +356,18 @@ export type CapabilityDeclaration<
         readonly default?: readonly SortTerm[] | undefined;
         /** What breaks ties after the last term; unordered when left out. */
         readonly tiebreak?: SortTiebreak | undefined;
-        /** The BCP-47 tag text compares under; code point when left out. */
+        /**
+         * Where each sortable field's empty values order, in both
+         * directions; last for every field left out.
+         */
+        readonly empties?:
+          | {
+              readonly [TName in FieldNameOf<TFields>]?:
+                | EmptyPlacement
+                | undefined;
+            }
+          | undefined;
+        /** The BCP-47 tag text compares under; code unit when left out. */
         readonly collation?: string | undefined;
       }
     | undefined;
@@ -420,13 +452,20 @@ export type ArraySourceConfig<TRow extends object = RowRecord> = {
   readonly defaultSort?: readonly SortTerm[] | undefined;
   /**
    * The BCP-47 tag text compares under, root collation with numeric ordering
-   * by default, or null to compare by code point. The source's locale, never
+   * by default, or null to compare by code unit. The source's locale, never
    * the viewer's, so a server render and a local execution agree.
    *
    * @experimental The declared tag is not yet canonicalized against what the
    * runtime resolves.
    */
   readonly collation?: string | null | undefined;
+  /**
+   * Where a field's empty values order, `first` or `last`, the same in both
+   * directions; every field left out keeps its empties last. Declared here,
+   * like the collation, so a local order agrees with a backend that places
+   * empties first.
+   */
+  readonly empties?: Readonly<Record<string, EmptyPlacement>> | undefined;
   /**
    * Fields free-text search reads; none by default, which refuses search.
    * They need not be schema fields: search reads the row itself, and a note

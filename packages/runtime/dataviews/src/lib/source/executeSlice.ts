@@ -151,5 +151,6 @@ export default function executeSlice<TRow extends object>(
     ordering: resolveEffectiveOrdering(query, config.sort),
     schema: config.schema,
     collation: config.sort.collation,
+    empties: config.sort.empties,
   });
 }

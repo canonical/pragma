@@ -7,7 +7,7 @@ import {
 } from "../schema/index.js";
 import { ROOT_NUMERIC_COLLATION } from "./constants.js";
 import orderRows from "./orderRows.js";
-import type { EffectiveOrdering } from "./types.js";
+import type { EffectiveOrdering, EmptyPlacement } from "./types.js";
 
 const schema = createSchema([
   { field: "name", kind: "text" },
@@ -37,6 +37,7 @@ type Ordered = {
   readonly schema?: Schema<readonly SchemaFieldDefinition[]>;
   readonly collation?: string | null;
   readonly tiebreak?: EffectiveOrdering["tiebreak"];
+  readonly empties?: Readonly<Record<string, EmptyPlacement>>;
 };
 
 const buildOrderConfig = (
@@ -49,6 +50,7 @@ const buildOrderConfig = (
     options.collation === undefined
       ? ROOT_NUMERIC_COLLATION
       : options.collation,
+  empties: options.empties ?? {},
 });
 
 /** Order rows by one ordering, answering their ids. */
@@ -101,7 +103,7 @@ describe("orderRows", () => {
     ]);
   });
 
-  it("compares text by code point when the source names no collation", () => {
+  it("compares text by code unit when the source names no collation", () => {
     const rows = [
       { id: "z", name: "Zebra" },
       { id: "a", name: "apple" },
@@ -112,24 +114,35 @@ describe("orderRows", () => {
     ]);
   });
 
-  it("compares by code point rather than the viewer's locale for a tag no runtime backs", () => {
-    // "und" and "zxx" are well-formed and backed by no collation data, so
-    // honouring either would silently hand the order to whoever is looking.
+  it("orders digit runs by number, and the rest by code point, for a tag no runtime backs", () => {
+    // "und" and "zxx" are well-formed and backed by no collation data, as
+    // most tags are on a small-ICU build. Honouring either would hand the
+    // order to the viewer's locale; code unit would put item10 before
+    // item2, which the declared numeric collation promises never happens.
     const rows = [
-      { id: "z", name: "Zebra" },
-      { id: "a", name: "apple" },
+      { id: "item10", name: "item10" },
+      { id: "Zebra", name: "Zebra" },
+      { id: "item2", name: "item2" },
+      { id: "apple", name: "apple" },
     ];
-    expect(order(rows, [buildAscTerm("name")], { collation: "und" })).toEqual([
-      "z",
-      "a",
-    ]);
-    expect(order(rows, [buildAscTerm("name")], { collation: "zxx" })).toEqual([
-      "z",
-      "a",
-    ]);
+    const byDigitRuns = ["Zebra", "apple", "item2", "item10"];
+    expect(order(rows, [buildAscTerm("name")], { collation: "und" })).toEqual(
+      byDigitRuns,
+    );
+    expect(order(rows, [buildAscTerm("name")], { collation: "zxx" })).toEqual(
+      byDigitRuns,
+    );
+  });
+
+  it("compares by code unit for a tag that is not well formed", () => {
+    // A malformed tag names no collation, so it is read as naming none.
+    const rows = [
+      { id: "item10", name: "item10" },
+      { id: "item2", name: "item2" },
+    ];
     expect(
       order(rows, [buildAscTerm("name")], { collation: "not a tag" }),
-    ).toEqual(["z", "a"]);
+    ).toEqual(["item10", "item2"]);
   });
 
   it("orders choices by declared option index, not by label", () => {
@@ -250,6 +263,80 @@ describe("orderRows", () => {
       "one",
       ...empties,
     ]);
+  });
+
+  it("orders a field's empties first, in both directions, where the source places them", () => {
+    const rows = [
+      { id: "absent" },
+      { id: "two", cores: 2 },
+      { id: "null", cores: null },
+      { id: "one", cores: 1 },
+    ];
+    const empties = { cores: "first" } as const;
+    expect(order(rows, [buildAscTerm("cores")], { empties })).toEqual([
+      "absent",
+      "null",
+      "one",
+      "two",
+    ]);
+    expect(order(rows, [buildDescTerm("cores")], { empties })).toEqual([
+      "absent",
+      "null",
+      "two",
+      "one",
+    ]);
+  });
+
+  it("places empties per field, leaving every field the source says nothing about last", () => {
+    const rows = [
+      { id: "a-empty-name", cores: 1 },
+      { id: "b-named", cores: 1, name: "b" },
+      { id: "c-empty-cores", name: "a" },
+    ];
+    // cores empties first; name keeps its empties last.
+    expect(
+      order(rows, [buildAscTerm("cores"), buildAscTerm("name")], {
+        empties: { cores: "first" },
+      }),
+    ).toEqual(["c-empty-cores", "b-named", "a-empty-name"]);
+    expect(
+      order(rows, [buildAscTerm("cores"), buildAscTerm("name")], {
+        empties: { cores: "last", name: "first" },
+      }),
+    ).toEqual(["a-empty-name", "b-named", "c-empty-cores"]);
+  });
+
+  it("places the empties of a named tiebreak's field as the source declares", () => {
+    const rows = [
+      { id: "named", cores: 1, name: "a" },
+      { id: "unnamed", cores: 1 },
+    ];
+    expect(
+      order(rows, [buildAscTerm("cores")], {
+        tiebreak: [buildAscTerm("name")],
+        empties: { name: "first" },
+      }),
+    ).toEqual(["unnamed", "named"]);
+  });
+
+  it("reads a placement only from the declaration's own keys", () => {
+    // An inherited member of a plain record is not a placement.
+    const rows: readonly Record<string, unknown>[] = [
+      { id: "absent" },
+      { id: "one", toString: 1 },
+    ];
+    const schemaWithPrototypeName = createSchema([
+      { field: "toString", kind: "number" },
+    ]);
+    const inherited = Object.create({ toString: "first" }) as Readonly<
+      Record<string, EmptyPlacement>
+    >;
+    expect(
+      order(rows, [buildAscTerm("toString")], {
+        schema: schemaWithPrototypeName,
+        empties: inherited,
+      }),
+    ).toEqual(["one", "absent"]);
   });
 
   it("orders an unparseable or local-time date as empty", () => {
