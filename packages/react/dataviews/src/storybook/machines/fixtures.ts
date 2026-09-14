@@ -12,6 +12,7 @@
 import {
   createArraySource,
   createCollection,
+  type SortTerm,
   type Source,
 } from "@canonical/dataviews-core";
 
@@ -181,26 +182,24 @@ export const manyMachines = (count: number): readonly Machine[] =>
     name: `node-${String(position).padStart(5, "0")}.example.com`,
   }));
 
+/** How a story's machine source is built. */
+type MachineSourceConfig = {
+  /** The records; every machine by default. */
+  readonly rows?: readonly Machine[] | undefined;
+  /** The order the source documents for a query with no term; none by default. */
+  readonly defaultSort?: readonly SortTerm[] | undefined;
+};
+
 /** A local-array source over the machines, or over a caller's own rows. */
-export const createMachineSource = (
-  rows: readonly Machine[] = machines,
-): Source<Machine> =>
+export const createMachineSource = ({
+  rows = machines,
+  defaultSort,
+}: MachineSourceConfig = {}): Source<Machine> =>
   createArraySource<Machine>({
     rows,
     collection: machineCollection,
     searchFields: ["name", "owner"],
-  });
-
-/**
- * A local-array source over the machines that documents its own order: by
- * host, when a query states no term of its own.
- */
-export const createHostOrderedSource = (): Source<Machine> =>
-  createArraySource<Machine>({
-    rows: machines,
-    collection: machineCollection,
-    searchFields: ["name", "owner"],
-    defaultSort: [{ field: "name", direction: "asc" }],
+    ...(defaultSort === undefined ? {} : { defaultSort }),
   });
 
 /**
@@ -225,8 +224,24 @@ export const createSourceWithoutCores = (): Source<Machine> => {
   };
 };
 
+/**
+ * A source that orders by one term at a time: a further term is refused, and
+ * the heading that asked for it says why.
+ */
+export const createOneTermSource = (): Source<Machine> => {
+  const source = createMachineSource();
+  return {
+    ...source,
+    capabilities: {
+      ...source.capabilities,
+      sort: { ...source.capabilities.sort, terms: 1 },
+    },
+  };
+};
+
 /** A source whose collection has nothing in it. */
-export const createEmptySource = (): Source<Machine> => createMachineSource([]);
+export const createEmptySource = (): Source<Machine> =>
+  createMachineSource({ rows: [] });
 
 /**
  * A source that pages without counting, as many backends do: it declares no

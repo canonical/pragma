@@ -1,17 +1,25 @@
 import type { SortDirection } from "@canonical/dataviews-core";
 import { Icon, type IconProps } from "@canonical/react-ds-global";
-import { type KeyboardEvent, type ReactElement, useRef } from "react";
+import {
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactElement,
+  useLayoutEffect,
+  useRef,
+} from "react";
+import { HeaderMenu } from "../HeaderMenu/index.js";
 import { ResizeHandle } from "../ResizeHandle/index.js";
-import describeSortPlacement from "./describeSortPrecedence.js";
+import describeSortPrecedence from "./describeSortPrecedence.js";
+import isFocusWithinOwnColumn from "./isFocusWithinOwnColumn.js";
 import type { HeaderCellProps } from "./types.js";
 
 const componentCssClassName = "ds data-table-header-cell";
 
 /** The ordering's icon. A column the ordering does not name shows none. */
-const sortIcon: Readonly<Record<SortDirection, IconProps["icon"]>> = {
+const sortIcon = {
   asc: "chevron-up",
   desc: "chevron-down",
-};
+} as const satisfies Readonly<Record<SortDirection, IconProps["icon"]>>;
 
 /** The value `aria-sort` takes for each direction. */
 const ariaSort = {
@@ -47,19 +55,25 @@ const isActivationKey = (event: KeyboardEvent<HTMLButtonElement>): boolean =>
  * once there are two terms; its control is described by both, as
  * "descending, 2nd of 3". Only the header of the ordering's first term
  * carries `aria-sort`. An activation the source refuses changes nothing
- * and says why, politely.
+ * and says why, politely. Once scripts run, a menu beside the control
+ * carries the same sort for a reader who uses neither a precise pointer
+ * nor a modifier key.
  *
  * @implements ds:apps.subcomponent.data_table-header_cell
  */
 export default function HeaderCell({
   column,
   sortable,
-  placement,
+  precedence,
   primary,
   destination,
   hydrated,
   reason,
   onSort,
+  removable,
+  onPlace,
+  onRemoveFromSort,
+  onClearRefusal,
   interaction,
   resizable,
   bounds,
@@ -70,15 +84,33 @@ export default function HeaderCell({
   // a key produces carries `detail` 0, and not every browser copies the
   // modifier onto it.
   const shiftedKey = useRef(false);
+  // The link a server rendered, and whether it held focus as scripts took
+  // over: the button replacing it takes that focus, or the reader who
+  // tabbed to the header before hydration is left on nothing.
+  const link = useRef<HTMLAnchorElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const linkHadFocus = useRef(false);
+  useLayoutEffect(() => {
+    if (!hydrated) {
+      linkHadFocus.current =
+        link.current !== null &&
+        link.current === link.current.ownerDocument.activeElement;
+      return;
+    }
+    if (linkHadFocus.current) {
+      linkHadFocus.current = false;
+      button.current?.focus();
+    }
+  }, [hydrated]);
   const descriptionId = `${labelId}-sort`;
-  const describedBy = placement === null ? undefined : descriptionId;
+  const describedBy = precedence === null ? undefined : descriptionId;
   const indicator =
-    placement === null ? null : (
+    precedence === null ? null : (
       <>
-        <Icon icon={sortIcon[placement.direction]} />
-        {placement.count > 1 ? (
+        <Icon icon={sortIcon[precedence.direction]} />
+        {precedence.count > 1 ? (
           <span className="precedence" aria-hidden="true">
-            {placement.position}
+            {precedence.position}
           </span>
         ) : null}
       </>
@@ -92,16 +124,43 @@ export default function HeaderCell({
     <div
       role="columnheader"
       className={componentCssClassName}
+      // Named by its label alone: a reader hears a column's name on every
+      // cell, and the menu's button, the resize handle and a refusal's
+      // message would otherwise be read into it each time.
+      aria-labelledby={labelId}
       aria-sort={
-        primary && placement !== null
-          ? ariaSort[placement.direction]
+        primary && precedence !== null
+          ? ariaSort[precedence.direction]
           : undefined
       }
       // A header with no control of its own is described itself.
       aria-describedby={interactive ? undefined : describedBy}
+      // A refusal's reason stands while focus is in the header or in this
+      // column's own menu, whose surface is portalled outside it, and goes
+      // once focus leaves both: a choice from the menu settles it through the
+      // ordering instead. Opening the menu mounts it and fires no blur at
+      // all, so keeping its surface keeps every open alike. Another
+      // column's menu is not this header's, and ends it.
+      onBlur={(event: FocusEvent<HTMLDivElement>) => {
+        // The window losing focus, not the column: the reader comes back to
+        // the same control, and the reason with it.
+        if (!event.currentTarget.ownerDocument.hasFocus()) {
+          return;
+        }
+        const next = event.relatedTarget;
+        if (
+          !(
+            next instanceof Element &&
+            isFocusWithinOwnColumn(event.currentTarget, next)
+          )
+        ) {
+          onClearRefusal();
+        }
+      }}
     >
       {sortable && hydrated ? (
         <button
+          ref={button}
           type="button"
           id={labelId}
           className="sort"
@@ -111,11 +170,21 @@ export default function HeaderCell({
               shiftedKey.current = event.shiftKey;
             }
           }}
+          // Enter clicks on its keydown, so its keyup ends it; Space clicks
+          // after its keyup, so its click ends it, or leaving the control.
+          onKeyUp={(event) => {
+            if (event.key === "Enter") {
+              shiftedKey.current = false;
+            }
+          }}
+          onBlur={() => {
+            shiftedKey.current = false;
+          }}
           onClick={(event) => {
             const additive =
               event.shiftKey || (event.detail === 0 && shiftedKey.current);
             shiftedKey.current = false;
-            onSort(additive);
+            onSort(column.id, additive);
           }}
         >
           {label}
@@ -123,6 +192,7 @@ export default function HeaderCell({
         </button>
       ) : sortable && destination !== null ? (
         <a
+          ref={link}
           href={destination}
           id={labelId}
           className="sort"
@@ -139,19 +209,31 @@ export default function HeaderCell({
           {indicator}
         </>
       )}
-      {placement === null ? null : (
+      {precedence === null ? null : (
         <span id={descriptionId} hidden>
-          {describeSortPlacement(placement)}
+          {describeSortPrecedence(precedence)}
         </span>
       )}
       {sortable && hydrated ? (
         // A live region rather than a status role: it is polite, it exists
-        // before it speaks, and it leaves the table's one status alone.
-        <span aria-live="polite" aria-atomic="true" className="sort-status">
-          {reason ?? ""}
+        // before it speaks, and it leaves the table's one status alone. Its
+        // text is shown beside the control while it stands.
+        <span aria-live="polite" aria-atomic="true" className="sort-reason">
+          {reason}
         </span>
       ) : null}
-      {resizable ? (
+      {sortable && hydrated ? (
+        <HeaderMenu
+          columnId={column.id}
+          header={column.header}
+          removable={removable}
+          onPlace={onPlace}
+          onRemoveFromSort={onRemoveFromSort}
+        />
+      ) : null}
+      {/* A focusable handle whose keys resize only once scripts run: none
+          before then, so nothing is offered that does not work. */}
+      {resizable && hydrated ? (
         <ResizeHandle
           interaction={interaction}
           columnId={column.id}

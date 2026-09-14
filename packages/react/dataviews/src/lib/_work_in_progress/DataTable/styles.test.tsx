@@ -161,7 +161,7 @@ const virtualizedTable = (): HTMLElement => {
 };
 
 /** A table ordered by two terms: each sorted header shows its precedence. */
-const sortedByTwo = (): HTMLElement => {
+const renderSortedByTwo = (): HTMLElement => {
   const { provider } = createMachineProvider({
     rows: [machine("m-1", "alpha")],
     capabilities: declareMachineOrdering(null),
@@ -186,7 +186,7 @@ const sortedByTwo = (): HTMLElement => {
 };
 
 /** A table as the server sends it: each sortable header is its link. */
-const serverRendered = (): HTMLElement => {
+const renderServerMarkup = (): HTMLElement => {
   const { provider } = createMachineProvider({
     location: createMemoryLocation({ href: "/machines" }),
     capabilities: declareMachineOrdering(null),
@@ -238,7 +238,7 @@ describe("DataTable stylesheet", () => {
       rendered.add(name);
     }
     cleanup();
-    for (const name of classesOf(sortedByTwo())) {
+    for (const name of classesOf(renderSortedByTwo())) {
       rendered.add(name);
     }
     cleanup();
@@ -362,9 +362,14 @@ describe("DataTable stylesheet", () => {
     expect(rule(/\.ds\.data-table-header-cell/)).toMatch(
       /align-self:\s*stretch;/,
     );
-    // Its precedence numeral beside it, in the one rule, never shrinks either.
+    // Its precedence numeral beside it never shrinks either, in the sort
+    // control or beside a plain label.
     expect(
-      sheet.match(/& > \.ds\.icon,\s*& > \.precedence\s*\{([^{}]*)/)?.[1],
+      sheet
+        .match(
+          /& > :is\(\.ds\.icon, \.precedence\),\s*& > \.sort > :is\(\.ds\.icon, \.precedence\)\s*\{([^{}]*)/,
+        )
+        ?.at(1),
     ).toMatch(/flex:\s*none;/);
   });
 
@@ -441,8 +446,8 @@ describe("DataTable anatomy", () => {
       loaded,
       failed,
       virtualizedTable,
-      sortedByTwo,
-      serverRendered,
+      renderSortedByTwo,
+      renderServerMarkup,
     ]) {
       const container = mount();
       for (const selector of [...stated]) {

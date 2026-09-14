@@ -7,8 +7,8 @@ import { consumerCode } from "../../../storybook/machines/consumerCode.js";
 import {
   createEmptySource,
   createFailingSource,
-  createHostOrderedSource,
   createMachineSource,
+  createOneTermSource,
   createPendingSource,
   type Machine,
   type MachineFields,
@@ -337,6 +337,27 @@ export const SortedDescending: Story = {
   },
 };
 
+/**
+ * Sort limited to one term: this source orders by a single term. Sort by
+ * a heading, then Shift-activate another: the ordering stays as it was, and
+ * the second heading says why below it while focus is in that heading or
+ * its menu, and until the ordering changes. Activating a heading without
+ * Shift still sorts by that column alone.
+ */
+export const SortLimitedToOneTerm: Story = {
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: sortableColumnsCode,
+    render: tableCode,
+  }),
+  render: renderMachines(sortableColumns, { source: createOneTermSource }),
+};
+
+/**
+ * Sort the story's provider by status, then cores, before it renders.
+ *
+ * @note Impure: sets the provider's ordering.
+ */
 const sortByStatusThenCores = (provider: MachineProvider): void => {
   provider.setSort([
     { field: "status", direction: "asc" },
@@ -365,11 +386,11 @@ export const SortedByTwoTerms: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(
-        canvas.getByRole("columnheader", { name: /^Status/ }),
+        canvas.getByRole("columnheader", { name: "Status" }),
       ).toHaveAttribute("aria-sort", "ascending"),
     );
     await expect(
-      canvas.getByRole("columnheader", { name: /^Cores/ }),
+      canvas.getByRole("columnheader", { name: "Cores" }),
     ).not.toHaveAttribute("aria-sort");
     await expect(
       canvas.getByRole("button", { name: "Cores" }),
@@ -378,8 +399,8 @@ export const SortedByTwoTerms: Story = {
 };
 
 /**
- * The source's own order: this source documents that its pages come by
- * host when a query states no term, so the Host heading shows that order
+ * Default ordering: this source documents that its pages come by host
+ * when a query states no term, so the Host heading shows that order
  * and reports it — rows a source orders are never shown as unsorted. The
  * first activation of Host is still ascending, as a term of the reader's
  * own; clearing it returns to this.
@@ -396,11 +417,16 @@ export const DefaultOrdering: Story = {
 ${sortableColumnsCode}`,
     render: tableCode,
   }),
-  render: renderMachines(sortableColumns, { source: createHostOrderedSource }),
+  render: renderMachines(sortableColumns, {
+    source: () =>
+      createMachineSource({
+        defaultSort: [{ field: "name", direction: "asc" }],
+      }),
+  }),
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(
-        canvas.getByRole("columnheader", { name: /^Host/ }),
+        canvas.getByRole("columnheader", { name: "Host" }),
       ).toHaveAttribute("aria-sort", "ascending"),
     );
     await expect(
@@ -670,7 +696,7 @@ export const ResizePastTheContainer: Story = {
       start + table.clientWidth + 0.5,
     );
     await expect(
-      widthOf(canvas.getByRole("columnheader", { name: /^Owner/ })),
+      widthOf(canvas.getByRole("columnheader", { name: "Owner" })),
     ).toBe(96);
   },
 };
@@ -716,7 +742,7 @@ export const LastColumnTakesTheRest: Story = {
   render: renderMachines(fixedColumns),
   play: async ({ canvas }) => {
     await expect(
-      widthOf(await canvas.findByRole("columnheader", { name: /^Owner/ })),
+      widthOf(await canvas.findByRole("columnheader", { name: "Owner" })),
     ).toBeGreaterThan(120);
   },
 };
@@ -995,7 +1021,7 @@ const virtualization = virtualizeRows({ estimatedRowHeight: 24 });
 
 /** Ten thousand machines, all in one window. */
 const tenThousand = {
-  source: () => createMachineSource(manyMachines(10_000)),
+  source: () => createMachineSource({ rows: manyMachines(10_000) }),
   window: { ...DEFAULT_WINDOW, page: 1, size: 10_000 },
 } as const;
 

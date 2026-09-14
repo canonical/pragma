@@ -5,6 +5,7 @@
  */
 
 import {
+  type CapabilityDeclaration,
   type Collection,
   createCollection,
   createDataViewsProvider,
@@ -50,14 +51,19 @@ export const machine = (
   cores = 4,
 ): Machine => ({ id, name, status, cores });
 
+/** What every machine declaration shares: its filters, its search and its counts. */
+const MACHINE_DECLARATION = {
+  filter: { status: ["eq"], cores: ["gte", "lte"] },
+  search: ["name"],
+  counts: COUNTED_EXACTLY,
+} as const satisfies CapabilityDeclaration<MachineFields>;
+
 /** What the fixture source declares: it filters, searches and orders by `name` alone. */
 export const MACHINE_CAPABILITIES: SourceCapabilities = declareCapabilities(
   machines,
   {
-    filter: { status: ["eq"], cores: ["gte", "lte"] },
-    search: ["name"],
+    ...MACHINE_DECLARATION,
     sort: { fields: ["name"], terms: 1, tiebreak: "opaque" },
-    counts: COUNTED_EXACTLY,
   },
 );
 
@@ -70,15 +76,13 @@ export const declareMachineOrdering = (
   defaultSort: readonly SortTerm[] = [],
 ): SourceCapabilities =>
   declareCapabilities(machines, {
-    filter: { status: ["eq"], cores: ["gte", "lte"] },
-    search: ["name"],
+    ...MACHINE_DECLARATION,
     sort: {
       fields: ["name", "status", "cores"],
       terms,
       tiebreak: "opaque",
       default: defaultSort,
     },
-    counts: COUNTED_EXACTLY,
   });
 
 /** How one test's machine provider is set up. */

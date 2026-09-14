@@ -176,6 +176,8 @@
   }
 
   .ds.data-table-header-cell {
+    /* The containing block of a refusal's reason, shown below it. */
+    position: relative;
     display: flex;
     align-items: center;
     /* The row's full height, so the resize target at its edge is too. */
@@ -208,7 +210,9 @@
     /* The sort control is the header cell's text: it inherits the type rather
        than looking like a button or a link that happens to sit in a table.
        It is the link to the next ordering until scripts take over, and a
-       button after, drawn the same, so nothing moves on hydration. */
+       button after, drawn the same. What hydration does move is the trailing
+       edge: a resizable column's handle, and the column's menu button,
+       arrive with scripts, and the label ellipsizes to make room. */
     & > .sort {
       display: flex;
       min-inline-size: 0;
@@ -230,36 +234,82 @@
           var(--color-focus-ring, currentColor);
         outline-offset: calc(-1 * var(--dimension-stroke-thickness-large));
       }
-
-      /* The ordering's chevron and, from two terms, the column's
-         precedence, neither of which shrinks as the label does. A column
-         the ordering does not name shows neither. */
-      & > .ds.icon,
-      & > .precedence {
-        flex: none;
-      }
     }
 
-    /* A column the ordering names that offers no sort shows the same. */
-    & > .ds.icon,
-    & > .precedence {
+    /* The ordering's chevron and, from two terms, the column's precedence,
+       in the sort control or beside a plain label: neither shrinks as the
+       label does. A column the ordering does not name shows neither. */
+    & > :is(.ds.icon, .precedence),
+    & > .sort > :is(.ds.icon, .precedence) {
       flex: none;
     }
 
     /* The precedence numeral keeps one width as it counts. */
-    & .precedence {
+    & > .precedence,
+    & > .sort > .precedence {
       font-variant-numeric: tabular-nums;
     }
 
-    /* Why an activation changed nothing, for assistive technology: read
-       politely, taking no room and drawing nothing. Unthemable geometry. */
-    & > .sort-status {
+    /* The menu button's name: read, taking no room and drawing nothing.
+       Unthemable geometry. */
+    & > .menu > .trigger > .menu-label {
       position: absolute;
       inline-size: 0;
       block-size: 0;
       overflow: hidden;
       clip-path: inset(50%);
       white-space: nowrap;
+    }
+
+    /* Why an activation changed nothing: read politely, and shown below
+       the heading, over the first row, while it stands. It spans the
+       heading and wraps within it, so a trailing column's reason never
+       widens the table's scroll area. Empty, it takes no room. */
+    & > .sort-reason {
+      position: absolute;
+      /* Read and seen, never in a pointer's way: a click on the row beneath
+         reaches the row. */
+      pointer-events: none;
+      inset-block-start: 100%;
+      inset-inline: 0;
+      z-index: 1;
+      font-weight: var(--typography-text-primary-font-weight);
+
+      &:not(:empty) {
+        padding-block: var(--dimension-050);
+        padding-inline: var(--density-padding-inline);
+        color: var(--color-text);
+        background-color: var(
+          --surface-color-background,
+          var(--color-background)
+        );
+        border: var(--dimension-stroke-thickness-medium) solid
+          var(--color-border-muted);
+      }
+    }
+
+    /* The column's menu: an icon beside the sort control that neither
+       shrinks with the label nor looks like a separate button. Its name is
+       the hidden label above. */
+    & > .menu {
+      flex: none;
+
+      & > .trigger {
+        display: flex;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+        color: inherit;
+        font: inherit;
+        background: none;
+        border: none;
+
+        &:focus-visible {
+          outline: var(--dimension-stroke-thickness-large) solid
+            var(--color-focus-ring, currentColor);
+          outline-offset: calc(-1 * var(--dimension-stroke-thickness-large));
+        }
+      }
     }
   }
 

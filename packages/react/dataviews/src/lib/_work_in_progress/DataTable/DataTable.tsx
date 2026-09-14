@@ -7,13 +7,10 @@ import {
   type ColumnToSize,
   createColumnLayout,
   createGridInteraction,
-  cycleSortTerm,
   isDataViewsProvider,
   listDisplayEntries,
-  readProviderHost,
   readSizingBounds,
   resolveDisplayStatus,
-  resolveEffectiveOrdering,
 } from "@canonical/dataviews-core/bindings";
 import {
   type CSSProperties,
@@ -22,7 +19,6 @@ import {
   useEffect,
   useId,
   useMemo,
-  useState,
 } from "react";
 import {
   type EntryRenderer,
@@ -38,7 +34,6 @@ import {
   HeaderCell,
   Row,
   SelectAllCell,
-  type SortPlacement,
   StatusRow,
   TableBody,
 } from "./common/index.js";
@@ -50,6 +45,7 @@ import {
 import describeStatus from "./describeStatus.js";
 import {
   useColumnArrangement,
+  useHeaderSort,
   useRowScopes,
   useStableCallback,
   useStableValue,
@@ -67,12 +63,6 @@ const componentCssClassName = "ds data-table dense";
 
 /** One identity for a source that orders by nothing. */
 const NO_SORTABLE_FIELDS: readonly string[] = Object.freeze([]);
-
-/** The last activation a source refused, and the header it came from. */
-type SortRefusal = {
-  readonly columnId: string;
-  readonly reason: string;
-};
 
 /** A record answers to its own identity until the caller names it better. */
 const defaultRowLabel = (_row: object, rowId: string): string => rowId;
@@ -116,7 +106,9 @@ const renderVirtualizedBody = (
  * the ordering in force — the source's default when the query states none
  * — and exactly one of them, the first term's, carries `aria-sort`. Without
  * scripting each sortable header is a real link to the next ordering, from
- * the first page, where the provider has a location to lead to.
+ * the first page, where the provider has a location to lead to; once
+ * scripts run, a menu beside each sortable header sorts ascending or
+ * descending, or removes the column from the reader's ordering.
  *
  * Given `virtualization`, it mounts only the rows near its viewport and reports
  * every row's logical position; without it, every row is rendered.
@@ -163,9 +155,6 @@ export default function DataTable<
   const orderable = useMemo(() => new Set(sortableFields), [sortableFields]);
   const baseId = useId();
   const hydrated = useIsHydrated();
-  const { spellQuery } = readProviderHost(provider);
-  // The last activation the source refused, until the next one is accepted.
-  const [refusal, setRefusal] = useState<SortRefusal | null>(null);
 
   // The columns the presentation shows, in its order. Both derivations
   // below are keyed on content, not on array identity: a caller who
@@ -232,46 +221,15 @@ export default function DataTable<
   // over retained rows as over none.
   const busy = state.pendingRequestId !== null;
 
-  // The ordering the rows are in: the query's own terms, or the source's
-  // default when it states none. Each field's place in it, read once.
-  const ordering = resolveEffectiveOrdering(state.slice, declared.sort).terms;
-  const placements = new Map(
-    ordering.map((term, at): [string, SortPlacement] => [
-      term.field,
-      { direction: term.direction, position: at + 1, count: ordering.length },
-    ]),
-  );
-  // One header claims the sort: the first column showing the first term's
-  // field, and none when no column shows it.
-  const primaryField = ordering.at(0)?.field;
-  const primaryColumnId =
-    rendered.find((column) => readFieldName(column) === primaryField)?.id ??
-    null;
-  /** Activate one column's sort, saying why when the source refuses it. */
-  const sortColumn = (columnId: string, field: string, additive: boolean) => {
-    // The latest ordering, not this render's: two activations in one frame
-    // each build on the one before.
-    const refused = provider
-      .setSort(cycleSortTerm(provider.state.get().slice.sort, field, additive))
-      .find((problem) => problem.part === "sort");
-    setRefusal(
-      refused === undefined
-        ? null
-        : { columnId, reason: `Sort unchanged: ${refused.reason}` },
-    );
-  };
-  /** Where a plain activation of one column leads without scripting. */
-  const spellDestination = (field: string): string | null => {
-    const params = spellQuery({
-      slice: {
-        ...state.slice,
-        sort: cycleSortTerm(state.slice.sort, field, false),
-      },
-      // A new ordering is a new window: the page counted rows in the old one.
-      window: { ...state.window, page: 1, cursor: null },
-    });
-    return params === null ? null : `?${params}`;
-  };
+  // The header row's sort: the ordering in force and what each column shows
+  // of it, the column that claims it, refusals, no-JS destinations, and the
+  // actions every header shares.
+  const headerSort = useHeaderSort({
+    provider,
+    columns: rendered,
+    slice: state.slice,
+    window: state.window,
+  });
 
   // The container ref is the table's own — the solver measures it — so a
   // caller's ref is merged onto it rather than dropped, as className and
@@ -360,18 +318,22 @@ export default function DataTable<
                 key={column.id}
                 column={column}
                 sortable={sortable}
-                placement={placements.get(field) ?? null}
-                primary={column.id === primaryColumnId}
+                precedence={headerSort.precedences.get(field) ?? null}
+                primary={column.id === headerSort.primaryColumnId}
                 // Spelled only while it is rendered: once scripts take over
                 // the header is a button, and nothing reads a destination.
                 destination={
-                  sortable && !hydrated ? spellDestination(field) : null
+                  sortable && !hydrated
+                    ? headerSort.spellDestination(column.id)
+                    : null
                 }
                 hydrated={hydrated}
-                reason={refusal?.columnId === column.id ? refusal.reason : null}
-                onSort={(additive) => {
-                  sortColumn(column.id, field, additive);
-                }}
+                reason={headerSort.readReason(column.id)}
+                onClearRefusal={headerSort.clearRefusal}
+                onSort={headerSort.sortColumn}
+                removable={headerSort.stated.has(field)}
+                onPlace={headerSort.placeColumn}
+                onRemoveFromSort={headerSort.removeFromSort}
                 interaction={interaction}
                 resizable={
                   column.resizable === true && position < rendered.length - 1

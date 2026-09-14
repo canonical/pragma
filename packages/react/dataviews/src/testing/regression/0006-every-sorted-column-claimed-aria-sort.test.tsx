@@ -10,6 +10,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { act } from "react";
 import { describe, expect, it } from "vitest";
+import elementAt from "../../../testing/elementAt.js";
 import {
   createMachineProvider,
   declareMachineOrdering,
@@ -33,22 +34,22 @@ describe("regression 0006 — every sorted column claimed aria-sort", () => {
         label="Machines"
       />,
     );
-    const claimed = () =>
+    const listClaimed = () =>
       screen
         .getAllByRole("columnheader")
         .filter((header) => header.hasAttribute("aria-sort"));
-    expect(claimed()).toEqual([]);
+    expect(listClaimed()).toEqual([]);
     act(() => {
       provider.setSort([
         { field: "status", direction: "desc" },
         { field: "name", direction: "asc" },
       ]);
     });
-    expect(claimed()).toHaveLength(1);
-    const [status] = claimed();
+    expect(listClaimed()).toHaveLength(1);
+    const status = elementAt(listClaimed(), 0);
     expect(status).toHaveAttribute("aria-sort", "descending");
     expect(
-      within(status as HTMLElement).getByRole("button", { name: "Status" }),
+      within(status).getByRole("button", { name: "Status" }),
     ).toBeInTheDocument();
   });
 });

@@ -17,7 +17,7 @@ import {
 } from "../../../testing/machines.js";
 import { DataTable } from "../../lib/_work_in_progress/DataTable/index.js";
 
-describe("regression 0008 — a sort header a dead button before hydration", () => {
+describe("regression 0008 — a sort header was a dead button before hydration", () => {
   it("sends a link to the next ordering in place of a button", () => {
     const { provider } = createMachineProvider({
       location: createMemoryLocation({ href: "/machines" }),
@@ -31,7 +31,7 @@ describe("regression 0008 — a sort header a dead button before hydration", () 
       />,
     );
     expect(markup).not.toContain("<button");
-    const href = /<a href="\?([^"]*)"[^>]*class="sort"/.exec(markup)?.[1];
+    const href = /<a href="\?([^"]*)"[^>]*class="sort"/.exec(markup)?.at(1);
     expect(href).toBeDefined();
     const query = decodeQuery({
       schema: machines.schema,

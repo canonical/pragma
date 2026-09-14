@@ -516,6 +516,79 @@ test.describe("DataTable and sort panel stories, keyboard only", () => {
     await expect(status.locator(".precedence")).toHaveCount(0);
   });
 
+  test("SortLimitedToOneTerm: a refused Shift+Enter says why until the menu's choice is accepted", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(TABLE, "Sort Limited To One Term").id);
+    const hostSort = page.getByRole("button", { name: "Host", exact: true });
+    const status = page.getByRole("columnheader", {
+      name: "Status",
+      exact: true,
+    });
+    const statusSort = status.getByRole("button", {
+      name: "Status",
+      exact: true,
+    });
+    await tabTo(page, hostSort);
+    await page.keyboard.press("Enter");
+    await tabTo(page, statusSort);
+    await page.keyboard.press("Shift+Enter");
+    const reason = status.locator(".sort-reason");
+    await expect(reason).toHaveText(
+      "Sort unchanged: this source orders by at most 1 term.",
+    );
+    await expect(reason).toBeVisible();
+    await expect(statusSort).toBeFocused();
+    // Still in the header, on its menu button: the reason stands.
+    await page.keyboard.press("Tab");
+    await expect(
+      page.getByRole("button", {
+        name: "Sort options for Status",
+        exact: true,
+      }),
+    ).toBeFocused();
+    await expect(reason).toHaveText(
+      "Sort unchanged: this source orders by at most 1 term.",
+    );
+    // Into the menu: the reason stands for its choice to settle.
+    await page.keyboard.press("Enter");
+    const ascending = page.getByRole("menuitem", { name: "Sort ascending" });
+    await expect(ascending).toBeFocused();
+    await expect(reason).toHaveText(
+      "Sort unchanged: this source orders by at most 1 term.",
+    );
+    // An accepted choice clears it: Status alone, ascending.
+    await page.keyboard.press("Enter");
+    await expect(status).toHaveAttribute("aria-sort", "ascending");
+    await expect(reason).toBeEmpty();
+  });
+
+  test("Sortable: Enter opens a header's menu, Enter sorts from it, focus returns to its trigger", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(TABLE, "Sortable").id);
+    const host = page.getByRole("columnheader", { name: "Host", exact: true });
+    const trigger = page.getByRole("button", {
+      name: "Sort options for Host",
+      exact: true,
+    });
+    await tabTo(page, trigger);
+    await page.keyboard.press("Enter");
+    const menu = page.getByRole("menu", {
+      name: "Sort options for Host",
+      exact: true,
+    });
+    await expect(menu).toBeVisible();
+    // The menu takes focus on its first item, which Enter chooses.
+    await expect(
+      page.getByRole("menuitem", { name: "Sort ascending" }),
+    ).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(host).toHaveAttribute("aria-sort", "ascending");
+    await expect(menu).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
   test("Selectable: Space checks a row's checkbox", async ({ page }) => {
     await openStory(page, findStory(TABLE, "Selectable").id);
     const checkbox = page.getByRole("checkbox", {

@@ -135,6 +135,7 @@ describe("public surface", () => {
       "cycleSortTerm",
       "isDataViewsProvider",
       "listDisplayEntries",
+      "placeSortTerm",
       "readProviderHost",
       "readSizingBounds",
       "resolveColumnArrangement",

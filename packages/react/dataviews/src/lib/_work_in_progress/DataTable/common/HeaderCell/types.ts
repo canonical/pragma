@@ -1,3 +1,9 @@
+/**
+ * The header cell's contract — its props — and the one ordering fact it
+ * renders from, a column's precedence, which the table derives once per
+ * ordering and hands to every header.
+ */
+
 import type { SortDirection } from "@canonical/dataviews-core";
 import type {
   GridInteraction,
@@ -6,7 +12,7 @@ import type {
 import type { DataTableColumn } from "../../types.js";
 
 /** Where one column's field stands in the ordering in force. */
-export type SortPlacement = {
+export type SortPrecedence = {
   readonly direction: SortDirection;
   /** One-based precedence among the ordering's terms. */
   readonly position: number;
@@ -35,7 +41,7 @@ export type HeaderCellProps = {
    * the ordering does not name it. Shown whether or not the column offers
    * sorting: a column the rows are ordered by says so.
    */
-  readonly placement: SortPlacement | null;
+  readonly precedence: SortPrecedence | null;
   /**
    * Whether this header carries `aria-sort`: the column of the ordering's
    * first term, and only the first column showing that field. Every other
@@ -58,8 +64,25 @@ export type HeaderCellProps = {
    * politely, or null.
    */
   readonly reason: string | null;
-  /** Activate this column's sort, as a further term when `additive`. */
-  readonly onSort: (additive: boolean) => void;
+  /**
+   * Activate a column's sort, as a further term when `additive`. This,
+   * `onPlace`, `onRemoveFromSort` and `onClearRefusal` are the table's, one
+   * identity for every column, so a render of the header row renders no
+   * column's menu again. Each takes the column's id alone: the table reads
+   * the column's field itself.
+   */
+  readonly onSort: (columnId: string, additive: boolean) => void;
+  /**
+   * Whether the reader's own ordering names this column, so its menu can
+   * remove it.
+   */
+  readonly removable: boolean;
+  /** Sort by a column in a direction, from its menu. */
+  readonly onPlace: (columnId: string, direction: SortDirection) => void;
+  /** Take a column out of the reader's ordering, from its menu. */
+  readonly onRemoveFromSort: (columnId: string) => void;
+  /** Let a refusal's reason go, once focus leaves the header and its menu. */
+  readonly onClearRefusal: () => void;
   readonly interaction: GridInteraction;
   /**
    * Offer a resize handle at this header cell's trailing edge. False for the

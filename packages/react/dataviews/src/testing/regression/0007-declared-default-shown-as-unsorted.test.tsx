@@ -35,9 +35,10 @@ describe("regression 0007 — a declared default shown as unsorted", () => {
       />,
     );
     expect(provider.state.get().slice.sort).toEqual([]);
-    expect(
-      screen.getByRole("columnheader", { name: /^Cores/ }),
-    ).toHaveAttribute("aria-sort", "descending");
+    expect(screen.getByRole("columnheader", { name: "Cores" })).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
     expect(
       screen.getByRole("button", { name: "Name" }),
     ).toHaveAccessibleDescription("ascending, 2nd of 2");
