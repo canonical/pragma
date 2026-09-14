@@ -35,6 +35,7 @@ import {
   createStandInViewStore,
 } from "../../../../testing/createStandInStores.js";
 import elementAt from "../../../../testing/elementAt.js";
+import expectNoAxeViolations from "../../../../testing/expectNoAxeViolations.js";
 import {
   buildStoredView,
   deliverRows,
@@ -1709,5 +1710,41 @@ describe("DataTable", () => {
       "aria-busy",
       "true",
     );
+  });
+});
+
+describe("DataTable accessibility", () => {
+  it("has no axe violation over loaded rows with sorting and resizing offered", async () => {
+    const { view } = loadedTable(undefined, {
+      columns: [
+        { id: "name", header: "Name", sortable: true, resizable: true },
+        { id: "status", header: "Status" },
+      ],
+    });
+    await expectNoAxeViolations(view.container);
+  });
+
+  it("has no axe violation with a selection column and a row selected", async () => {
+    const { provider, view } = loadedTable(undefined, { selectable: true });
+    act(() => {
+      provider.selection.add(["m-1"]);
+    });
+    await expectNoAxeViolations(view.container);
+  });
+
+  it("has no axe violation while a column is sorted", async () => {
+    const { view } = loadedTable();
+    fireEvent.click(screen.getByRole("button", { name: "Name" }));
+    await expectNoAxeViolations(view.container);
+  });
+
+  it("has no axe violation while rows are pending, and once they have failed", async () => {
+    const { provider, source } = createMachineProvider();
+    const view = render(
+      <DataTable provider={provider} columns={columns} label="Machines" />,
+    );
+    await expectNoAxeViolations(view.container);
+    fail(source, "the inventory is unreachable");
+    await expectNoAxeViolations(view.container);
   });
 });

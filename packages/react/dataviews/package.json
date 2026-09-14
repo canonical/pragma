@@ -55,6 +55,7 @@
     "check:ts": "tsc --noEmit",
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0",
     "test": "vitest run --coverage",
+    "test:keyboard": "playwright test --config testing/playwright.config.ts",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -76,6 +77,7 @@
     "@canonical/vitest-config-react": "^0.37.0",
     "@canonical/webarchitect": "^0.37.0",
     "@chromatic-com/storybook": "^5.0.1",
+    "@playwright/test": "^1.58.2",
     "@storybook/addon-docs": "^10.3.1",
     "@storybook/react-vite": "^10.3.1",
     "@testing-library/jest-dom": "^7.0.0",
@@ -85,6 +87,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.18",
+    "axe-core": "^4.11.1",
     "copyfiles": "^2.4.1",
     "jsdom": "^28.1.0",
     "storybook": "^10.3.1",
