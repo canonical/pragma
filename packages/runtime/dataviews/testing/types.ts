@@ -1,7 +1,8 @@
 /**
  * Test-only shapes: what a manual source records and answers with, what a
- * counting view store reports, and what a recording location port
- * records. Named here so a test file imports one place for them.
+ * counting view store reports, what a recording location port records, and
+ * a promise a test settles on cue. Named here so a test file imports one
+ * place for them.
  */
 
 import type { HistoryMode, QueryLocation } from "../src/lib/location/index.js";
@@ -85,4 +86,11 @@ export type RecordingLocation = {
   readonly notifications: string[];
   /** Move the location from outside the loop, as the browser would. */
   readonly move: (params: string) => void;
+};
+
+/** A promise and its settling functions, to answer a stand-in call on cue. */
+export type Deferred<T> = {
+  readonly promise: Promise<T>;
+  readonly resolve: (value: T) => void;
+  readonly reject: (error: unknown) => void;
 };

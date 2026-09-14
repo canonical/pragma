@@ -1,15 +1,19 @@
 import { describe, expect, it } from "vitest";
+import { createPresentation } from "../presentation/index.js";
 import createColumnLayout from "./createColumnLayout.js";
 import createGridInteraction from "./createGridInteraction.js";
 import type { ColumnToSize } from "./types.js";
 
-const columns = (): readonly ColumnToSize[] => [
+const buildColumns = (): readonly ColumnToSize[] => [
   { id: "name", sizing: { kind: "flex", weight: 2, minPx: 100, maxPx: 400 } },
   { id: "status", sizing: { kind: "fixed", px: 120 } },
 ];
 
-const harness = (declared: readonly ColumnToSize[] = columns()) => {
-  const layout = createColumnLayout(declared);
+const createHarness = (declared: readonly ColumnToSize[] = buildColumns()) => {
+  const layout = createColumnLayout({
+    columns: declared,
+    presentation: createPresentation(),
+  });
   const interaction = createGridInteraction(layout);
   const detach = interaction.observe();
   return { layout, interaction, detach };
@@ -17,13 +21,13 @@ const harness = (declared: readonly ColumnToSize[] = columns()) => {
 
 describe("createGridInteraction", () => {
   it("hands its state out read-only at runtime", () => {
-    const { interaction } = harness();
+    const { interaction } = createHarness();
     expect(Object.isFrozen(interaction.state)).toBe(true);
     expect(interaction.state).not.toHaveProperty("set");
   });
 
   it("starts idle and enters resizing with a captured start width", () => {
-    const { interaction } = harness();
+    const { interaction } = createHarness();
     expect(interaction.state.get()).toEqual({ status: "idle" });
     interaction.startResize("name", 500, 100);
     expect(interaction.state.get()).toEqual({
@@ -36,7 +40,7 @@ describe("createGridInteraction", () => {
   });
 
   it("clamps the preview to the column's declared bounds", () => {
-    const { interaction } = harness();
+    const { interaction } = createHarness();
     interaction.startResize("name", 500, 100);
     interaction.preview(900);
     // start 100 + (900 - 500) = 500, clamped to maxPx 400.
@@ -55,7 +59,7 @@ describe("createGridInteraction", () => {
   });
 
   it("publishes nothing for a preview landing on the width in force", () => {
-    const { interaction } = harness();
+    const { interaction } = createHarness();
     const seen: number[] = [];
     const release = interaction.observe();
     interaction.state.subscribe(() => {
@@ -73,7 +77,7 @@ describe("createGridInteraction", () => {
   });
 
   it("commits a fixed override at the clamped preview width", () => {
-    const { layout, interaction } = harness();
+    const { layout, interaction } = createHarness();
     interaction.startResize("name", 500, 100);
     interaction.preview(650);
     interaction.commit();
@@ -85,7 +89,7 @@ describe("createGridInteraction", () => {
   });
 
   it("leaves the authoritative layout untouched on cancel", () => {
-    const { layout, interaction } = harness();
+    const { layout, interaction } = createHarness();
     interaction.startResize("name", 500, 100);
     interaction.preview(650);
     interaction.cancel();
@@ -99,19 +103,19 @@ describe("createGridInteraction", () => {
   });
 
   it("ignores previews outside a resize", () => {
-    const { interaction } = harness();
+    const { interaction } = createHarness();
     interaction.preview(999);
     expect(interaction.state.get()).toEqual({ status: "idle" });
   });
 
   it("ignores commit outside a resize", () => {
-    const { layout, interaction } = harness();
+    const { layout, interaction } = createHarness();
     interaction.commit();
     expect(layout.state.get().overrides).toEqual({});
   });
 
   it("invalidates the live preview on an external change to the same column", () => {
-    const { layout, interaction } = harness();
+    const { layout, interaction } = createHarness();
     interaction.startResize("name", 500, 100);
     interaction.preview(600);
     // Another actor fixes the same column mid-resize.
@@ -120,7 +124,7 @@ describe("createGridInteraction", () => {
   });
 
   it("ignores external changes to unrelated columns", () => {
-    const { layout, interaction } = harness();
+    const { layout, interaction } = createHarness();
     interaction.startResize("name", 500, 100);
     layout.setOverride("status", { kind: "fixed", px: 140 });
     // ColumnLayout changes are per-record: a change to status does not
@@ -133,7 +137,7 @@ describe("createGridInteraction", () => {
   });
 
   it("clamps a fixed column at zero only", () => {
-    const { interaction } = harness();
+    const { interaction } = createHarness();
     interaction.startResize("status", 500, 120);
     interaction.preview(900);
     // A fixed column declares no bounds: 120 + (900 - 500) = 520 stands.
@@ -152,7 +156,7 @@ describe("createGridInteraction", () => {
   });
 
   it("clamps an unbounded flex column at its minimum only", () => {
-    const { interaction } = harness([
+    const { interaction } = createHarness([
       { id: "notes", sizing: { kind: "flex", weight: 1, minPx: 80 } },
     ]);
     interaction.startResize("notes", 500, 80);
@@ -173,7 +177,7 @@ describe("createGridInteraction", () => {
   });
 
   it("invalidates the preview when a fixed column's pixels change externally", () => {
-    const { layout, interaction } = harness();
+    const { layout, interaction } = createHarness();
     interaction.startResize("status", 500, 120);
     interaction.preview(600);
     // Same kind on both sides: the pixel comparison is what invalidates.
@@ -182,7 +186,7 @@ describe("createGridInteraction", () => {
   });
 
   it("ignores an external write that restates a fixed column's pixels", () => {
-    const { layout, interaction } = harness();
+    const { layout, interaction } = createHarness();
     interaction.startResize("status", 500, 120);
     interaction.preview(600);
     layout.setOverride("status", { kind: "fixed", px: 120 });
@@ -194,13 +198,13 @@ describe("createGridInteraction", () => {
   });
 
   it("ignores cancel outside a resize", () => {
-    const { interaction } = harness();
+    const { interaction } = createHarness();
     interaction.cancel();
     expect(interaction.state.get()).toEqual({ status: "idle" });
   });
 
   it("unsubscribes from previews", () => {
-    const { interaction } = harness();
+    const { interaction } = createHarness();
     let notifications = 0;
     const unsubscribe = interaction.state.subscribe(() => {
       notifications += 1;
@@ -212,7 +216,7 @@ describe("createGridInteraction", () => {
   });
 
   it("stops watching the layout once the observation detaches", () => {
-    const { layout, interaction, detach } = harness();
+    const { layout, interaction, detach } = createHarness();
     detach();
     interaction.startResize("name", 500, 100);
     expect(interaction.state.get().status).toBe("resizing");
@@ -222,7 +226,10 @@ describe("createGridInteraction", () => {
   });
 
   it("watches nothing until it is asked to", () => {
-    const layout = createColumnLayout(columns());
+    const layout = createColumnLayout({
+      columns: buildColumns(),
+      presentation: createPresentation(),
+    });
     const interaction = createGridInteraction(layout);
     interaction.startResize("name", 500, 100);
     layout.setOverride("name", { kind: "fixed", px: 260 });
@@ -232,7 +239,7 @@ describe("createGridInteraction", () => {
   });
 
   it("publishes on each preview", () => {
-    const { interaction } = harness();
+    const { interaction } = createHarness();
     let notifications = 0;
     interaction.state.subscribe(() => {
       notifications += 1;

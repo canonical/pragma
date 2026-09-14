@@ -61,9 +61,11 @@ import type {
   PredicateOperand,
   PredicateOperator,
   PreferenceResult,
+  Presentation,
   PresentationPatch,
+  PresentationState,
+  PresentationStore,
   PresentationTarget,
-  ProviderViews,
   Query,
   QueryIssue,
   QueryIssueCode,
@@ -83,6 +85,7 @@ import type {
   RowModel,
   RowRecord,
   SavedView,
+  SavedViews,
   Schema,
   SchemaFieldDefinition,
   SchemaPredicateResult,
@@ -108,13 +111,13 @@ import type {
   SourceRequest,
   TextField,
   UnreadableView,
-  ViewAction,
   ViewChanges,
+  ViewCommand,
+  ViewCommandState,
   ViewCreateResult,
   ViewDraft,
   ViewGetResult,
   ViewList,
-  ViewOperation,
   ViewOutcome,
   ViewPresentation,
   ViewRemoveResult,
@@ -128,10 +131,13 @@ import type {
 import * as dataviews from "./index.js";
 import type {
   Applicability,
+  ArrangedColumn,
   ColumnLayout,
+  ColumnLayoutConfig,
   ColumnLayoutState,
   ColumnSizing,
   ColumnToSize,
+  DeclaredColumn,
   DisplayEntriesConfig,
   DisplayEntry,
   DisplayEntryKind,
@@ -147,6 +153,7 @@ import type {
   RowChannels,
   RowScopes,
   RowScopesConfig,
+  SizingBounds,
 } from "./lib/bindings/index.js";
 import * as bindings from "./lib/bindings/index.js";
 import type {
@@ -217,7 +224,9 @@ type EveryPublicType = [
   PreferenceResult,
   PresentationPatch,
   PresentationTarget,
-  ProviderViews,
+  Presentation,
+  PresentationState,
+  PresentationStore,
   Query,
   QueryIssue,
   QueryIssueCode,
@@ -237,6 +246,7 @@ type EveryPublicType = [
   RowModel<RowRecord>,
   RowRecord,
   SavedView,
+  SavedViews,
   Schema<readonly SchemaFieldDefinition[]>,
   SchemaFieldDefinition,
   SchemaPredicateResult,
@@ -262,13 +272,13 @@ type EveryPublicType = [
   SourceRequest,
   TextField,
   UnreadableView,
-  ViewAction,
+  ViewCommand,
+  ViewCommandState,
   ViewChanges,
   ViewCreateResult,
   ViewDraft,
   ViewGetResult,
   ViewList,
-  ViewOperation,
   ViewOutcome,
   ViewPresentation,
   ViewRemoveResult,
@@ -283,10 +293,13 @@ type EveryPublicType = [
 /** Every type the binding entry point exports, as one enumerable tuple. */
 type EveryBindingType = [
   Applicability,
+  ArrangedColumn,
   ColumnLayout,
+  ColumnLayoutConfig,
   ColumnLayoutState,
   ColumnSizing,
   ColumnToSize,
+  DeclaredColumn,
   DisplayEntriesConfig,
   DisplayEntry,
   DisplayEntryKind,
@@ -302,6 +315,7 @@ type EveryBindingType = [
   RowChannels<RowRecord>,
   RowScopes<RowRecord>,
   RowScopesConfig<RowRecord>,
+  SizingBounds,
 ];
 
 /** Every type the saved-view entry point exports, as one enumerable tuple. */
@@ -402,6 +416,14 @@ describe("public surface types", () => {
       "syncLocation",
       "registerProviderHost",
       "createSelection",
+      "createPresentation",
+      "createMemoryPresentationStore",
+      "createPreferenceLayer",
+      "createPreferenceWriter",
+      "createSavedViews",
+      "createViewCommands",
+      "createCommandQueue",
+      "createIndexedDBConnection",
       "applyWindow",
       "stringifyStable",
       "collapseSortTerms",
@@ -422,7 +444,7 @@ describe("public surface types", () => {
     expectTypeOf<
       ViewStore["create"]
     >().returns.resolves.toEqualTypeOf<ViewCreateResult>();
-    expectTypeOf<ProviderViews["state"]>().toEqualTypeOf<
+    expectTypeOf<SavedViews["state"]>().toEqualTypeOf<
       ReadonlyChannel<ViewsState>
     >();
   });

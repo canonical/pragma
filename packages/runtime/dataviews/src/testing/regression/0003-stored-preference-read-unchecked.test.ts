@@ -5,19 +5,18 @@
  * Before the fix, the IndexedDB store cast every record of its preferences
  * store to a preference and handed its value on, so a record another
  * client — or a newer version of this store — had written with a value no
- * presentation can hold, or with no key at all, reached
- * `views.presentation` as it stood, where saved views were already checked
- * and reported unreadable.
+ * presentation can hold, or with no key at all, reached the presentation
+ * as it stood, where saved views were already checked and reported
+ * unreadable.
  */
 
 import { IDBFactory } from "fake-indexeddb";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import createManualSource from "../../../testing/createManualSource.js";
 import { byId } from "../../../testing/fixtures.js";
 import { createCollection } from "../../lib/collection/index.js";
 import { createIndexedDBViewStore } from "../../lib/indexeddb/index.js";
 import { createDataViewsProvider } from "../../lib/provider/index.js";
-import type { ViewStore } from "../../lib/views/index.js";
 
 const machines = createCollection({
   identify: byId,
@@ -51,14 +50,6 @@ const writePreferences = (
     };
   });
 
-const opened: ViewStore[] = [];
-
-afterEach(() => {
-  for (const store of opened.splice(0)) {
-    store.dispose();
-  }
-});
-
 describe("regression 0003 — a stored preference is read unchecked", () => {
   it("leaves a record that is not a preference out of the presentation", async () => {
     const indexedDB = new IDBFactory();
@@ -68,7 +59,7 @@ describe("regression 0003 — a stored preference is read unchecked", () => {
       collection: "machines",
       partition: null,
     });
-    opened.push(store);
+    onTestFinished(store.dispose);
     await store.patchPresentation("default", { density: "compact" });
     const scope = JSON.stringify(["machines", null]);
     await writePreferences(indexedDB, [
@@ -80,16 +71,15 @@ describe("regression 0003 — a stored preference is read unchecked", () => {
     const provider = createDataViewsProvider({
       collection: machines,
       source: createManualSource().source,
-      views: store,
+      presentation: store,
     });
-    const views = provider.views;
-    if (views === null) {
-      throw new Error("a provider given a store has views");
-    }
-    const release = views.observe();
+    const { presentation } = provider;
+    const release = presentation.observe();
     await vi.waitFor(() => {
-      expect(views.state.get().presentationFailure).toBeNull();
-      expect(views.state.get().presentation).toEqual({ density: "compact" });
+      expect(presentation.state.get()).toEqual({
+        presentationReason: null,
+        presentation: { density: "compact" },
+      });
     });
     release();
   });

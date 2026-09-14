@@ -135,6 +135,8 @@ describe("public surface", () => {
       "isDataViewsProvider",
       "listDisplayEntries",
       "readProviderHost",
+      "readSizingBounds",
+      "resolveColumnArrangement",
       "resolveColumns",
       "resolveDisplayStatus",
       "resolvePagination",

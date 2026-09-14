@@ -18,8 +18,6 @@ export default function createCountingViewStore(
     remove: async () => ({ status: "unreadable", reason: "read-only" }),
     pin: async () => ({ status: "missing" }),
     unpin: async () => ({ status: "missing" }),
-    readPresentation: async () => ({}),
-    patchPresentation: async () => ({ status: "missing" }),
     subscribe(listener) {
       config.onSubscribe?.();
       listeners.add(listener);
