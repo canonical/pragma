@@ -1,6 +1,6 @@
 import { areListsEqual } from "@canonical/dataviews-core/bindings";
+import type { DataTableColumn } from "../../types.js";
 import areColumnModelsEqual from "./areColumnModelsEqual.js";
-import type { DataTableColumn } from "./types.js";
 
 /**
  * Whether two column arrays say the same thing about everything the

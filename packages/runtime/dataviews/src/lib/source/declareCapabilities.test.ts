@@ -26,6 +26,7 @@ describe("declareCapabilities", () => {
         terms: 0,
         default: [],
         tiebreak: "none",
+        empties: {},
         collation: null,
       },
       group: { fields: [], levels: 0, summaries: "none", collapse: false },
@@ -45,6 +46,7 @@ describe("declareCapabilities", () => {
         terms: 2,
         default: [{ field: "name", direction: "asc" }],
         tiebreak: "opaque",
+        empties: { cpu: "first", name: "last" },
         collation: "en-u-kn-true",
       },
       counts: { pageable: "exact", matched: "at-least", total: "unknown" },
@@ -59,6 +61,7 @@ describe("declareCapabilities", () => {
         terms: 2,
         default: [{ field: "name", direction: "asc" }],
         tiebreak: "opaque",
+        empties: { cpu: "first", name: "last" },
         collation: "en-u-kn-true",
       },
       group: { fields: [], levels: 0, summaries: "none", collapse: false },
@@ -69,6 +72,15 @@ describe("declareCapabilities", () => {
     });
     expect(Object.isFrozen(declared)).toBe(true);
     expect(Object.isFrozen(declared.filter)).toBe(true);
+    expect(Object.isFrozen(declared.sort.empties)).toBe(true);
+    expect(Object.getPrototypeOf(declared.sort.empties)).toBeNull();
+  });
+
+  it("leaves out a placement a JavaScript author wrote as undefined", () => {
+    const declared = declareCapabilities(machines, {
+      sort: { fields: ["cpu"], terms: 1, empties: { cpu: undefined } },
+    });
+    expect(declared.sort.empties).toEqual({});
   });
 
   it("declares sortable fields with the term limit the source states", () => {
@@ -80,6 +92,7 @@ describe("declareCapabilities", () => {
       terms: null,
       default: [],
       tiebreak: "none",
+      empties: {},
       collation: null,
     });
   });
@@ -121,6 +134,11 @@ describe("declareCapabilities", () => {
         },
       }),
     ).toThrow('the default ordering names "name", which is not sortable');
+    expect(() =>
+      declareCapabilities(machines, {
+        sort: { fields: ["cpu"], terms: null, empties: { name: "first" } },
+      }),
+    ).toThrow('empty values of "name" are placed, which is not sortable');
   });
 
   it("checks the declaration against the schema at compile time", () => {

@@ -1,7 +1,7 @@
 /** The rendered reading carries what the model reading deliberately does not. */
 import { describe, expect, it } from "vitest";
+import type { DataTableColumn } from "../../types.js";
 import areColumnsEqual from "./areColumnsEqual.js";
-import type { DataTableColumn } from "./types.js";
 
 const name: DataTableColumn = { id: "name", header: "Name" };
 

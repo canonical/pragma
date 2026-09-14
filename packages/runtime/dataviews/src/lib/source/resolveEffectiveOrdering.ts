@@ -18,7 +18,7 @@ import type { EffectiveOrdering, SortCapabilities } from "./types.js";
  * show the ordering in force when the query states none
  */
 export default function resolveEffectiveOrdering(
-  slice: Slice,
+  slice: Pick<Slice, "sort" | "group">,
   declared: SortCapabilities,
 ): EffectiveOrdering {
   const stated = collapseSortTerms(

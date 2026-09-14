@@ -38,6 +38,7 @@ export default function createArraySource<TRow extends object = RowRecord>(
       // name: the order the records were given in.
       tiebreak: "opaque",
       ...(collation === null ? {} : { collation }),
+      ...(config.empties === undefined ? {} : { empties: config.empties }),
     },
     counts: { pageable: "exact", matched: "exact", total: "exact" },
     actions: config.actions ?? {},

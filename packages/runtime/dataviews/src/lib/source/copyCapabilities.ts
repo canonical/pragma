@@ -1,13 +1,11 @@
 import type { PredicateOperator, SortTerm } from "../query/index.js";
+import createBareRecord from "./createBareRecord.js";
 import type {
   ActionCapabilities,
+  EmptyPlacement,
   SortCapabilities,
   SourceCapabilities,
 } from "./types.js";
-
-/** A prototype-free record, so a key named for an `Object.prototype` member
- * reads as absent rather than as a function. */
-const bareRecord = <TValue>(): Record<string, TValue> => Object.create(null);
 
 const copyTerms = (terms: readonly SortTerm[]): readonly SortTerm[] =>
   Object.freeze(
@@ -15,6 +13,16 @@ const copyTerms = (terms: readonly SortTerm[]): readonly SortTerm[] =>
       Object.freeze({ field: term.field, direction: term.direction }),
     ),
   );
+
+const copyEmpties = (
+  empties: SortCapabilities["empties"],
+): SortCapabilities["empties"] => {
+  const copied = createBareRecord<EmptyPlacement>();
+  for (const [field, placement] of Object.entries(empties)) {
+    copied[field] = placement;
+  }
+  return Object.freeze(copied);
+};
 
 const copySort = (sort: SortCapabilities): SortCapabilities =>
   Object.freeze({
@@ -25,13 +33,14 @@ const copySort = (sort: SortCapabilities): SortCapabilities =>
       typeof sort.tiebreak === "string"
         ? sort.tiebreak
         : copyTerms(sort.tiebreak),
+    empties: copyEmpties(sort.empties),
     collation: sort.collation,
   });
 
 const copyActions = (
   actions: Readonly<Record<string, ActionCapabilities>>,
 ): Readonly<Record<string, ActionCapabilities>> => {
-  const copied = bareRecord<ActionCapabilities>();
+  const copied = createBareRecord<ActionCapabilities>();
   for (const [name, action] of Object.entries(actions)) {
     copied[name] = Object.freeze({
       targets: action.targets,
@@ -44,7 +53,7 @@ const copyActions = (
 const copyFilter = (
   filter: SourceCapabilities["filter"],
 ): SourceCapabilities["filter"] => {
-  const copied = bareRecord<readonly PredicateOperator[]>();
+  const copied = createBareRecord<readonly PredicateOperator[]>();
   for (const [field, operators] of Object.entries(filter)) {
     copied[field] = Object.freeze([...operators]);
   }

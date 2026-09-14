@@ -72,6 +72,7 @@ describe("createArraySource", () => {
         terms: null,
         default: [],
         tiebreak: "opaque",
+        empties: {},
         collation: ROOT_NUMERIC_COLLATION,
       },
       group: { fields: [], levels: 0, summaries: "none", collapse: false },
@@ -144,6 +145,32 @@ describe("createArraySource", () => {
       other,
     );
     expect(idsOf(deliveredAt(other, 0))).toEqual(["n10", "n2"]);
+  });
+
+  it("places a field's empties first in both directions when told to", () => {
+    const withBlank = [...rows, { id: "d", name: "delta" }];
+    const live = createArraySource({
+      rows: withBlank,
+      collection,
+      empties: { cpu: "first" },
+    });
+    expect(live.capabilities.sort.empties).toEqual({ cpu: "first" });
+    for (const direction of ["asc", "desc"] as const) {
+      const deliver = delivery();
+      live.execute(
+        request({
+          slice: { ...emptySlice, sort: [{ field: "cpu", direction }] },
+        }),
+        deliver,
+      );
+      expect(idsOf(deliveredAt(deliver, 0)).at(0)).toBe("d");
+    }
+  });
+
+  it("refuses a placement for a field the schema does not define", () => {
+    expect(() =>
+      createArraySource({ rows, collection, empties: { zone: "first" } }),
+    ).toThrow('empty values of "zone" are placed, which is not sortable');
   });
 
   it("declares no search when no field is searchable", () => {

@@ -2,8 +2,9 @@ import {
   areListsEqual,
   areSizingsEqual,
 } from "@canonical/dataviews-core/bindings";
-import { readFieldName, readSizing } from "./common/utils/index.js";
-import type { DataTableColumn } from "./types.js";
+import type { DataTableColumn } from "../../types.js";
+import readFieldName from "./readFieldName.js";
+import readSizing from "./readSizing.js";
 
 /**
  * Whether two column arrays say the same thing about the model everything

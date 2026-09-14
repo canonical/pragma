@@ -1,7 +1,7 @@
 import { resolveColumnArrangement } from "@canonical/dataviews-core/bindings";
 import { useMemo } from "react";
 import { useDataViewsValue } from "../../../hooks/index.js";
-import areColumnsEqual from "../areColumnsEqual.js";
+import { areColumnsEqual } from "../common/utils/index.js";
 import type {
   UseColumnArrangementProps,
   UseColumnArrangementResult,
