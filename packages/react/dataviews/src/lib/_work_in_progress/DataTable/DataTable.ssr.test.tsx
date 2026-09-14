@@ -7,7 +7,6 @@
 
 import {
   createMemoryLocation,
-  DEFAULT_WINDOW,
   decodeQuery,
   type PresentationStore,
 } from "@canonical/dataviews-core";
@@ -108,22 +107,14 @@ describe("DataTable SSR", () => {
 
   it("renders each sortable header as a real link to the next ordering, from page one", () => {
     // The page the reader is on, a host parameter the grammar does not own,
-    // and the ordering the provider holds.
+    // and the query the request carries, which the provider reads when it
+    // is built.
     const location = createMemoryLocation({
-      href: "/machines?tab=inventory&sort=name__asc&page=3",
+      href: "/machines?tab=inventory&status=failed&q=al&sort=name__asc&page=3&size=25",
     });
     const { provider } = createMachineProvider({
       location,
       capabilities: declareMachineOrdering(3),
-      seed: {
-        slice: {
-          filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
-          search: "al",
-          sort: [{ field: "name", direction: "asc" }],
-          group: [],
-        },
-        window: { ...DEFAULT_WINDOW, page: 3, size: 25 },
-      },
     });
     const markup = renderToString(
       <DataTable

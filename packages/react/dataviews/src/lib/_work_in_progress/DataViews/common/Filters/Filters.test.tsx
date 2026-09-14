@@ -84,7 +84,7 @@ const adopt = (
     window: DEFAULT_WINDOW,
   };
   act(() => {
-    readProviderHost(provider).adopt(query, "adopt");
+    readProviderHost(provider).adopt(query, "adopt", null);
   });
 };
 

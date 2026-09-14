@@ -1,7 +1,6 @@
 import {
   type ActionCapabilities,
   createArraySource,
-  DEFAULT_WINDOW,
   type Source,
 } from "@canonical/dataviews-core";
 import { Button, type ButtonProps } from "@canonical/react-ds-global";
@@ -103,7 +102,7 @@ function ManagedMachines({
 }): ReactElement {
   const provider = useMachineProvider({
     source: createManagedSource,
-    window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+    query: "page=1&size=5",
     prepare: (built) => {
       built.selection.add(select);
     },
@@ -191,7 +190,7 @@ import { archiveMachines, machineCollection, machines } from "./machines.js";`,
   // Resolves with one outcome per target: { target, status }.
   runAction: ({ action, targets }) => archiveMachines(action, targets),
 })`,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     prepare,
     render: `<DataViews provider={provider}>
   <DataTable

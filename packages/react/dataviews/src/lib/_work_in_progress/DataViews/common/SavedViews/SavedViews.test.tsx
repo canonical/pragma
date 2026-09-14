@@ -550,6 +550,7 @@ describe("DataViews.SavedViews", () => {
         id: running.id,
         name: running.name,
         query: running.query,
+        presentation: running.presentation,
       }),
     );
     await choose(running);

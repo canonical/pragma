@@ -1,6 +1,5 @@
 import {
   createMemoryLocation,
-  DEFAULT_WINDOW,
   type QueryLocation,
   type ViewDraft,
 } from "@canonical/dataviews-core";
@@ -123,6 +122,7 @@ const failedMachines: ViewDraft = {
   id: "failed-machines",
   name: "Failed machines",
   query: "as=table&status=failed",
+  presentation: {},
 };
 
 /**
@@ -149,7 +149,7 @@ import { platform } from "./router.js";`,
 ${queryIssuesCode}`,
     location: "createPlatformLocation(platform)",
     store: true,
-    window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
+    query: "page=1&size=5",
     render: `<DataViews provider={provider}>
   <DataViews.SavedViews />
   <DataViews.Search label="Search machines" />
@@ -173,7 +173,7 @@ ${queryIssuesCode}`,
     );
     const { store } = useStoryViewStore({ seed: [failedMachines] });
     const provider = useMachineProvider({
-      window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+      query: "page=1&size=5",
       prepare: selectTwo,
       location,
       views: store,
@@ -258,7 +258,7 @@ ${queryIssuesCode}`,
       createMemoryLocation({ href: "/machines?status=failed" }),
     );
     const provider = useMachineProvider({
-      window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
+      query: "page=1&size=5",
       location,
     });
     return (

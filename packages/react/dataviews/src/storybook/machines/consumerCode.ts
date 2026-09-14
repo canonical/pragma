@@ -20,10 +20,8 @@ type ConsumerCode = {
   readonly declarations?: string | undefined;
   /** The source, as source text; the machines over a local array by default. */
   readonly source?: string | undefined;
-  /** The slice the provider starts on, as source text. */
-  readonly slice?: string | undefined;
-  /** The window the provider starts on, as source text. */
-  readonly window?: string | undefined;
+  /** The query the provider starts on, as the canonical text its snapshot carries. */
+  readonly query?: string | undefined;
   /** Commands issued once the provider is built, as source text. */
   readonly prepare?: string | undefined;
   /** Give the provider the browser's store, as `views` and `presentation`. */
@@ -65,36 +63,28 @@ const indent = (text: string, depth: number): string =>
 /** The provider, built once in state, with the commands issued once it is. */
 const providerState = ({
   source,
-  slice,
-  window,
+  query,
   prepare,
   store,
   location,
 }: Pick<
   ConsumerCode,
-  "source" | "slice" | "window" | "prepare" | "store" | "location"
+  "source" | "query" | "prepare" | "store" | "location"
 >): string => {
   const commands =
     prepare === undefined
       ? ""
       : `\n${indent(prepare, 4)}\n    return provider;`;
-  // A window alone fits on the seed's line; a slice gets a line of its own.
-  const seed =
-    slice === undefined
-      ? window === undefined
-        ? []
-        : [`seed: { window: ${window} },`]
-      : [
-          `seed: {
-  slice: ${slice},${window === undefined ? "" : `\n  window: ${window},`}
-},`,
-        ];
+  const snapshot =
+    query === undefined
+      ? []
+      : [`snapshot: { query: ${JSON.stringify(query)}, presentation: {} },`];
   const config = [
     "collection: machineCollection,",
     `source: ${source},`,
     ...(location === undefined ? [] : [`location: ${location},`]),
     ...(store === true ? ["views: store,", "presentation: store,"] : []),
-    ...seed,
+    ...snapshot,
   ];
   const built = `createDataViewsProvider({
 ${config.map((line) => indent(line, 6)).join("\n")}
@@ -118,29 +108,17 @@ export const consumerCode = ({
   imports,
   declarations,
   source = machineSource,
-  slice,
-  window,
+  query,
   prepare,
   store = false,
   location,
   hooks = [],
   render,
 }: ConsumerCode) => {
-  // A window is built from the package's default one, so whichever block
-  // spells it out pulls the import in.
-  const blocks = [slice, window, prepare, declarations, render];
-  const usesDefaultWindow = blocks.some(
-    (block) => block?.includes("DEFAULT_WINDOW") === true,
-  );
-  const usesEmptySlice = blocks.some(
-    (block) => block?.includes("EMPTY_SLICE") === true,
-  );
   const core = [
     ...(source.includes("createArraySource(") ? ["createArraySource"] : []),
     "createDataViewsProvider",
     ...coreFunctions,
-    ...(usesDefaultWindow ? ["DEFAULT_WINDOW"] : []),
-    ...(usesEmptySlice ? ["EMPTY_SLICE"] : []),
     ...coreTypes.map((name) => `type ${name}`),
   ];
   return {
@@ -157,7 +135,7 @@ ${imports ?? `import { machineCollection, machines } from "./machines.js";`}`,
           store ? viewStore : undefined,
           declarations,
           `export function Machines() {
-${providerState({ source, slice, window, prepare, store, location })}
+${providerState({ source, query, prepare, store, location })}
   return (
 ${indent(render, 4)}
   );

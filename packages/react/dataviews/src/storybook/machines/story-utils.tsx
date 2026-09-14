@@ -8,11 +8,8 @@
 import {
   createDataViewsProvider,
   type DataViewsProvider,
-  DEFAULT_WINDOW,
   type PresentationStore,
   type QueryLocation,
-  type ResultWindow,
-  type Slice,
   type Source,
   type ViewDraft,
   type ViewStore,
@@ -36,10 +33,11 @@ export type MachineProvider = DataViewsProvider<MachineFields, Machine>;
 export type MachineProviderConfig = {
   /** The source the table reads; every machine by default. */
   readonly source?: (() => Source<Machine>) | undefined;
-  /** The slice the provider starts on; nothing filtered or ordered otherwise. */
-  readonly slice?: Slice | undefined;
-  /** The displayed window; the provider's default page otherwise. */
-  readonly window?: Partial<ResultWindow> | undefined;
+  /**
+   * The query the provider starts on, as the canonical text a snapshot
+   * carries; nothing filtered or ordered, on the first page, otherwise.
+   */
+  readonly query?: string | undefined;
   /** Commands issued once the provider is built: a sort, a search, a selection. */
   readonly prepare?: ((provider: MachineProvider) => void) | undefined;
   /** Where the applied query lives; in the provider alone by default. */
@@ -58,8 +56,7 @@ export type MachineProviderConfig = {
  */
 export function useMachineProvider({
   source = createMachineSource,
-  slice,
-  window: resultWindow,
+  query,
   prepare,
   location,
   views,
@@ -72,16 +69,7 @@ export function useMachineProvider({
       ...(location === undefined ? {} : { location }),
       ...(views === undefined ? {} : { views }),
       ...(presentation === undefined ? {} : { presentation }),
-      seed:
-        slice === undefined && resultWindow === undefined
-          ? undefined
-          : {
-              slice,
-              window:
-                resultWindow === undefined
-                  ? undefined
-                  : { ...DEFAULT_WINDOW, ...resultWindow },
-            },
+      ...(query === undefined ? {} : { snapshot: { query, presentation: {} } }),
     });
     prepare?.(built);
     return built;

@@ -254,13 +254,12 @@ const statusText = (status: DisplayStatus): string => {
 
 ## Mounting only the rows in view
 
-A table renders every row of its result window, which is the right default: a page of fifty is small, and every row is in the page for the browser's own search and for a reader without JavaScript. When a result window holds thousands of rows, give the table `virtualization`, and it mounts only the rows near its viewport. `virtualizeRows` comes from its own entry point, `@canonical/dataviews-react/virtualization`, so an application that never imports it never ships it. The window the provider starts on is its `seed`.
+A table renders every row of its result window, which is the right default: a page of fifty is small, and every row is in the page for the browser's own search and for a reader without JavaScript. When a result window holds thousands of rows, give the table `virtualization`, and it mounts only the rows near its viewport. `virtualizeRows` comes from its own entry point, `@canonical/dataviews-react/virtualization`, so an application that never imports it never ships it. The window the provider starts on is in its `snapshot`.
 
 ```tsx
 import {
   createArraySource,
   createDataViewsProvider,
-  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { DataTable, type DataTableColumn } from "@canonical/dataviews-react";
 import { virtualizeRows } from "@canonical/dataviews-react/virtualization";
@@ -287,7 +286,7 @@ export function Machines() {
         searchFields: ["name", "owner"],
       }),
       // Every machine in one window.
-      seed: { window: { ...DEFAULT_WINDOW, size: 10_000 } },
+      snapshot: { query: "page=1&size=10000", presentation: {} },
     }),
   );
   return (

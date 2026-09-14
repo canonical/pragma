@@ -51,7 +51,7 @@ describe("DataViews SSR", () => {
     expect(provider.state.get().pendingRequestId).toBeNull();
   });
 
-  it("starts no port on the server: the location is neither read into the query nor written", () => {
+  it("starts no port on the server: the location's query is read, never subscribed to or written", () => {
     const memory = createMemoryLocation({ href: "/machines?status=failed" });
     const subscribe = vi.fn(memory.subscribe);
     const write = vi.fn(memory.write);
@@ -64,10 +64,12 @@ describe("DataViews SSR", () => {
         <ScopeProbe onRead={() => {}} />
       </DataViews>,
     );
-    // The seed renders, not the location's query: adopting it is the first
-    // observer's job, and the server observes nothing.
+    // The location's query renders, read when the provider was built; the
+    // server observes nothing, so nothing was asked for it.
     expect(html).toContain('data-testid="status">idle<');
-    expect(provider.state.get().slice.filter).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([
+      { field: "status", operator: "eq", operands: ["failed"] },
+    ]);
     expect(subscribe).not.toHaveBeenCalled();
     expect(write).not.toHaveBeenCalled();
     expect(memory.read().toString()).toBe("status=failed");

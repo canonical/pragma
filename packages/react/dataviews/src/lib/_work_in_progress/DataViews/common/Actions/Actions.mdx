@@ -19,7 +19,6 @@ A destructive action is the design system's `Button` with `anticipation="destruc
 import {
   createArraySource,
   createDataViewsProvider,
-  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import {
   DataTable,
@@ -74,7 +73,7 @@ export function Machines() {
         // Resolves with one outcome per target: { target, status }.
         runAction: ({ action, targets }) => archiveMachines(action, targets),
       }),
-      seed: { window: { ...DEFAULT_WINDOW, page: 1, size: 5 } },
+      snapshot: { query: "page=1&size=5", presentation: {} },
     }),
   );
   return (

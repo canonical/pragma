@@ -38,9 +38,17 @@ const at = (page: number, size: number) => ({
   size,
 });
 
-/** A provider seeded on `window`, over a source each case answers by hand. */
+/** A provider started on `window`, over a source each case answers by hand. */
 const makeProvider = (window = at(1, 2)): MachineFixture =>
-  createMachineProvider({ seed: { window } });
+  createMachineProvider({
+    snapshot: {
+      query: new URLSearchParams({
+        page: String(window.page),
+        size: String(window.size),
+      }).toString(),
+      presentation: {},
+    },
+  });
 
 const machines = (count: number): readonly Machine[] =>
   Array.from({ length: count }, (_unused, index) =>
@@ -112,7 +120,8 @@ describe("PaginationBar", () => {
 
   it("observes its provider for as long as it is mounted", () => {
     const { provider, source } = makeProvider();
-    // Construction starts nothing: the first request is the bar's.
+    // Construction subscribes to nothing and requests nothing: the first
+    // request is the bar's.
     expect(source.calls).toHaveLength(0);
     const { unmount } = mount(provider);
     expect(source.calls).toHaveLength(1);
@@ -484,7 +493,7 @@ describe("PaginationBar", () => {
     // the source knows which pages its tokens reach, so it has to answer
     // for refusals itself; this one refuses nothing.
     const { provider, source } = createMachineProvider({
-      seed: { window: at(1, 2) },
+      snapshot: { query: "page=1&size=2", presentation: {} },
       capabilities: declareCapabilities(collection, {
         counts: { pageable: "exact" },
         pagination: { kind: "cursor", backward: false, durable: false },

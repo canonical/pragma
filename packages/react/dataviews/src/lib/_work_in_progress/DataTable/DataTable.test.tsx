@@ -624,7 +624,8 @@ describe("DataTable", () => {
       setSort.mockRestore();
     });
     fireEvent.click(findSortButton("Status"), { shiftKey: true });
-    // Exactly: a matcher that trims would hide a second stop or a no-break space.
+    // Exactly: a matcher that trims would hide a second stop or a no-break
+    // space.
     expect(findSortReason("Status")?.textContent).toBe(
       "Sort unchanged: this source is busy.",
     );
@@ -2573,16 +2574,9 @@ describe("DataTable", () => {
       const { provider } = createMachineProvider({
         location: createMemoryLocation({ href: "/machines" }),
         capabilities: declareMachineOrdering(2),
-        seed: {
-          slice: {
-            filter: [],
-            search: null,
-            sort: [
-              { field: "name", direction: "desc" },
-              { field: "status", direction: "asc" },
-            ],
-            group: [],
-          },
+        snapshot: {
+          query: "sort=name__desc&sort=status__asc",
+          presentation: {},
         },
       });
       const container = document.createElement("div");
