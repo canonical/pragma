@@ -91,11 +91,8 @@ export type SortCapabilities = {
   /**
    * The effective ordering when the query carries no sort term. Empty
    * declares that the source documents no order, so pages may not be
-   * stable. A header over a query with no term still reports no sorted
-   * column rather than the default it is in fact ordering by.
-   *
-   * @seam sort header — read by the header's sorted-column report and
-   * its "clear sort", which returns to this
+   * stable. A header over a query with no term shows this as the ordering
+   * in force, and clearing a column's sort returns to it.
    */
   readonly default: readonly SortTerm[];
   readonly tiebreak: SortTiebreak;
@@ -130,10 +127,10 @@ export type SortCapabilities = {
  * takes the direction of the query's own term over that field and that term
  * is not repeated below it.
  *
- * Resolved by local execution today.
+ * Resolved for local execution, and for a table's headers, which show it.
  *
- * @seam sort header — read by the header's sorted-column report, which
- * may add whether the terms are the query's own.
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export type EffectiveOrdering = {
   readonly terms: readonly SortTerm[];

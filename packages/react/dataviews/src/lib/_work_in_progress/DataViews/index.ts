@@ -4,6 +4,7 @@ export type { DataViewsFiltersProps } from "./common/Filters/index.js";
 export type { DataViewsPaginationProps } from "./common/Pagination/index.js";
 export type { DataViewsSavedViewsProps } from "./common/SavedViews/index.js";
 export type { DataViewsSearchProps } from "./common/Search/index.js";
+export type { DataViewsSortPanelProps } from "./common/SortPanel/index.js";
 export type {
   UseDataViewsFilterResult,
   UseDataViewsResult,

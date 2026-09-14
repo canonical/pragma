@@ -13,9 +13,11 @@
 import {
   createCollection,
   createDataViewsProvider,
+  createMemoryLocation,
   type DataViewsProvider,
   type DisplayStatus,
   declareCapabilities,
+  type SortTerm,
   type SourceDelivery,
 } from "@canonical/dataviews-core";
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
@@ -28,7 +30,9 @@ import {
   within,
 } from "@testing-library/react";
 import { createRef, type ReactElement, StrictMode, useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import createManualSource from "../../../../testing/createManualSource.js";
 import {
   createStandInPresentationStore,
@@ -43,6 +47,7 @@ import {
 } from "../../../../testing/fixtures.js";
 import {
   createMachineProvider,
+  declareMachineOrdering,
   MACHINE_CAPABILITIES,
   type Machine,
   type MachineFields,
@@ -59,6 +64,12 @@ type Provider = DataViewsProvider<MachineFields, Machine>;
 
 const columns: readonly DataTableColumn[] = [
   { id: "name", header: "Name", sortable: true },
+  { id: "status", header: "Status" },
+];
+
+/** The same columns, neither offering a sort. */
+const unsortedColumns: readonly DataTableColumn[] = [
+  { id: "name", header: "Name" },
   { id: "status", header: "Status" },
 ];
 
@@ -152,7 +163,9 @@ describe("DataTable", () => {
     expect(table.tagName).toBe("DIV");
     expect(within(table).getAllByRole("rowgroup")).toHaveLength(2);
     expect(
-      screen.getAllByRole("columnheader").map((c) => c.textContent),
+      screen
+        .getAllByRole("columnheader")
+        .map((header) => header.querySelector(".label")?.textContent),
     ).toEqual(["Name", "Status"]);
     expect(screen.getAllByRole("row")).toHaveLength(3);
     expect(
@@ -376,37 +389,52 @@ describe("DataTable", () => {
     );
   });
 
-  it("cycles one column's ordering and describes it with aria-sort", async () => {
+  it("cycles one column's ordering and claims aria-sort only while it sorts", () => {
     const { provider } = loadedTable();
     const headers = screen.getAllByRole("columnheader");
     const sortable = elementAt(headers, 0);
     const plain = elementAt(headers, 1);
-    expect(sortable).toHaveAttribute("aria-sort", "none");
+    // At rest nothing orders the rows, so no header claims a sort.
+    expect(sortable).not.toHaveAttribute("aria-sort");
     expect(plain).not.toHaveAttribute("aria-sort");
     // The chevron repeats the order for the eye, hidden from assistive
     // technology; a column at rest shows none.
     const glyph = () =>
-      elementAt(screen.getAllByRole("columnheader"), 0).querySelector("svg");
+      elementAt(screen.getAllByRole("columnheader"), 0).querySelector(
+        ".sort > .ds.icon",
+      );
     expect(glyph()).toBeNull();
 
     const button = within(sortable).getByRole("button", { name: "Name" });
+    expect(button).not.toHaveAccessibleDescription();
     fireEvent.click(button);
     expect(provider.state.get().slice.sort).toEqual([
       { field: "name", direction: "asc" },
     ]);
-    expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
+    expect(elementAt(screen.getAllByRole("columnheader"), 0)).toHaveAttribute(
       "aria-sort",
       "ascending",
     );
+    // The button carries the description; its header does not repeat it.
+    expect(
+      elementAt(screen.getAllByRole("columnheader"), 0),
+    ).not.toHaveAccessibleDescription();
     expect(glyph()).toHaveAttribute("aria-hidden", "true");
     expect(glyph()?.querySelector("use")).toHaveAttribute(
       "href",
       expect.stringMatching(/#chevron-up$/),
     );
     expect(button).toHaveAccessibleName("Name");
+    expect(button).toHaveAccessibleDescription("ascending");
+    // One term needs no precedence numeral.
+    expect(
+      elementAt(screen.getAllByRole("columnheader"), 0).querySelector(
+        ".precedence",
+      ),
+    ).toBeNull();
 
     fireEvent.click(button);
-    expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
+    expect(elementAt(screen.getAllByRole("columnheader"), 0)).toHaveAttribute(
       "aria-sort",
       "descending",
     );
@@ -414,14 +442,777 @@ describe("DataTable", () => {
       "href",
       expect.stringMatching(/#chevron-down$/),
     );
+    expect(button).toHaveAccessibleDescription("descending");
 
     fireEvent.click(button);
     expect(provider.state.get().slice.sort).toEqual([]);
-    expect(screen.getAllByRole("columnheader")[0]).toHaveAttribute(
-      "aria-sort",
-      "none",
-    );
+    expect(
+      elementAt(screen.getAllByRole("columnheader"), 0),
+    ).not.toHaveAttribute("aria-sort");
     expect(glyph()).toBeNull();
+    expect(button).not.toHaveAccessibleDescription();
+  });
+
+  /** Three sortable columns over a source ordering by all three. */
+  const renderOrderingTable = (
+    terms: number | null,
+    defaultSort: readonly SortTerm[] = [],
+    columnsInView: readonly DataTableColumn[] = [
+      { id: "name", header: "Name", sortable: true },
+      { id: "status", header: "Status", sortable: true },
+      { id: "cores", header: "Cores", sortable: true },
+    ],
+  ) => {
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha"), machine("m-2", "beta", "failed", 8)],
+      capabilities: declareMachineOrdering(terms, defaultSort),
+    });
+    const view = render(
+      <DataTable
+        provider={provider}
+        columns={columnsInView}
+        label="Machines"
+      />,
+    );
+    return { provider, view };
+  };
+
+  /** The sort button of the header with this name. */
+  const findSortButton = (name: string): HTMLElement =>
+    screen.getByRole("button", { name });
+
+  /** The header whose sort control has this name. */
+  const findHeader = (name: string): HTMLElement =>
+    screen.getByRole("columnheader", { name });
+
+  /** The polite region where that header says why a sort changed nothing. */
+  const findSortReason = (name: string): Element | null =>
+    findHeader(name).querySelector(".sort-reason");
+
+  it("adds, turns and removes a further term with Shift, numbering each sorted header", () => {
+    const { provider } = renderOrderingTable(3);
+    fireEvent.click(findSortButton("Name"));
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "asc" },
+    ]);
+    // Only the first term's header claims the sort; both state their place.
+    expect(findHeader("Name")).toHaveAttribute("aria-sort", "ascending");
+    expect(findHeader("Status")).not.toHaveAttribute("aria-sort");
+    expect(findSortButton("Name")).toHaveAccessibleDescription(
+      "ascending, 1st of 2",
+    );
+    expect(findSortButton("Status")).toHaveAccessibleDescription(
+      "ascending, 2nd of 2",
+    );
+    // The numerals repeat the precedence for the eye only.
+    const findNumeral = (name: string) =>
+      findHeader(name).querySelector(".precedence");
+    expect(findNumeral("Name")).toHaveTextContent("1");
+    expect(findNumeral("Status")).toHaveTextContent("2");
+    expect(findNumeral("Status")).toHaveAttribute("aria-hidden", "true");
+    expect(findHeader("Cores").querySelector(".precedence")).toBeNull();
+
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "desc" },
+    ]);
+    expect(findSortButton("Status")).toHaveAccessibleDescription(
+      "descending, 2nd of 2",
+    );
+
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+    ]);
+    // One term again: no numerals, and the description says the direction.
+    expect(findNumeral("Name")).toBeNull();
+    expect(findSortButton("Name")).toHaveAccessibleDescription("ascending");
+  });
+
+  it("adds a term from Shift+Enter and Shift+Space as from a Shift+click", () => {
+    const { provider } = renderOrderingTable(3);
+    // A key's own click carries `detail` 0 and may lose the modifier.
+    fireEvent.keyDown(findSortButton("Name"), { key: "Enter", shiftKey: true });
+    fireEvent.click(findSortButton("Name"), { detail: 0 });
+    fireEvent.keyDown(findSortButton("Cores"), { key: " ", shiftKey: true });
+    fireEvent.click(findSortButton("Cores"), { detail: 0 });
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+      { field: "cores", direction: "asc" },
+    ]);
+    // Without Shift, the same keys sort by the column alone.
+    fireEvent.keyDown(findSortButton("Status"), { key: "Enter" });
+    fireEvent.click(findSortButton("Status"), { detail: 0 });
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "status", direction: "asc" },
+    ]);
+  });
+
+  it("reads a Shift held on a key only for the click that key produces", () => {
+    const { provider } = renderOrderingTable(3);
+    fireEvent.click(findSortButton("Name"));
+    // Shift+Enter on a key whose click never came, then a pointer click.
+    fireEvent.keyDown(findSortButton("Status"), {
+      key: "Enter",
+      shiftKey: true,
+    });
+    fireEvent.click(findSortButton("Status"), { detail: 1 });
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "status", direction: "asc" },
+    ]);
+    // A key other than Enter or Space leaves no Shift behind either.
+    fireEvent.keyDown(findSortButton("Cores"), { key: "Tab", shiftKey: true });
+    fireEvent.click(findSortButton("Cores"), { detail: 0 });
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "cores", direction: "asc" },
+    ]);
+  });
+
+  it("says politely why a term past the source's maximum changed nothing", () => {
+    const { provider } = renderOrderingTable(2);
+    fireEvent.click(findSortButton("Name"));
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    const reason = findSortReason("Cores");
+    expect(reason).toHaveAttribute("aria-live", "polite");
+    expect(reason).toBeEmptyDOMElement();
+
+    fireEvent.click(findSortButton("Cores"), { shiftKey: true });
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "asc" },
+    ]);
+    expect(reason?.textContent?.trim()).toBe(
+      "Sort unchanged: this source orders by at most 2 terms.",
+    );
+    expect(reason).toHaveAttribute("aria-atomic", "true");
+    // Only the header activated says it.
+    expect(findSortReason("Name")).toBeEmptyDOMElement();
+
+    // An accepted choice clears it, even one that changes nothing.
+    openMenuOf("Name");
+    choose("Sort ascending");
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "asc" },
+    ]);
+    expect(reason).toBeEmptyDOMElement();
+
+    // So does the next activation the source accepts.
+    fireEvent.click(findSortButton("Cores"), { shiftKey: true });
+    expect(reason).not.toBeEmptyDOMElement();
+    fireEvent.click(findSortButton("Cores"));
+    expect(reason).toBeEmptyDOMElement();
+  });
+
+  it("ends a source's reason with one full stop, whether or not the source ended it", () => {
+    const { provider } = renderOrderingTable(1);
+    fireEvent.click(findSortButton("Name"));
+    const [refusal] = provider.setSort([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "asc" },
+    ]);
+    if (refusal === undefined) {
+      throw new Error("a source ordering by one term accepted two");
+    }
+    const setSort = vi
+      .spyOn(provider, "setSort")
+      .mockReturnValue([{ ...refusal, reason: "this source is busy." }]);
+    onTestFinished(() => {
+      setSort.mockRestore();
+    });
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    // Exactly: a matcher that trims would hide a second stop or a no-break space.
+    expect(findSortReason("Status")?.textContent).toBe(
+      "Sort unchanged: this source is busy.",
+    );
+  });
+
+  it("moves neither focus nor the ordering on arrow keys: the header row is no grid", () => {
+    const { provider } = renderOrderingTable(3);
+    const before = provider.state.get().slice.sort;
+    const button = findSortButton("Status");
+    button.focus();
+    for (const key of ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"]) {
+      fireEvent.keyDown(button, { key });
+    }
+    expect(button).toHaveFocus();
+    expect(provider.state.get().slice.sort).toBe(before);
+    expect(
+      document.querySelector("[role='grid'], [role='treegrid']"),
+    ).not.toBeInTheDocument();
+    // No roving tab stop: every sort button is in the tab order.
+    const sortButtons = document.querySelectorAll<HTMLButtonElement>(
+      "[role='columnheader'] button.sort",
+    );
+    expect(sortButtons.length).toBeGreaterThan(1);
+    for (const sortButton of sortButtons) {
+      expect(sortButton.tabIndex).toBe(0);
+    }
+  });
+
+  it("keeps the sort button it focused, never replacing it, through every change it draws", () => {
+    renderOrderingTable(3);
+    const button = findSortButton("Status");
+    button.focus();
+    fireEvent.click(button);
+    fireEvent.click(findSortButton("Name"), { shiftKey: true });
+    findSortButton("Status").focus();
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    expect(document.activeElement).toBe(button);
+    expect(findSortButton("Status")).toBe(button);
+  });
+
+  /** Every ordering of distinct fields drawn from `fields`, the empty one included. */
+  const listOrderings = (
+    fields: readonly string[],
+  ): readonly (readonly SortTerm[])[] => {
+    const orderings: (readonly SortTerm[])[] = [[]];
+    const extend = (prefix: readonly SortTerm[], left: readonly string[]) => {
+      for (const field of left) {
+        for (const direction of ["asc", "desc"] as const) {
+          const next = [...prefix, { field, direction }];
+          orderings.push(next);
+          extend(
+            next,
+            left.filter((other) => other !== field),
+          );
+        }
+      }
+    };
+    extend([], fields);
+    return orderings;
+  };
+
+  it("puts aria-sort on exactly one header, the first term's, across every ordering", () => {
+    const orderings = listOrderings(["name", "status", "cores"]);
+    // Every ordering of up to three distinct fields, in both directions.
+    expect(orderings).toHaveLength(79);
+    const names: Readonly<Record<string, string>> = {
+      name: "Name",
+      status: "Status",
+      cores: "Cores",
+    };
+    for (const defaultSort of [
+      [],
+      [{ field: "cores", direction: "desc" }],
+    ] as const) {
+      const { provider, view } = renderOrderingTable(null, defaultSort);
+      // Plain attribute queries: 158 orderings through role queries would
+      // spend seconds computing names the text content already states.
+      const listClaimed = () => [
+        ...view.container.querySelectorAll<HTMLElement>(
+          "[role='columnheader'][aria-sort]",
+        ),
+      ];
+      for (const ordering of orderings) {
+        act(() => {
+          provider.setSort(ordering);
+        });
+        const shown = ordering.length > 0 ? ordering : defaultSort;
+        const claimed = listClaimed();
+        const first = shown.at(0);
+        if (first === undefined) {
+          expect(claimed).toEqual([]);
+          continue;
+        }
+        expect(
+          claimed.map((header) => header.querySelector(".label")?.textContent),
+        ).toEqual([names[first.field]]);
+        expect(elementAt(claimed, 0)).toHaveAttribute(
+          "aria-sort",
+          first.direction === "asc" ? "ascending" : "descending",
+        );
+      }
+      view.unmount();
+    }
+  });
+
+  it("puts aria-sort on the first rendered column of the first term, over duplicate, unsortable and hidden columns", () => {
+    // Which column claims depends on the first term, and on a later term only
+    // where the first term's field shows no column: orderings of two terms
+    // run only over a layout that leaves a field without one.
+    const orderingsOfOne = listOrderings(["name", "status", "cores"]).filter(
+      (ordering) => ordering.length <= 1,
+    );
+    const orderingsOfTwo = listOrderings(["name", "status", "cores"]).filter(
+      (ordering) => ordering.length <= 2,
+    );
+    expect(orderingsOfOne).toHaveLength(7);
+    expect(orderingsOfTwo).toHaveLength(31);
+    const layouts: readonly {
+      readonly columns: readonly DataTableColumn[];
+      readonly hidden: readonly string[];
+      readonly order: readonly string[];
+      /** The label of the first rendered column showing each field. */
+      readonly claims: Readonly<Record<string, string | undefined>>;
+    }[] = [
+      {
+        columns: [
+          { id: "again", header: "Name again", field: "name", sortable: true },
+          { id: "name", header: "Name", sortable: true },
+          { id: "status", header: "Status", sortable: true },
+          { id: "cores", header: "Cores", sortable: true },
+        ],
+        hidden: [],
+        order: [],
+        claims: { name: "Name again", status: "Status", cores: "Cores" },
+      },
+      {
+        columns: [
+          { id: "name", header: "Name", sortable: true },
+          { id: "status", header: "Status" },
+          { id: "cores", header: "Cores", sortable: true },
+        ],
+        hidden: [],
+        order: [],
+        claims: { name: "Name", status: "Status", cores: "Cores" },
+      },
+      {
+        columns: [
+          { id: "name", header: "Name", sortable: true },
+          { id: "status", header: "Status", sortable: true },
+          { id: "cores", header: "Cores", sortable: true },
+        ],
+        hidden: ["status"],
+        order: [],
+        claims: { name: "Name", status: undefined, cores: "Cores" },
+      },
+      {
+        // The first of two columns over one field hidden: the other claims.
+        columns: [
+          { id: "again", header: "Name again", field: "name", sortable: true },
+          { id: "name", header: "Name", sortable: true },
+          { id: "status", header: "Status", sortable: true },
+          { id: "cores", header: "Cores", sortable: true },
+        ],
+        hidden: ["again"],
+        order: [],
+        claims: { name: "Name", status: "Status", cores: "Cores" },
+      },
+      {
+        // The two reordered: the one rendered first claims, not the one
+        // declared first.
+        columns: [
+          { id: "again", header: "Name again", field: "name", sortable: true },
+          { id: "name", header: "Name", sortable: true },
+          { id: "status", header: "Status", sortable: true },
+          { id: "cores", header: "Cores", sortable: true },
+        ],
+        hidden: [],
+        order: ["name", "again", "status", "cores"],
+        claims: { name: "Name", status: "Status", cores: "Cores" },
+      },
+    ];
+    for (const layout of layouts) {
+      for (const defaultSort of [
+        [],
+        [{ field: "status", direction: "desc" }],
+      ] as const) {
+        const { provider, view } = renderOrderingTable(
+          null,
+          defaultSort,
+          layout.columns,
+        );
+        act(() => {
+          provider.presentation.arrange({
+            "table.hidden": layout.hidden,
+            "table.order": layout.order,
+          });
+        });
+        const orderings = Object.values(layout.claims).includes(undefined)
+          ? orderingsOfTwo
+          : orderingsOfOne;
+        for (const ordering of orderings) {
+          act(() => {
+            provider.setSort(ordering);
+          });
+          const first = (ordering.length > 0 ? ordering : defaultSort).at(0);
+          const claimed = [
+            ...view.container.querySelectorAll<HTMLElement>(
+              "[role='columnheader'][aria-sort]",
+            ),
+          ];
+          const label =
+            first === undefined ? undefined : layout.claims[first.field];
+          expect(
+            claimed.map(
+              (header) => header.querySelector(".label")?.textContent,
+            ),
+          ).toEqual(label === undefined ? [] : [label]);
+        }
+        view.unmount();
+      }
+    }
+  });
+
+  it("clears a refusal's reason once focus leaves its header and its own menu", () => {
+    renderOrderingTable(1);
+    fireEvent.click(findSortButton("Name"));
+    // A reader on the header, in a document that has focus: a blur with the
+    // window's focus gone is the window's, not the column's.
+    findSortButton("Status").focus();
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    const findStatusReason = () => findSortReason("Status");
+    expect(findStatusReason()).not.toBeEmptyDOMElement();
+    // Within the header: it stands.
+    fireEvent.blur(findSortButton("Status"), {
+      relatedTarget: screen.getByRole("button", {
+        name: "Sort options for Status",
+      }),
+    });
+    expect(findStatusReason()).not.toBeEmptyDOMElement();
+    // Into this column's own menu, portalled outside the header: it stands.
+    openMenuOf("Status");
+    fireEvent.blur(findSortButton("Status"), {
+      relatedTarget: screen.getByRole("menuitem", { name: "Sort ascending" }),
+    });
+    expect(findStatusReason()).not.toBeEmptyDOMElement();
+    // From there to another column's control, its menu still open: it goes.
+    fireEvent.blur(findSortButton("Status"), {
+      relatedTarget: findSortButton("Name"),
+    });
+    expect(findStatusReason()).toBeEmptyDOMElement();
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    expect(findStatusReason()).not.toBeEmptyDOMElement();
+    // Into another column's menu: it goes.
+    openMenuOf("Name");
+    fireEvent.blur(findSortButton("Status"), {
+      relatedTarget: screen.getByRole("menuitem", { name: "Sort descending" }),
+    });
+    expect(findStatusReason()).toBeEmptyDOMElement();
+    fireEvent.keyDown(document, { key: "Escape" });
+    // Refused again, then focus going nowhere at all: it goes.
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    expect(findStatusReason()).not.toBeEmptyDOMElement();
+    findSortButton("Status").focus();
+    fireEvent.blur(findSortButton("Status"));
+    expect(findStatusReason()).toBeEmptyDOMElement();
+    // Leaving again with nothing refused changes nothing.
+    fireEvent.blur(findSortButton("Status"));
+    expect(findStatusReason()).toBeEmptyDOMElement();
+  });
+
+  it("claims the sort on the first column showing a field, and on none when no column shows it", () => {
+    const { provider } = renderOrderingTable(
+      null,
+      [],
+      [
+        { id: "name", header: "Name", sortable: true },
+        { id: "again", header: "Name again", field: "name", sortable: true },
+        { id: "status", header: "Status", sortable: true },
+      ],
+    );
+    act(() => {
+      provider.setSort([{ field: "name", direction: "desc" }]);
+    });
+    expect(findHeader("Name")).toHaveAttribute("aria-sort", "descending");
+    expect(findHeader("Name again")).not.toHaveAttribute("aria-sort");
+    act(() => {
+      provider.setSort([
+        { field: "cores", direction: "asc" },
+        { field: "status", direction: "asc" },
+      ]);
+    });
+    // Cores has no column: nothing claims a sort a reader cannot see.
+    expect(
+      screen
+        .getAllByRole("columnheader")
+        .filter((header) => header.hasAttribute("aria-sort")),
+    ).toEqual([]);
+    expect(findSortButton("Status")).toHaveAccessibleDescription(
+      "ascending, 2nd of 2",
+    );
+  });
+
+  it("shows the ordering on a column that offers no sort, describing its header", () => {
+    const { provider } = renderOrderingTable(
+      null,
+      [],
+      [
+        { id: "name", header: "Name", sortable: true },
+        { id: "status", header: "Status" },
+      ],
+    );
+    act(() => {
+      provider.setSort([
+        { field: "status", direction: "desc" },
+        { field: "name", direction: "asc" },
+      ]);
+    });
+    const status = screen.getByRole("columnheader", { name: "Status" });
+    expect(status).toHaveAttribute("aria-sort", "descending");
+    expect(within(status).queryByRole("button")).toBeNull();
+    expect(status.querySelector(".sort-reason")).toBeNull();
+    expect(status).toHaveAccessibleDescription("descending, 1st of 2");
+    expect(status.querySelector(".precedence")).toHaveTextContent("1");
+  });
+
+  it("renders a link to the next ordering before hydration and a button after, without a mismatch", async () => {
+    const location = createMemoryLocation({ href: "/machines?tab=inventory" });
+    const build = () =>
+      createMachineProvider({
+        rows: [machine("m-1", "alpha")],
+        location,
+        capabilities: declareMachineOrdering(3),
+      }).provider;
+    const buildTable = (provider: Provider) => (
+      <DataTable
+        provider={provider}
+        columns={[{ id: "name", header: "Name", sortable: true }]}
+        label="Machines"
+      />
+    );
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(buildTable(build()));
+    document.body.append(container);
+    onTestFinished(() => {
+      container.remove();
+    });
+    // The next ordering from the first page, the window's size and the
+    // host's own parameter kept.
+    expect(container.querySelector("a.sort")).toHaveAttribute(
+      "href",
+      "?tab=inventory&sort=name__asc&page=1&size=50",
+    );
+    expect(container.querySelector("button")).toBeNull();
+
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => {
+      errors.mockRestore();
+    });
+    const root = await act(async () =>
+      hydrateRoot(container, buildTable(build())),
+    );
+    onTestFinished(() => {
+      act(() => {
+        root.unmount();
+      });
+    });
+    expect(errors).not.toHaveBeenCalled();
+    // No link held focus, so the button that replaces it takes none.
+    expect(document.activeElement).toBe(document.body);
+    expect(container.querySelector("a.sort")).toBeNull();
+    expect(
+      within(container).getByRole("button", { name: "Name" }),
+    ).toBeInTheDocument();
+  });
+
+  /** Open one column's header menu from its trigger. */
+  const openMenuOf = (name: string): HTMLElement => {
+    fireEvent.click(
+      screen.getByRole("button", { name: `Sort options for ${name}` }),
+    );
+    // The menu mounts as it opens, replacing the button that opened it.
+    return screen.getByRole("button", { name: `Sort options for ${name}` });
+  };
+
+  /** Choose an item of the open header menu. */
+  const choose = (item: string): void => {
+    fireEvent.click(screen.getByRole("menuitem", { name: item }));
+  };
+
+  it("sorts from a column's header menu and returns focus to its trigger", () => {
+    const { provider } = renderOrderingTable(2);
+    openMenuOf("Status");
+    choose("Sort descending");
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "status", direction: "desc" },
+    ]);
+    // Closed, the menu unmounts: its button, in the trigger's place, has focus.
+    expect(
+      screen.getByRole("button", { name: "Sort options for Status" }),
+    ).toHaveFocus();
+    expect(findHeader("Status")).toHaveAttribute("aria-sort", "descending");
+  });
+
+  it("adds a column from its menu while the source has room, and sorts by it alone once it has none", () => {
+    const { provider } = renderOrderingTable(2);
+    fireEvent.click(findSortButton("Name"));
+    openMenuOf("Status");
+    choose("Sort ascending");
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "asc" },
+    ]);
+    openMenuOf("Cores");
+    choose("Sort descending");
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "cores", direction: "desc" },
+    ]);
+  });
+
+  it("sets an ordered column's direction where it stands from its menu", () => {
+    const { provider } = renderOrderingTable(3);
+    act(() => {
+      provider.setSort([
+        { field: "name", direction: "asc" },
+        { field: "status", direction: "asc" },
+        { field: "cores", direction: "asc" },
+      ]);
+    });
+    openMenuOf("Status");
+    choose("Sort descending");
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "desc" },
+      { field: "cores", direction: "asc" },
+    ]);
+  });
+
+  it("offers remove from sort only while the reader's ordering names the column", () => {
+    const { provider } = renderOrderingTable(3, [
+      { field: "status", direction: "asc" },
+    ]);
+    // The source's default orders by Status, but the reader stated nothing:
+    // there is no term of the reader's to remove.
+    openMenuOf("Status");
+    expect(
+      screen.queryByRole("menuitem", { name: "Remove from sort" }),
+    ).toBeNull();
+    fireEvent.keyDown(document, { key: "Escape" });
+    act(() => {
+      provider.setSort([
+        { field: "status", direction: "asc" },
+        { field: "name", direction: "desc" },
+      ]);
+    });
+    openMenuOf("Status");
+    choose("Remove from sort");
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "desc" },
+    ]);
+    // Closed, the menu unmounts: its button, in the trigger's place, has focus.
+    expect(
+      screen.getByRole("button", { name: "Sort options for Status" }),
+    ).toHaveFocus();
+  });
+
+  it("offers a header menu only on a sortable column, once scripts run", () => {
+    renderOrderingTable(
+      3,
+      [],
+      [
+        { id: "name", header: "Name", sortable: true },
+        { id: "status", header: "Status" },
+      ],
+    );
+    expect(
+      screen.getByRole("button", { name: "Sort options for Name" }),
+    ).toHaveAttribute("aria-haspopup", "menu");
+    expect(
+      screen.queryByRole("button", { name: "Sort options for Status" }),
+    ).toBeNull();
+  });
+
+  it("has no axe violation with a header menu open", async () => {
+    renderOrderingTable(3);
+    openMenuOf("Name");
+    await expectNoAxeViolations(document.body);
+  });
+
+  it("names each header by its label alone, whatever controls it holds", () => {
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+      capabilities: declareMachineOrdering(1),
+    });
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          { id: "name", header: "Name", sortable: true, resizable: true },
+          { id: "status", header: "Status", sortable: true },
+          { id: "cores", header: "Cores" },
+        ]}
+        label="Machines"
+      />,
+    );
+    // A refusal's message sits in the Status header for as long as it stands.
+    fireEvent.click(findSortButton("Name"));
+    fireEvent.click(findSortButton("Status"), { shiftKey: true });
+    const status = findHeader("Status");
+    // The header holds more text than its label: the message and the
+    // menu button's hidden name are both inside it.
+    expect(status).toHaveTextContent(
+      "Sort unchanged: this source orders by at most 1 term",
+    );
+    expect(status).toHaveTextContent("Sort options for Status");
+    // Yet every header, with a control or without, is named by its label.
+    for (const name of ["Name", "Status", "Cores"]) {
+      expect(
+        screen
+          .getAllByRole("columnheader")
+          .find((header) => header.textContent?.startsWith(name)),
+      ).toHaveAccessibleName(name);
+    }
+  });
+
+  it("sorts by a column's field, not its id, from every gesture, and says why on that header", () => {
+    const { provider } = renderOrderingTable(
+      2,
+      [],
+      [
+        { id: "host", header: "Host", field: "name", sortable: true },
+        { id: "state", header: "State", field: "status", sortable: true },
+        { id: "size", header: "Size", field: "cores", sortable: true },
+      ],
+    );
+    fireEvent.click(findSortButton("Host"));
+    fireEvent.click(findSortButton("State"), { shiftKey: true });
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "asc" },
+    ]);
+    fireEvent.click(findSortButton("Size"), { shiftKey: true });
+    expect(findSortReason("Size")?.textContent?.trim()).toBe(
+      "Sort unchanged: this source orders by at most 2 terms.",
+    );
+    openMenuOf("Host");
+    choose("Sort descending");
+    openMenuOf("State");
+    choose("Remove from sort");
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "desc" },
+    ]);
+    expect(findHeader("Host")).toHaveAttribute("aria-sort", "descending");
+  });
+
+  it("shows the source's declared default as the ordering while the query states none", () => {
+    // A source's declared default already orders its rows, so the header
+    // says so rather than claiming the rows are unsorted.
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+      capabilities: declareCapabilities(machines, {
+        filter: { status: ["eq"] },
+        sort: {
+          fields: ["name"],
+          terms: 1,
+          tiebreak: "opaque",
+          default: [{ field: "name", direction: "asc" }],
+        },
+        counts: MACHINE_CAPABILITIES.counts,
+      }),
+    });
+    render(
+      <DataTable
+        provider={provider}
+        columns={[{ id: "name", header: "Name", sortable: true }]}
+        label="Machines"
+      />,
+    );
+    expect(screen.getByRole("columnheader", { name: "Name" })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    expect(findSortButton("Name")).toHaveAccessibleDescription("ascending");
+    // The first activation is still ascending: the default is not a term.
+    fireEvent.click(findSortButton("Name"));
+    expect(provider.state.get().slice.sort).toEqual([
+      { field: "name", direction: "asc" },
+    ]);
   });
 
   /**
@@ -587,36 +1378,6 @@ describe("DataTable", () => {
       />,
     );
     expect(screen.getByRole("status")).toHaveTextContent(/^Changed$/);
-  });
-
-  it("reports no sorted column for a declared default the header does not read yet", () => {
-    // A source's declared default already orders
-    // its rows, but the header does not report it yet, so it claims no
-    // sorted column rather than half of that contract.
-    const { provider } = createMachineProvider({
-      rows: [machine("m-1", "alpha")],
-      capabilities: declareCapabilities(machines, {
-        filter: { status: ["eq"] },
-        sort: {
-          fields: ["name"],
-          terms: 1,
-          tiebreak: "opaque",
-          default: [{ field: "name", direction: "asc" }],
-        },
-        counts: MACHINE_CAPABILITIES.counts,
-      }),
-    });
-    render(
-      <DataTable
-        provider={provider}
-        columns={[{ id: "name", header: "Name", sortable: true }]}
-        label="Machines"
-      />,
-    );
-    expect(screen.getByRole("columnheader", { name: /Name/ })).toHaveAttribute(
-      "aria-sort",
-      "none",
-    );
   });
 
   it("offers a real checkbox per row, named after the record", () => {
@@ -827,7 +1588,9 @@ describe("DataTable", () => {
   it("rebuilds its model when a column genuinely changes", () => {
     const { provider, view } = loadedTable([machine("m-1", "alpha")]);
     expect(
-      screen.getAllByRole("columnheader").map((header) => header.textContent),
+      screen
+        .getAllByRole("columnheader")
+        .map((header) => header.querySelector(".label")?.textContent),
     ).toEqual(["Name", "Status"]);
     view.rerender(
       <DataTable
@@ -837,7 +1600,9 @@ describe("DataTable", () => {
       />,
     );
     expect(
-      screen.getAllByRole("columnheader").map((header) => header.textContent),
+      screen
+        .getAllByRole("columnheader")
+        .map((header) => header.querySelector(".label")?.textContent),
     ).toEqual(["Name", "Status", "Cores"]);
     expect(
       within(elementAt(screen.getAllByRole("row"), 1))
@@ -958,7 +1723,7 @@ describe("DataTable", () => {
     const listHeaders = (): string[] =>
       screen
         .getAllByRole("columnheader")
-        .map((header) => header.textContent ?? "");
+        .map((header) => header.querySelector(".label")?.textContent ?? "");
     expect(listHeaders()).toEqual(["Name", "Status", "Cores"]);
     act(() => {
       provider.presentation.arrange({
@@ -1005,7 +1770,7 @@ describe("DataTable", () => {
     const listHeaders = (name: string): string[] =>
       within(screen.getByRole("table", { name }))
         .getAllByRole("columnheader")
-        .map((header) => header.textContent ?? "");
+        .map((header) => header.querySelector(".label")?.textContent ?? "");
     await act(async () => {
       await provider.views?.open(view.id);
     });
@@ -1242,6 +2007,32 @@ describe("DataTable", () => {
     }
   });
 
+  it("mounts and publishes its columns at their minimums where there is no ResizeObserver", () => {
+    // A runtime with nothing to measure a container by: no width ever
+    // arrives, so the table resolves each column at its minimum rather than
+    // failing to mount.
+    vi.stubGlobal("ResizeObserver", undefined);
+    onTestFinished(() => {
+      vi.unstubAllGlobals();
+    });
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+    });
+    const { container } = render(
+      <DataTable
+        provider={provider}
+        columns={unsortedColumns}
+        label="Machines"
+      />,
+    );
+    expect(screen.getByRole("table", { name: "Machines" })).toBeInTheDocument();
+    expect(
+      container
+        .querySelector<HTMLElement>("[role='table']")
+        ?.style.getPropertyValue("--data-table-columns"),
+    ).toBe("96px 96px");
+  });
+
   it("is safe under StrictMode double-mount without orphaned subscriptions", () => {
     const { provider, source } = createMachineProvider({
       rows: [machine("m-1", "alpha")],
@@ -1267,6 +2058,8 @@ describe("DataTable", () => {
         <StrictMode>
           <DataTable
             provider={provider}
+            // Sortable columns: a header menu mounts only while open, so a
+            // closed one observes nothing and what is counted is the table's.
             columns={columns}
             label="Machines"
             selectable
@@ -1609,7 +2402,8 @@ describe("DataTable", () => {
     const name = elementAt(headers, 0);
     const status = elementAt(headers, 1);
     expect(within(name).getByRole("button", { name: "Name" })).toBeVisible();
-    expect(name).toHaveAttribute("aria-sort", "none");
+    // Offered, and at rest claiming no sort: nothing orders the rows yet.
+    expect(name).not.toHaveAttribute("aria-sort");
     expect(within(status).queryByRole("button")).toBeNull();
     expect(status).not.toHaveAttribute("aria-sort");
   });
@@ -1711,40 +2505,103 @@ describe("DataTable", () => {
       "true",
     );
   });
-});
 
-describe("DataTable accessibility", () => {
-  it("has no axe violation over loaded rows with sorting and resizing offered", async () => {
-    const { view } = loadedTable(undefined, {
-      columns: [
-        { id: "name", header: "Name", sortable: true, resizable: true },
-        { id: "status", header: "Status" },
-      ],
+  describe("accessibility", () => {
+    it("has no axe violation over loaded rows with sorting and resizing offered", async () => {
+      const { view } = loadedTable(undefined, {
+        columns: [
+          { id: "name", header: "Name", sortable: true, resizable: true },
+          { id: "status", header: "Status" },
+        ],
+      });
+      await expectNoAxeViolations(view.container);
     });
-    await expectNoAxeViolations(view.container);
-  });
 
-  it("has no axe violation with a selection column and a row selected", async () => {
-    const { provider, view } = loadedTable(undefined, { selectable: true });
-    act(() => {
-      provider.selection.add(["m-1"]);
+    it("has no axe violation with a selection column and a row selected", async () => {
+      const { provider, view } = loadedTable(undefined, { selectable: true });
+      act(() => {
+        provider.selection.add(["m-1"]);
+      });
+      await expectNoAxeViolations(view.container);
     });
-    await expectNoAxeViolations(view.container);
-  });
 
-  it("has no axe violation while a column is sorted", async () => {
-    const { view } = loadedTable();
-    fireEvent.click(screen.getByRole("button", { name: "Name" }));
-    await expectNoAxeViolations(view.container);
-  });
+    it("has no axe violation while a column is sorted", async () => {
+      const { view } = loadedTable();
+      fireEvent.click(screen.getByRole("button", { name: "Name" }));
+      await expectNoAxeViolations(view.container);
+    });
 
-  it("has no axe violation while rows are pending, and once they have failed", async () => {
-    const { provider, source } = createMachineProvider();
-    const view = render(
-      <DataTable provider={provider} columns={columns} label="Machines" />,
-    );
-    await expectNoAxeViolations(view.container);
-    fail(source, "the inventory is unreachable");
-    await expectNoAxeViolations(view.container);
+    it("has no axe violation over several terms and a refusal's reason", async () => {
+      const { provider } = createMachineProvider({
+        rows: [machine("m-1", "alpha")],
+        capabilities: declareMachineOrdering(2),
+      });
+      const view = render(
+        <DataTable
+          provider={provider}
+          columns={[
+            { id: "name", header: "Name", sortable: true },
+            { id: "status", header: "Status", sortable: true },
+            { id: "cores", header: "Cores" },
+          ]}
+          label="Machines"
+        />,
+      );
+      act(() => {
+        provider.setSort([
+          { field: "name", direction: "asc" },
+          { field: "cores", direction: "desc" },
+        ]);
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Status" }), {
+        shiftKey: true,
+      });
+      await expectNoAxeViolations(view.container);
+    });
+
+    it("has no axe violation while rows are pending, and once they have failed", async () => {
+      const { provider, source } = createMachineProvider();
+      const view = render(
+        <DataTable provider={provider} columns={columns} label="Machines" />,
+      );
+      await expectNoAxeViolations(view.container);
+      fail(source, "the inventory is unreachable");
+      await expectNoAxeViolations(view.container);
+    });
+
+    it("has no axe violation in the markup a server sends", async () => {
+      const { provider } = createMachineProvider({
+        location: createMemoryLocation({ href: "/machines" }),
+        capabilities: declareMachineOrdering(2),
+        seed: {
+          slice: {
+            filter: [],
+            search: null,
+            sort: [
+              { field: "name", direction: "desc" },
+              { field: "status", direction: "asc" },
+            ],
+            group: [],
+          },
+        },
+      });
+      const container = document.createElement("div");
+      container.innerHTML = renderToString(
+        <DataTable
+          provider={provider}
+          columns={[
+            { id: "name", header: "Name", sortable: true },
+            { id: "status", header: "Status", sortable: true },
+            { id: "cores", header: "Cores" },
+          ]}
+          label="Machines"
+        />,
+      );
+      document.body.append(container);
+      onTestFinished(() => {
+        container.remove();
+      });
+      await expectNoAxeViolations(container);
+    });
   });
 });

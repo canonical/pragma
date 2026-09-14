@@ -27,3 +27,9 @@ export type UseDataViewsCellResult<TRow extends object = RowRecord> = {
   /** Whether the row is in the collection's selection. */
   readonly selected: ReadonlyChannel<boolean>;
 };
+
+/**
+ * What `useIsHydrated` returns: whether scripts have taken over the page —
+ * false on the server and while hydrating, true after.
+ */
+export type UseIsHydratedResult = boolean;

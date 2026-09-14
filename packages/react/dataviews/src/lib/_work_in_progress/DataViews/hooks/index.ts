@@ -1,5 +1,6 @@
 export type * from "./types.js";
 export { default as useAppliedSearch } from "./useAppliedSearch.js";
+export { default as useAppliedSort } from "./useAppliedSort.js";
 export { default as useDataViews } from "./useDataViews.js";
 export { default as useDataViewsFilter } from "./useDataViewsFilter.js";
 export { default as useDataViewsRoot } from "./useDataViewsRoot.js";

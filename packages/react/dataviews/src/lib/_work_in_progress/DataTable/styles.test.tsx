@@ -13,12 +13,18 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SortTerm, SourceDelivery } from "@canonical/dataviews-core";
+import {
+  createMemoryLocation,
+  type SortTerm,
+  type SourceDelivery,
+} from "@canonical/dataviews-core";
 import { act, cleanup, render } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { pageOf } from "../../../../testing/fixtures.js";
 import {
   createMachineProvider,
+  declareMachineOrdering,
   type Machine,
   machine,
 } from "../../../../testing/machines.js";
@@ -154,6 +160,44 @@ const virtualizedTable = (): HTMLElement => {
   return container;
 };
 
+/** A table ordered by two terms: each sorted header shows its precedence. */
+const renderSortedByTwo = (): HTMLElement => {
+  const { provider } = createMachineProvider({
+    rows: [machine("m-1", "alpha")],
+    capabilities: declareMachineOrdering(null),
+  });
+  const { container } = render(
+    <DataTable
+      provider={provider}
+      columns={[
+        { id: "name", header: "Name", sortable: true },
+        { id: "status", header: "Status", sortable: true },
+      ]}
+      label="Machines"
+    />,
+  );
+  act(() => {
+    provider.setSort([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "desc" },
+    ]);
+  });
+  return container;
+};
+
+/** A table as the server sends it: each sortable header is its link. */
+const renderServerMarkup = (): HTMLElement => {
+  const { provider } = createMachineProvider({
+    location: createMemoryLocation({ href: "/machines" }),
+    capabilities: declareMachineOrdering(null),
+  });
+  const container = document.createElement("div");
+  container.innerHTML = renderToString(
+    <DataTable provider={provider} columns={columns} label="Machines" />,
+  );
+  return container;
+};
+
 const classesOf = (container: HTMLElement): Set<string> =>
   new Set(
     [...container.querySelectorAll("[class]")].flatMap((element) => [
@@ -193,6 +237,11 @@ describe("DataTable stylesheet", () => {
     for (const name of classesOf(refreshFailedTable())) {
       rendered.add(name);
     }
+    cleanup();
+    for (const name of classesOf(renderSortedByTwo())) {
+      rendered.add(name);
+    }
+    cleanup();
     expect(styled.size).toBeGreaterThan(0);
     expect([...styled].filter((name) => !rendered.has(name))).toEqual([]);
   });
@@ -313,9 +362,15 @@ describe("DataTable stylesheet", () => {
     expect(rule(/\.ds\.data-table-header-cell/)).toMatch(
       /align-self:\s*stretch;/,
     );
-    expect(sheet.match(/& > \.ds\.icon\s*\{([^{}]*)/)?.[1]).toMatch(
-      /flex:\s*none;/,
-    );
+    // Its precedence numeral beside it never shrinks either, in the sort
+    // control or beside a plain label.
+    expect(
+      sheet
+        .match(
+          /& > :is\(\.ds\.icon, \.precedence\),\s*& > \.sort > :is\(\.ds\.icon, \.precedence\)\s*\{([^{}]*)/,
+        )
+        ?.at(1),
+    ).toMatch(/flex:\s*none;/);
   });
 
   it("keeps a resize drag from starting a text selection", () => {
@@ -387,7 +442,13 @@ describe("DataTable anatomy", () => {
       ),
     );
     expect(stated.size).toBeGreaterThan(0);
-    for (const mount of [loaded, failed, virtualizedTable]) {
+    for (const mount of [
+      loaded,
+      failed,
+      virtualizedTable,
+      renderSortedByTwo,
+      renderServerMarkup,
+    ]) {
       const container = mount();
       for (const selector of [...stated]) {
         if (container.querySelector(selector) !== null) {

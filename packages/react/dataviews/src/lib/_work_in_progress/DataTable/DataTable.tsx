@@ -25,7 +25,11 @@ import {
   VIRTUALIZED,
   type VirtualizedBodyProps,
 } from "../../common/index.js";
-import { useDataViewsValue, useMergedRef } from "../../hooks/index.js";
+import {
+  useDataViewsValue,
+  useIsHydrated,
+  useMergedRef,
+} from "../../hooks/index.js";
 import {
   HeaderCell,
   Row,
@@ -41,6 +45,7 @@ import {
 import describeStatus from "./describeStatus.js";
 import {
   useColumnArrangement,
+  useHeaderSort,
   useRowScopes,
   useStableCallback,
   useStableValue,
@@ -95,6 +100,16 @@ const renderVirtualizedBody = (
  * arrangement in force and writes a resize back to it, so every table on
  * one provider agrees.
  *
+ * A column marked `sortable` sorts from its header: activating it cycles
+ * ascending, descending and back to the source's own order, and Shift adds
+ * a further term where the source orders by more than one. The headers show
+ * the ordering in force — the source's default when the query states none
+ * — and exactly one of them, the first term's, carries `aria-sort`. Without
+ * scripting each sortable header is a real link to the next ordering, from
+ * the first page, where the provider has a location to lead to; once
+ * scripts run, a menu beside each sortable header sorts ascending or
+ * descending, or removes the column from the reader's ordering.
+ *
  * Given `virtualization`, it mounts only the rows near its viewport and reports
  * every row's logical position; without it, every row is rendered.
  *
@@ -139,6 +154,7 @@ export default function DataTable<
   // memo holds there too.
   const orderable = useMemo(() => new Set(sortableFields), [sortableFields]);
   const baseId = useId();
+  const hydrated = useIsHydrated();
 
   // The columns the presentation shows, in its order. Both derivations
   // below are keyed on content, not on array identity: a caller who
@@ -204,6 +220,16 @@ export default function DataTable<
   // Busy while a request is in flight, and only then: the root says so
   // over retained rows as over none.
   const busy = state.pendingRequestId !== null;
+
+  // The header row's sort: the ordering in force and what each column shows
+  // of it, the column that claims it, refusals, no-JS destinations, and the
+  // actions every header shares.
+  const headerSort = useHeaderSort({
+    provider,
+    columns: rendered,
+    slice: state.slice,
+    window: state.window,
+  });
 
   // The container ref is the table's own — the solver measures it — so a
   // caller's ref is merged onto it rather than dropped, as className and
@@ -284,28 +310,41 @@ export default function DataTable<
               reserve={geometry.reserve}
             />
           ) : null}
-          {rendered.map((column, position) => (
-            <HeaderCell
-              key={column.id}
-              column={column}
-              field={readFieldName(column)}
-              sortable={
-                column.sortable === true && orderable.has(readFieldName(column))
-              }
-              sort={state.slice.sort.find(
-                (term) => term.field === readFieldName(column),
-              )}
-              setSort={provider.setSort}
-              interaction={interaction}
-              resizable={
-                column.resizable === true && position < rendered.length - 1
-              }
-              bounds={readSizingBounds(layout.readDeclared(column.id))}
-              // Solved for every rendered column, in the same order.
-              width={geometry.widths[position] as number}
-              labelId={`${baseId}-${column.id}`}
-            />
-          ))}
+          {rendered.map((column, position) => {
+            const field = readFieldName(column);
+            const sortable = column.sortable === true && orderable.has(field);
+            return (
+              <HeaderCell
+                key={column.id}
+                column={column}
+                sortable={sortable}
+                precedence={headerSort.precedences.get(field) ?? null}
+                primary={column.id === headerSort.primaryColumnId}
+                // Spelled only while it is rendered: once scripts take over
+                // the header is a button, and nothing reads a destination.
+                destination={
+                  sortable && !hydrated
+                    ? headerSort.spellDestination(column.id)
+                    : null
+                }
+                hydrated={hydrated}
+                reason={headerSort.readReason(column.id)}
+                onClearRefusal={headerSort.clearRefusal}
+                onSort={headerSort.sortColumn}
+                removable={headerSort.stated.has(field)}
+                onPlace={headerSort.placeColumn}
+                onRemoveFromSort={headerSort.removeFromSort}
+                interaction={interaction}
+                resizable={
+                  column.resizable === true && position < rendered.length - 1
+                }
+                bounds={readSizingBounds(layout.readDeclared(column.id))}
+                // Solved for every rendered column, in the same order.
+                width={geometry.widths[position] as number}
+                labelId={`${baseId}-${column.id}`}
+              />
+            );
+          })}
         </div>
       </div>
       {virtualization === undefined ? (

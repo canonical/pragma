@@ -27,8 +27,11 @@ type IndexedStory = {
 /** The table's stories. */
 const TABLE = "_work_in_progress/DataTable";
 
-/** The stories this pass walks: the table's own. */
-const TITLES: readonly string[] = [TABLE];
+/** The sort panel's stories, the path to an ordering without Shift. */
+const SORT_PANEL = "_work_in_progress/DataViews/SortPanel";
+
+/** The stories this pass walks: the table's own, and the sort panel's. */
+const TITLES: readonly string[] = [TABLE, SORT_PANEL];
 
 /**
  * The built Storybook's index, trusted as the build writes it: only its
@@ -412,7 +415,7 @@ const tabTo = async (page: Page, control: Locator): Promise<void> => {
   }
 };
 
-test.describe("DataTable stories, keyboard only", () => {
+test.describe("DataTable and sort panel stories, keyboard only", () => {
   for (const story of stories) {
     test(`${story.title} ${story.name}: every control is reached both ways, focus visible`, async ({
       page,
@@ -462,19 +465,128 @@ test.describe("DataTable stories, keyboard only", () => {
     });
   }
 
-  test("Sortable: Enter and Space cycle a heading's sort and keep focus on it", async ({
+  test("Sortable: Enter and Space cycle a header's sort, Shift adds a term, focus stays", async ({
     page,
   }) => {
     await openStory(page, findStory(TABLE, "Sortable").id);
-    const heading = page.getByRole("columnheader", { name: /^Host/ });
-    const control = heading.getByRole("button", { name: "Host" });
-    await tabTo(page, control);
+    const host = page.getByRole("columnheader", { name: "Host", exact: true });
+    const status = page.getByRole("columnheader", {
+      name: "Status",
+      exact: true,
+    });
+    const hostSort = host.getByRole("button", { name: "Host", exact: true });
+    const statusSort = status.getByRole("button", {
+      name: "Status",
+      exact: true,
+    });
+    // At rest nothing is sorted, and no header claims it is.
+    await expect(host).not.toHaveAttribute("aria-sort");
+
+    await tabTo(page, hostSort);
     await page.keyboard.press("Enter");
-    await expect(heading).toHaveAttribute("aria-sort", "ascending");
-    await expect(control).toBeFocused();
+    await expect(host).toHaveAttribute("aria-sort", "ascending");
+    await expect(hostSort).toBeFocused();
     await page.keyboard.press("Space");
-    await expect(heading).toHaveAttribute("aria-sort", "descending");
-    await expect(control).toBeFocused();
+    await expect(host).toHaveAttribute("aria-sort", "descending");
+    await expect(hostSort).toBeFocused();
+
+    // Shift adds Status as the second term; Host keeps the sort's claim.
+    await tabTo(page, statusSort);
+    await page.keyboard.press("Shift+Enter");
+    await expect(statusSort).toHaveAccessibleDescription("ascending, 2nd of 2");
+    await expect(status.locator(".precedence")).toHaveText("2");
+    await expect(host).toHaveAttribute("aria-sort", "descending");
+    await expect(status).not.toHaveAttribute("aria-sort");
+    await expect(statusSort).toBeFocused();
+    await page.keyboard.press("Shift+Space");
+    await expect(statusSort).toHaveAccessibleDescription(
+      "descending, 2nd of 2",
+    );
+    await expect(statusSort).toBeFocused();
+
+    // Enter alone on a descending Status completes its cycle: back to the
+    // source's own order, which here orders by nothing.
+    await page.keyboard.press("Enter");
+    await expect(status).not.toHaveAttribute("aria-sort");
+    await expect(host).not.toHaveAttribute("aria-sort");
+    await expect(statusSort).toBeFocused();
+    // Enter again starts it over, by Status alone.
+    await page.keyboard.press("Enter");
+    await expect(status).toHaveAttribute("aria-sort", "ascending");
+    await expect(status.locator(".precedence")).toHaveCount(0);
+  });
+
+  test("SortLimitedToOneTerm: a refused Shift+Enter says why until the menu's choice is accepted", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(TABLE, "Sort Limited To One Term").id);
+    const hostSort = page.getByRole("button", { name: "Host", exact: true });
+    const status = page.getByRole("columnheader", {
+      name: "Status",
+      exact: true,
+    });
+    const statusSort = status.getByRole("button", {
+      name: "Status",
+      exact: true,
+    });
+    await tabTo(page, hostSort);
+    await page.keyboard.press("Enter");
+    await tabTo(page, statusSort);
+    await page.keyboard.press("Shift+Enter");
+    const reason = status.locator(".sort-reason");
+    await expect(reason).toHaveText(
+      "Sort unchanged: this source orders by at most 1 term.",
+    );
+    await expect(reason).toBeVisible();
+    await expect(statusSort).toBeFocused();
+    // Still in the header, on its menu button: the reason stands.
+    await page.keyboard.press("Tab");
+    await expect(
+      page.getByRole("button", {
+        name: "Sort options for Status",
+        exact: true,
+      }),
+    ).toBeFocused();
+    await expect(reason).toHaveText(
+      "Sort unchanged: this source orders by at most 1 term.",
+    );
+    // Into the menu: the reason stands for its choice to settle.
+    await page.keyboard.press("Enter");
+    const ascending = page.getByRole("menuitem", { name: "Sort ascending" });
+    await expect(ascending).toBeFocused();
+    await expect(reason).toHaveText(
+      "Sort unchanged: this source orders by at most 1 term.",
+    );
+    // An accepted choice clears it: Status alone, ascending.
+    await page.keyboard.press("Enter");
+    await expect(status).toHaveAttribute("aria-sort", "ascending");
+    await expect(reason).toBeEmpty();
+  });
+
+  test("Sortable: Enter opens a header's menu, Enter sorts from it, focus returns to its trigger", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(TABLE, "Sortable").id);
+    const host = page.getByRole("columnheader", { name: "Host", exact: true });
+    const trigger = page.getByRole("button", {
+      name: "Sort options for Host",
+      exact: true,
+    });
+    await tabTo(page, trigger);
+    await page.keyboard.press("Enter");
+    const menu = page.getByRole("menu", {
+      name: "Sort options for Host",
+      exact: true,
+    });
+    await expect(menu).toBeVisible();
+    // The menu takes focus on its first item, which Enter chooses.
+    await expect(
+      page.getByRole("menuitem", { name: "Sort ascending" }),
+    ).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(host).toHaveAttribute("aria-sort", "ascending");
+    await expect(menu).toBeHidden();
+    await expect(trigger).toBeFocused();
   });
 
   test("Selectable: Space checks a row's checkbox", async ({ page }) => {
@@ -486,5 +598,38 @@ test.describe("DataTable stories, keyboard only", () => {
     await page.keyboard.press("Space");
     await expect(checkbox).toBeChecked();
     await expect(checkbox).toBeFocused();
+  });
+
+  test("SortPanel Default: Enter and Space move a term up, focus kept or handed to its Remove", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(SORT_PANEL, "Default").id);
+    const panel = page.getByRole("region", { name: "Sort" });
+    const terms = panel.getByRole("listitem");
+    // The story's own play function moves Host up first; start from there.
+    await expect(terms.nth(1)).toHaveText(/^name, ascending/);
+    const coresTerm = terms.filter({ hasText: /^cores/ });
+    const moveUp = coresTerm.getByRole("button", { name: "Move up" });
+
+    await tabTo(page, moveUp);
+    await page.keyboard.press("Enter");
+    await expect(terms.nth(1)).toHaveText(/^cores, descending/);
+    await expect(moveUp).toBeFocused();
+
+    await page.keyboard.press("Space");
+    await expect(terms.first()).toHaveText(/^cores, descending/);
+    // Cores is first: its Move up disabled under the focus, which moved on.
+    await expect(moveUp).toBeDisabled();
+    await expect(
+      coresTerm.getByRole("button", { name: "Remove" }),
+    ).toBeFocused();
+
+    // Move down re-inserts the moved term's item; focus stays on its control.
+    const moveDown = coresTerm.getByRole("button", { name: "Move down" });
+    await page.keyboard.press("Shift+Tab");
+    await expect(moveDown).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(terms.nth(1)).toHaveText(/^cores, descending/);
+    await expect(moveDown).toBeFocused();
   });
 });

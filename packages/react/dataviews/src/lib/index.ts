@@ -23,6 +23,7 @@ export type {
   DataViewsProps,
   DataViewsSavedViewsProps,
   DataViewsSearchProps,
+  DataViewsSortPanelProps,
   UseDataViewsFilterResult,
   UseDataViewsResult,
 } from "./_work_in_progress/DataViews/index.js";

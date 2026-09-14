@@ -1,0 +1,53 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./SortPanel.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# DataViews.SortPanel recipes
+
+`DataViews.SortPanel` is the collection's ordering as a list: the reader's own sort terms in precedence order, each named by its field and its direction, with a way to move each up or down and to remove it. It takes no ordering and no callback — every change goes through the provider's `setSort`, as a table header's does, so the panel and the headers always show one ordering. It is the discoverable path to an ordering of several terms, and one that needs no Shift key.
+
+Without scripts, each move and removal is a real link to the ordering it leads to, from the first page; once scripts run, a button. It is deliberately rough: its design comes later. Until the root owns field labels, each term is named by its field.
+
+## The ordering beside the table it orders
+
+Sort the table by several columns from its headers, or start the provider on an ordering, and the panel lists it. Moving a term changes which column the rows are sorted by first; the table's headers follow, and only the first term's header reports the sort.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+} from "@canonical/dataviews-core";
+import { DataViews, type DataTableColumn } from "@canonical/dataviews-react";
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host", sortable: true },
+  { id: "status", header: "Status", sortable: true },
+  { id: "cores", header: "Cores", sortable: true },
+];
+
+export function Machines() {
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      collection: machineCollection,
+      source: createArraySource({ rows: machines, collection: machineCollection }),
+    }),
+  );
+  return (
+    <DataViews provider={provider}>
+      <DataViews.SortPanel />
+      <DataViews.DataTable columns={columns} label="Machines" />
+    </DataViews>
+  );
+}
+```
+
+<Canvas of={Stories.Default} sourceState="none" />
+
+## Nothing stated
+
+While the reader states no term, the panel says what orders the rows instead: the source's own documented order, or that nothing does.
+
+<Canvas of={Stories.NothingStated} sourceState="none" />

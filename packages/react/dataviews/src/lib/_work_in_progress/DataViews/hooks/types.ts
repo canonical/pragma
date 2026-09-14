@@ -14,6 +14,7 @@ import type {
   Query,
   RowRecord,
   SchemaFieldDefinition,
+  SortTerm,
   SourceRefusal,
 } from "@canonical/dataviews-core";
 import type { ContextOptions, DataViewsProps } from "../types.js";
@@ -40,6 +41,17 @@ export type UseAppliedSearchProps = {
 
 /** What the applied-search hook returns: the applied search, empty for none. */
 export type UseAppliedSearchResult = string;
+
+/** What the applied-sort hook takes: the provider whose ordering it reads. */
+export type UseAppliedSortProps = {
+  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
+};
+
+/**
+ * What the applied-sort hook returns: the applied terms, at one identity while
+ * they read the same.
+ */
+export type UseAppliedSortResult = readonly SortTerm[];
 
 /** What the destination hook takes: the provider, and the query a state leads to. */
 export type UseDestinationProps = {

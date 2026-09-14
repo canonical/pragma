@@ -5,7 +5,9 @@
  * of its body and the pagination facts a bar offers — each projected from
  * the published state — the filter records a root builds, the check a
  * binding tells a provider by, the provider's internal host, the list
- * comparison, and the wire key a form control is named by. React uses it
+ * comparison, the ordering in force and the next one a header's activation,
+ * or its menu's choice, leads to, and the wire key a form control is named
+ * by. React uses it
  * now; a Svelte binding would use the same names rather than solve its own
  * geometry.
  */
@@ -56,7 +58,11 @@ export type {
 export { resolveColumnArrangement } from "../presentation/index.js";
 export type { ProviderHost } from "../provider/index.js";
 export { isDataViewsProvider, readProviderHost } from "../provider/index.js";
-export { areListsEqual } from "../query/index.js";
+export {
+  areListsEqual,
+  cycleSortTerm,
+  placeSortTerm,
+} from "../query/index.js";
 export type {
   Applicability,
   RowChannels,
@@ -64,4 +70,6 @@ export type {
   RowScopesConfig,
 } from "../rows/index.js";
 export { createRowScopes } from "../rows/index.js";
+export type { EffectiveOrdering } from "../source/index.js";
+export { resolveEffectiveOrdering } from "../source/index.js";
 export { spellWireKey } from "../wire/index.js";

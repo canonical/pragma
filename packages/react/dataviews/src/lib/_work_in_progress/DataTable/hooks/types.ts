@@ -1,9 +1,18 @@
 /**
- * Hook domain types for the DataTable domain. Each hook declares its result
- * type here; a hook's props type lives beside it when the hook takes one.
+ * Hook domain types for the DataTable domain. Each hook declares its props
+ * and result types here.
  */
 
-import type { Presentation } from "@canonical/dataviews-core";
+import type {
+  DataViewsProvider,
+  Presentation,
+  ResultWindow,
+  RowRecord,
+  SchemaFieldDefinition,
+  Slice,
+  SortDirection,
+} from "@canonical/dataviews-core";
+import type { SortPrecedence } from "../common/index.js";
 import type { DataTableColumn } from "../types.js";
 
 /** One table's resolved geometry. */
@@ -38,3 +47,45 @@ export type UseColumnArrangementProps = {
 
 /** The columns a table renders, in the arrangement's order, the hidden ones left out. */
 export type UseColumnArrangementResult = readonly DataTableColumn[];
+
+/** What the header row's sort hook reads: the provider, the columns shown and the query in force. */
+export type UseHeaderSortProps<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  readonly provider: DataViewsProvider<TFields, TRow>;
+  /** The columns the presentation shows, in its order. */
+  readonly columns: readonly DataTableColumn[];
+  /** The applied query's slice. */
+  readonly slice: Slice;
+  /** The applied query's window. */
+  readonly window: ResultWindow;
+};
+
+/** What the header row's sort hook gives each header. */
+export type UseHeaderSortResult = {
+  /** Where each field stands in the ordering in force, by field. */
+  readonly precedences: ReadonlyMap<string, SortPrecedence>;
+  /** The one column that carries `aria-sort`, or null when none shows the first term. */
+  readonly primaryColumnId: string | null;
+  /** The fields the reader's own ordering names, which a column's menu can remove. */
+  readonly stated: ReadonlySet<string>;
+  /** Why the last activation of a column changed nothing, or null. */
+  readonly readReason: (columnId: string) => string | null;
+  /**
+   * Where a plain activation of a column leads without scripting, as
+   * `?query`, or null for a column not shown.
+   */
+  readonly spellDestination: (columnId: string) => string | null;
+  /**
+   * Activate a column's sort, as a further term when `additive`. Each action
+   * takes the column's id alone and reads its field from the columns shown.
+   */
+  readonly sortColumn: (columnId: string, additive: boolean) => void;
+  /** Sort by a column in a direction, from its menu. */
+  readonly placeColumn: (columnId: string, direction: SortDirection) => void;
+  /** Take a column out of the reader's ordering, from its menu. */
+  readonly removeFromSort: (columnId: string) => void;
+  /** Let a refusal's reason go. */
+  readonly clearRefusal: () => void;
+};

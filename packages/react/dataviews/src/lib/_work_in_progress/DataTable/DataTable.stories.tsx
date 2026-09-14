@@ -8,6 +8,7 @@ import {
   createEmptySource,
   createFailingSource,
   createMachineSource,
+  createOneTermSource,
   createPendingSource,
   type Machine,
   type MachineFields,
@@ -252,14 +253,16 @@ export const Default: Story = {
 };
 
 /**
- * Sortable: a column marked `sortable` makes its heading a button, and the
- * heading reports the applied order through `aria-sort`. Nothing is sorted
- * yet, so every sortable heading says `none`. Activating a heading cycles
- * ascending, then descending, then back to the source's own order — enabling
- * a sort never lands on descending by accident.
+ * Sortable: a column marked `sortable` makes its heading a control that
+ * sorts by it. Nothing is sorted yet, so no heading claims a sort.
+ * Activating a heading sorts by that column alone and cycles ascending,
+ * then descending, then back to the source's own order — enabling a sort
+ * never lands on descending by accident. Shift with a click, Enter or Space
+ * adds the column as a further term instead.
  *
- * Region and Owner are not sortable, so they carry no `aria-sort` at all
- * rather than claiming `none` about an order they cannot change.
+ * Without scripting each sortable heading is a link to that next ordering,
+ * from the first page. Region and Owner are not sortable, so they offer
+ * nothing to activate.
  */
 export const Sortable: Story = {
   parameters: consumerCode({
@@ -331,6 +334,104 @@ export const SortedDescending: Story = {
         "ironwood.example.com",
       ),
     );
+  },
+};
+
+/**
+ * Sort limited to one term: this source orders by a single term. Sort by
+ * a heading, then Shift-activate another: the ordering stays as it was, and
+ * the second heading says why below it while focus is in that heading or
+ * its menu, and until the ordering changes. Activating a heading without
+ * Shift still sorts by that column alone.
+ */
+export const SortLimitedToOneTerm: Story = {
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: sortableColumnsCode,
+    render: tableCode,
+  }),
+  render: renderMachines(sortableColumns, { source: createOneTermSource }),
+};
+
+/**
+ * Sort the story's provider by status, then cores, before it renders.
+ *
+ * @note Impure: sets the provider's ordering.
+ */
+const sortByStatusThenCores = (provider: MachineProvider): void => {
+  provider.setSort([
+    { field: "status", direction: "asc" },
+    { field: "cores", direction: "desc" },
+  ]);
+};
+
+/**
+ * Sorted by two terms: failed, pending and running machines, and the
+ * largest first within each status. Each sorted heading shows its place as
+ * a numeral and states it — Cores reads "descending, 2nd of 2" — while only
+ * Status, the first term, reports the sort through `aria-sort`, so exactly
+ * one heading ever claims it.
+ */
+export const SortedByTwoTerms: Story = {
+  parameters: consumerCode({
+    parts: tableParts,
+    declarations: sortableColumnsCode,
+    prepare: `provider.setSort([
+  { field: "status", direction: "asc" },
+  { field: "cores", direction: "desc" },
+]);`,
+    render: tableCode,
+  }),
+  render: renderMachines(sortableColumns, { prepare: sortByStatusThenCores }),
+  play: async ({ canvas }) => {
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("columnheader", { name: "Status" }),
+      ).toHaveAttribute("aria-sort", "ascending"),
+    );
+    await expect(
+      canvas.getByRole("columnheader", { name: "Cores" }),
+    ).not.toHaveAttribute("aria-sort");
+    await expect(
+      canvas.getByRole("button", { name: "Cores" }),
+    ).toHaveAccessibleDescription("descending, 2nd of 2");
+  },
+};
+
+/**
+ * Default ordering: this source documents that its pages come by host
+ * when a query states no term, so the Host heading shows that order
+ * and reports it — rows a source orders are never shown as unsorted. The
+ * first activation of Host is still ascending, as a term of the reader's
+ * own; clearing it returns to this.
+ */
+export const DefaultOrdering: Story = {
+  parameters: consumerCode({
+    parts: [...tableParts, "createArraySource"],
+    declarations: `const source = createArraySource({
+  rows: machines,
+  collection: machineCollection,
+  defaultSort: [{ field: "name", direction: "asc" }],
+});
+
+${sortableColumnsCode}`,
+    render: tableCode,
+  }),
+  render: renderMachines(sortableColumns, {
+    source: () =>
+      createMachineSource({
+        defaultSort: [{ field: "name", direction: "asc" }],
+      }),
+  }),
+  play: async ({ canvas }) => {
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("columnheader", { name: "Host" }),
+      ).toHaveAttribute("aria-sort", "ascending"),
+    );
+    await expect(
+      canvas.getByRole("button", { name: "Host" }),
+    ).toHaveAccessibleDescription("ascending");
   },
 };
 
@@ -595,7 +696,7 @@ export const ResizePastTheContainer: Story = {
       start + table.clientWidth + 0.5,
     );
     await expect(
-      widthOf(canvas.getByRole("columnheader", { name: /^Owner/ })),
+      widthOf(canvas.getByRole("columnheader", { name: "Owner" })),
     ).toBe(96);
   },
 };
@@ -641,7 +742,7 @@ export const LastColumnTakesTheRest: Story = {
   render: renderMachines(fixedColumns),
   play: async ({ canvas }) => {
     await expect(
-      widthOf(await canvas.findByRole("columnheader", { name: /^Owner/ })),
+      widthOf(await canvas.findByRole("columnheader", { name: "Owner" })),
     ).toBeGreaterThan(120);
   },
 };
@@ -920,7 +1021,7 @@ const virtualization = virtualizeRows({ estimatedRowHeight: 24 });
 
 /** Ten thousand machines, all in one window. */
 const tenThousand = {
-  source: () => createMachineSource(manyMachines(10_000)),
+  source: () => createMachineSource({ rows: manyMachines(10_000) }),
   window: { ...DEFAULT_WINDOW, page: 1, size: 10_000 },
 } as const;
 

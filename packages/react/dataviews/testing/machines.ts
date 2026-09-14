@@ -5,6 +5,7 @@
  */
 
 import {
+  type CapabilityDeclaration,
   type Collection,
   createCollection,
   createDataViewsProvider,
@@ -13,6 +14,7 @@ import {
   declareCapabilities,
   type PresentationStore,
   type QueryLocation,
+  type SortTerm,
   type SourceCapabilities,
   type ViewStore,
 } from "@canonical/dataviews-core";
@@ -49,16 +51,39 @@ export const machine = (
   cores = 4,
 ): Machine => ({ id, name, status, cores });
 
+/** What every machine declaration shares: its filters, its search and its counts. */
+const MACHINE_DECLARATION = {
+  filter: { status: ["eq"], cores: ["gte", "lte"] },
+  search: ["name"],
+  counts: COUNTED_EXACTLY,
+} as const satisfies CapabilityDeclaration<MachineFields>;
+
 /** What the fixture source declares: it filters, searches and orders by `name` alone. */
 export const MACHINE_CAPABILITIES: SourceCapabilities = declareCapabilities(
   machines,
   {
-    filter: { status: ["eq"], cores: ["gte", "lte"] },
-    search: ["name"],
+    ...MACHINE_DECLARATION,
     sort: { fields: ["name"], terms: 1, tiebreak: "opaque" },
-    counts: COUNTED_EXACTLY,
   },
 );
+
+/**
+ * A declaration ordering by all three machine fields, with the given term
+ * limit and default: what a header test sorts several columns over.
+ */
+export const declareMachineOrdering = (
+  terms: number | null,
+  defaultSort: readonly SortTerm[] = [],
+): SourceCapabilities =>
+  declareCapabilities(machines, {
+    ...MACHINE_DECLARATION,
+    sort: {
+      fields: ["name", "status", "cores"],
+      terms,
+      tiebreak: "opaque",
+      default: defaultSort,
+    },
+  });
 
 /** How one test's machine provider is set up. */
 export type MachineProviderConfig = Omit<
