@@ -47,13 +47,17 @@
       rather than token references. They are the documented override point:
       `<Modal style={{ "--modal-max-inline-size": "30rem" }} />`.
     */
+
     --modal-min-inline-size: 50ch;
-    --modal-max-inline-size: 80vw;
+    --modal-max-inline-size: 130ch;
+
     --modal-inline-size: clamp(
       var(--modal-min-inline-size),
-      50ch,
+      30vw,
       var(--modal-max-inline-size)
     );
+
+
 
     --modal-max-block-size: 80vh;
   }
