@@ -1,20 +1,9 @@
-import type React from "react";
+import type { ComponentProps } from "react";
 
 /** The number of stars offered. Ratings are conventionally out of 5 or 10. */
 export type RatingScale = 5 | 10;
 
-/**
- * Props for the presentational RatingInput (no react-hook-form). The control is
- * a radio group under the hood — a single-select from `count` options — so it
- * inherits native keyboard support and screen-reader announcements; the props
- * mirror a controlled/uncontrolled radio group rather than a single input.
- */
-export interface RatingInputProps {
-  /** A unique identifier for the group. */
-  id?: string;
-  /** Additional CSS classes on the group wrapper. */
-  className?: string;
-  style?: React.CSSProperties;
+type OwnProps = {
   /**
    * The radio group name — shared by every star so they form one group.
    * (Per-star input ids are derived from the group `id`, or a generated id when
@@ -41,7 +30,9 @@ export interface RatingInputProps {
   disabled?: boolean;
   /**
    * Accessible name for the group (e.g. "Rate this article"). Falls back to
-   * "Rating" — always provide a meaningful one in context.
+   * "Rating" — always provide a meaningful one in context. Declared here rather
+   * than taken from the root element's props because the component supplies that
+   * fallback and suppresses it when `aria-labelledby` is set.
    */
   "aria-label"?: string;
   "aria-labelledby"?: string;
@@ -50,4 +41,15 @@ export interface RatingInputProps {
    * and the total; defaults to "{value} of {count} stars".
    */
   formatStarLabel?: (value: number, count: number) => string;
-}
+};
+
+/**
+ * Props for the presentational RatingInput (no react-hook-form). The control is
+ * a radio group under the hood — a single-select from `count` options — so it
+ * inherits native keyboard support and screen-reader announcements; the props
+ * mirror a controlled/uncontrolled radio group rather than a single input.
+ *
+ * Renders a `<div class="ds form-rating" role="radiogroup">` as its root.
+ */
+export type RatingInputProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

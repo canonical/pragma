@@ -1,9 +1,10 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
+import type { ComponentProps } from "react";
 import type { InputProps } from "../../common/types.js";
-import type { BaseProps, OptionsProps } from "../../subcomponent/types.js";
+import type { OptionsProps } from "../../subcomponent/types.js";
 
-type AdditionalChoicesProps = OptionsProps & {
+type OwnProps = OptionsProps & {
   /** Field name shared by every option input in the group */
   name: string;
 
@@ -34,8 +35,10 @@ type AdditionalChoicesProps = OptionsProps & {
   onChange?: (value: string | string[]) => void;
 };
 
-/** Props for the presentational Choices (controlled, no react-hook-form). */
-export type ChoicesPresentationProps = BaseProps & AdditionalChoicesProps;
+/** Props for the presentational Choices (controlled, no react-hook-form).
+ * Renders a `<fieldset class="ds form-choices">` as its root. */
+export type ChoicesPresentationProps = OwnProps &
+  Omit<ComponentProps<"fieldset">, keyof OwnProps>;
 
 /** Props for the react-hook-form-bound Choices field. */
 export type ChoicesFieldProps = InputProps<ChoicesPresentationProps>;

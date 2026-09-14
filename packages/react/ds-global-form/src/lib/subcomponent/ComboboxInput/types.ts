@@ -1,15 +1,16 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
-import type { BaseProps, Option, OptionsProps } from "../types.js";
+import type { ComponentProps, Dispatch, SetStateAction } from "react";
+import type { Option, OptionsProps } from "../types.js";
 import type * as utils from "./utils/index.js";
 
-/** Controlled value props — supplied by the field tier, or directly when standalone. */
-type ControlledProps = {
+type OwnProps = OptionsProps & {
+  /** Controlled value — supplied by the field tier, or directly when standalone. */
   value?: string | string[];
-  onChange?: (value: string | string[] | undefined) => void;
-  onBlur?: () => void;
-};
 
-type CommonProps = {
+  onChange?: (value: string | string[] | undefined) => void;
+
+  onBlur?: () => void;
+
   /** Whether the input is disabled */
   disabled?: boolean;
 
@@ -29,12 +30,11 @@ type CommonProps = {
   convertValueToItem?: typeof utils.convertValueToItem;
 
   onInputValueChangeFactory?: (
-    setItems: React.Dispatch<React.SetStateAction<Option[]>>,
+    setItems: Dispatch<SetStateAction<Option[]>>,
   ) => ({ inputValue }: { inputValue: string }) => void;
 };
 
-/** Props for the presentational Combobox (controlled, no react-hook-form). */
-export type ComboboxInputProps = BaseProps &
-  OptionsProps &
-  CommonProps &
-  ControlledProps;
+/** Props for the presentational Combobox (controlled, no react-hook-form).
+ * Renders a `<div class="ds combobox form-combobox">` as its root. */
+export type ComboboxInputProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

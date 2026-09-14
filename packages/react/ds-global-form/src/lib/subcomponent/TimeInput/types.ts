@@ -1,8 +1,6 @@
-import type React from "react";
+import type { ComponentProps } from "react";
 
-type NativeDateInputProps = React.InputHTMLAttributes<HTMLInputElement>;
-
-type AdditionalTimeProps = {
+type OwnProps = {
   /** Minimum time value (HH:MM format) */
   min?: string;
 
@@ -13,5 +11,7 @@ type AdditionalTimeProps = {
   step?: number;
 };
 
-/** Props for the presentational time input (no react-hook-form). */
-export type TimeInputProps = NativeDateInputProps & AdditionalTimeProps;
+/** Props for the presentational time input (no react-hook-form). Renders an
+ * `<input type="time">` as its root. */
+export type TimeInputProps = OwnProps &
+  Omit<ComponentProps<"input">, keyof OwnProps>;

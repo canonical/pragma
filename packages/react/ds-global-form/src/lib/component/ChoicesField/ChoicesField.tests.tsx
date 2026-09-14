@@ -51,4 +51,21 @@ describe("ChoicesField", () => {
     expect(radios[1]).toBeChecked();
     expect(radios[0]).not.toBeChecked();
   });
+
+  it("passes native attributes through to its root element", () => {
+    renderWithForm(
+      <ChoicesField
+        name="colour"
+        label="Colour"
+        options={options}
+        data-testid="colour-field"
+        title="Pick a colour"
+      />,
+    );
+    const root = screen.getByTestId("colour-field");
+    expect(root.tagName).toBe("FIELDSET");
+    expect(root).toHaveAttribute("title", "Pick a colour");
+    // the design-system class is merged, not replaced
+    expect(root).toHaveClass("ds", "form-choices");
+  });
 });

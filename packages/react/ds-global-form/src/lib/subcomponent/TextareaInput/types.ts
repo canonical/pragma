@@ -1,6 +1,5 @@
-import type React from "react";
+import type { ComponentProps } from "react";
 
-type NativeTextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
-
-/** Props for the presentational Textarea input (no react-hook-form). */
-export type TextareaInputProps = NativeTextareaProps;
+/** Props for the presentational Textarea input (no react-hook-form). Renders a
+ * `<textarea>` as its root. */
+export type TextareaInputProps = ComponentProps<"textarea">;
