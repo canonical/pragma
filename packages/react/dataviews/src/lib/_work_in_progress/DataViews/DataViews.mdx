@@ -18,7 +18,6 @@ import {
   createArraySource,
   createDataViewsProvider,
   createPlatformLocation,
-  DEFAULT_WINDOW,
 } from "@canonical/dataviews-core";
 import { createIndexedDBViewStore } from "@canonical/dataviews-core/indexeddb";
 import {
@@ -77,7 +76,7 @@ export function Machines() {
       location: createPlatformLocation(platform),
       views: store,
       presentation: store,
-      seed: { window: { ...DEFAULT_WINDOW, page: 1, size: 5 } },
+      snapshot: { query: "page=1&size=5", presentation: {} },
     }),
   );
   return (
@@ -150,24 +149,81 @@ createDataViewsProvider({
 
 The search, the filters and the pagination bar are real HTML first. The search and the filters are GET forms whose controls are named as the URL spells their clauses — `q`, `status`, `cores__gte` — with a number bound a native number input carrying the schema's `min` and `max`; every page the bar can reach is a link the same encoder spelled; and the page size and the page select each sit in a GET form. Each form also carries the rest of the applied query hidden, so a submission lands on the destination the provider would have written. Once scripting is enabled the parts intercept a click or a submission and apply the same command in place, the baseline's submit controls are hidden with `@media (scripting: enabled)`, and controls only the enhancement can drive — the clear buttons, page controls with no location to lead to — appear.
 
-A server that renders the page seeds the provider with the query the request carries, through the same decoder the browser uses, and gives it a memory location over the request's URL, so the forms and links it renders are the ones the browser would have built:
+A server renders the page from the request's URL. It gives the provider a memory location over that URL, which the provider reads when it is built, and calls `refresh()` before rendering: a source that answers within the call — the array source, or a server-side source already holding its rows — has published the page by then, so the markup carries the rows, the ordering and the page the URL asks for, and the forms and links are the ones the browser would have built. Nothing is subscribed. A source that cannot answer within the call renders pending, and the client asks for the page once it runs.
 
-```ts
-import { createMemoryLocation, decodeQuery } from "@canonical/dataviews-core";
+The server hands the client `readSnapshot()` — the query as canonical text and the arrangement in force, never the selection. The screen takes the provider it is handed, so one component renders on both sides:
 
-const params = new URL(request.url).searchParams;
-const { slice, window } = decodeQuery({
-  schema: machineCollection.schema,
-  params,
-  capabilities: source.capabilities,
-});
+```tsx
+import type { DataViewsProvider } from "@canonical/dataviews-core";
+import { DataViews, type DataTableColumn } from "@canonical/dataviews-react";
+import type { Machine, machineCollection } from "./machines.js";
+
+type MachineProvider = DataViewsProvider<
+  typeof machineCollection.schema.fields,
+  Machine
+>;
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+  { id: "cores", header: "Cores", sortable: true },
+];
+
+export function MachinesPage({
+  provider,
+}: {
+  readonly provider: MachineProvider;
+}) {
+  return (
+    <DataViews provider={provider}>
+      <DataViews.Search label="Search machines" />
+      <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+      <DataViews.DataTable columns={columns} label="Machines" />
+      <DataViews.Pagination sizes={[5, 10, 25]} />
+    </DataViews>
+  );
+}
+```
+
+On the server, for each request, the provider reads the request's URL and `refresh()` asks for the page before rendering. The snapshot goes into the page as JSON beside the markup, with `<` escaped, since the query comes from the URL. `renderToString` is enough, because the page is published before the render starts; a streaming render carries the same markup.
+
+```tsx
 const provider = createDataViewsProvider({
   collection: machineCollection,
   source,
   location: createMemoryLocation({ href: request.url }),
-  seed: { slice, window },
 });
+provider.refresh();
+const markup = renderToString(<MachinesPage provider={provider} />);
+const snapshot = JSON.stringify(provider.readSnapshot()).replaceAll(
+  "<",
+  "\\u003c",
+);
+const html = `<div id="machines">${markup}</div>
+<script type="application/json" id="machines-snapshot">${snapshot}</script>`;
 ```
+
+In the browser, once, the client's provider starts from that snapshot and asks for its page before hydrating, so that its first render draws what the server drew:
+
+```tsx
+const embedded =
+  document.getElementById("machines-snapshot")?.textContent ?? null;
+const container = document.getElementById("machines");
+if (embedded !== null && container !== null) {
+  const provider = createDataViewsProvider({
+    collection: machineCollection,
+    source,
+    location: createPlatformLocation(platform),
+    snapshot: JSON.parse(embedded),
+  });
+  provider.refresh();
+  hydrateRoot(container, <MachinesPage provider={provider} />);
+}
+```
+
+Rows never travel in the snapshot. The client's first render matches the server's only when its source answers `refresh()` within the call as well — the array source over rows the page already holds, or a source whose `readDelivery` answers from a cache the server's rows were handed to. A source that has to fetch in the browser renders pending on that first render, and React reports the difference as a hydration mismatch: hand that source's cache the page's rows beside the snapshot, or render the collection on the client alone.
+
+The same snapshot puts a collection back as an application left it: pass one kept earlier as `snapshot`, and the provider starts from its query and arrangement, and returns to that query on `reset()`.
 
 `createPlatformLocation` comes from `@canonical/dataviews-core`. The platform is your router's platform surface — anything with `getLocation`, `navigate` and `subscribe`. `createMemoryLocation` is the same port in memory, for a secondary collection on the page or a test.
 
