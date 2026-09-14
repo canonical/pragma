@@ -2,7 +2,7 @@ import { Button } from "@canonical/react-ds-global";
 import { type ReactElement, useId } from "react";
 import type { DeleteConfirmProps } from "./types.js";
 
-const componentCssClassName = "ds data-views-views-confirm";
+const componentCssClassName = "ds data-views-saved-views-confirm";
 
 /**
  * The question deleting a view asks first, naming the view. The focus starts

@@ -26,8 +26,8 @@ type ConsumerCode = {
   readonly window?: string | undefined;
   /** Commands issued once the provider is built, as source text. */
   readonly prepare?: string | undefined;
-  /** Give the provider the browser's saved-view store. */
-  readonly views?: boolean | undefined;
+  /** Give the provider the browser's store, as `views` and `presentation`. */
+  readonly store?: boolean | undefined;
   /** Give the provider a location, as source text. */
   readonly location?: string | undefined;
   /** React hooks the declarations use beyond `useState`. */
@@ -44,11 +44,12 @@ const machineSource = `createArraySource({
   searchFields: ["name", "owner"],
 })`;
 
-/** The application's saved-view store, declared once beside the collection. */
-const viewStore = `// One store per collection, for as long as the application runs. On a
-// server \`globalThis.indexedDB\` is undefined and nothing reads it: the
-// store is first read when the provider is first observed, in the browser.
-const views = createIndexedDBViewStore({
+/** The application's store, declared once beside the collection. */
+const viewStore = `// One store per collection, for as long as the application runs, serving
+// the saved views and the viewer's arrangement alike. On a server
+// \`globalThis.indexedDB\` is undefined and nothing reads it: the store is
+// first read when the provider is first observed, in the browser.
+const store = createIndexedDBViewStore({
   indexedDB: globalThis.indexedDB,
   database: "operations-console-views",
   collection: "machines",
@@ -67,11 +68,11 @@ const providerState = ({
   slice,
   window,
   prepare,
-  views,
+  store,
   location,
 }: Pick<
   ConsumerCode,
-  "source" | "slice" | "window" | "prepare" | "views" | "location"
+  "source" | "slice" | "window" | "prepare" | "store" | "location"
 >): string => {
   const commands =
     prepare === undefined
@@ -92,7 +93,7 @@ const providerState = ({
     "collection: machineCollection,",
     `source: ${source},`,
     ...(location === undefined ? [] : [`location: ${location},`]),
-    ...(views === true ? ["views,"] : []),
+    ...(store === true ? ["views: store,", "presentation: store,"] : []),
     ...seed,
   ];
   const built = `createDataViewsProvider({
@@ -120,7 +121,7 @@ export const consumerCode = ({
   slice,
   window,
   prepare,
-  views = false,
+  store = false,
   location,
   hooks = [],
   render,
@@ -149,14 +150,14 @@ export const consumerCode = ({
         code: [
           `import {
 ${core.map((name) => `  ${name},`).join("\n")}
-} from "@canonical/dataviews-core";${views ? `\nimport { createIndexedDBViewStore } from "@canonical/dataviews-core/indexeddb";` : ""}
+} from "@canonical/dataviews-core";${store ? `\nimport { createIndexedDBViewStore } from "@canonical/dataviews-core/indexeddb";` : ""}
 import { ${parts.join(", ")} } from "@canonical/dataviews-react";
 import { ${["useState", ...hooks].join(", ")} } from "react";
 ${imports ?? `import { machineCollection, machines } from "./machines.js";`}`,
-          views ? viewStore : undefined,
+          store ? viewStore : undefined,
           declarations,
           `export function Machines() {
-${providerState({ source, slice, window, prepare, views, location })}
+${providerState({ source, slice, window, prepare, store, location })}
   return (
 ${indent(render, 4)}
   );

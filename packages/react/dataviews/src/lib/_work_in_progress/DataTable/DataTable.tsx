@@ -9,6 +9,7 @@ import {
   createGridInteraction,
   isDataViewsProvider,
   listDisplayEntries,
+  readSizingBounds,
   resolveDisplayStatus,
 } from "@canonical/dataviews-core/bindings";
 import {
@@ -26,7 +27,6 @@ import {
 } from "../../common/index.js";
 import { useDataViewsValue, useMergedRef } from "../../hooks/index.js";
 import areColumnModelsEqual from "./areColumnModelsEqual.js";
-import areColumnsEqual from "./areColumnsEqual.js";
 import {
   HeaderCell,
   Row,
@@ -34,10 +34,10 @@ import {
   StatusRow,
   TableBody,
 } from "./common/index.js";
-import { readBounds, readFieldName, readSizing } from "./common/utils/index.js";
+import { readFieldName, readSizing } from "./common/utils/index.js";
 import describeStatus from "./describeStatus.js";
 import {
-  usePreferredWidths,
+  useColumnArrangement,
   useRowScopes,
   useStableCallback,
   useStableValue,
@@ -87,7 +87,10 @@ const renderVirtualizedBody = (
  * width the others leave, and the container scrolls when the remainder no
  * longer fits — there is no automatic hiding, pairing or renderer switching.
  * The selection column is not among them: its width is the stylesheet's,
- * and the columns share what it leaves.
+ * and the columns share what it leaves. Which columns show, in what order
+ * and at what width is the provider's presentation: the table renders the
+ * arrangement in force and writes a resize back to it, so every table on
+ * one provider agrees.
  *
  * Given `virtualization`, it mounts only the rows near its viewport and reports
  * every row's logical position; without it, every row is rendered.
@@ -106,7 +109,6 @@ export default function DataTable<
   provider,
   columns,
   label,
-  layout,
   selectable = false,
   rowLabel = defaultRowLabel,
   renderStatus = describeStatus,
@@ -135,13 +137,17 @@ export default function DataTable<
   const orderable = useMemo(() => new Set(sortableFields), [sortableFields]);
   const baseId = useId();
 
-  // Both derivations are keyed on content, not on array identity: a caller
-  // who rebuilds its column array on every render must not re-mint the
-  // layout, the interaction or one row scope, nor re-render one cell.
-  // The two keys are separate because they answer different questions — a
-  // caller's inline `header` node must not cost anyone a new layout.
-  const model = useStableValue(columns, areColumnModelsEqual);
-  const rendered = useStableValue(columns, areColumnsEqual);
+  // The columns the presentation shows, in its order. Both derivations
+  // below are keyed on content, not on array identity: a caller who
+  // rebuilds its column array on every render must not re-mint the layout,
+  // the interaction or one row scope, nor re-render one cell. The two keys
+  // are separate because they answer different questions — a caller's
+  // inline `header` node must not cost anyone a new layout.
+  const rendered = useColumnArrangement({
+    presentation: provider.presentation,
+    columns,
+  });
+  const model = useStableValue(rendered, areColumnModelsEqual);
 
   const fields = useMemo<readonly string[]>(
     () => model.map(readFieldName),
@@ -157,23 +163,25 @@ export default function DataTable<
     [declaredTracks],
   );
 
-  const ownLayout = useMemo(
-    () => createColumnLayout(declaredTracks),
-    [declaredTracks],
+  // The layout is this table's view over the provider's presentation: its
+  // widths are read from there and a resize is written there, so nothing
+  // here holds a width of its own.
+  const layout = useMemo(
+    () =>
+      createColumnLayout({
+        columns: declaredTracks,
+        presentation: provider.presentation,
+      }),
+    [declaredTracks, provider],
   );
-  const activeLayout = layout ?? ownLayout;
-  const interaction = useMemo(
-    () => createGridInteraction(activeLayout),
-    [activeLayout],
-  );
+  const interaction = useMemo(() => createGridInteraction(layout), [layout]);
   // Subscribed from an effect, never from the render that built it: React
   // may discard a render — StrictMode double-invokes the body, and a
   // concurrent render can be thrown away — and a subscription taken at
   // construction would outlive the interaction nothing else holds.
   useEffect(() => interaction.observe(), [interaction]);
-  usePreferredWidths(activeLayout, provider.views);
 
-  const geometry = useTableGeometry(activeLayout, interaction, columnIds);
+  const geometry = useTableGeometry(layout, interaction, columnIds);
   const scopes = useRowScopes(provider, fields);
   const state = useDataViewsValue(provider.state);
   // The core's answer, held at one reference while it says the same thing,
@@ -289,7 +297,7 @@ export default function DataTable<
               resizable={
                 column.resizable === true && position < rendered.length - 1
               }
-              bounds={readBounds(activeLayout.readDeclared(column.id))}
+              bounds={readSizingBounds(layout.readDeclared(column.id))}
               // Solved for every rendered column, in the same order.
               width={geometry.widths[position] as number}
               labelId={`${baseId}-${column.id}`}

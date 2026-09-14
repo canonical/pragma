@@ -11,6 +11,7 @@ import {
   type DataViewsProvider,
   type DataViewsProviderConfig,
   declareCapabilities,
+  type PresentationStore,
   type QueryLocation,
   type SourceCapabilities,
   type ViewStore,
@@ -69,6 +70,7 @@ export type MachineProviderConfig = Omit<
   readonly rows?: readonly Machine[] | undefined;
   readonly location?: QueryLocation | undefined;
   readonly views?: ViewStore | undefined;
+  readonly presentation?: PresentationStore | undefined;
   readonly seed?: DataViewsProviderConfig<MachineFields, Machine>["seed"];
 };
 
@@ -93,6 +95,7 @@ export const createMachineProvider = ({
   capabilities = MACHINE_CAPABILITIES,
   location,
   views,
+  presentation,
   seed,
   ...rest
 }: MachineProviderConfig = {}): MachineFixture => {
@@ -106,6 +109,7 @@ export const createMachineProvider = ({
     source: source.source,
     ...(location === undefined ? {} : { location }),
     ...(views === undefined ? {} : { views }),
+    ...(presentation === undefined ? {} : { presentation }),
     ...(seed === undefined ? {} : { seed }),
   });
   return { provider, collection: machines, source };

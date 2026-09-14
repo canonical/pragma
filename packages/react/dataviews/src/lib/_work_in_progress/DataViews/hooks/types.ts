@@ -73,6 +73,7 @@ export type UseDataViewsResult<
   | "issues"
   | "selection"
   | "views"
+  | "presentation"
   | "navigateWindow"
   | "setSort"
   | "setSearch"

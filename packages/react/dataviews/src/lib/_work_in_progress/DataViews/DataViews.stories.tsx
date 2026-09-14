@@ -80,7 +80,7 @@ function QueryIssues() {
 }`;
 
 /** The pagination bar's summary: the filters hold status regions of their own. */
-const summary = (canvas: ReturnType<typeof within>): HTMLElement =>
+const getSummary = (canvas: ReturnType<typeof within>): HTMLElement =>
   within(canvas.getByRole("navigation", { name: "Pagination" })).getByRole(
     "status",
   );
@@ -95,7 +95,7 @@ function Collection({
 }): ReactElement {
   return (
     <Component provider={provider}>
-      {provider.views === null ? null : <Component.Views />}
+      {provider.views === null ? null : <Component.SavedViews />}
       <Component.Search label="Search machines" />
       <Component.Filters labels={{ status: "Status", cores: "Cores" }} />
       <QueryIssues />
@@ -148,10 +148,10 @@ import { platform } from "./router.js";`,
 
 ${queryIssuesCode}`,
     location: "createPlatformLocation(platform)",
-    views: true,
+    store: true,
     window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
     render: `<DataViews provider={provider}>
-  <DataViews.Views />
+  <DataViews.SavedViews />
   <DataViews.Search label="Search machines" />
   <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
   <QueryIssues />
@@ -182,7 +182,9 @@ ${queryIssuesCode}`,
   },
   play: async ({ canvas }) => {
     await waitFor(() =>
-      expect(summary(canvas)).toHaveTextContent("Showing 1–5 out of 12 items"),
+      expect(getSummary(canvas)).toHaveTextContent(
+        "Showing 1–5 out of 12 items",
+      ),
     );
     await expect(
       canvas.getByRole("group", { name: "Selection actions" }),
@@ -270,7 +272,9 @@ ${queryIssuesCode}`,
       expect(canvas.getByRole("checkbox", { name: "failed" })).toBeChecked(),
     );
     await waitFor(() =>
-      expect(summary(canvas)).toHaveTextContent("Showing 1–3 out of 3 items"),
+      expect(getSummary(canvas)).toHaveTextContent(
+        "Showing 1–3 out of 3 items",
+      ),
     );
     // An edit the filters make is written back to the location.
     await userEvent.click(canvas.getByRole("checkbox", { name: "running" }));
@@ -282,7 +286,9 @@ ${queryIssuesCode}`,
     await waitFor(() =>
       // The location carried no page size, so the default page holds all
       // nine.
-      expect(summary(canvas)).toHaveTextContent("Showing 1–9 out of 9 items"),
+      expect(getSummary(canvas)).toHaveTextContent(
+        "Showing 1–9 out of 9 items",
+      ),
     );
   },
 };

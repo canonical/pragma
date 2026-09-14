@@ -6,8 +6,8 @@ type OwnProps = {
 };
 
 /**
- * Props of the connected views control. The root is a `div` grouping the
- * collection's saved-view controls, so it extends native div props.
+ * Props of the connected saved-views control. The root is a `div` grouping
+ * the collection's saved-view controls, so it extends native div props.
  * `children` is excluded, since the control renders its own contents, and so
  * is `role`, the group role being the control's own, and so are `aria-label`
  * and `aria-labelledby`, which would override the name it takes from
@@ -16,7 +16,7 @@ type OwnProps = {
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type DataViewsViewsProps = OwnProps &
+export type DataViewsSavedViewsProps = OwnProps &
   Omit<
     ComponentProps<"div">,
     keyof OwnProps | "children" | "role" | "aria-label" | "aria-labelledby"

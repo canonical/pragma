@@ -1,25 +1,16 @@
 import { Button } from "@canonical/react-ds-global";
 import { SelectInput } from "@canonical/react-ds-global-form";
-import {
-  type ReactElement,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ReactElement, useEffect, useId } from "react";
 import { useDataViewsValue } from "../../../../hooks/index.js";
 import { composeSentence, pluralizeNoun } from "../../../../utils/index.js";
 import { useDataViewsRoot } from "../../hooks/index.js";
 import { DeleteConfirm, NameForm } from "./common/index.js";
 import describeViewStatus from "./describeViewStatus.js";
-import type { DataViewsViewsProps } from "./types.js";
+import { usePanelFocus } from "./hooks/index.js";
+import type { DataViewsSavedViewsProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds data-views-views";
-
-/** The panel open beneath the commands, if any. */
-type Panel = "save-as" | "rename" | "remove" | null;
+const componentCssClassName = "ds data-views-saved-views";
 
 /**
  * The collection's saved views: which view is open, whether the query has
@@ -33,102 +24,57 @@ type Panel = "save-as" | "rename" | "remove" | null;
  *
  * Every outcome is said in a polite status, a conflict or a failure never as
  * saved. After a conflict the stored view is the open one: Save overwrites
- * it and Reset discards the changes. Deleting asks first. A name that is
+ * it and Revert discards the changes. Deleting asks first. A name that is
  * empty or another view's is refused before anything is written, beside the
- * input.
- *
- * The focus is never stranded: a panel returns it to the command that opened
- * it, and a control that becomes unavailable under it hands it to the view
- * select, or to Try again while the views are unavailable.
+ * input. The notices also say when the arrangement is not being saved,
+ * which the provider's presentation reports.
  *
  * `import { DataViews } from "@canonical/dataviews-react";`
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export default function Views({
+export default function SavedViews({
   label = "Saved views",
   className,
   onFocus,
   onBlur,
   ...rest
-}: DataViewsViewsProps): ReactElement {
-  const { provider } = useDataViewsRoot("Views");
-  const { views } = provider;
+}: DataViewsSavedViewsProps): ReactElement {
+  const { provider } = useDataViewsRoot("SavedViews");
+  const { views, presentation } = provider;
   if (views === null) {
     throw new Error(
-      "DataViews.Views requires a provider given a view store; pass one to createDataViewsProvider",
+      "DataViews.SavedViews requires a provider given a view store; pass one to createDataViewsProvider",
     );
   }
   useEffect(() => views.observe(), [views]);
   const state = useDataViewsValue(views.state);
-  const { listing, current, modified, operation } = state;
-  const pending = operation?.status === "pending";
-  const [panel, setPanel] = useState<Panel>(null);
-  const select = useRef<HTMLSelectElement>(null);
-  const opener = useRef<HTMLButtonElement>(null);
-  // What the focus was last on inside the control, until it leaves. A
-  // control disabled or removed under the focus reports no blur, so this
-  // finds the focus stranded.
-  const focused = useRef<HTMLElement>(null);
-  const retry = useRef<HTMLButtonElement>(null);
-  // Where a closing panel sends the focus: state, so closing always renders.
-  const [returnTo, setReturnTo] = useState<HTMLElement | null>(null);
+  // The reason alone: a width commit re-renders no saved-views control.
+  const presentationReason = useDataViewsValue(
+    presentation.state,
+    (shown) => shown.presentationReason,
+  );
+  const { listing, current, modified, command } = state;
+  const pending = command?.status === "pending";
+  const {
+    panel,
+    select,
+    opener,
+    retry,
+    openPanel,
+    closePanel,
+    cancelPanel,
+    recordFocus,
+    recordBlur,
+  } = usePanelFocus({ pending, hasView: current !== null });
   const baseId = useId();
-
-  // Once nothing is pending, a closed panel returns the focus to the command
-  // that opened it, and a control that became unavailable or went away under
-  // the focus hands it to the view select — or, while the views are
-  // unavailable and the select with them, to Try again. A layout effect, so
-  // the focus moves in the commit that stranded it, never after a paint.
-  useLayoutEffect(() => {
-    if (pending) {
-      return;
-    }
-    if (returnTo !== null) {
-      // Taking the focus records it as focused; a target that cannot take
-      // it leaves the focus stranded where it was.
-      returnTo.focus();
-      setReturnTo(null);
-    }
-    const stranded = focused.current;
-    if (
-      stranded !== null &&
-      (!stranded.isConnected || stranded.matches(":disabled"))
-    ) {
-      focused.current = null;
-      // Only focus that was lost: never from another element the user moved it to.
-      const { activeElement, body } = stranded.ownerDocument;
-      const lost: readonly (Element | null)[] = [stranded, body, null];
-      if (lost.includes(activeElement)) {
-        (select.current?.disabled ? retry.current : select.current)?.focus();
-      }
-    }
-  });
-
-  // A rename or delete panel closes with the view it was about.
-  if (current === null && (panel === "rename" || panel === "remove")) {
-    setPanel(null);
-  }
-
-  const openPanel = (next: Panel, from: HTMLButtonElement): void => {
-    opener.current = from;
-    setPanel(next);
-  };
-  const closePanel = (focus: HTMLElement | null = opener.current): void => {
-    setReturnTo(focus);
-    setPanel(null);
-  };
-  // Never `closePanel` itself as a handler: an event is no focus target.
-  const cancelPanel = (): void => {
-    closePanel();
-  };
 
   const listed = listing.status === "ready";
   const conflicted =
-    operation?.status === "settled" &&
-    operation.action === "save" &&
-    operation.outcome.status === "conflict";
+    command?.status === "settled" &&
+    command.command === "save" &&
+    command.outcome.status === "conflict";
   const selectId = `${baseId}-view`;
   const modifiedId = `${baseId}-modified`;
   const unreadable = state.unreadable.length;
@@ -154,14 +100,11 @@ export default function Views({
       aria-label={label}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       onFocus={(event) => {
-        focused.current = event.target;
+        recordFocus(event);
         onFocus?.(event);
       }}
       onBlur={(event) => {
-        // Focus leaving for nowhere may be its control going away.
-        if (event.relatedTarget !== null) {
-          focused.current = null;
-        }
+        recordBlur(event);
         onBlur?.(event);
       }}
     >
@@ -215,9 +158,9 @@ export default function Views({
             <Button
               type="button"
               disabled={pending || current === null || !modified}
-              onClick={views.reset}
+              onClick={views.revert}
             >
-              {conflicted ? "Discard changes" : "Reset"}
+              {conflicted ? "Discard changes" : "Revert"}
             </Button>
             <Button
               type="button"
@@ -246,9 +189,15 @@ export default function Views({
             >
               Delete…
             </Button>
-            {listing.status === "failed" ||
-            state.presentationFailure !== null ? (
-              <Button ref={retry} type="button" onClick={views.reload}>
+            {listing.status === "failed" || presentationReason !== null ? (
+              <Button
+                ref={retry}
+                type="button"
+                onClick={() => {
+                  views.refresh();
+                  presentation.refresh();
+                }}
+              >
                 Try again
               </Button>
             ) : null}
@@ -292,7 +241,7 @@ export default function Views({
             />
           ) : null}
           <p role="status" className="status">
-            {describeViewStatus(operation, modified)}
+            {describeViewStatus(command, modified)}
           </p>
           <div role="status" className="notices">
             {listing.status === "pending" ? <p>Loading saved views…</p> : null}
@@ -302,8 +251,8 @@ export default function Views({
             {unreadable > 0 ? (
               <p>{`${unreadable} saved ${pluralizeNoun(unreadable, "view")} cannot be read.`}</p>
             ) : null}
-            {state.presentationFailure === null ? null : (
-              <p>{`Column widths are not being saved: ${state.presentationFailure}.`}</p>
+            {presentationReason === null ? null : (
+              <p>{`The arrangement is not being saved: ${presentationReason}.`}</p>
             )}
           </div>
         </>

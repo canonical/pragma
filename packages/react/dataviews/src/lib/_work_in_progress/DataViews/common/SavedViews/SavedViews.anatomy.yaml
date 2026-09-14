@@ -1,5 +1,5 @@
 ---
-# DataViews.Views — the collection's saved views: which view is open, whether
+# DataViews.SavedViews — the collection's saved views: which view is open, whether
 # the query has moved away from it, and the way to switch, save, save as,
 # rename and delete.
 #
@@ -10,16 +10,16 @@
 # controls are the design system's own Button, SelectInput and TextInput.
 #
 # Names — one per part, the same in the DOM and here; the design has none yet:
-#   views control     DOM `ds data-views-views`
+#   saved-views control  DOM `ds data-views-saved-views`
 #   view picker       DOM `.picker`
 #   modified mark     DOM `.modified`
 #   label             DOM `.label` (the view picker's and the name form's)
 #   commands          DOM `.commands`
-#   name form         DOM `ds data-views-views-name-form`
+#   name form         DOM `ds data-views-saved-views-name-form`
 #   name error        DOM `.error`
-#   delete confirm    DOM `ds data-views-views-confirm`
+#   delete confirm    DOM `ds data-views-saved-views-confirm`
 #   question          DOM `.message`
-#   operation status  DOM `.status`
+#   command status    DOM `.status`
 #   notices           DOM `.notices`
 #   no-script notice  DOM `.unavailable`
 #
@@ -30,7 +30,11 @@
 #   --form-input-padding-block   dimension/050
 #   --form-input-padding-inline  dimension/100
 # The chrome comes from the `@canonical/react-ds-global-form` stylesheet,
-# which the page loads.
+# which the page loads. The one channel read from it here:
+#   --form-input-border-color-error   the name input's border once the user
+#                                     has given a name the collection refuses
+#                                     (`:user-invalid`, set through the
+#                                     validity API)
 #
 # Deviations the DSL cannot express, recorded here:
 #   - Conditional display is deferred in the DSL. The modified mark shows only
@@ -40,28 +44,29 @@
 #   - Without JavaScript the part renders only the no-script notice, inside a
 #     `noscript`: views live in the browser's storage, which a server cannot
 #     read. Links to a full query still work, since the query is in the URL.
-#   - The design draws no views control. The part is composed from existing
+#   - The design draws no saved-views control. The part is composed from existing
 #     components and waits on a design (recorded for the design owners).
 #
 # States:
 #   - listing: loading, listed, unavailable (with a way to try again).
 #   - open view: none, open, open and modified.
-#   - operation: pending (every command but Try again disabled), settled saved,
+#   - command: pending (every command but Try again disabled), settled saved,
 #     opened or removed (shown while the query is unmodified), conflict (with
-#     its
-#     recovery: overwrite, save as a new view, discard the changes), missing,
-#     unreadable, refused, failed.
-#   - name form: valid, invalid (the error beside the input).
+#     its recovery: overwrite, save as a new view, discard the changes),
+#     missing, unreadable, refused, failed.
+#   - name form: valid, invalid (the browser's own report, and the error
+#     beside the input): a name is required, and one the collection refuses
+#     is set as the input's validity.
 #
 # Accessibility (DataViews component coverage, "Views/save/rename/delete":
 # 2.1.1, 2.4.6, 3.3.1, 3.3.4, 4.1.2-4.1.3):
-#   views control     A named group ("Saved views").
+#   saved-views control  A named group ("Saved views").
 #   view picker       A labelled native select ("View") whose value is the
 #                     open view; the modified mark describes it. Choosing a
 #                     view opens it.
 #   commands          Native buttons named for what they do; "…" marks the ones
-#                     that ask for more before acting. Disabled while an
-#                     operation is pending, Try again aside, or while they have
+#                     that ask for more before acting. Disabled while a
+#                     command is pending, Try again aside, or while they have
 #                     nothing to act on.
 #   name form         A labelled input ("Name"). An empty or duplicate name is
 #                     refused before anything is written, and the error is
@@ -70,12 +75,12 @@
 #                     opened the form.
 #   delete confirm    Deleting asks first, naming the view; the focus starts on
 #                     Cancel. Escape cancels.
-#   operation status  A polite status: what is in flight, then what happened —
+#   command status    A polite status: what is in flight, then what happened —
 #                     a conflict or a failure is never reported as saved.
 #   notices           A polite status: views unavailable, records that cannot
-#                     be read, presentation not being saved.
+#                     be read, the arrangement not being saved.
 node:
-  role: views control
+  role: saved-views control
   styles:
     layout.type: stack
     layout.direction: row
@@ -114,10 +119,10 @@ node:
           layout.align: center
           spacing.gap: dimension/050
         edges:
-          # Save, Reset, Save as…, Rename…, Delete…, and Try again while the
-          # views are unavailable or column widths are not being saved. After a
-          # conflict on save, Save reads
-          # "Overwrite" and Reset "Discard changes": the stored view is open.
+          # Save, Revert, Save as…, Rename…, Delete…, and Try again while the
+          # views are unavailable or the arrangement is not being saved. After
+          # a conflict on save, Save reads "Overwrite" and Revert "Discard
+          # changes": the stored view is open.
           - uri: global.component.button
             relation:
               cardinality: "5..6"
@@ -162,7 +167,7 @@ node:
         cardinality: "0..1"
         slotName: panel
     - node:
-        role: operation status
+        role: command status
       relation:
         cardinality: "1"
         slotName: status

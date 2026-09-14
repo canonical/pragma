@@ -11,10 +11,7 @@ import type {
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
-import type {
-  ColumnLayout,
-  ColumnSizing,
-} from "@canonical/dataviews-core/bindings";
+import type { ColumnSizing } from "@canonical/dataviews-core/bindings";
 import type { ComponentProps, ComponentType, ReactNode } from "react";
 import type { DataTableVirtualization } from "../../common/index.js";
 
@@ -60,6 +57,13 @@ export type DataTableColumn = {
   /** Declared sizing. Defaults to a flexible column with a 96px minimum. */
   readonly sizing?: ColumnSizing;
   /**
+   * Whether the viewer may hide this column through the collection's
+   * presentation. Defaults to true; a column declared `false` shows
+   * whatever the arrangement says, so a table always has the column an
+   * application cannot do without.
+   */
+  readonly hideable?: boolean;
+  /**
    * Offer sorting on this column's field. Honoured only when the source's
    * declaration, which the provider carries, names the field sortable and
    * allows at least one sort term, so the table never offers an ordering
@@ -86,18 +90,14 @@ type OwnProps<
 > = {
   /** The provider owning this collection's query, result and selection. */
   readonly provider: DataViewsProvider<TFields, TRow>;
-  /** The rendered columns, in display order. */
+  /**
+   * The columns, in their declared order. The provider's presentation
+   * decides which show, in what order and at what width; the declaration
+   * is the lowest layer, standing where nothing is stored.
+   */
   readonly columns: readonly DataTableColumn[];
   /** The table's accessible name. */
   readonly label: string;
-  /**
-   * The column-layout record holding declared sizing and user overrides.
-   * Supply one to share user arrangement between two tables on the same
-   * provider; omitted, the table keeps its own. On a provider with views,
-   * the widths follow the collection's saved presentation and a resize is
-   * saved to it; without views they last for the record's lifetime.
-   */
-  readonly layout?: ColumnLayout;
   /** Render a leading selection column backed by the provider's selection. */
   readonly selectable?: boolean;
   /**

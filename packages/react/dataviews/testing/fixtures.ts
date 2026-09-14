@@ -3,8 +3,9 @@
  * page, the shapes a test hands a manual source when it answers a request
  * by hand. A source's declaration is built the way an application builds
  * one, with `declareCapabilities` against the test's own collection;
- * `COUNTED_EXACTLY` is the counts block complete local input declares; and
- * one display status of each kind, for the parts that render one.
+ * `COUNTED_EXACTLY` is the counts block complete local input declares; one
+ * display status of each kind, for the parts that render one; and a stored
+ * view as a store lists it, spelled as the core fixtures spell theirs.
  */
 
 import {
@@ -13,6 +14,7 @@ import {
   type CountCapabilities,
   createPage,
   type DisplayStatus,
+  type SavedView,
   type SourcePage,
 } from "@canonical/dataviews-core";
 
@@ -50,3 +52,22 @@ export const displayStatusOf = (
   status === "failed" || status === "refresh-failed" || status === "stale"
     ? { status, reason: "offline" }
     : { status };
+
+/**
+ * One stored view as a store lists it — first revision, unpinned, stamped
+ * at a fixed instant — with any field overridden. The same builder, by the
+ * same name, as the core package's testing fixtures.
+ */
+export const buildStoredView = (
+  overrides: Partial<SavedView> = {},
+): SavedView => ({
+  id: "v1",
+  name: "Failed",
+  query: "as=table&status=failed",
+  presentation: null,
+  revision: 1,
+  pinned: false,
+  createdAt: "2026-09-11T00:00:00.000Z",
+  updatedAt: "2026-09-11T00:00:00.000Z",
+  ...overrides,
+});

@@ -1,6 +1,6 @@
-import type { ViewAction, ViewOperation } from "@canonical/dataviews-core";
+import type { ViewCommand, ViewCommandState } from "@canonical/dataviews-core";
 
-const PENDING: Readonly<Record<ViewAction, string>> = {
+const PENDING: Readonly<Record<ViewCommand, string>> = {
   open: "Opening the view…",
   save: "Saving…",
   "save-as": "Saving…",
@@ -8,8 +8,8 @@ const PENDING: Readonly<Record<ViewAction, string>> = {
   remove: "Deleting…",
 };
 
-/** How a message starts when the operation did not happen. */
-const NOT_DONE: Readonly<Record<ViewAction, string>> = {
+/** How a message starts when the command did not happen. */
+const NOT_DONE: Readonly<Record<ViewCommand, string>> = {
   open: "Not opened",
   save: "Not saved",
   "save-as": "Not saved",
@@ -18,28 +18,28 @@ const NOT_DONE: Readonly<Record<ViewAction, string>> = {
 };
 
 /**
- * What the views control says about its latest operation: what is in flight,
- * then what happened. A conflict or a failure never reads as saved, and a
- * confirmation that the query was opened or saved is withdrawn once the query
- * moves from it, where it would no longer be true.
+ * What the saved-views control says about its latest command: what is in
+ * flight, then what happened. A conflict or a failure never reads as saved,
+ * and a confirmation that the query was opened or saved is withdrawn once
+ * the query moves from it, where it would no longer be true.
  */
 export default function describeViewStatus(
-  operation: ViewOperation | null,
+  state: ViewCommandState | null,
   modified: boolean,
 ): string {
-  if (operation === null) {
+  if (state === null) {
     return "";
   }
-  const { action } = operation;
-  if (operation.status === "pending") {
-    return PENDING[action];
+  const { command } = state;
+  if (state.status === "pending") {
+    return PENDING[command];
   }
-  const { outcome } = operation;
+  const { outcome } = state;
   switch (outcome.status) {
     case "opened":
       return modified ? "" : `Opened "${outcome.view.name}".`;
     case "saved":
-      if (action === "rename") {
+      if (command === "rename") {
         return `Renamed to "${outcome.view.name}".`;
       }
       return modified ? "" : `Saved "${outcome.view.name}".`;
@@ -50,18 +50,18 @@ export default function describeViewStatus(
         .map((issue) => issue.reason)
         .join("; ")}. The query is unchanged.`;
     case "conflict":
-      if (action === "save") {
+      if (command === "save") {
         return `Not saved: "${outcome.view.name}" was changed elsewhere. Overwrite it, save your changes as a new view, or discard them.`;
       }
-      if (action === "save-as") {
+      if (command === "save-as") {
         return "Not saved: a different view is stored under the same identity. Try again.";
       }
-      return `${NOT_DONE[action]}: "${outcome.view.name}" was changed elsewhere. Its latest version is open; try again.`;
+      return `${NOT_DONE[command]}: "${outcome.view.name}" was changed elsewhere. Its latest version is open; try again.`;
     case "missing":
-      return `${NOT_DONE[action]}: the view no longer exists.`;
+      return `${NOT_DONE[command]}: the view no longer exists.`;
     case "unreadable":
-      return `${NOT_DONE[action]}: the stored view cannot be read (${outcome.reason}).`;
+      return `${NOT_DONE[command]}: the stored view cannot be read (${outcome.reason}).`;
     case "failed":
-      return `${NOT_DONE[action]}: ${outcome.reason}.`;
+      return `${NOT_DONE[command]}: ${outcome.reason}.`;
   }
 }

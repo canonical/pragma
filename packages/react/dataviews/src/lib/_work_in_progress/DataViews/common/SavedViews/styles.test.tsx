@@ -3,10 +3,11 @@
  * pinned as for the action bar: jsdom applies no CSS, so what is checked is
  * what a stylesheet change could break with every render still green.
  */
+
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SavedView, ViewStore } from "@canonical/dataviews-core";
+import type { ViewStore } from "@canonical/dataviews-core";
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import {
   act,
@@ -16,9 +17,10 @@ import {
   within,
 } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { buildStoredView } from "../../../../../../testing/fixtures.js";
 import { createMachineProvider } from "../../../../../../testing/machines.js";
 import DataViews from "../../Provider.js";
-import Views from "./Views.js";
+import SavedViews from "./SavedViews.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -49,16 +51,7 @@ const selectorOf = (dom: string): string =>
         .join("")
     : dom;
 
-const view: SavedView = {
-  id: "v1",
-  name: "Failed",
-  query: "as=table&status=failed",
-  presentation: null,
-  revision: 1,
-  pinned: false,
-  createdAt: "2026-09-11T00:00:00.000Z",
-  updatedAt: "2026-09-11T00:00:00.000Z",
-};
+const view = buildStoredView();
 
 /** A store call this test never makes. */
 const unused = () => Promise.reject(new Error("not used in this test"));
@@ -72,8 +65,6 @@ const store: ViewStore = {
   remove: unused,
   pin: unused,
   unpin: unused,
-  readPresentation: async () => ({}),
-  patchPresentation: unused,
   subscribe: () => () => {},
   dispose: () => {},
 };
@@ -83,7 +74,7 @@ const opened = async (command: "Save as…" | "Delete…"): Promise<Element> => 
   const { provider } = createMachineProvider({ rows: [], views: store });
   const { container } = render(
     <DataViews provider={provider}>
-      <Views />
+      <SavedViews />
     </DataViews>,
   );
   const control = within(container);
@@ -114,9 +105,9 @@ const rendered = async (): Promise<readonly Element[]> => [
   await opened("Delete…"),
 ];
 
-const root = ".ds.data-views-views";
+const root = ".ds.data-views-saved-views";
 
-describe("Views stylesheet", () => {
+describe("SavedViews stylesheet", () => {
   it("styles only classes the control renders", async () => {
     const styled = new Set(
       [...sheet.matchAll(/\.([a-z][\w-]*)/g)].map(([, name = ""]) => name),
@@ -138,9 +129,9 @@ describe("Views stylesheet", () => {
       `${root} > .picker > .ds.input.select`,
       `${root} > .picker > .modified`,
       `${root} > .commands`,
-      `${root} > .ds.data-views-views-name-form > .ds.input.text`,
-      `${root} > .ds.data-views-views-name-form > .error`,
-      `${root} > .ds.data-views-views-confirm`,
+      `${root} > .ds.data-views-saved-views-name-form > .ds.input.text`,
+      `${root} > .ds.data-views-saved-views-name-form > .error`,
+      `${root} > .ds.data-views-saved-views-confirm`,
       `${root} > .notices`,
     ]) {
       expect(
@@ -168,15 +159,15 @@ describe("Views stylesheet", () => {
     expect(rule("& > .picker > .modified, & > .notices")).toMatch(
       /color: var\(--color-text-muted\);/,
     );
-    expect(rule("& > .ds.data-views-views-name-form > .error")).toMatch(
+    expect(rule("& > .ds.data-views-saved-views-name-form > .error")).toMatch(
       /color: var\(--color-text-error\);/,
     );
   });
 });
 
-describe("Views anatomy", () => {
+describe("SavedViews anatomy", () => {
   it("states only DOM the control renders", async () => {
-    const anatomy = read("Views.anatomy.yaml");
+    const anatomy = read("SavedViews.anatomy.yaml");
     const stated = [...anatomy.matchAll(/DOM `([^`]+)`/g)]
       .map(([, dom = ""]) => selectorOf(dom))
       // Rendered inside a `noscript`, so only without JavaScript.

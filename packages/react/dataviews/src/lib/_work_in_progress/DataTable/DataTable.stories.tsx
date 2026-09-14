@@ -42,7 +42,6 @@ const meta = {
   argTypes: {
     provider: { control: false },
     columns: { control: false },
-    layout: { control: false },
     rowLabel: { control: false },
     renderStatus: { control: false },
     virtualization: { control: false },

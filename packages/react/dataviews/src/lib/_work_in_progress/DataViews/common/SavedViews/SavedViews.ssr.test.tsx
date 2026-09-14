@@ -4,17 +4,18 @@
  * nothing from the store.
  */
 
-import type { ViewStore } from "@canonical/dataviews-core";
+import type { PresentationStore, ViewStore } from "@canonical/dataviews-core";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
+import {
+  createStandInPresentationStore,
+  createStandInViewStore,
+} from "../../../../../../testing/createStandInStores.js";
 import { createMachineProvider } from "../../../../../../testing/machines.js";
 import DataViews from "../../Provider.js";
-import Views from "./Views.js";
+import SavedViews from "./SavedViews.js";
 
-/** A store call this test never makes. */
-const unused = () => Promise.reject(new Error("not used in this test"));
-
-describe("DataViews.Views SSR", () => {
+describe("DataViews.SavedViews SSR", () => {
   it("renders only the no-script notice, and never reads the store", () => {
     const errors = vi.spyOn(console, "error");
     onTestFinished(() => {
@@ -22,30 +23,28 @@ describe("DataViews.Views SSR", () => {
     });
     const list = vi.fn<ViewStore["list"]>();
     const subscribe = vi.fn<ViewStore["subscribe"]>();
-    const store: ViewStore = {
-      list,
-      get: unused,
-      create: unused,
-      update: unused,
-      remove: unused,
-      pin: unused,
-      unpin: unused,
-      readPresentation: unused,
-      patchPresentation: unused,
-      subscribe,
-      dispose: () => {},
-    };
-    const { provider, source } = createMachineProvider({ views: store });
+    const readPresentation = vi.fn<PresentationStore["readPresentation"]>();
+    const heard = vi.fn<PresentationStore["subscribe"]>();
+    const { provider, source } = createMachineProvider({
+      views: createStandInViewStore({ list, subscribe }),
+      presentation: createStandInPresentationStore({
+        readPresentation,
+        subscribe: heard,
+      }),
+    });
     const html = renderToString(
       <DataViews provider={provider}>
-        <Views />
+        <SavedViews />
       </DataViews>,
     );
     expect(html).toBe(
-      '<div role="group" aria-label="Saved views" class="ds data-views-views"><noscript><p class="unavailable">Saved views need JavaScript. A link to a query still works.</p></noscript></div>',
+      '<div role="group" aria-label="Saved views" class="ds data-views-saved-views"><noscript><p class="unavailable">Saved views need JavaScript. A link to a query still works.</p></noscript></div>',
     );
     expect(list).not.toHaveBeenCalled();
     expect(subscribe).not.toHaveBeenCalled();
+    // Nor the presentation's store: the arrangement stays the declared one.
+    expect(readPresentation).not.toHaveBeenCalled();
+    expect(heard).not.toHaveBeenCalled();
     // Nor did the server render observe the provider: the source never ran.
     expect(source.calls).toHaveLength(0);
     expect(errors).not.toHaveBeenCalled();

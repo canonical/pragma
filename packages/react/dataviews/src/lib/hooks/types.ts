@@ -6,7 +6,7 @@
 
 import type { ReadonlyChannel, RowRecord } from "@canonical/dataviews-core";
 
-/** What `useDataViewsValue` returns: the channel's current value. */
+/** What `useDataViewsValue` returns: the channel's current value, or the part `select` picks. */
 export type UseDataViewsValueResult<T> = T;
 
 /**

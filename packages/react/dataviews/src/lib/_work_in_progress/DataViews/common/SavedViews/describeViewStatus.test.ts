@@ -1,26 +1,17 @@
 import type {
-  SavedView,
-  ViewAction,
+  ViewCommand,
   ViewSettledOutcome,
 } from "@canonical/dataviews-core";
 import { describe, expect, it } from "vitest";
+import { buildStoredView } from "../../../../../../testing/fixtures.js";
 import describeViewStatus from "./describeViewStatus.js";
 
-const view: SavedView = {
-  id: "v1",
-  name: "Failed",
-  query: "as=table&status=failed",
-  presentation: null,
-  revision: 2,
-  pinned: false,
-  createdAt: "2026-09-11T00:00:00.000Z",
-  updatedAt: "2026-09-11T00:00:00.000Z",
-};
+const view = buildStoredView({ revision: 2 });
 
-type Action = ViewAction;
+type Command = ViewCommand;
 type Outcome = ViewSettledOutcome;
 
-const actions: readonly Action[] = [
+const commands: readonly Command[] = [
   "open",
   "save",
   "save-as",
@@ -28,18 +19,18 @@ const actions: readonly Action[] = [
   "remove",
 ];
 
-/** What the status says for each action settling to one outcome. */
-const settledAs = (outcome: Outcome, modified = false): string[] =>
-  actions.map((action) =>
-    describeViewStatus({ action, status: "settled", outcome }, modified),
+/** What the status says for each command settling to one outcome. */
+const describeSettledAs = (outcome: Outcome, modified = false): string[] =>
+  commands.map((command) =>
+    describeViewStatus({ command, status: "settled", outcome }, modified),
   );
 
 describe("describeViewStatus", () => {
-  it("says nothing before the first operation, then what is in flight", () => {
+  it("says nothing before the first command, then what is in flight", () => {
     expect(describeViewStatus(null, false)).toBe("");
     expect(
-      actions.map((action) =>
-        describeViewStatus({ action, status: "pending" }, false),
+      commands.map((command) =>
+        describeViewStatus({ command, status: "pending" }, false),
       ),
     ).toEqual([
       "Opening the view…",
@@ -53,24 +44,24 @@ describe("describeViewStatus", () => {
   it("confirms an open or a save only while the query is still the view's, a rename always", () => {
     const opened = { status: "opened", view } as const;
     const saved = { status: "saved", view } as const;
-    expect(settledAs(opened)[0]).toBe('Opened "Failed".');
-    expect(settledAs(opened, true)[0]).toBe("");
-    expect(settledAs(saved).slice(1, 4)).toEqual([
+    expect(describeSettledAs(opened)[0]).toBe('Opened "Failed".');
+    expect(describeSettledAs(opened, true)[0]).toBe("");
+    expect(describeSettledAs(saved).slice(1, 4)).toEqual([
       'Saved "Failed".',
       'Saved "Failed".',
       'Renamed to "Failed".',
     ]);
-    expect(settledAs(saved, true).slice(1, 4)).toEqual([
+    expect(describeSettledAs(saved, true).slice(1, 4)).toEqual([
       "",
       "",
       'Renamed to "Failed".',
     ]);
-    expect(settledAs({ status: "removed" })[4]).toBe("View deleted.");
+    expect(describeSettledAs({ status: "removed" })[4]).toBe("View deleted.");
   });
 
   it("names every reason a view was refused, and says the query stands", () => {
     expect(
-      settledAs({
+      describeSettledAs({
         status: "refused",
         view,
         issues: [
@@ -92,7 +83,7 @@ describe("describeViewStatus", () => {
   });
 
   it("never reports a conflict as saved, and says how to recover", () => {
-    const [, save, saveAs, rename, remove] = settledAs({
+    const [, save, saveAs, rename, remove] = describeSettledAs({
       status: "conflict",
       view,
     });
@@ -108,15 +99,15 @@ describe("describeViewStatus", () => {
     ]);
   });
 
-  it("says a view is gone, unreadable or not written, for the operation tried", () => {
-    expect(settledAs({ status: "missing" })[0]).toBe(
+  it("says a view is gone, unreadable or not written, for the command tried", () => {
+    expect(describeSettledAs({ status: "missing" })[0]).toBe(
       "Not opened: the view no longer exists.",
     );
-    expect(settledAs({ status: "unreadable", reason: "corrupt" })[1]).toBe(
-      "Not saved: the stored view cannot be read (corrupt).",
-    );
-    expect(settledAs({ status: "failed", reason: "quota exceeded" })[4]).toBe(
-      "Not deleted: quota exceeded.",
-    );
+    expect(
+      describeSettledAs({ status: "unreadable", reason: "corrupt" })[1],
+    ).toBe("Not saved: the stored view cannot be read (corrupt).");
+    expect(
+      describeSettledAs({ status: "failed", reason: "quota exceeded" })[4],
+    ).toBe("Not deleted: quota exceeded.");
   });
 });

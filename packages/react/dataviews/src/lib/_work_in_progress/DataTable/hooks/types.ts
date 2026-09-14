@@ -1,7 +1,10 @@
 /**
  * Hook domain types for the DataTable domain. Each hook declares its result
- * type here; a hook's config type lives beside it when the hook takes one.
+ * type here; a hook's props type lives beside it when the hook takes one.
  */
+
+import type { Presentation } from "@canonical/dataviews-core";
+import type { DataTableColumn } from "../types.js";
 
 /** One table's resolved geometry. */
 export type UseTableGeometryResult = {
@@ -25,3 +28,13 @@ export type UseTableGeometryResult = {
   /** The resolved widths, positionally aligned with the column ids. */
   readonly widths: readonly number[];
 };
+
+/** What the arrangement hook takes: the presentation that arranges the declared columns. */
+export type UseColumnArrangementProps = {
+  readonly presentation: Presentation;
+  /** The columns as declared, in their declared order. */
+  readonly columns: readonly DataTableColumn[];
+};
+
+/** The columns a table renders, in the arrangement's order, the hidden ones left out. */
+export type UseColumnArrangementResult = readonly DataTableColumn[];

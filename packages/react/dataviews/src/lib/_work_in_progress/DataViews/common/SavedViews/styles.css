@@ -2,17 +2,19 @@
 
 @layer ds.components.global {
   /**
-   * Views styles
+   * SavedViews styles
    *
-   * The specification is the anatomy beside the code, `Views.anatomy.yaml`.
-   * Every value below is one it binds; what it could not bind is recorded
-   * there, never hardcoded here.
+   * The specification is the anatomy beside the code,
+   * `SavedViews.anatomy.yaml`. Every value below is one it binds; what it
+   * could not bind is recorded there, never hardcoded here.
    *
    * The select and the name input are the design system's own, themed
-   * through the form layer's channels. The one override is their width: in a
-   * row of controls each takes its content's.
+   * through the form layer's channels. The overrides are their width — in a
+   * row of controls each takes its content's — and the name input's border
+   * once the user has given it a name the collection refuses, which the
+   * validity API marks and the form layer's error channel colours.
    */
-  .ds.data-views-views {
+  .ds.data-views-saved-views {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -31,8 +33,8 @@
 
     & > .picker,
     & > .commands,
-    & > .ds.data-views-views-name-form,
-    & > .ds.data-views-views-confirm {
+    & > .ds.data-views-saved-views-name-form,
+    & > .ds.data-views-saved-views-confirm {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -41,8 +43,15 @@
 
     /* The input chrome fills its container; in a row it takes its content. */
     & > .picker > .ds.input.select,
-    & > .ds.data-views-views-name-form > .ds.input.text {
+    & > .ds.data-views-saved-views-name-form > .ds.input.text {
       inline-size: auto;
+    }
+
+    &
+      > .ds.data-views-saved-views-name-form
+      > .ds.input.text
+      > input:user-invalid {
+      border-color: var(--form-input-border-color-error);
     }
 
     & > .picker > .modified,
@@ -50,7 +59,7 @@
       color: var(--color-text-muted);
     }
 
-    & > .ds.data-views-views-name-form > .error {
+    & > .ds.data-views-saved-views-name-form > .error {
       color: var(--color-text-error);
     }
   }

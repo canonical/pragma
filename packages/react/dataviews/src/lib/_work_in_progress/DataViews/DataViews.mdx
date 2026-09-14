@@ -9,7 +9,7 @@ A `DataViews` root mounts one provider for the parts inside it. The parts read t
 
 ## A whole screen
 
-Three declarations at module scope, one provider in state, and the parts. The **collection** is the schema and the record identity, declared once and named by every hook as its witness. The **provider** is built once over the collection, a source, and the ports it drives — a location for the URL, a store for saved views — and it starts nothing until something reads it: the first part to mount observes it, and that adopts the location, runs the source and asks for the first page. Your own children read the root through `useDataViews(collection)`, at module scope, and take no provider prop.
+Three declarations at module scope, one provider in state, and the parts. The **collection** is the schema and the record identity, declared once and named by every hook as its witness. The **provider** is built once over the collection, a source, and the ports it drives — a location for the URL, a store for saved views, a store for the viewer's arrangement — and it starts nothing until something reads it: the first part to mount observes it, and that adopts the location, runs the source and asks for the first page. Your own children read the root through `useDataViews(collection)`, at module scope, and take no provider prop.
 
 Each part comes in one of two forms. A **connected** part — every `DataViews.*` — reads the enclosing root and throws outside one. A **standalone** part — `DataTable`, `PaginationBar` — takes its provider explicitly and never reads context, so it behaves the same alone as it does here. Each standalone part has a connected twin taking its props less the provider: `DataViews.DataTable` and `DataViews.Pagination` below are exactly that. Use the connected form inside a root, and the standalone form when there is no root to read.
 
@@ -31,10 +31,11 @@ import { useState } from "react";
 import { machineCollection, machines } from "./machines.js";
 import { platform } from "./router.js";
 
-// One store per collection, for as long as the application runs. On a
-// server `globalThis.indexedDB` is undefined and nothing reads it: the
-// store is first read when the provider is first observed, in the browser.
-const views = createIndexedDBViewStore({
+// One store per collection, for as long as the application runs, serving
+// the saved views and the viewer's arrangement alike. On a server
+// `globalThis.indexedDB` is undefined and nothing reads it: the store is
+// first read when the provider is first observed, in the browser.
+const store = createIndexedDBViewStore({
   indexedDB: globalThis.indexedDB,
   database: "operations-console-views",
   collection: "machines",
@@ -74,13 +75,14 @@ export function Machines() {
         searchFields: ["name", "owner"],
       }),
       location: createPlatformLocation(platform),
-      views,
+      views: store,
+      presentation: store,
       seed: { window: { ...DEFAULT_WINDOW, page: 1, size: 5 } },
     }),
   );
   return (
     <DataViews provider={provider}>
-      <DataViews.Views />
+      <DataViews.SavedViews />
       <DataViews.Search label="Search machines" />
       <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
       <QueryIssues />
@@ -124,7 +126,7 @@ export const machineCollection = createCollection({
 });
 ```
 
-The filters and the table's sortable columns offer nothing the source did not declare it can execute — the provider reads the source's capabilities once, and a command outside them is refused at the boundary and moves nothing. Leave `location` out and the query lives in the provider alone; leave `views` out and the collection has no saved views.
+The filters and the table's sortable columns offer nothing the source did not declare it can execute — the provider reads the source's capabilities once, and a command outside them is refused at the boundary and moves nothing. Leave `location` out and the query lives in the provider alone; leave `views` out and the collection has no saved views; leave `presentation` out and the arrangement — column widths, order and visibility — lives in memory for the session.
 
 <Canvas of={Stories.ConnectedParts} sourceState="none" />
 

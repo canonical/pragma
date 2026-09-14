@@ -23,8 +23,8 @@ import type {
   DataViewsFiltersProps,
   DataViewsPaginationProps,
   DataViewsProps,
+  DataViewsSavedViewsProps,
   DataViewsSearchProps,
-  DataViewsViewsProps,
   PaginationBarProps,
   UseDataViewsCellResult,
   UseDataViewsFilterResult,
@@ -52,7 +52,7 @@ type EveryPublicType = [
   UseDataViewsCellResult,
   UseDataViewsFilterResult<unknown>,
   UseDataViewsResult<Fields>,
-  DataViewsViewsProps,
+  DataViewsSavedViewsProps,
 ];
 
 /**
@@ -225,6 +225,8 @@ describe("the hooks' results", () => {
   it("hand a child the provider's commands and this root's filters, and nothing that starts or resets it", () => {
     expectTypeOf<UseDataViewsResult<Fields>>().toHaveProperty("filters");
     expectTypeOf<UseDataViewsResult<Fields>>().toHaveProperty("runAction");
+    // The presentation reaches every child: the settings part will edit it.
+    expectTypeOf<UseDataViewsResult<Fields>>().toHaveProperty("presentation");
     expectTypeOf<UseDataViewsResult<Fields>>().not.toHaveProperty("observe");
     expectTypeOf<UseDataViewsResult<Fields>>().not.toHaveProperty("reset");
   });
@@ -236,6 +238,12 @@ describe("connected part props", () => {
     // custom cell through `useDataViewsCell(collection)`.
     expectTypeOf<DataViewsDataTableProps>().not.toHaveProperty("provider");
     expectTypeOf<DataViewsDataTableProps>().toHaveProperty("columns");
+    // The presentation is the one authority for the arrangement: no
+    // layout record is passed, and a column may declare `hideable`.
+    expectTypeOf<DataTableProps<Fields>>().not.toHaveProperty("layout");
+    expectTypeOf<DataTableColumn>()
+      .toHaveProperty("hideable")
+      .toEqualTypeOf<boolean | undefined>();
     expectTypeOf<
       Omit<DataTableProps<Fields, RowRecord>, "provider">
     >().toEqualTypeOf<DataViewsDataTableProps>();

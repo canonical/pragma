@@ -24,10 +24,10 @@ import {
 } from "../../../../../storybook/machines/story-utils.js";
 import { DataTable, type DataTableColumn } from "../../../DataTable/index.js";
 import DataViews from "../../Provider.js";
-import Component from "./Views.js";
+import Component from "./SavedViews.js";
 
 const meta = {
-  title: "_work_in_progress/DataViews/Views",
+  title: "_work_in_progress/DataViews/SavedViews",
   component: Component,
   decorators: [withAppScope],
 } satisfies Meta<typeof Component>;
@@ -36,21 +36,21 @@ export default meta;
 type Story = StoryObj<typeof Component>;
 
 const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host", resizable: true },
+  { id: "name", header: "Host", resizable: true, hideable: false },
   { id: "status", header: "Status" },
   { id: "cores", header: "Cores" },
   { id: "owner", header: "Owner" },
 ];
 
 const columnsCode = `const columns: readonly DataTableColumn[] = [
-  { id: "name", header: "Host", resizable: true },
+  { id: "name", header: "Host", resizable: true, hideable: false },
   { id: "status", header: "Status" },
   { id: "cores", header: "Cores" },
   { id: "owner", header: "Owner" },
 ];`;
 
 const composition = `<DataViews provider={provider}>
-  <DataViews.Views />
+  <DataViews.SavedViews />
   <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
   <DataTable provider={provider} columns={columns} label="Machines" />
   <DataViews.Pagination sizes={[5, 10, 25]} />
@@ -67,11 +67,11 @@ const parameters = consumerCode({
   parts: ["DataTable", "DataViews", "type DataTableColumn"],
   declarations: columnsCode,
   window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
-  views: true,
+  store: true,
   render: composition,
 });
 
-/** The root, its views control and the parts the views act on. */
+/** The root, its saved-views control and the parts the views act on. */
 function Collection({
   provider,
   children,
@@ -102,34 +102,35 @@ function SavedMachines({
   const provider = useMachineProvider({
     window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
     views: store,
+    presentation: store,
   });
   return <Collection provider={provider} />;
 }
 
 type Canvas = ReturnType<typeof within>;
 
-const views = (canvas: Canvas) =>
+const getViews = (canvas: Canvas) =>
   within(canvas.getByRole("group", { name: "Saved views" }));
 
-/** The views control's operation status. */
-const outcome = (canvas: Canvas): HTMLElement | null =>
+/** The saved-views control's command status. */
+const queryOutcome = (canvas: Canvas): HTMLElement | null =>
   canvas
     .getByRole("group", { name: "Saved views" })
     .querySelector('.status[role="status"]');
 
 /** The pagination bar's summary. */
-const summary = (canvas: Canvas): HTMLElement =>
+const getSummary = (canvas: Canvas): HTMLElement =>
   within(canvas.getByRole("navigation", { name: "Pagination" })).getByRole(
     "status",
   );
 
 /** Open a view by name, once the store has listed it. */
 const open = async (canvas: Canvas, name: string): Promise<void> => {
-  const select = views(canvas).getByRole("combobox", { name: "View" });
+  const select = getViews(canvas).getByRole("combobox", { name: "View" });
   await within(select).findByRole("option", { name });
   await userEvent.selectOptions(select, name);
   await waitFor(() =>
-    expect(outcome(canvas)).toHaveTextContent(`Opened "${name}".`),
+    expect(queryOutcome(canvas)).toHaveTextContent(`Opened "${name}".`),
   );
 };
 
@@ -143,7 +144,9 @@ export const SavedViews: Story = {
   play: async ({ canvas }) => {
     await open(canvas, "Failed machines");
     await waitFor(() =>
-      expect(summary(canvas)).toHaveTextContent("Showing 1–3 out of 3 items"),
+      expect(getSummary(canvas)).toHaveTextContent(
+        "Showing 1–3 out of 3 items",
+      ),
     );
     await expect(
       canvas.getByRole("checkbox", { name: "failed" }),
@@ -163,13 +166,13 @@ export const SaveAsANewView: Story = {
     await userEvent.click(canvas.getByRole("checkbox", { name: "running" }));
     await waitFor(() =>
       expect(
-        views(canvas).getByRole("button", { name: "Save as…" }),
+        getViews(canvas).getByRole("button", { name: "Save as…" }),
       ).toBeEnabled(),
     );
     await userEvent.click(
-      views(canvas).getByRole("button", { name: "Save as…" }),
+      getViews(canvas).getByRole("button", { name: "Save as…" }),
     );
-    const name = views(canvas).getByRole("textbox", { name: "Name" });
+    const name = getViews(canvas).getByRole("textbox", { name: "Name" });
     await userEvent.type(name, "failed machines{Enter}");
     await waitFor(() =>
       expect(name).toHaveAccessibleDescription(
@@ -218,6 +221,7 @@ export const AConflictBetweenTabs: Story = {
     const provider = useMachineProvider({
       window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
       views: store,
+      presentation: store,
     });
     return (
       <Collection provider={provider}>
@@ -231,17 +235,19 @@ export const AConflictBetweenTabs: Story = {
       canvas.getByRole("button", { name: "Change it in another tab" }),
     );
     await userEvent.click(canvas.getByRole("checkbox", { name: "running" }));
-    await userEvent.click(views(canvas).getByRole("button", { name: "Save" }));
+    await userEvent.click(
+      getViews(canvas).getByRole("button", { name: "Save" }),
+    );
     await waitFor(() =>
-      expect(outcome(canvas)).toHaveTextContent(
+      expect(queryOutcome(canvas)).toHaveTextContent(
         'Not saved: "Failed machines" was changed elsewhere.',
       ),
     );
     await expect(
-      views(canvas).getByRole("button", { name: "Overwrite" }),
+      getViews(canvas).getByRole("button", { name: "Overwrite" }),
     ).toBeEnabled();
     await expect(
-      views(canvas).getByRole("button", { name: "Discard changes" }),
+      getViews(canvas).getByRole("button", { name: "Discard changes" }),
     ).toBeEnabled();
   },
 };
@@ -256,9 +262,9 @@ export const DeletingAView: Story = {
   play: async ({ canvas }) => {
     await open(canvas, "Failed machines");
     await userEvent.click(
-      views(canvas).getByRole("button", { name: "Delete…" }),
+      getViews(canvas).getByRole("button", { name: "Delete…" }),
     );
-    const confirm = views(canvas).getByRole("group", {
+    const confirm = getViews(canvas).getByRole("group", {
       name: 'Delete "Failed machines"? This cannot be undone.',
     });
     await expect(
@@ -267,17 +273,22 @@ export const DeletingAView: Story = {
   },
 };
 
-/** A view saved with its own column widths. */
+/** A view saved with its own arrangement: a width, an order and a hidden column. */
 const wideHosts: ViewDraft = {
   id: "wide-hosts",
   name: "Wide hosts",
   query: "as=table",
-  presentation: { "table.width.name": 320 },
+  presentation: {
+    "table.width.name": 320,
+    "table.order": ["owner", "name", "status", "cores"],
+    "table.hidden": ["cores"],
+  },
 };
 
 /**
  * A view's arrangement: this view was saved with the Host column 320 pixels
- * wide, so opening it sets that width over the one the column declares.
+ * wide, the Owner column first and the Cores column hidden, so opening it
+ * sets that arrangement over the one the columns declare.
  */
 export const AViewsArrangement: Story = {
   parameters,
@@ -293,6 +304,9 @@ export const AViewsArrangement: Story = {
         ),
       ).toBe(320),
     );
+    await expect(
+      canvas.getAllByRole("columnheader").map((header) => header.textContent),
+    ).toEqual(["Owner", "Host", "Status"]);
   },
 };
 
@@ -307,7 +321,7 @@ const refusedStorage: IndexedDBFactory = {
 };
 
 /**
- * Storage the browser refusals: the control says views are unavailable and
+ * Storage the browser refuses: the control says views are unavailable and
  * why, with a way to try again. The query, the filters and the table work as
  * before; nothing is kept in memory and passed off as saved.
  */
@@ -315,14 +329,14 @@ export const StorageUnavailable: Story = {
   parameters,
   render: () => <SavedMachines indexedDB={refusedStorage} />,
   play: async ({ canvas }) => {
-    await views(canvas).findByText(
+    await getViews(canvas).findByText(
       "Saved views are unavailable: view storage is unavailable: the browser refused storage for this site.",
     );
     await expect(
-      views(canvas).getByRole("button", { name: "Try again" }),
+      getViews(canvas).getByRole("button", { name: "Try again" }),
     ).toBeEnabled();
     await expect(
-      views(canvas).getByRole("combobox", { name: "View" }),
+      getViews(canvas).getByRole("combobox", { name: "View" }),
     ).toBeDisabled();
   },
 };
@@ -359,7 +373,7 @@ import { platform } from "./router.js";`,
     // and subscribe. Opening a view writes its query there.
     location: "createPlatformLocation(platform)",
     window: "{ ...DEFAULT_WINDOW, page: 1, size: 5 }",
-    views: true,
+    store: true,
     render: composition,
   }),
   render: function Render() {
@@ -372,6 +386,7 @@ import { platform } from "./router.js";`,
     const provider = useMachineProvider({
       window: { ...DEFAULT_WINDOW, page: 1, size: 5 },
       views: store,
+      presentation: store,
       location,
     });
     return (
