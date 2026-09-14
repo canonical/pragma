@@ -4,9 +4,12 @@
  * deterministic before any solver or observer runs. And there is nothing to
  * observe the provider: a server render starts no request.
  */
+
+import type { PresentationStore } from "@canonical/dataviews-core";
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { createStandInPresentationStore } from "../../../../testing/createStandInStores.js";
 import { deliverRows } from "../../../../testing/fixtures.js";
 import {
   createMachineProvider,
@@ -33,7 +36,17 @@ describe("DataTable SSR", () => {
   it("renders the declarative tracks, the roles and the controls", () => {
     // Rows the server already holds, fed to the provider by hand: nothing
     // observes it, so nothing else would ask the source.
-    const { provider } = createMachineProvider();
+    // A stored width the server never reads: the tracks stay declarative.
+    const readPresentation = vi.fn<PresentationStore["readPresentation"]>(
+      async () => ({ "table.width.name": 300 }),
+    );
+    const heard = vi.fn<PresentationStore["subscribe"]>();
+    const { provider } = createMachineProvider({
+      presentation: createStandInPresentationStore({
+        readPresentation,
+        subscribe: heard,
+      }),
+    });
     const host = readProviderHost(provider);
     host.complete(host.refresh(), deliverRows([machine("m-1", "alpha")]));
     const html = renderToString(
@@ -47,6 +60,8 @@ describe("DataTable SSR", () => {
     // The data columns only: the selection track is the stylesheet's, and
     // `dense` is what sets the density channel.
     expect(html).toContain("--data-table-columns:minmax(120px, 2fr) 80px");
+    expect(readPresentation).not.toHaveBeenCalled();
+    expect(heard).not.toHaveBeenCalled();
     expect(html).toContain('class="ds data-table dense"');
     expect(html).toContain('role="table"');
     expect(html).toContain('aria-label="Machines"');

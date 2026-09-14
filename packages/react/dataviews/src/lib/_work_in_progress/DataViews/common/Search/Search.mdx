@@ -7,7 +7,7 @@ import * as Stories from "./Search.stories";
 
 `DataViews.Search` is the collection's text search: one labelled native search input over the applied search. It takes no value and no callback — every edit applies as it is typed, through the provider's `setSearch`, and the input shows the applied search and nothing else, so Back or a saved view opened is what the input shows next. It reads the applied search alone, so a result arriving or a page turning re-renders no search box.
 
-The part throws where the provider's source declares no search, as `DataViews.Views` does without a store: a control nothing can execute is not offered disabled.
+The part throws where the provider's source declares no search, as `DataViews.SavedViews` does without a store: a control nothing can execute is not offered disabled.
 
 ## Search over a composed collection
 

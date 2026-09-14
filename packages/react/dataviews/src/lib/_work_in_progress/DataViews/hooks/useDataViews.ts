@@ -48,6 +48,7 @@ export default function useDataViews<
       issues: provider.issues,
       selection: provider.selection,
       views: provider.views,
+      presentation: provider.presentation,
       filters,
       navigateWindow: provider.navigateWindow,
       setSort: provider.setSort,

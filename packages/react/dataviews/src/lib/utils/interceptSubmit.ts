@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 
 /**
  * Cancel a GET form's own submission: the edit its controls made has applied
@@ -8,7 +8,7 @@ import type { FormEvent } from "react";
  * @note Impure by design: it cancels the browser's default for the event.
  */
 export default function interceptSubmit(
-  event: FormEvent<HTMLFormElement>,
+  event: SubmitEvent<HTMLFormElement>,
 ): void {
   event.preventDefault();
 }

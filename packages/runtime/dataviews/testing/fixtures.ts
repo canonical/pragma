@@ -3,8 +3,8 @@
  * declaration that can execute nothing with a builder that overrides one
  * member of it, the page and answer a manual source is answered with, the
  * completions a request ends badly with, the counts a page claims, the
- * pagination kinds a source declares, a slice filtered one way, and one
- * display status of each kind.
+ * pagination kinds a source declares, a slice filtered one way, one display
+ * status of each kind, and a stored saved view as a store lists it.
  * Kept in one place so a new capability member does not have to be spelled
  * into ninety test files.
  */
@@ -32,6 +32,7 @@ import {
   type SourceCapabilities,
   type SourceRequest,
 } from "../src/lib/source/index.js";
+import type { SavedView } from "../src/lib/views/index.js";
 
 /** The identity every fixture record carries: its own `id`. */
 export const byId = (row: RowRecord): string => String(row["id"]);
@@ -181,3 +182,18 @@ export const displayStatusOf = (
   status === "failed" || status === "refresh-failed" || status === "stale"
     ? { status, reason: "offline" }
     : { status };
+
+/** One stored view, as a store would list it, with the given fields changed. */
+export const buildStoredView = (
+  overrides: Partial<SavedView> = {},
+): SavedView => ({
+  id: "v1",
+  name: "Failed",
+  query: "as=table&status=failed",
+  presentation: null,
+  revision: 1,
+  pinned: false,
+  createdAt: "2026-09-11T00:00:00.000Z",
+  updatedAt: "2026-09-11T00:00:00.000Z",
+  ...overrides,
+});

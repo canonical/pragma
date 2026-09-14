@@ -8,6 +8,7 @@ import {
   protectChannel,
   type ReadonlyChannel,
 } from "../observable/index.js";
+import { createPresentation } from "../presentation/index.js";
 import type {
   GroupPath,
   GroupTerm,
@@ -26,7 +27,7 @@ import {
 import type { SchemaFieldDefinition } from "../schema/index.js";
 import { createSelection } from "../selection/index.js";
 import { copyCapabilities } from "../source/index.js";
-import { createProviderViews } from "../views/index.js";
+import { createSavedViews } from "../views/index.js";
 import { encodeQuery, type QueryIssue } from "../wire/index.js";
 import createActionRunner from "./createActionRunner.js";
 import createQueryCommands from "./createQueryCommands.js";
@@ -69,14 +70,15 @@ const NO_ISSUES: ReadonlyChannel<readonly QueryIssue[]> = protectChannel(
  * of the ports that feed it. It assembles the query coordinator, the
  * selection, the row model and the record typing over the collection it is
  * given, reads the source's capabilities once, and drives the source, the
- * location and the saved views itself — an application hands it the ports
- * and mounts.
+ * location, the presentation and the saved views itself — an application
+ * hands it the ports and mounts.
  *
  * Construction starts nothing. `observe()` is ref-counted: the first
- * observer adopts the location, starts source execution, the location loop
- * and the views, and asks for a page when nothing is pending after that —
- * the first page from idle, the current one again after a release; the
- * last release stops all of it, and the next observer starts it again.
+ * observer adopts the location, starts source execution, the location loop,
+ * the presentation and the views, and asks for a page when nothing is
+ * pending after that — the first page from idle, the current one again
+ * after a release; the last release stops all of it, and the next observer
+ * starts it again.
  *
  * @note Impure by design: the provider is the one place the collection's
  * state lives, and observing it starts its ports — subscriptions on the
@@ -175,10 +177,11 @@ export default function createDataViewsProvider<
     },
   };
 
+  const presentation = createPresentation({ store: config.presentation });
   const views =
     config.views === undefined
       ? null
-      : createProviderViews({
+      : createSavedViews({
           host: {
             schema: collection.schema,
             capabilities,
@@ -190,6 +193,7 @@ export default function createDataViewsProvider<
             },
           },
           store: config.views,
+          presentation,
         });
   const location =
     config.location === undefined
@@ -214,7 +218,7 @@ export default function createDataViewsProvider<
   if (location !== null) {
     ports.push(location);
   }
-  ports.push(run);
+  ports.push(run, presentation);
   if (views !== null) {
     ports.push(views);
   }
@@ -239,6 +243,7 @@ export default function createDataViewsProvider<
     issues: location?.issues ?? NO_ISSUES,
     selection,
     views,
+    presentation,
     navigateWindow: (window: WindowNavigation) =>
       command({ kind: "navigateWindow", ...window }),
     setSort: (sort: readonly SortTerm[]) => command({ kind: "setSort", sort }),

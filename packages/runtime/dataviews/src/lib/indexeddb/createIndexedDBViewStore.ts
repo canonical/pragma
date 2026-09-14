@@ -1,179 +1,39 @@
-import { describeError } from "../source/index.js";
+import {
+  type JsonValue,
+  type PreferenceResult,
+  type PresentationStore,
+  spellTargetKey,
+} from "../presentation/index.js";
 import type {
-  JsonValue,
-  PreferenceResult,
-  PresentationTarget,
   SavedView,
   UnreadableView,
   ViewCreateResult,
   ViewGetResult,
   ViewList,
-  ViewPresentation,
   ViewRemoveResult,
   ViewStore,
   ViewUpdateResult,
 } from "../views/index.js";
+import { PINS, PREFERENCES, RECORD_VERSION } from "./constants.js";
+import createIndexedDBConnection from "./createIndexedDBConnection.js";
+import describeUnreadableRecord from "./describeUnreadableRecord.js";
+import isStoredPreference from "./isStoredPreference.js";
+import isStoredView from "./isStoredView.js";
+import readSavedView from "./readSavedView.js";
+import readStoredId from "./readStoredId.js";
 import type {
-  IndexedDBDatabase,
-  IndexedDBObjectStore,
-  IndexedDBOpenRequest,
-  IndexedDBRequest,
-  IndexedDBTransaction,
   IndexedDBViewStoreConfig,
+  LookedUp,
+  Step,
+  StoredView,
+  Stores,
 } from "./types.js";
-
-/** The database schema this store creates. Version 1 is the first. */
-const DATABASE_VERSION = 1;
-/** The saved-view record format this store reads and writes. */
-const RECORD_VERSION = 1;
-const VIEWS = "views";
-const PREFERENCES = "preferences";
-/** Preference targets: pins, and presentation by target. */
-const PINS = "pins";
-const targetKey = (target: PresentationTarget): string =>
-  target === "default" ? "default" : `view:${target.view}`;
-
-/** A stored saved-view record: its key, its format and its fields. */
-type StoredView = {
-  readonly scope: string;
-  readonly id: string;
-  readonly v: number;
-  readonly name: string;
-  readonly query: string;
-  readonly presentation?: ViewPresentation;
-  readonly revision: number;
-  readonly createdAt: string;
-  readonly updatedAt: string;
-};
-
-/** One stored preference: a key of a target, in a scope. */
-type StoredPreference = {
-  readonly scope: string;
-  readonly target: string;
-  readonly key: string;
-  readonly value: JsonValue;
-};
-
-/** Run `then` with a request's result once it succeeds. */
-type Step = <TResult>(
-  request: IndexedDBRequest<TResult>,
-  then: (result: TResult) => void,
-) => void;
-
-/** An object store as one transaction uses it. */
-type TransactionStore = Pick<
-  IndexedDBObjectStore,
-  "get" | "put" | "delete" | "index"
->;
-
-type Stores = {
-  readonly views: TransactionStore;
-  readonly preferences: TransactionStore;
-};
-
-/** One view as stored: readable with its record, missing, or unreadable. */
-type LookedUp =
-  | {
-      readonly status: "found";
-      readonly view: SavedView;
-      readonly record: StoredView;
-    }
-  | { readonly status: "missing" }
-  | { readonly status: "unreadable"; readonly reason: string };
-
-/** Whether a stored record is a saved view in the format this store reads. */
-const isStoredView = (
-  record: Readonly<Record<string, unknown>>,
-): record is StoredView => {
-  const { v, id, name, query, presentation, revision, createdAt, updatedAt } =
-    record;
-  return (
-    v === RECORD_VERSION &&
-    typeof id === "string" &&
-    typeof name === "string" &&
-    typeof query === "string" &&
-    typeof revision === "number" &&
-    Number.isInteger(revision) &&
-    revision >= 1 &&
-    typeof createdAt === "string" &&
-    typeof updatedAt === "string" &&
-    (presentation === undefined ||
-      (typeof presentation === "object" &&
-        presentation !== null &&
-        !Array.isArray(presentation)))
-  );
-};
-
-/** Whether a value is JSON: what a presentation may hold, and nothing else. */
-const isJsonValue = (value: unknown): value is JsonValue => {
-  switch (typeof value) {
-    case "string":
-    case "boolean":
-      return true;
-    case "number":
-      return Number.isFinite(value);
-    case "object":
-      if (value === null) {
-        return true;
-      }
-      if (Array.isArray(value)) {
-        return value.every(isJsonValue);
-      }
-      return (
-        Object.getPrototypeOf(value) === Object.prototype &&
-        Object.values(value).every(isJsonValue)
-      );
-    default:
-      return false;
-  }
-};
-
-/**
- * Whether a stored record is a preference this store can read. Storage is
- * an external boundary — another client, a newer version of this store or
- * a hand-edited database may have written it — so a record is checked
- * before it is read, never cast. One that fails reads as absent: a pin
- * that is not one leaves the view unpinned, a presentation entry that is
- * not one leaves its key unset, and neither is misread as a value.
- */
-const isStoredPreference = (record: unknown): record is StoredPreference => {
-  if (typeof record !== "object" || record === null) {
-    return false;
-  }
-  const { scope, target, key, value } = record as Readonly<
-    Record<string, unknown>
-  >;
-  return (
-    typeof scope === "string" &&
-    typeof target === "string" &&
-    typeof key === "string" &&
-    isJsonValue(value)
-  );
-};
-
-/** Why a stored record cannot be read as a saved view. */
-const unreadableReason = (record: Readonly<Record<string, unknown>>): string =>
-  record["v"] === RECORD_VERSION
-    ? "the record does not have the shape of a saved view"
-    : `record version ${String(record["v"])} is not the supported version ${RECORD_VERSION}`;
-
-/** A stored saved view as this viewer sees it. */
-const viewOf = (record: StoredView, pinned: boolean): SavedView => ({
-  id: record.id,
-  name: record.name,
-  query: record.query,
-  presentation: record.presentation ?? null,
-  revision: record.revision,
-  pinned,
-  createdAt: record.createdAt,
-  updatedAt: record.updatedAt,
-});
-
-const disposedError = (): Error => new Error("the view store is disposed");
 
 /**
  * Create a local-first view store over IndexedDB, scoped at construction
- * to one collection and one partition of one application's database.
+ * to one collection and one partition of one application's database. It
+ * implements both the view store and the presentation store, so one object
+ * may serve a provider's `views` and its `presentation`.
  *
  * View edits are transactional: an update or removal names the revision it
  * was made against, and a stale one is an explicit conflict rather than a
@@ -189,228 +49,25 @@ const disposedError = (): Error => new Error("the view store is disposed");
  * BroadcastChannel where the platform has one. Import it explicitly from
  * `@canonical/dataviews-core/indexeddb`.
  *
+ * @note Impure by design: building it opens a channel to the other tabs of
+ * its scope, and every call is storage I/O through its connection.
+ *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
 export default function createIndexedDBViewStore(
   config: IndexedDBViewStoreConfig,
-): ViewStore {
+): ViewStore & PresentationStore {
   const scope = JSON.stringify([config.collection, config.partition]);
-  const listeners = new Set<() => void>();
-  const channelName = JSON.stringify([
-    "@canonical/dataviews-core",
-    config.database,
-    scope,
-  ]);
-  const channel =
-    typeof BroadcastChannel === "undefined"
-      ? null
-      : new BroadcastChannel(channelName);
-  let connection: Promise<IndexedDBDatabase> | null = null;
-  let disposed = false;
-
-  /**
-   * Call each listener in a microtask of its own, as the platform calls event
-   * listeners: one that throws is reported without stopping the others,
-   * and never turns a committed write into a rejected one.
-   */
-  const notify = (): void => {
-    for (const listener of listeners) {
-      queueMicrotask(() => {
-        if (listeners.has(listener)) {
-          listener();
-        }
-      });
-    }
-  };
-  if (channel !== null) {
-    channel.onmessage = notify;
-  }
-
-  /**
-   * Tell this tab's listeners and every other store of this scope. A write
-   * committing after dispose has no listener here left to tell, but other
-   * tabs still hear of it.
-   */
-  const announce = (): void => {
-    if (disposed) {
-      if (channel !== null) {
-        const parting = new BroadcastChannel(channelName);
-        parting.postMessage(null);
-        parting.close();
-      }
-      return;
-    }
-    channel?.postMessage(null);
-    notify();
-  };
-
-  const open = (forget: () => void): Promise<IndexedDBDatabase> =>
-    new Promise((resolve, reject) => {
-      const unavailable = (error: unknown): void => {
-        reject(
-          new Error(`view storage is unavailable: ${describeError(error)}`, {
-            cause: error,
-          }),
-        );
-      };
-      let request: IndexedDBOpenRequest;
-      try {
-        request = config.indexedDB.open(config.database, DATABASE_VERSION);
-      } catch (error) {
-        unavailable(error);
-        return;
-      }
-      // The first version: an upgrade only ever starts from nothing.
-      request.onupgradeneeded = () => {
-        const database = request.result;
-        database
-          .createObjectStore(VIEWS, { keyPath: ["scope", "id"] })
-          .createIndex("scope", "scope");
-        database
-          .createObjectStore(PREFERENCES, {
-            keyPath: ["scope", "target", "key"],
-          })
-          .createIndex("target", ["scope", "target"]);
-      };
-      request.onerror = () => {
-        unavailable(request.error);
-      };
-      request.onsuccess = () => {
-        const database = request.result;
-        // Another tab upgrading or deleting the database, or the platform
-        // closing it, ends this connection; the next call opens a new one.
-        const close = (): void => {
-          database.close();
-          forget();
-        };
-        database.onversionchange = close;
-        database.onclose = close;
-        if (disposed) {
-          database.close();
-          reject(disposedError());
-          return;
-        }
-        resolve(database);
-      };
-    });
-
-  const connect = (): Promise<IndexedDBDatabase> => {
-    if (disposed) {
-      return Promise.reject(disposedError());
-    }
-    if (connection === null) {
-      const opening = open(() => {
-        if (connection === opening) {
-          connection = null;
-        }
-      });
-      connection = opening;
-      // A failed open is not kept: the next call retries.
-      opening.catch(() => {
-        if (connection === opening) {
-          connection = null;
-        }
-      });
-    }
-    return connection;
-  };
-
-  /**
-   * Run one transaction over both stores. `work` issues its requests and
-   * returns how to read the outcome, which is read only once the
-   * transaction commits: a resolved write is a committed one, under the
-   * browser's default durability. A transaction that wrote something is
-   * announced as it commits; one that wrote nothing is not. Anything
-   * thrown aborts the transaction, which rejects.
-   */
-  const transact = async <TOutcome>(
-    mode: "readonly" | "readwrite",
-    work: (stores: Stores, step: Step) => () => TOutcome,
-  ): Promise<TOutcome> => {
-    const database = await connect();
-    return new Promise((resolve, reject) => {
-      const failed = (error: unknown): void => {
-        reject(
-          new Error(`view storage failed: ${describeError(error)}`, {
-            cause: error,
-          }),
-        );
-      };
-      let transaction: IndexedDBTransaction;
-      try {
-        transaction = database.transaction([VIEWS, PREFERENCES], mode);
-      } catch (error) {
-        failed(error);
-        return;
-      }
-      /** What aborted the transaction, when this store did. */
-      let thrown: { readonly error: unknown } | null = null;
-      const abort = (error: unknown): void => {
-        thrown = { error };
-        transaction.abort();
-      };
-      const step: Step = (request, then) => {
-        request.onsuccess = () => {
-          try {
-            then(request.result);
-          } catch (error) {
-            abort(error);
-          }
-        };
-      };
-      /** Whether this transaction issued a write. */
-      let wrote = false;
-      const tracked = (store: IndexedDBObjectStore): TransactionStore => ({
-        get(key) {
-          return store.get(key);
-        },
-        index(name) {
-          return store.index(name);
-        },
-        put(value) {
-          wrote = true;
-          return store.put(value);
-        },
-        delete(key) {
-          wrote = true;
-          return store.delete(key);
-        },
-      });
-      let outcome: () => TOutcome;
-      transaction.oncomplete = () => {
-        if (wrote) {
-          announce();
-        }
-        resolve(outcome());
-      };
-      transaction.onabort = () => {
-        failed(thrown === null ? transaction.error : thrown.error);
-      };
-      try {
-        outcome = work(
-          {
-            views: tracked(transaction.objectStore(VIEWS)),
-            preferences: tracked(transaction.objectStore(PREFERENCES)),
-          },
-          step,
-        );
-      } catch (error) {
-        abort(error);
-      }
-    });
-  };
-
-  /** A read, which a store disposed meanwhile never delivers. */
-  const read = async <TOutcome>(
-    work: (stores: Stores, step: Step) => () => TOutcome,
-  ): Promise<TOutcome> => {
-    const outcome = await transact("readonly", work);
-    if (disposed) {
-      throw disposedError();
-    }
-    return outcome;
-  };
+  const { transact, read, subscribe, dispose } = createIndexedDBConnection({
+    indexedDB: config.indexedDB,
+    database: config.database,
+    channelName: JSON.stringify([
+      "@canonical/dataviews-core",
+      config.database,
+      scope,
+    ]),
+  });
 
   /** Look one view up with its pin, then continue in the same transaction. */
   const lookUp = (
@@ -423,9 +80,7 @@ export default function createIndexedDBViewStore(
     // Requests in one transaction complete in order: the view is in hand
     // by the time the pin is.
     step(preferences.get([scope, PINS, id]), (pin) => {
-      const record = viewRequest.result as
-        | Readonly<Record<string, unknown>>
-        | undefined;
+      const record = viewRequest.result;
       if (record === undefined) {
         then({ status: "missing" });
         return;
@@ -434,10 +89,10 @@ export default function createIndexedDBViewStore(
         isStoredView(record)
           ? {
               status: "found",
-              view: viewOf(record, isStoredPreference(pin)),
+              view: readSavedView(record, isStoredPreference(pin)),
               record,
             }
-          : { status: "unreadable", reason: unreadableReason(record) },
+          : { status: "unreadable", reason: describeUnreadableRecord(record) },
       );
     });
   };
@@ -450,7 +105,9 @@ export default function createIndexedDBViewStore(
   ): void => {
     preferences.delete([scope, PINS, id]);
     step(
-      preferences.index("target").getAllKeys([scope, targetKey({ view: id })]),
+      preferences
+        .index("target")
+        .getAllKeys([scope, spellTargetKey({ view: id })]),
       (keys) => {
         for (const key of keys) {
           preferences.delete(key);
@@ -501,15 +158,13 @@ export default function createIndexedDBViewStore(
           );
           const found: SavedView[] = [];
           const unreadable: UnreadableView[] = [];
-          for (const record of viewsRequest.result as readonly Readonly<
-            Record<string, unknown>
-          >[]) {
+          for (const record of viewsRequest.result) {
             if (isStoredView(record)) {
-              found.push(viewOf(record, pinned.has(record.id)));
+              found.push(readSavedView(record, pinned.has(record.id)));
             } else {
               unreadable.push({
-                id: String(record["id"]),
-                reason: unreadableReason(record),
+                id: readStoredId(record),
+                reason: describeUnreadableRecord(record),
               });
             }
           }
@@ -569,7 +224,7 @@ export default function createIndexedDBViewStore(
             updatedAt: now,
           };
           stores.views.put(record);
-          written = { status: "saved", view: viewOf(record, false) };
+          written = { status: "saved", view: readSavedView(record, false) };
         });
         return () => written;
       });
@@ -604,7 +259,7 @@ export default function createIndexedDBViewStore(
           stores.views.put(record);
           written = {
             status: "saved",
-            view: viewOf(record, found.view.pinned),
+            view: readSavedView(record, found.view.pinned),
           };
         });
         return () => written;
@@ -613,9 +268,7 @@ export default function createIndexedDBViewStore(
 
     remove({ id, revision }) {
       return transact("readwrite", (stores, step) => {
-        let removal: ViewRemoveResult = {
-          status: "removed",
-        };
+        let removal: ViewRemoveResult = { status: "removed" };
         lookUp(stores, step, id, (found) => {
           if (found.status === "unreadable") {
             removal = found;
@@ -644,43 +297,53 @@ export default function createIndexedDBViewStore(
     },
 
     readPresentation(target) {
-      return read(({ preferences }, step) => {
-        const presentation: Record<string, JsonValue> = {};
-        step(
-          preferences.index("target").getAll([scope, targetKey(target)]),
-          (records) => {
-            for (const record of records.filter(isStoredPreference)) {
-              presentation[record.key] = record.value;
-            }
-          },
-        );
-        return () => presentation;
-      });
+      return read(
+        ({ preferences }, step) => {
+          const presentation: Record<string, JsonValue> = {};
+          step(
+            preferences.index("target").getAll([scope, spellTargetKey(target)]),
+            (records) => {
+              for (const record of records.filter(isStoredPreference)) {
+                presentation[record.key] = record.value;
+              }
+            },
+          );
+          return () => presentation;
+        },
+        [PREFERENCES],
+      );
     },
 
     patchPresentation(target, patch) {
+      const key = spellTargetKey(target);
+      const apply = (preferences: Stores["preferences"]): void => {
+        for (const [name, value] of Object.entries(patch)) {
+          if (value === undefined) {
+            preferences.delete([scope, key, name]);
+          } else {
+            preferences.put({ scope, target: key, key: name, value });
+          }
+        }
+      };
+      if (target === "default") {
+        // The default arrangement names no view: the preferences alone.
+        return transact<PreferenceResult>(
+          "readwrite",
+          ({ preferences }) => {
+            apply(preferences);
+            return () => ({ status: "saved" });
+          },
+          [PREFERENCES],
+        );
+      }
       return transact<PreferenceResult>(
         "readwrite",
         ({ views, preferences }, step) => {
-          const key = targetKey(target);
-          const apply = (): void => {
-            for (const [name, value] of Object.entries(patch)) {
-              if (value === undefined) {
-                preferences.delete([scope, key, name]);
-              } else {
-                preferences.put({ scope, target: key, key: name, value });
-              }
-            }
-          };
-          if (target === "default") {
-            apply();
-            return () => ({ status: "saved" });
-          }
           let exists = false;
           step(views.get([scope, target.view]), (record) => {
             exists = record !== undefined;
             if (exists) {
-              apply();
+              apply(preferences);
             }
           });
           return () => ({ status: exists ? "saved" : "missing" });
@@ -688,29 +351,7 @@ export default function createIndexedDBViewStore(
       );
     },
 
-    subscribe(listener) {
-      // A disposed store announces nothing, so a late listener never hears.
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-
-    dispose() {
-      if (disposed) {
-        return;
-      }
-      disposed = true;
-      listeners.clear();
-      channel?.close();
-      const closing = connection;
-      connection = null;
-      closing?.then(
-        (database) => {
-          database.close();
-        },
-        () => {},
-      );
-    },
+    subscribe,
+    dispose,
   };
 }

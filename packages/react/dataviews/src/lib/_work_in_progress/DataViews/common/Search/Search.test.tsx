@@ -48,7 +48,7 @@ describe("DataViews.Search", () => {
     );
   });
 
-  it("throws where the source declares no search, as Views does without a store", () => {
+  it("throws where the source declares no search, as SavedViews does without a store", () => {
     const { provider } = createMachineProvider({
       capabilities: declareCapabilities(machines, { counts: COUNTED_EXACTLY }),
     });

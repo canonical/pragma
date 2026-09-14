@@ -1,2 +1,2 @@
-export { default as createProviderViews } from "./createProviderViews.js";
+export { default as createSavedViews } from "./createSavedViews.js";
 export type * from "./types.js";

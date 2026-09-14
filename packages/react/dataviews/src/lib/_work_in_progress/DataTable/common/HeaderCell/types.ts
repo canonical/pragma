@@ -1,5 +1,8 @@
 import type { SortTerm } from "@canonical/dataviews-core";
-import type { GridInteraction } from "@canonical/dataviews-core/bindings";
+import type {
+  GridInteraction,
+  SizingBounds,
+} from "@canonical/dataviews-core/bindings";
 import type { DataTableColumn } from "../../types.js";
 
 /**
@@ -34,7 +37,7 @@ export type HeaderCellProps = {
    * The widths a resize may leave this column at, from the declared sizing
    * the table's widths are solved from.
    */
-  readonly bounds: { readonly min: number; readonly max: number };
+  readonly bounds: SizingBounds;
   /** The column's resolved width, for a resize capture. */
   readonly width: number;
   /** The id this header's label carries, for the resize handle's name. */

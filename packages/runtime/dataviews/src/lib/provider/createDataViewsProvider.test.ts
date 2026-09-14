@@ -102,6 +102,11 @@ describe("createDataViewsProvider", () => {
     expect(provider.collection).toBe(machines);
     expect(provider.selection.state.get().ids.size).toBe(0);
     expect(provider.views).toBeNull();
+    // The presentation is always there: in memory, with nothing to report.
+    expect(provider.presentation.state.get()).toEqual({
+      presentation: {},
+      presentationReason: null,
+    });
     expect(provider.state.get().result.status).toBe("idle");
   });
 
@@ -113,6 +118,7 @@ describe("createDataViewsProvider", () => {
       "issues",
       "navigateWindow",
       "observe",
+      "presentation",
       "refresh",
       "refusals",
       "reset",
@@ -169,7 +175,11 @@ describe("createDataViewsProvider", () => {
     if (provider.views === null) {
       throw new Error("expected views over the store given");
     }
-    for (const channel of [provider.selection.state, provider.views.state]) {
+    for (const channel of [
+      provider.selection.state,
+      provider.views.state,
+      provider.presentation.state,
+    ]) {
       expect(Object.isFrozen(channel)).toBe(true);
       expect(channel).not.toHaveProperty("set");
       expect(Object.keys(channel)).toEqual(["get", "subscribe"]);

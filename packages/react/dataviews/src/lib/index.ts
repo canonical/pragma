@@ -21,8 +21,8 @@ export type {
   DataViewsFiltersProps,
   DataViewsPaginationProps,
   DataViewsProps,
+  DataViewsSavedViewsProps,
   DataViewsSearchProps,
-  DataViewsViewsProps,
   UseDataViewsFilterResult,
   UseDataViewsResult,
 } from "./_work_in_progress/DataViews/index.js";

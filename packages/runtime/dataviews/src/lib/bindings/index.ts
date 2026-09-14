@@ -1,12 +1,13 @@
 /**
  * The machinery every framework binding shares and no application calls:
- * the column geometry a table solves, the row channels a body renders
- * from, the table's status, the entries of its body and the pagination facts
- * a bar offers — each projected from the published state — the filter
- * records a root builds, the check a binding tells a provider by, the
- * provider's internal host, the list comparison, and the wire key a form
- * control is named by. React uses it now; a Svelte binding would use the
- * same names rather than solve its own geometry.
+ * the column geometry a table solves, the arrangement it places its columns
+ * by, the row channels a body renders from, the table's status, the entries
+ * of its body and the pagination facts a bar offers — each projected from
+ * the published state — the filter records a root builds, the check a
+ * binding tells a provider by, the provider's internal host, the list
+ * comparison, and the wire key a form control is named by. React uses it
+ * now; a Svelte binding would use the same names rather than solve its own
+ * geometry.
  */
 
 export type {
@@ -29,6 +30,7 @@ export type {
 export { createFilterInputs } from "../filter/index.js";
 export type {
   ColumnLayout,
+  ColumnLayoutConfig,
   ColumnLayoutState,
   ColumnSizing,
   ColumnToSize,
@@ -37,14 +39,21 @@ export type {
   GridInteraction,
   GridInteractionState,
   ResolvedColumn,
+  SizingBounds,
 } from "../geometry/index.js";
 export {
   areSizingsEqual,
   buildColumnTemplate,
   createColumnLayout,
   createGridInteraction,
+  readSizingBounds,
   resolveColumns,
 } from "../geometry/index.js";
+export type {
+  ArrangedColumn,
+  DeclaredColumn,
+} from "../presentation/index.js";
+export { resolveColumnArrangement } from "../presentation/index.js";
 export type { ProviderHost } from "../provider/index.js";
 export { isDataViewsProvider, readProviderHost } from "../provider/index.js";
 export { areListsEqual } from "../query/index.js";

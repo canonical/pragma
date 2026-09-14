@@ -9,6 +9,7 @@ import type { Collection } from "../collection/index.js";
 import type { DataViewsState, QueryCoordinator } from "../coordinator/index.js";
 import type { HistoryMode, QueryLocation } from "../location/index.js";
 import type { Channel, ReadonlyChannel } from "../observable/index.js";
+import type { Presentation, PresentationStore } from "../presentation/index.js";
 import type {
   GroupPath,
   GroupTerm,
@@ -31,14 +32,14 @@ import type {
 import type { SchemaFieldDefinition } from "../schema/index.js";
 import type { Selection } from "../selection/index.js";
 import type { Source, SourceCapabilities } from "../source/index.js";
-import type { ProviderViews, ViewStore } from "../views/index.js";
+import type { SavedViews, ViewStore } from "../views/index.js";
 import type { QueryIssue } from "../wire/index.js";
 
 /**
  * The provider: the one owner of a collection's state and of the ports
  * that feed it. Built once per page over a module-scope collection, a
- * source and, optionally, a location and a view store; every mount that
- * reads it calls `observe()`.
+ * source and, optionally, a location, a view store and a presentation
+ * store; every mount that reads it calls `observe()`.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -80,7 +81,14 @@ export type DataViewsProvider<
    * null when it was given none: no store means no views, never views kept
    * in memory and lost on reload.
    */
-  readonly views: ProviderViews | null;
+  readonly views: SavedViews | null;
+  /**
+   * The collection's presentation — column widths, order and visibility —
+   * the one authority every table on this provider reads and a resize
+   * writes. Over the presentation store the provider was given, or in
+   * memory for the session without one, which is never labelled saved.
+   */
+  readonly presentation: Presentation;
   /**
    * Bounded commands, not raw dispatch. Each answers with the refusals the
    * query it would produce incurs, empty when applied; a refused command
@@ -128,11 +136,11 @@ export type DataViewsProvider<
   /**
    * Start the provider's ports and return the release. Ref-counted: the
    * first observer adopts the location, starts source execution, the
-   * location loop and the saved views, and asks for a page when nothing is
-   * pending after that — the first page when the state is idle, the current
-   * one again when an earlier observation settled it and released; the last
-   * release stops all of it. Every mount that
-   * reads the provider calls this in an effect, so two roots on one
+   * location loop, the presentation and the saved views, and asks for a
+   * page when nothing is pending after that — the first page when the state
+   * is idle, the current one again when an earlier observation settled it
+   * and released; the last release stops all of it. Every mount that reads
+   * the provider calls this in an effect, so two roots on one
    * provider do not race and a rehearsal mount and unmount leaves a
    * provider that starts again on the next observer. Construction starts
    * nothing, so a server render stays idle.
@@ -178,11 +186,19 @@ export type DataViewsProviderConfig<
    */
   readonly history?: HistoryPolicy | undefined;
   /**
-   * Where the collection's saved views and presentation preferences live —
-   * `createIndexedDBViewStore` from `@canonical/dataviews-core/indexeddb`, or a
-   * store of the application's own. Left out, the collection has no views.
+   * Where the collection's saved views live — `createIndexedDBViewStore`
+   * from `@canonical/dataviews-core/indexeddb`, or a store of the
+   * application's own. Left out, the collection has no views.
    */
   readonly views?: ViewStore | undefined;
+  /**
+   * Where the viewer's arrangement lives — the same IndexedDB store, which
+   * implements both ports, a `localStorage`-backed store or the
+   * application's own server preferences. Left out, the arrangement lives
+   * in memory for the session: widths, order and visibility still work, and
+   * nothing claims they were saved.
+   */
+  readonly presentation?: PresentationStore | undefined;
   /** The query and window the provider starts on, and returns to on `reset()`. */
   readonly seed?:
     | {

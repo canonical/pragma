@@ -3,6 +3,7 @@ import type {
   Query,
   QueryLocation,
   ReadonlyChannel,
+  SavedView,
   Source,
   SourceActionRunner,
   SourceCapabilities,
@@ -10,6 +11,7 @@ import type {
   SourcePage,
   SourceRefusal,
   SourceRequest,
+  ViewStore,
 } from "@canonical/dataviews-core";
 
 /** A channel a test publishes on: the read side plus `set`. */
@@ -66,4 +68,13 @@ export type RecordingLocation = {
   readonly notifications: string[];
   /** Move the location from outside the loop, as the browser would. */
   readonly move: (params: string) => void;
+};
+
+/** A view store kept in memory, with the ways another tab would change it. */
+export type MemoryViewStore = {
+  readonly store: ViewStore;
+  /** Change a record as another tab would, and tell this one. */
+  readonly elsewhere: (id: string, changes: Partial<SavedView>) => void;
+  /** Delete a record as another tab would, and tell this one. */
+  readonly drop: (id: string) => void;
 };

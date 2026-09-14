@@ -63,15 +63,15 @@ const observeResize = (
  * written onto every cell. Before the container is measured the tracks are
  * declarative, so the baseline is aligned and server output deterministic;
  * afterwards the solver's pixel vector is published, which is what capping
- * and resizing need. The authoritative layout is untouched while a
- * resize previews: the preview only replaces its own column's track.
+ * and resizing need. The presentation is untouched while a resize
+ * previews: the preview only replaces its own column's track.
  *
  * The columns are resolved against the container's content width less the
  * selection track, whose width is the stylesheet's: it is read back from the
  * cell that track sizes, observed for as long as that cell is there.
  *
- * Two tables sharing one layout therefore share user arrangement while
- * resolving their own widths against their own container.
+ * Two tables on one provider read one presentation, so they share the
+ * arrangement while resolving their own widths against their own container.
  */
 export default function useTableGeometry(
   layout: ColumnLayout,
@@ -80,10 +80,8 @@ export default function useTableGeometry(
 ): UseTableGeometryResult {
   const [container, setContainer] = useState<number | null>(null);
   const [reserved, setReserved] = useState(0);
-  // Subscribed for the re-render, not for the snapshot: the tracks below
-  // are read through the record itself, so its unknown-id guard is the one
-  // answer to a column the layout never declared.
-  useDataViewsValue(layout.state);
+  // The snapshot keys the track list.
+  const snapshot = useDataViewsValue(layout.state);
   const interactionState = useDataViewsValue(interaction.state);
 
   const attach = useCallback(
@@ -116,10 +114,23 @@ export default function useTableGeometry(
 
   const width = container === null ? null : Math.max(0, container - reserved);
 
-  const tracks = useStableValue<readonly ColumnToSize[]>(
-    columnIds.map((id) => ({ id, sizing: layout.effective(id) })),
-    areTracksEqual,
+  // Rebuilt only when a width or the column list changes, never per frame
+  // of a preview, which moves neither.
+  const declared = useMemo<readonly ColumnToSize[]>(
+    () =>
+      columnIds.map((id) => ({
+        id,
+        // The snapshot's own override, else the declaration — whose guard
+        // is the one answer to a column the layout never declared. An own
+        // property only, as the layout itself reads its overrides.
+        sizing:
+          (Object.hasOwn(snapshot.overrides, id)
+            ? snapshot.overrides[id]
+            : undefined) ?? layout.readDeclared(id),
+      })),
+    [columnIds, layout, snapshot],
   );
+  const tracks = useStableValue(declared, areTracksEqual);
 
   // Resolving against zero yields each column's own reservation, which is
   // exactly the width a resize should capture before the container is
@@ -136,11 +147,11 @@ export default function useTableGeometry(
       ? { id: interactionState.columnId, width: interactionState.previewWidth }
       : undefined;
 
-  // Rebuilt per render rather than memoised: the track list costs one pass
-  // over the columns, and a live preview would defeat the memo anyway. The
-  // solved vector is handed over rather than re-solved: before the
-  // container is measured the tracks are declarative, and after it they are
-  // the widths just resolved.
+  // The published template is rebuilt per render rather than memoised: it
+  // costs one pass over the columns, and a live preview would defeat the
+  // memo anyway. The solved vector is handed over rather than re-solved:
+  // before the container is measured the tracks are declarative, and after
+  // it they are the widths just resolved.
   // A live preview is substituted before the last column is filled, so the
   // last column follows the edge being dragged rather than waiting for the
   // commit.

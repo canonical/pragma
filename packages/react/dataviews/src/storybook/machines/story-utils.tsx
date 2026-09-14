@@ -9,6 +9,7 @@ import {
   createDataViewsProvider,
   type DataViewsProvider,
   DEFAULT_WINDOW,
+  type PresentationStore,
   type QueryLocation,
   type ResultWindow,
   type Slice,
@@ -45,6 +46,8 @@ export type MachineProviderConfig = {
   readonly location?: QueryLocation | undefined;
   /** Where the collection's saved views live; none by default. */
   readonly views?: ViewStore | undefined;
+  /** Where the viewer's arrangement lives; in memory for the session by default. */
+  readonly presentation?: PresentationStore | undefined;
 };
 
 /**
@@ -60,6 +63,7 @@ export function useMachineProvider({
   prepare,
   location,
   views,
+  presentation,
 }: MachineProviderConfig = {}): MachineProvider {
   const [provider] = useState(() => {
     const built = createDataViewsProvider({
@@ -67,6 +71,7 @@ export function useMachineProvider({
       source: source(),
       ...(location === undefined ? {} : { location }),
       ...(views === undefined ? {} : { views }),
+      ...(presentation === undefined ? {} : { presentation }),
       seed:
         slice === undefined && resultWindow === undefined
           ? undefined
@@ -87,10 +92,13 @@ export function useMachineProvider({
 /** Names a machine for its selection checkbox: by host. */
 export const hostName = (row: Machine): string => row.name;
 
-/** A story's saved-view store, and a way to open another tab over it. */
+/**
+ * A story's saved-view store — which keeps the viewer's arrangement too —
+ * and a way to open another tab over it.
+ */
 export type StoryViewStore = {
-  readonly store: ViewStore;
-  readonly openAnotherTab: () => ViewStore;
+  readonly store: ViewStore & PresentationStore;
+  readonly openAnotherTab: () => ViewStore & PresentationStore;
 };
 
 /** How one story's saved-view store is set up. Read once, when it mounts. */

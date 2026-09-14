@@ -9,6 +9,7 @@
  * and the test answers it by hand, or the provider is built over a source
  * that answers every request at once.
  */
+
 import {
   createCollection,
   createDataViewsProvider,
@@ -17,17 +18,28 @@ import {
   declareCapabilities,
   type SourceDelivery,
 } from "@canonical/dataviews-core";
+import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import {
-  type ColumnLayout,
-  createColumnLayout,
-  readProviderHost,
-} from "@canonical/dataviews-core/bindings";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { createRef, type ReactElement, StrictMode, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import createManualSource from "../../../../testing/createManualSource.js";
+import {
+  createStandInPresentationStore,
+  createStandInViewStore,
+} from "../../../../testing/createStandInStores.js";
 import elementAt from "../../../../testing/elementAt.js";
-import { deliverRows, pageOf } from "../../../../testing/fixtures.js";
+import {
+  buildStoredView,
+  deliverRows,
+  pageOf,
+} from "../../../../testing/fixtures.js";
 import {
   createMachineProvider,
   MACHINE_CAPABILITIES,
@@ -860,57 +872,156 @@ describe("DataTable", () => {
     expect(renders).toEqual([]);
   });
 
-  it("shares user arrangement between two tables on one layout", () => {
-    const { provider } = createMachineProvider();
-    const layout: ColumnLayout = createColumnLayout([
-      { id: "name", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-      { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-    ]);
+  it("keeps two tables on one provider agreed on every width: one authority", async () => {
+    const patchPresentation = vi.fn(async () => ({ status: "saved" }) as const);
+    const { provider } = createMachineProvider({
+      presentation: createStandInPresentationStore({ patchPresentation }),
+    });
     render(
       <>
         <DataTable
           provider={provider}
-          columns={columns}
+          columns={[
+            { id: "name", header: "Name", resizable: true },
+            { id: "status", header: "Status" },
+          ]}
           label="Machines"
-          layout={layout}
         />
-        <DataTable
-          provider={provider}
-          columns={columns}
-          label="Machines elsewhere"
-          layout={layout}
-        />
+        <DataTable provider={provider} columns={columns} label="Elsewhere" />
       </>,
     );
+    const readTracks = (name: string): string =>
+      screen
+        .getByRole("table", { name })
+        .style.getPropertyValue("--data-table-columns");
+    // A resize in one table is written to the presentation once, and the
+    // other table reads it from there: nothing echoes it back.
+    fireEvent.keyDown(screen.getByRole("separator"), { key: "ArrowRight" });
+    for (const name of ["Machines", "Elsewhere"]) {
+      // jsdom reports a zero-width container, so the solver publishes each
+      // column's own reservation; the declarative form is the server path.
+      expect(readTracks(name)).toBe("112px 96px");
+    }
     act(() => {
-      layout.setOverride("name", { kind: "fixed", px: 200 });
+      provider.presentation.arrange({ "table.width.status": 200 });
     });
-    for (const name of ["Machines", "Machines elsewhere"]) {
+    for (const name of ["Machines", "Elsewhere"]) {
+      expect(readTracks(name)).toBe("112px 200px");
+    }
+    // One write reaches the store, the resize and the arrangement merged:
+    // the other table read the widths, and echoed nothing back.
+    await waitFor(() => {
+      expect(patchPresentation.mock.calls).toEqual([
+        ["default", { "table.width.name": 112, "table.width.status": 200 }],
+      ]);
+    });
+  });
+
+  it("sizes a column named for a prototype member from its declaration", () => {
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+    });
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          { id: "constructor", header: "Name", field: "name" },
+          { id: "status", header: "Status" },
+        ]}
+        label="Machines"
+      />,
+    );
+    // Nothing is stored for it: the prototype's `constructor` is no width.
+    expect(
+      screen
+        .getByRole("table", { name: "Machines" })
+        .style.getPropertyValue("--data-table-columns"),
+    ).toBe("96px 96px");
+  });
+
+  it("renders the columns the presentation shows, in its order, a column declared not hideable always", () => {
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+    });
+    render(
+      <DataTable
+        provider={provider}
+        columns={[
+          { id: "name", header: "Name", hideable: false },
+          { id: "status", header: "Status" },
+          { id: "cores", header: "Cores" },
+        ]}
+        label="Machines"
+      />,
+    );
+    const listHeaders = (): string[] =>
+      screen
+        .getAllByRole("columnheader")
+        .map((header) => header.textContent ?? "");
+    expect(listHeaders()).toEqual(["Name", "Status", "Cores"]);
+    act(() => {
+      provider.presentation.arrange({
+        "table.order": ["cores", "region", "name"],
+        "table.hidden": ["status", "name"],
+      });
+    });
+    expect(listHeaders()).toEqual(["Cores", "Name"]);
+    // The cells follow the header: each row is the same two columns.
+    expect(screen.getAllByRole("cell").map((cell) => cell.textContent)).toEqual(
+      ["4", "alpha"],
+    );
+    expect(
+      screen
+        .getByRole("table", { name: "Machines" })
+        .style.getPropertyValue("--data-table-columns"),
+    ).toBe("96px 96px");
+  });
+
+  it("re-layers every table when a view opens, without an echo", async () => {
+    const view = buildStoredView({
+      id: "wide",
+      name: "Wide",
+      query: "as=table",
+      presentation: {
+        "table.width.name": 240,
+        "table.order": ["status", "name"],
+      },
+    });
+    const patchPresentation = vi.fn(async () => ({ status: "saved" }) as const);
+    const { provider } = createMachineProvider({
+      views: createStandInViewStore({
+        list: async () => ({ views: [view], unreadable: [] }),
+        get: async () => ({ status: "found", view }),
+      }),
+      presentation: createStandInPresentationStore({ patchPresentation }),
+    });
+    const { unmount } = render(
+      <>
+        <DataTable provider={provider} columns={columns} label="Machines" />
+        <DataTable provider={provider} columns={columns} label="Elsewhere" />
+      </>,
+    );
+    const listHeaders = (name: string): string[] =>
+      within(screen.getByRole("table", { name }))
+        .getAllByRole("columnheader")
+        .map((header) => header.textContent ?? "");
+    await act(async () => {
+      await provider.views?.open(view.id);
+    });
+    for (const name of ["Machines", "Elsewhere"]) {
+      expect(listHeaders(name)).toEqual(["Status", "Name"]);
       expect(
         screen
           .getByRole("table", { name })
           .style.getPropertyValue("--data-table-columns"),
-        // jsdom reports a zero-width container, so the solver publishes each
-        // column's own reservation; the declarative form is the server path.
-      ).toBe("200px 96px");
+      ).toBe("96px 240px");
     }
-  });
-
-  it("refuses a layout that does not declare a rendered column", () => {
-    const { provider } = createMachineProvider();
-    const layout = createColumnLayout([
-      { id: "name", sizing: { kind: "fixed", px: 100 } },
-    ]);
-    expect(() =>
-      render(
-        <DataTable
-          provider={provider}
-          columns={columns}
-          label="Machines"
-          layout={layout}
-        />,
-      ),
-    ).toThrow('unknown column id "status"');
+    // Applying a view's arrangement is not a resize: nothing is written
+    // back. Unmounting releases the last observer, which sends every write
+    // the tables queued before the check runs — so an echo cannot hide
+    // behind the writer's delay.
+    unmount();
+    expect(patchPresentation).not.toHaveBeenCalled();
   });
 
   it("leaves the selection track to the stylesheet, and its width to no column", () => {
@@ -1098,16 +1209,16 @@ describe("DataTable", () => {
       return frames.length;
     });
     try {
-      const layout = createColumnLayout([
-        { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
-        { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-      ]);
-      loadedTable([machine("m-1", "alpha")], {
+      const { provider } = loadedTable([machine("m-1", "alpha")], {
         columns: [
-          { id: "name", header: "Name", resizable: true },
+          {
+            id: "name",
+            header: "Name",
+            resizable: true,
+            sizing: { kind: "flex", weight: 1, minPx: 50 },
+          },
           { id: "status", header: "Status" },
         ],
-        layout,
       });
       fireEvent.pointerDown(screen.getByRole("separator"), { clientX: 0 });
       fireEvent.pointerMove(window, { clientX: 180 });
@@ -1124,7 +1235,7 @@ describe("DataTable", () => {
         // pointer travelled 180 from there.
       ).toBe("230px 96px");
       // The authority is untouched until the pointer is released.
-      expect(layout.state.get().overrides["name"]).toBeUndefined();
+      expect(provider.presentation.state.get().presentation).toEqual({});
     } finally {
       vi.unstubAllGlobals();
     }
@@ -1134,25 +1245,6 @@ describe("DataTable", () => {
     const { provider, source } = createMachineProvider({
       rows: [machine("m-1", "alpha")],
     });
-    const declared = createColumnLayout([
-      { id: "name", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-      { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-    ]);
-    let layoutSubscriptions = 0;
-    const layout: ColumnLayout = {
-      ...declared,
-      state: {
-        get: declared.state.get,
-        subscribe: (listener) => {
-          layoutSubscriptions += 1;
-          const unsubscribe = declared.state.subscribe(listener);
-          return () => {
-            layoutSubscriptions -= 1;
-            unsubscribe();
-          };
-        },
-      },
-    };
     // Elements under observation, across every observer the table creates:
     // its container's and its selection cell's.
     let observing = 0;
@@ -1176,7 +1268,6 @@ describe("DataTable", () => {
             provider={provider}
             columns={columns}
             label="Machines"
-            layout={layout}
             selectable
           />
         </StrictMode>,
@@ -1201,7 +1292,6 @@ describe("DataTable", () => {
       // Every execution the rehearsal and the kept mount asked for is
       // released: nothing observes the provider any more.
       expect(source.calls.every((call) => call.releases === 1)).toBe(true);
-      expect(layoutSubscriptions).toBe(0);
       expect(observing).toBe(0);
     } finally {
       vi.unstubAllGlobals();
@@ -1378,12 +1468,12 @@ describe("DataTable", () => {
           }
         });
       };
-      const tracks = (): string =>
+      const readTracks = (): string =>
         screen
           .getByRole("table", { name: "Machines" })
           .style.getPropertyValue("--data-table-columns");
       measure(400);
-      expect(tracks()).toBe("100px 300px");
+      expect(readTracks()).toBe("100px 300px");
       fireEvent.pointerDown(screen.getByRole("separator"), { clientX: 0 });
       fireEvent.pointerMove(window, { clientX: 50 });
       act(() => {
@@ -1392,13 +1482,13 @@ describe("DataTable", () => {
         }
       });
       // The last column follows the edge being dragged, before any commit.
-      expect(tracks()).toBe("150px 250px");
+      expect(readTracks()).toBe("150px 250px");
       fireEvent.pointerUp(window);
-      expect(tracks()).toBe("150px 250px");
+      expect(readTracks()).toBe("150px 250px");
       // Once the columns no longer fit, nothing is stretched: the table
       // scrolls instead.
       measure(200);
-      expect(tracks()).toBe("150px 100px");
+      expect(readTracks()).toBe("150px 100px");
     } finally {
       vi.unstubAllGlobals();
     }
@@ -1417,19 +1507,19 @@ describe("DataTable", () => {
       ],
     });
     const handle = screen.getByRole("separator");
-    const tracks = (): string =>
+    const readTracks = (): string =>
       screen
         .getByRole("table", { name: "Machines" })
         .style.getPropertyValue("--data-table-columns");
     expect(handle).toHaveAttribute("aria-valuemax", "80");
     fireEvent.keyDown(handle, { key: "ArrowRight" });
-    expect(tracks()).toBe("66px 96px");
+    expect(readTracks()).toBe("66px 96px");
     // The first step committed a fixed override; the declared maximum still
     // stops the second step, and the third moves nothing.
     fireEvent.keyDown(handle, { key: "ArrowRight" });
-    expect(tracks()).toBe("80px 96px");
+    expect(readTracks()).toBe("80px 96px");
     fireEvent.keyDown(handle, { key: "ArrowRight" });
-    expect(tracks()).toBe("80px 96px");
+    expect(readTracks()).toBe("80px 96px");
   });
 
   it("scrolls the table to keep a moved edge in view", () => {
@@ -1503,28 +1593,6 @@ describe("DataTable", () => {
     } finally {
       vi.unstubAllGlobals();
     }
-  });
-
-  it("holds a resize to the layout's declared bounds, not the column's", () => {
-    const layout = createColumnLayout([
-      { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
-      { id: "status", sizing: { kind: "flex", weight: 1, minPx: 96 } },
-    ]);
-    loadedTable([machine("m-1", "alpha")], {
-      columns: [
-        { id: "name", header: "Name", resizable: true },
-        { id: "status", header: "Status" },
-      ],
-      layout,
-    });
-    const handle = screen.getByRole("separator");
-    // The column declares nothing, so on its own it would default to a 96px
-    // minimum; the shared layout, which the widths are solved from,
-    // declares 50. The column sits at 50, and a step left moves nothing.
-    expect(handle).toHaveAttribute("aria-valuemin", "50");
-    expect(handle).toHaveAttribute("aria-valuenow", "50");
-    fireEvent.keyDown(handle, { key: "ArrowLeft" });
-    expect(layout.state.get().overrides["name"]).toBeUndefined();
   });
 
   it("offers sorting only on a field its source declares sortable", () => {

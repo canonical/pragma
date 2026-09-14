@@ -46,6 +46,16 @@ export {
 } from "./location/index.js";
 export type { ReadonlyChannel } from "./observable/index.js";
 export type {
+  JsonValue,
+  PreferenceResult,
+  Presentation,
+  PresentationPatch,
+  PresentationState,
+  PresentationStore,
+  PresentationTarget,
+  ViewPresentation,
+} from "./presentation/index.js";
+export type {
   DataViewsProvider,
   DataViewsProviderConfig,
   HistoryPolicy,
@@ -134,22 +144,17 @@ export {
   readSlice,
 } from "./source/index.js";
 export type {
-  JsonValue,
-  PreferenceResult,
-  PresentationPatch,
-  PresentationTarget,
-  ProviderViews,
   SavedView,
+  SavedViews,
   UnreadableView,
-  ViewAction,
   ViewChanges,
+  ViewCommand,
+  ViewCommandState,
   ViewCreateResult,
   ViewDraft,
   ViewGetResult,
   ViewList,
-  ViewOperation,
   ViewOutcome,
-  ViewPresentation,
   ViewRemoveResult,
   ViewRevision,
   ViewSettledOutcome,

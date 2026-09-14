@@ -25,6 +25,24 @@ describe("useDataViewsValue", () => {
     expect(renders).toBe(2);
   });
 
+  it("re-renders only when the selected part of the snapshot changes", () => {
+    const channel = createFakeChannel({
+      width: 100,
+      reason: null as string | null,
+    });
+    let renders = 0;
+    const { result } = renderHook(() => {
+      renders += 1;
+      return useDataViewsValue(channel, (state) => state.width);
+    });
+    expect(result.current).toBe(100);
+    act(() => channel.set({ width: 100, reason: "failed" }));
+    expect(renders).toBe(1);
+    act(() => channel.set({ width: 120, reason: "failed" }));
+    expect(result.current).toBe(120);
+    expect(renders).toBe(2);
+  });
+
   it("does not re-render when a custom equality guard rejects the set", () => {
     const channel = createFakeChannel(
       { value: 1 },

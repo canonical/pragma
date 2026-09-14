@@ -1,6 +1,6 @@
 /**
  * Resizing must never require a drag, must clamp every path the same way,
- * and must leave the authoritative layout alone until it commits.
+ * and must leave the presentation alone until it commits.
  * Pointer previews are coalesced to one publication per animation frame.
  */
 import {
@@ -11,7 +11,17 @@ import {
 } from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createMachineProvider } from "../../../../../../testing/machines.js";
 import ResizeHandle from "./ResizeHandle.js";
+
+/** A layout over a fresh provider's presentation, kept in memory. */
+const createLayoutOf = (
+  columns: Parameters<typeof createColumnLayout>[0]["columns"],
+): ColumnLayout =>
+  createColumnLayout({
+    columns,
+    presentation: createMachineProvider().provider.presentation,
+  });
 
 let frames: FrameRequestCallback[] = [];
 let cancelled: number[] = [];
@@ -43,7 +53,7 @@ const mount = ({
   interaction: GridInteraction;
   handle: HTMLElement;
 } => {
-  const layout = createColumnLayout([
+  const layout = createLayoutOf([
     { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50, maxPx: 300 } },
   ]);
   const interaction = createGridInteraction(layout);
@@ -202,7 +212,7 @@ describe("ResizeHandle", () => {
   });
 
   it("abandons a drag the unmounting table can no longer finish", () => {
-    const layout = createColumnLayout([
+    const layout = createLayoutOf([
       { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
     ]);
     const interaction = createGridInteraction(layout);
@@ -265,7 +275,7 @@ describe("ResizeHandle", () => {
   });
 
   it("reveals nothing outside a table, through a drag and after it", () => {
-    const layout = createColumnLayout([
+    const layout = createLayoutOf([
       { id: "name", sizing: { kind: "flex", weight: 1, minPx: 50 } },
     ]);
     const interaction = createGridInteraction(layout);
