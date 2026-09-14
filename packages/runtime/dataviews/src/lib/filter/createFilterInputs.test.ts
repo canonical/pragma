@@ -151,6 +151,7 @@ describe("createFilterInputs", () => {
         window: p.state.get().window,
       },
       "adopt",
+      null,
     );
     expect(inputs.handles.status.eq.applied.get()).toEqual({ kind: "empty" });
     const stop = inputs.observe();
@@ -171,6 +172,7 @@ describe("createFilterInputs", () => {
         window: p.state.get().window,
       },
       "adopt",
+      null,
     );
     expect(inputs.handles.status.eq.applied.get()).toEqual({ kind: "empty" });
     expect(inputs.handles.cpu.gte.state.get()).toEqual({

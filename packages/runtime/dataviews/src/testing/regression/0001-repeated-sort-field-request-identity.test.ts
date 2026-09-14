@@ -39,7 +39,9 @@ const twice: readonly SortTerm[] = [
 describe("regression 0001 — a repeated sort field keeps one request identity", () => {
   it("holds the ordering a command respells as the ordering it means", () => {
     const coordinator = createQueryCoordinator({
-      slice: { ...EMPTY_SLICE, sort: [{ field: "name", direction: "asc" }] },
+      start: {
+        slice: { ...EMPTY_SLICE, sort: [{ field: "name", direction: "asc" }] },
+      },
     });
     coordinator.dispatch({ kind: "setSort", sort: twice });
     expect(coordinator.state.slice.sort).toEqual(once);
@@ -47,7 +49,7 @@ describe("regression 0001 — a repeated sort field keeps one request identity",
 
   it("issues no new request for the respelling of the ordering in force", () => {
     const coordinator = createQueryCoordinator({
-      slice: { ...EMPTY_SLICE, sort: once },
+      start: { slice: { ...EMPTY_SLICE, sort: once } },
     });
     coordinator.refresh();
     const result = coordinator.dispatch({ kind: "setSort", sort: twice });

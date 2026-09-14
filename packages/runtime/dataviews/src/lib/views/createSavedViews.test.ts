@@ -2,6 +2,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import createDeferred from "../../../testing/createDeferred.js";
 import createManualSource from "../../../testing/createManualSource.js";
+import createRecordingLocation from "../../../testing/createRecordingLocation.js";
 import { createStandInViewStore } from "../../../testing/createStandInStores.js";
 import {
   answering,
@@ -21,11 +22,12 @@ import {
   type ProviderHost,
   readProviderHost,
 } from "../provider/index.js";
-import { DEFAULT_WINDOW } from "../query/index.js";
+import { DEFAULT_WINDOW, EMPTY_SLICE } from "../query/index.js";
 import createSavedViews from "./createSavedViews.js";
 import type {
   SavedView,
   SavedViews,
+  ViewDraft,
   ViewList,
   ViewOutcome,
   ViewStore,
@@ -60,7 +62,7 @@ afterEach(() => {
 });
 
 /**
- * A provider over the store, seeded on the third page of five. The
+ * A provider over the store, started on the third page of five. The
  * presentation store is the same object when the view store is a real one,
  * as an application passes it; a stand-in leaves it in memory.
  */
@@ -73,7 +75,7 @@ const createProviderOver = (
     source: createManualSource({ capabilities, answer: answering([]) }).source,
     views: store,
     ...(presentation === undefined ? {} : { presentation }),
-    seed: { window: { ...DEFAULT_WINDOW, page: 3, size: 5 } },
+    snapshot: { query: "page=3&size=5", presentation: {} },
   });
 
 type Provider = ReturnType<typeof createProviderOver>;
@@ -167,14 +169,14 @@ describe("createSavedViews", () => {
     expect(subscribe).not.toHaveBeenCalled();
   });
 
-  it("follows the host's query only while observed: never on construction, and not after the last release", () => {
-    // The provider's own host, with its state channel counted: what the
-    // views subscribe to is what a mounted control's query moves through.
+  it("follows the host's moves only while observed: never on construction, and not after the last release", () => {
+    // The provider's own host, with its transitions counted: what the views
+    // subscribe to is every move a mounted control's query makes.
     const provider = createProviderOver(createStandInViewStore());
     const host = readProviderHost(provider);
     const stopHost = vi.fn();
     const subscribe = vi.fn((listener: () => void) => {
-      const stop = provider.state.subscribe(listener);
+      const stop = host.transitions.subscribe(listener);
       return () => {
         stopHost();
         stop();
@@ -184,10 +186,10 @@ describe("createSavedViews", () => {
       host: {
         schema: collection.schema,
         capabilities: provider.capabilities,
-        state: { get: provider.state.get, subscribe },
-        adopt(query) {
-          host.adopt(query, "view");
-        },
+        state: provider.state,
+        view: host.view,
+        transitions: { subscribe },
+        adopt: host.adopt,
       },
       store: createStandInViewStore(),
       presentation: createPresentation(),
@@ -414,6 +416,7 @@ describe("createSavedViews", () => {
           },
         },
         "adopt",
+        null,
       );
       const outcome = await views.open(view.id);
       expect(outcome).toEqual({ status: "opened", view });
@@ -601,6 +604,306 @@ describe("createSavedViews", () => {
         reason: "corrupt",
       });
       expect(views.state.get().current).toEqual(view);
+    });
+  });
+
+  describe("in the URL", () => {
+    const failed: ViewDraft = {
+      id: "failed",
+      name: "Failed",
+      query: "as=table&status=failed",
+      presentation: {},
+    };
+
+    /**
+     * A provider over a fresh profile holding the given views and a
+     * recording location at `href`, observed whole and listed.
+     */
+    const observeAt = async (href: string, seed: readonly ViewDraft[] = []) => {
+      const indexedDB = new IDBFactory();
+      const store = openIndexedDBTab(indexedDB);
+      for (const draft of seed) {
+        await store.create(draft);
+      }
+      const recorded = createRecordingLocation({ href });
+      const source = createManualSource({
+        capabilities,
+        answer: answering([]),
+      });
+      const provider = createDataViewsProvider({
+        collection,
+        source: source.source,
+        views: store,
+        presentation: store,
+        location: recorded.location,
+      });
+      const views = readViews(provider);
+      observeUntilFinished(provider);
+      await vi.waitFor(() => {
+        expect(views.state.get().listing.status).toBe("ready");
+      });
+      return {
+        ...recorded,
+        calls: source.calls,
+        provider,
+        views,
+        host: readProviderHost(provider),
+      };
+    };
+
+    it("opens a view by writing its id beside its query: one entry, pushed", async () => {
+      const { views, writes, host } = await observeAt("/machines", [failed]);
+      writes.length = 0;
+      expect((await views.open("failed")).status).toBe("opened");
+      expect(writes).toEqual([
+        ["view=failed&status=failed&page=1&size=50", "push"],
+      ]);
+      expect(host.view.get()).toBe("failed");
+    });
+
+    it("opens a view over the query in force with one pushed entry, asking the source for nothing", async () => {
+      const { views, writes, calls } = await observeAt(
+        "/machines?status=failed&page=1&size=50",
+        [failed],
+      );
+      const asked = calls.length;
+      writes.length = 0;
+      await views.open("failed");
+      expect(writes).toEqual([
+        ["view=failed&status=failed&page=1&size=50", "push"],
+      ]);
+      expect(calls).toHaveLength(asked);
+      expect(views.state.get()).toMatchObject({
+        current: { id: "failed" },
+        modified: false,
+      });
+    });
+
+    it("reverts in place: the entry is replaced, and the view's id kept", async () => {
+      const { views, host, writes } = await observeAt("/machines", [failed]);
+      await views.open("failed");
+      filterCoresAtLeast(host, 8);
+      writes.length = 0;
+      views.revert();
+      expect(writes).toEqual([
+        ["view=failed&status=failed&page=1&size=50", "replace"],
+      ]);
+    });
+
+    it("restores the open view on load from the id beside the query", async () => {
+      const { views } = await observeAt("/machines?view=failed&status=failed", [
+        failed,
+      ]);
+      expect(views.state.get()).toMatchObject({
+        current: { id: "failed" },
+        modified: false,
+      });
+    });
+
+    it("restores a view whose query has moved as modified: the id is never the change", async () => {
+      const { views } = await observeAt(
+        "/machines?view=failed&status=failed&cores__gte=8",
+        [failed],
+      );
+      expect(views.state.get()).toMatchObject({
+        current: { id: "failed" },
+        modified: true,
+      });
+    });
+
+    it("loses the id of a view the store does not have, never the query", async () => {
+      const { views, provider, host, writes } = await observeAt(
+        "/machines?view=gone&status=failed",
+      );
+      expect(host.view.get()).toBeNull();
+      expect(views.state.get().current).toBeNull();
+      expect(provider.state.get().slice.filter).toEqual([
+        { field: "status", operator: "eq", operands: ["failed"] },
+      ]);
+      // Respelt in place without the id: no step of history.
+      expect(writes.at(-1)).toEqual([
+        "status=failed&page=1&size=50",
+        "replace",
+      ]);
+      expect(writes.every(([, history]) => history === "replace")).toBe(true);
+    });
+
+    it("lets go of an arrangement a snapshot drew under a view the store does not have", async () => {
+      const hidden = { "table.hidden": ["cores"] };
+      const provider = createDataViewsProvider({
+        collection,
+        source: createManualSource({ capabilities, answer: answering([]) })
+          .source,
+        views: openIndexedDBTab(new IDBFactory()),
+        location: createRecordingLocation({
+          href: "/machines?view=gone&status=failed",
+        }).location,
+        snapshot: { query: "view=gone&status=failed", presentation: hidden },
+      });
+      const views = readViews(provider);
+      // What the server drew under the view, before anything observes.
+      expect(provider.presentation.state.get().presentation).toEqual(hidden);
+      observeUntilFinished(provider);
+      await vi.waitFor(() => {
+        expect(views.state.get().listing.status).toBe("ready");
+      });
+      expect(readProviderHost(provider).view.get()).toBeNull();
+      expect(provider.presentation.state.get().presentation).toEqual({});
+      expect(provider.readSnapshot().presentation).toEqual({});
+    });
+
+    it("loses the id of a view whose stored query it cannot read whole, keeping the URL's query", async () => {
+      // This source searches nothing, so the stored query cannot be read whole.
+      const { views, host, provider, writes } = await observeAt(
+        "/machines?view=searching&status=failed",
+        [
+          {
+            id: "searching",
+            name: "Searching",
+            query: "as=table&q=web",
+            presentation: {},
+          },
+        ],
+      );
+      expect(host.view.get()).toBeNull();
+      expect(views.state.get().current).toBeNull();
+      expect(provider.state.get().slice.filter).toEqual([
+        { field: "status", operator: "eq", operands: ["failed"] },
+      ]);
+      expect(writes.at(-1)).toEqual([
+        "status=failed&page=1&size=50",
+        "replace",
+      ]);
+    });
+
+    it("keeps a named view unopened while the views cannot be listed, and opens it once they are", async () => {
+      const view = buildStoredView({
+        id: "failed",
+        query: "as=table&status=failed",
+      });
+      const list = vi
+        .fn<ViewStore["list"]>()
+        .mockRejectedValueOnce(new Error("storage is blocked"))
+        .mockResolvedValue({ views: [view], unreadable: [] });
+      const { location } = createRecordingLocation({
+        href: "/machines?view=failed&status=failed",
+      });
+      const provider = createDataViewsProvider({
+        collection,
+        source: createManualSource({ capabilities, answer: answering([]) })
+          .source,
+        views: createStandInViewStore({ list }),
+        location,
+      });
+      const views = readViews(provider);
+      observeUntilFinished(provider);
+      await vi.waitFor(() => {
+        expect(views.state.get().listing.status).toBe("failed");
+      });
+      // Named, unopened, and still in the URL: a failure is no answer.
+      expect(readProviderHost(provider).view.get()).toBe("failed");
+      expect(views.state.get().current).toBeNull();
+      expect(location.read().get("view")).toBe("failed");
+      views.refresh();
+      await vi.waitFor(() => {
+        expect(views.state.get().current?.id).toBe("failed");
+      });
+    });
+
+    it("settles modified once when Back moves the query and the open view together", async () => {
+      const running: ViewDraft = {
+        id: "running",
+        name: "Running",
+        query: "as=table&status=running",
+        presentation: {},
+      };
+      const { views, move } = await observeAt("/machines", [failed, running]);
+      await views.open("failed");
+      await views.open("running");
+      const modified: boolean[] = [];
+      views.state.subscribe(() => {
+        modified.push(views.state.get().modified);
+      });
+      move("view=failed&status=failed&page=1&size=50");
+      expect(views.state.get()).toMatchObject({
+        current: { id: "failed" },
+        modified: false,
+      });
+      expect(modified).not.toContain(true);
+    });
+
+    it("puts the new view's id in the URL when saving as, in one pushed entry", async () => {
+      const { views, host, writes } = await observeAt("/machines");
+      filterFailedOnly(host);
+      writes.length = 0;
+      const view = readView(await views.saveAs("Failed"));
+      expect(writes).toEqual([
+        [`view=${view.id}&status=failed&page=1&size=50`, "push"],
+      ]);
+    });
+
+    it("drops the id when the open view is removed, in place, keeping the query", async () => {
+      const { views, writes, provider } = await observeAt("/machines", [
+        failed,
+      ]);
+      await views.open("failed");
+      writes.length = 0;
+      expect((await views.remove()).status).toBe("removed");
+      expect(writes).toEqual([["status=failed&page=1&size=50", "replace"]]);
+      expect(provider.state.get().slice.filter).toHaveLength(1);
+    });
+
+    it("closes the open view on observing again when its id went while nothing observed", async () => {
+      const store = openIndexedDBTab(new IDBFactory());
+      await store.create(failed);
+      const provider = createDataViewsProvider({
+        collection,
+        source: createManualSource({ capabilities, answer: answering([]) })
+          .source,
+        views: store,
+      });
+      const views = readViews(provider);
+      const release = views.observe();
+      await vi.waitFor(() => {
+        expect(views.state.get().listing.status).toBe("ready");
+      });
+      await views.open("failed");
+      release();
+      const host = readProviderHost(provider);
+      const { window } = host.state.get();
+      const published: boolean[] = [];
+      views.state.subscribe(() => {
+        published.push(views.state.get().modified);
+      });
+      // The query moves with the id, as Back to an entry before the view.
+      host.adopt({ slice: EMPTY_SLICE, window }, "adopt", null);
+      const again = views.observe();
+      // At once, before the listing the observation starts has answered.
+      expect(views.state.get().current).toBeNull();
+      // The view is followed first: nothing reads modified against the view
+      // just closed.
+      expect(published).not.toContain(true);
+      again();
+    });
+
+    it("follows Back and Forward: the id gone closes the view, and back again opens it", async () => {
+      const { views, move, writes, calls } = await observeAt("/machines", [
+        failed,
+      ]);
+      await views.open("failed");
+      writes.length = 0;
+      const asked = calls.length;
+      move("status=failed&page=1&size=50");
+      expect(views.state.get().current).toBeNull();
+      move("view=failed&status=failed&page=1&size=50");
+      expect(views.state.get()).toMatchObject({
+        current: { id: "failed" },
+        modified: false,
+      });
+      // Followed, never written back, and the query never moved: the source
+      // was asked for nothing.
+      expect(writes).toEqual([]);
+      expect(calls).toHaveLength(asked);
     });
   });
 
@@ -1167,17 +1470,23 @@ describe("createSavedViews", () => {
       expect(published).toEqual([]);
     });
 
-    it("layers a view's saved arrangement when the stored view becomes the open one after a conflict", async () => {
+    it("keeps the view's saved arrangement and the viewer's own when the stored view becomes the open one after a conflict", async () => {
       const { indexedDB, provider, host, views, store } =
         await observeFreshProvider();
-      filterFailedOnly(host);
-      const view = readView(await views.saveAs("Failed"));
-      // The viewer's own change to the open view, made before the conflict.
-      provider.presentation.arrange({ density: "dense" });
-      await openIndexedDBTab(indexedDB).update(view, {
-        query: "as=table&status=running",
+      const other = openIndexedDBTab(indexedDB);
+      await other.create({
+        id: "wide",
+        name: "Wide",
+        query: "as=table&status=failed",
         presentation: { width: 240 },
       });
+      expect((await views.open("wide")).status).toBe("opened");
+      // The viewer's own change to the open view, made before the conflict.
+      provider.presentation.arrange({ density: "dense" });
+      await other.update(
+        { id: "wide", revision: 1 },
+        { query: "as=table&status=running" },
+      );
       filterCoresAtLeast(host, 8);
       expect((await views.save()).status).toBe("conflict");
       // The stored view's saved arrangement layers; the viewer's own stays.
@@ -1186,7 +1495,7 @@ describe("createSavedViews", () => {
         density: "dense",
       });
       await vi.waitFor(async () => {
-        expect(await store.readPresentation({ view: view.id })).toEqual({
+        expect(await store.readPresentation({ view: "wide" })).toEqual({
           density: "dense",
         });
       });

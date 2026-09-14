@@ -293,6 +293,18 @@ export type Source<TRow extends object = RowRecord> = {
     request: SourceRequest,
     deliver: (delivery: SourceDelivery<TRow>) => void,
   ) => () => void;
+  /**
+   * Read the delivery for one request within the call, from what the source
+   * already holds, without starting anything, subscribing to anything or
+   * waiting: the delivery `execute` would give at once, or null when it would
+   * have to wait. What a provider nothing observes asks — on a server, or
+   * before a client hydrates — so a render that follows draws rows. Left out,
+   * such a provider stays pending until it is observed. The array source always
+   * answers; a server-side source holding its rows may.
+   */
+  readonly readDelivery?: (
+    request: SourceRequest,
+  ) => SourceDelivery<TRow> | null;
   /** Run one action; present whenever `capabilities.actions` has a name. */
   readonly runAction?: SourceActionRunner;
 };

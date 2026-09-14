@@ -113,6 +113,7 @@ export type {
 } from "./schema/index.js";
 export { createSchema } from "./schema/index.js";
 export type { Selection, SelectionState } from "./selection/index.js";
+export type { DataViewsSnapshot } from "./snapshot/index.js";
 export type {
   ActionCapabilities,
   ActionTargets,

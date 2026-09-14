@@ -205,7 +205,7 @@ export default function createIndexedDBViewStore(
               view.name === draft.name &&
               view.query === draft.query &&
               JSON.stringify(view.presentation) ===
-                JSON.stringify(draft.presentation ?? null);
+                JSON.stringify(draft.presentation);
             written = { status: replayed ? "saved" : "conflict", view };
             return;
           }
@@ -216,9 +216,7 @@ export default function createIndexedDBViewStore(
             v: RECORD_VERSION,
             name: draft.name,
             query: draft.query,
-            ...(draft.presentation === undefined
-              ? {}
-              : { presentation: draft.presentation }),
+            presentation: draft.presentation,
             revision: 1,
             createdAt: now,
             updatedAt: now,
@@ -242,17 +240,12 @@ export default function createIndexedDBViewStore(
             written = { status: "conflict", view: found.view };
             return;
           }
-          // Fields this client does not know are carried over untouched.
-          const { presentation: _dropped, ...kept } = found.record;
-          const presentation =
-            changes.presentation === undefined
-              ? found.view.presentation
-              : changes.presentation;
+          // Fields this client does not know are carried over untouched, and
+          // so is the arrangement the view was created with.
           const record: StoredView = {
-            ...kept,
+            ...found.record,
             name: changes.name ?? found.view.name,
             query: changes.query ?? found.view.query,
-            ...(presentation === null ? {} : { presentation }),
             revision: revision + 1,
             updatedAt: stamp(),
           };

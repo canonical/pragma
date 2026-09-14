@@ -105,7 +105,8 @@ export type StoredView = {
   readonly v: number;
   readonly name: string;
   readonly query: string;
-  readonly presentation?: ViewPresentation;
+  /** The arrangement the view was created with; empty for none. */
+  readonly presentation: ViewPresentation;
   readonly revision: number;
   readonly createdAt: string;
   readonly updatedAt: string;

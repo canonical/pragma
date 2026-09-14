@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_WINDOW,
+  EMPTY_SLICE,
   type GroupTerm,
   type Predicate,
   type ResultWindow,
@@ -96,10 +97,12 @@ const refreshRequest = (coordinator: QueryCoordinator): string =>
   coordinator.refresh();
 
 describe("createQueryCoordinator", () => {
-  it("seeds idle with the configured slice and window", () => {
+  it("starts idle on the configured start's slice and window", () => {
     const coordinator = createQueryCoordinator({
-      slice: slice({ filter: [statusPredicate("failed")] }),
-      window: window({ page: 2, size: 25 }),
+      start: {
+        slice: slice({ filter: [statusPredicate("failed")] }),
+        window: window({ page: 2, size: 25 }),
+      },
     });
     const state = coordinator.state;
     expect(state.result.status).toBe("idle");
@@ -108,9 +111,33 @@ describe("createQueryCoordinator", () => {
     expect(state.resultMatchesQuery).toBe(false);
   });
 
+  it("stands idle on an initial query, and resets to the start", () => {
+    const initial = {
+      slice: { ...EMPTY_SLICE, search: "web" },
+      window: { ...DEFAULT_WINDOW, page: 3 },
+    };
+    const coordinator = createQueryCoordinator({
+      start: { slice: { ...EMPTY_SLICE, search: "seed" } },
+      initial,
+    });
+    expect(coordinator.state).toMatchObject({
+      slice: { search: "web" },
+      window: { page: 3 },
+      pendingRequestId: null,
+      result: { status: "idle" },
+    });
+    // Copied, like a start: the caller's objects are not the state.
+    expect(coordinator.state.slice).not.toBe(initial.slice);
+    // Standing there already, adopting it again issues nothing.
+    expect(coordinator.adopt(initial)).toBeNull();
+    coordinator.reset();
+    expect(coordinator.state.slice.search).toBe("seed");
+    expect(coordinator.state.window.page).toBe(1);
+  });
+
   it("issues a request on a query change, resets the window and retains rows", () => {
     const coordinator = createQueryCoordinator({
-      window: window({ page: 4 }),
+      start: { window: window({ page: 4 }) },
     });
     const first = dispatchRequest(coordinator, {
       kind: "setPredicate",
@@ -259,7 +286,7 @@ describe("createQueryCoordinator", () => {
 
   it("stamps the slice and window the rows answer, never what the source says", () => {
     const coordinator = createQueryCoordinator({
-      window: window({ size: 25 }),
+      start: { window: window({ size: 25 }) },
     });
     const request = dispatchRequest(coordinator, {
       kind: "setSearch",
@@ -452,8 +479,10 @@ describe("createQueryCoordinator", () => {
 
   it("issues no request for a semantically unchanged edit", () => {
     const coordinator = createQueryCoordinator({
-      slice: slice({ search: "yak" }),
-      window: window({ page: 3, size: 25 }),
+      start: {
+        slice: slice({ search: "yak" }),
+        window: window({ page: 3, size: 25 }),
+      },
     });
     const result = coordinator.dispatch({ kind: "setSearch", search: "yak" });
     if (result.status !== "accepted") {
@@ -466,7 +495,7 @@ describe("createQueryCoordinator", () => {
 
   it("issues no request when navigating to the current window", () => {
     const coordinator = createQueryCoordinator({
-      window: window({ page: 2, size: 25 }),
+      start: { window: window({ page: 2, size: 25 }) },
     });
     const result = coordinator.dispatch({
       kind: "navigateWindow",
@@ -508,20 +537,24 @@ describe("createQueryCoordinator", () => {
   });
 
   it("adopts an identical query without issuing a request", () => {
-    const seed = slice({ search: "yak" });
+    const start = slice({ search: "yak" });
     const coordinator = createQueryCoordinator({
-      slice: seed,
-      window: window({ page: 2, size: 25 }),
+      start: { slice: start, window: window({ page: 2, size: 25 }) },
     });
     expect(
-      coordinator.adopt({ slice: seed, window: window({ page: 2, size: 25 }) }),
+      coordinator.adopt({
+        slice: start,
+        window: window({ page: 2, size: 25 }),
+      }),
     ).toBeNull();
     expect(coordinator.state.result.status).toBe("idle");
   });
 
   it("adopts a canonically equal spelling without issuing a request", () => {
     const coordinator = createQueryCoordinator({
-      slice: slice({ filter: [statusPredicate("failed", "cancelled")] }),
+      start: {
+        slice: slice({ filter: [statusPredicate("failed", "cancelled")] }),
+      },
     });
     const respeled = slice({
       filter: [statusPredicate("cancelled", "failed")],
@@ -532,7 +565,7 @@ describe("createQueryCoordinator", () => {
 
   it("takes the cursor and the collapsed groups into request identity", () => {
     const coordinator = createQueryCoordinator({
-      window: window({ page: 2, cursor: "c:m2" }),
+      start: { window: window({ page: 2, cursor: "c:m2" }) },
     });
     // The same page reached by the same token is the same request…
     expect(
@@ -603,11 +636,13 @@ describe("createQueryCoordinator", () => {
 
   it("treats a key-order respelling as a canonical no-op", () => {
     const coordinator = createQueryCoordinator({
-      slice: slice({
-        filter: [statusPredicate("failed", "cancelled")],
-        sort: [{ field: "name", direction: "asc" }],
-        group: [{ field: "zone" }],
-      }),
+      start: {
+        slice: slice({
+          filter: [statusPredicate("failed", "cancelled")],
+          sort: [{ field: "name", direction: "asc" }],
+          group: [{ field: "zone" }],
+        }),
+      },
     });
     const respeled = slice({
       filter: [
@@ -676,7 +711,7 @@ describe("createQueryCoordinator", () => {
 
   it("takes a page of one, the smallest window there is", () => {
     const coordinator = createQueryCoordinator({
-      window: window({ size: 1 }),
+      start: { window: window({ size: 1 }) },
     });
     expect(coordinator.state.window.size).toBe(1);
     const request = dispatchRequest(coordinator, {
@@ -689,7 +724,9 @@ describe("createQueryCoordinator", () => {
 
   it("keeps the configured window immune to caller mutations", () => {
     const callerWindow = window({ page: 3, size: 25 });
-    const coordinator = createQueryCoordinator({ window: callerWindow });
+    const coordinator = createQueryCoordinator({
+      start: { window: callerWindow },
+    });
     (callerWindow as { page: number }).page = 7;
     expect(coordinator.state.window).toEqual(window({ page: 3, size: 25 }));
   });
@@ -742,15 +779,15 @@ describe("createQueryCoordinator", () => {
     expect(coordinator.state.result.rows).toBeNull();
   });
 
-  it("rejects invalid seed and adopted windows at intake", () => {
+  it("rejects invalid starting and adopted windows at intake", () => {
     expect(() =>
-      createQueryCoordinator({ window: window({ page: 0 }) }),
+      createQueryCoordinator({ start: { window: window({ page: 0 }) } }),
     ).toThrow("page must be a positive integer");
     expect(() =>
-      createQueryCoordinator({ window: window({ size: 0 }) }),
+      createQueryCoordinator({ start: { window: window({ size: 0 }) } }),
     ).toThrow("size must be a positive integer");
     expect(() =>
-      createQueryCoordinator({ window: window({ cursor: "" }) }),
+      createQueryCoordinator({ start: { window: window({ cursor: "" }) } }),
     ).toThrow("cursor must not be empty; use null to clear it");
     const coordinator = createQueryCoordinator();
     expect(() =>
@@ -764,16 +801,16 @@ describe("createQueryCoordinator", () => {
     ).toThrow("cursor must not be empty; use null to clear it");
   });
 
-  it("keeps the configured seed immune to caller mutations", () => {
-    const seed = slice({
+  it("keeps the configured start immune to caller mutations", () => {
+    const start = slice({
       filter: [statusPredicate("failed")],
       sort: [{ field: "name", direction: "asc" }],
       group: [{ field: "zone" }],
     });
-    const coordinator = createQueryCoordinator({ slice: seed });
-    (seed.filter as Predicate[]).push(statusPredicate("cancelled"));
-    (seed.sort as SortTerm[]).push({ field: "zone", direction: "desc" });
-    (seed.group as GroupTerm[]).push({ field: "owner" });
+    const coordinator = createQueryCoordinator({ start: { slice: start } });
+    (start.filter as Predicate[]).push(statusPredicate("cancelled"));
+    (start.sort as SortTerm[]).push({ field: "zone", direction: "desc" });
+    (start.group as GroupTerm[]).push({ field: "owner" });
     coordinator.dispatch({ kind: "navigateWindow", page: 3 });
     coordinator.reset();
     expect(coordinator.state.slice.filter).toEqual([statusPredicate("failed")]);
@@ -796,7 +833,7 @@ describe("createQueryCoordinator", () => {
 
   it("never publishes an old generation's completions into the next", () => {
     const coordinator = createQueryCoordinator({
-      slice: slice({ search: "yak" }),
+      start: { slice: slice({ search: "yak" }) },
     });
     const generationBefore = coordinator.state.generation;
     const staleRequest = dispatchRequest(coordinator, {
@@ -822,10 +859,9 @@ describe("createQueryCoordinator", () => {
     expect(coordinator.state.result.rows).toEqual([{ id: "new-generation" }]);
   });
 
-  it("returns to the configured seed on reset", () => {
+  it("returns to the configured start on reset", () => {
     const coordinator = createQueryCoordinator({
-      slice: slice({ search: "yak" }),
-      window: window({ size: 25 }),
+      start: { slice: slice({ search: "yak" }), window: window({ size: 25 }) },
     });
     coordinator.dispatch({ kind: "setSearch", search: "zebu" });
     coordinator.dispatch({ kind: "navigateWindow", page: 4 });

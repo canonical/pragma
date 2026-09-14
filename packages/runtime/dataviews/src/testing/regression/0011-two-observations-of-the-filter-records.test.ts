@@ -46,6 +46,7 @@ describe("regression 0011 — two observations of the filter records", () => {
         window: DEFAULT_WINDOW,
       },
       "view",
+      null,
     );
     expect(inputs.handles.cpu.gte.applied.get()).toEqual({
       kind: "value",

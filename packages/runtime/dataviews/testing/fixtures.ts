@@ -191,7 +191,7 @@ export const buildStoredView = (
   id: "v1",
   name: "Failed",
   query: "as=table&status=failed",
-  presentation: null,
+  presentation: {},
   revision: 1,
   pinned: false,
   createdAt: "2026-09-11T00:00:00.000Z",

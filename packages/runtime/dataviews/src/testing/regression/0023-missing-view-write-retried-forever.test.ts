@@ -37,6 +37,7 @@ describe("regression 0023 — a missing view's write retried forever", () => {
       id: "v1",
       name: "One",
       query: "as=table",
+      presentation: {},
     });
     if (created.status !== "saved") {
       throw new Error("expected the view to be created");
@@ -44,7 +45,7 @@ describe("regression 0023 — a missing view's write retried forever", () => {
     const patchPresentation = vi.spyOn(store, "patchPresentation");
     const presentation = createPresentation({ store });
     const release = presentation.observe();
-    presentation.show({ id: "v1", presentation: null });
+    presentation.show({ id: "v1", presentation: {} });
     // Another tab deletes the view; this tab's resize is still gathering.
     await store.remove(created.view);
     presentation.arrange({ "table.width.name": 120 });

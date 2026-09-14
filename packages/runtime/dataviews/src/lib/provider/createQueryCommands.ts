@@ -33,7 +33,9 @@ const NO_REFUSALS: readonly SourceRefusal[] = Object.freeze([]);
  * throws.
  *
  * Every move is announced as a transition once its state is published:
- * what moved the query and how the move enters history, by the policy.
+ * what moved the query, the saved view open beside it, and how the move
+ * enters history, by the policy. An adoption that moves only the open view
+ * — a view opened over the query already in force — is a move too.
  *
  * @note Impure by design: every accepted command moves the coordinator,
  * publishes its state and announces the transition.
@@ -41,18 +43,30 @@ const NO_REFUSALS: readonly SourceRefusal[] = Object.freeze([]);
 export default function createQueryCommands<TRow extends object = RowRecord>(
   config: QueryCommandsConfig<TRow>,
 ): QueryCommands {
-  const { coordinator, capabilities, source, publish, transitions, history } =
-    config;
+  const {
+    coordinator,
+    capabilities,
+    source,
+    publish,
+    transitions,
+    history,
+    view: openView,
+  } = config;
 
-  /** Publish the state the coordinator reached, then announce the move. */
-  const announce = (cause: TransitionCause): void => {
-    publish();
+  /** Announce the move the published state made. */
+  const announceTransition = (cause: TransitionCause): void => {
     const { slice, window } = coordinator.state;
     transitions.set({
       query: { slice, window },
       cause,
       history: history[cause],
     });
+  };
+
+  /** Publish the state the coordinator reached, then announce the move. */
+  const announce = (cause: TransitionCause): void => {
+    publish();
+    announceTransition(cause);
   };
 
   const refusals = (query: Query): readonly SourceRefusal[] => {
@@ -96,11 +110,26 @@ export default function createQueryCommands<TRow extends object = RowRecord>(
       announce(CAUSE_OF_COMMAND[next.kind]);
       return NO_REFUSALS;
     },
-    adopt(query: Query, cause: AdoptionCause): string | null {
+    adopt(
+      query: Query,
+      cause: AdoptionCause,
+      view: string | null,
+    ): string | null {
       const requestId = coordinator.adopt(query);
-      if (requestId !== null) {
-        announce(cause);
+      const viewMoved = view !== openView.get();
+      if (requestId === null && !viewMoved) {
+        return null;
       }
+      // The adopted state is published before the view moves, so anything
+      // hearing the view move reads the query it came with, never the one it
+      // replaced. The view moves before the transition, so the one transition
+      // carries both — what the saved views follow — and the location is
+      // written once.
+      publish();
+      if (viewMoved) {
+        openView.set(view);
+      }
+      announceTransition(cause);
       return requestId;
     },
     refresh(): string {

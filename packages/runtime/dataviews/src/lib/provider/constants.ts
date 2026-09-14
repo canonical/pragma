@@ -49,8 +49,9 @@ export const DEFAULT_HISTORY: Readonly<Record<QueryTransition, HistoryMode>> =
 /**
  * How the causes no policy names enter history: a collapse has no spelling
  * and the location's own adoption is never written back, so neither enters
- * it; a reset returns to the declared state rather than taking a step, so
- * it replaces.
+ * it; a reset returns to the declared state, reverting returns to a saved
+ * view's baseline, and leaving a view drops only its id — none of them a
+ * step taken — so each replaces.
  */
 export const FIXED_HISTORY: Readonly<
   Record<Exclude<TransitionCause, QueryTransition>, HistoryMode | null>
@@ -58,4 +59,5 @@ export const FIXED_HISTORY: Readonly<
   collapse: null,
   adopt: null,
   reset: "replace",
+  revert: "replace",
 });

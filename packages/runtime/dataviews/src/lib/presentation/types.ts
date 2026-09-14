@@ -172,13 +172,14 @@ export type Presentation = {
  */
 export type ShownView = {
   readonly id: string;
-  readonly presentation: ViewPresentation | null;
+  readonly presentation: ViewPresentation;
 };
 
 /** The provider's presentation, with what only the provider and its views call. */
 export type OwnedPresentation = Presentation & {
   /**
-   * Layer the open view, or none. Its saved presentation goes under the
+   * Layer the open view, or none; another view, or none, lets go of an
+   * arrangement restored under a view. Its saved presentation goes under the
    * viewer's own preferences for it, which are read from the store when
    * the view's identity changes while observed; the same view revised
    * keeps them, and a view shown again keeps the changes made to it before.
@@ -190,6 +191,22 @@ export type OwnedPresentation = Presentation & {
 export type PresentationConfig = {
   /** Where the viewer's layers live; in memory for the session when left out. */
   readonly store?: PresentationStore | undefined;
+  /** The arrangement a snapshot put back; none when left out. */
+  readonly restored?: RestoredArrangement | undefined;
+};
+
+/**
+ * An arrangement a snapshot put back, with the saved view it was in force
+ * under. With no view it is the default arrangement: the store decides it
+ * once read, and without a store it is kept for the session. With a view it
+ * is that view's arrangement as it was drawn, shown until the view's own
+ * preferences are read or another view, or none, is shown, whereupon the
+ * view's own layers take over and nothing of it becomes the default. Without
+ * a store it is kept as that view's own preferences for the session.
+ */
+export type RestoredArrangement = {
+  readonly view: string | null;
+  readonly presentation: ViewPresentation;
 };
 
 /**

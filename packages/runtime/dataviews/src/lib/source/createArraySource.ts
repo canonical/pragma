@@ -77,6 +77,8 @@ export default function createArraySource<TRow extends object = RowRecord>(
 
   return {
     capabilities,
+    // Complete local input always holds the answer.
+    readDelivery: deliveryFor,
     execute(
       request: SourceRequest,
       deliver: (delivery: SourceDelivery<TRow>) => void,

@@ -398,6 +398,16 @@ const machinesCollection = createCollection({
   identify: byId,
 });
 
+/** A window as the snapshot a provider starts from spells it. */
+const buildSnapshotAt = (window: ResultWindow) => ({
+  query: new URLSearchParams({
+    page: String(window.page),
+    size: String(window.size),
+    ...(window.cursor === null ? {} : { cursor: window.cursor }),
+  }).toString(),
+  presentation: {},
+});
+
 /**
  * A provider over a Relay source, observed as a mounted root observes it:
  * the first observer issues the first request, so `fetchAt(0)` is the
@@ -410,7 +420,7 @@ const bound = (
   const provider = createDataViewsProvider({
     collection: machinesCollection,
     source: source(environment),
-    seed: { window },
+    snapshot: buildSnapshotAt(window),
   });
   const release = provider.observe();
   const shown = () => {
@@ -1227,7 +1237,7 @@ describe("createRelaySource bound to a collection", () => {
     const provider = createDataViewsProvider({
       collection: machinesCollection,
       source: source(environment),
-      seed: { window: paged() },
+      snapshot: buildSnapshotAt(paged()),
     });
     expect(fetches).toHaveLength(0);
     expect(provider.state.get().result.status).toBe("idle");

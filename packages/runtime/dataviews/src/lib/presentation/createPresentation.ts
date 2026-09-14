@@ -38,6 +38,15 @@ type ReadKey = "default" | "view";
  * runs over one kept in memory for the session, and nothing claims it was
  * saved.
  *
+ * A restored arrangement with no view is the default arrangement until the
+ * store is first read, and decides nothing after: the store is the
+ * authority once it answers. Without a store it is kept for the session. One
+ * restored under a view is drawn over the default arrangement, beneath the
+ * view's saved arrangement and the viewer's own changes, until that view's
+ * own preferences are read, or another view or none is shown, and then let
+ * go, so it never becomes the default. Without a store the session keeps it
+ * as that view's own preferences.
+ *
  * Constructing it reads and subscribes to nothing: the store is first read
  * when something observes the presentation, or a view is shown.
  *
@@ -47,12 +56,34 @@ type ReadKey = "default" | "view";
 export default function createPresentation(
   config: PresentationConfig = {},
 ): OwnedPresentation {
-  const store = config.store ?? createMemoryPresentationStore();
-  const state = createChannel<PresentationState>(INITIAL_PRESENTATION_STATE, {
-    equals: areFieldsEqual,
-  });
+  const { restored } = config;
+  /** The view an arrangement was restored under, or null. */
+  const restoredView = restored?.view ?? null;
+  /** The arrangement restored as the defaults, when it names no view. */
+  const restoredDefaults =
+    restored !== undefined && restoredView === null
+      ? restored.presentation
+      : undefined;
+  /**
+   * The arrangement restored under a view, drawn until another view is shown
+   * or none is, or the restored view's own preferences are first read.
+   */
+  let restoredUnderView: ViewPresentation =
+    restored !== undefined && restoredView !== null
+      ? restored.presentation
+      : NO_PRESENTATION;
+  const store = config.store ?? createMemoryPresentationStore({ restored });
+  const state = createChannel<PresentationState>(
+    restored === undefined
+      ? INITIAL_PRESENTATION_STATE
+      : Object.freeze({
+          presentation: Object.freeze({ ...restored.presentation }),
+          presentationReason: null,
+        }),
+    { equals: areFieldsEqual },
+  );
   const defaults: KeptLayer = {
-    layer: createPreferenceLayer(),
+    layer: createPreferenceLayer(restoredDefaults),
     target: "default",
   };
   /** Every target's layer, kept for the session, by its store key. */
@@ -90,6 +121,7 @@ export default function createPresentation(
     const current = state.get();
     const presentation: ViewPresentation = Object.freeze({
       ...defaults.layer.values,
+      ...restoredUnderView,
       ...saved,
       ...(shown === null ? {} : own.layer.values),
     });
@@ -129,11 +161,20 @@ export default function createPresentation(
         }
         layer.settle(read, since);
         readFailures[key] = null;
+        if (key === "view") {
+          // The view's own preferences speak for it now: the arrangement
+          // restored under it goes in the same publication, so no frame is
+          // drawn from its saved arrangement alone.
+          restoredUnderView = NO_PRESENTATION;
+        }
         publish();
       },
       (error: unknown) => {
         if (reads[key] === token) {
           readFailures[key] = describeError(error);
+          if (key === "view") {
+            restoredUnderView = NO_PRESENTATION;
+          }
           publish();
         }
       },
@@ -222,6 +263,12 @@ export default function createPresentation(
     },
 
     show(view) {
+      // Another view, or none: the arrangement restored under the view the
+      // snapshot had open no longer describes anything shown. The restored
+      // view itself keeps it until its own preferences answer.
+      if (view === null || view.id !== restoredView) {
+        restoredUnderView = NO_PRESENTATION;
+      }
       saved = view?.presentation ?? NO_PRESENTATION;
       const id = view?.id ?? null;
       if (id !== shown) {

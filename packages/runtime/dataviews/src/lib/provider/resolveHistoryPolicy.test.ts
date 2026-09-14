@@ -13,6 +13,7 @@ describe("resolveHistoryPolicy", () => {
       collapse: null,
       adopt: null,
       reset: "replace",
+      revert: "replace",
     });
   });
 
@@ -27,6 +28,7 @@ describe("resolveHistoryPolicy", () => {
       collapse: null,
       adopt: null,
       reset: "replace",
+      revert: "replace",
     });
   });
 

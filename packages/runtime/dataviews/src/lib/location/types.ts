@@ -50,11 +50,19 @@ export type MemoryLocationConfig = {
  *   calls `read()`.
  *
  * What an adapter guarantees, so the provider's echo rule holds: a write
- * through the port is observed by the port's own subscribers at most once
- * — once, synchronously or before the next write returns, or not at all if
- * the router notifies only on navigations it did not make. The provider
- * recognises the echo by the spelling it wrote and tolerates its absence;
- * it must never see one write as two moves.
+ * through the port is observed by the port's own subscribers at most once —
+ * once, when the write lands, or not at all if the router notifies only on
+ * navigations it did not make. The provider recognises the echo by the spelling
+ * it wrote and tolerates its absence; it must never see one write as two moves.
+ * It also tolerates a write that lands after the call returns, as a router
+ * applying the navigation later does, provided such a router notifies as each
+ * write lands. A write must land as it was spelled — its parameters in the
+ * order and encoding given — since the provider respells a query that arrives
+ * out of its canonical spelling: an adapter reordering or re-encoding what it
+ * is given would be respelled, and rewrite it, without end. Writes land in the
+ * order they were made; a write landing after one made later is read as the
+ * reader's move. A router must not drop a write silently: one it skips or
+ * abandons notifies of where the location then stands, or throws.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.

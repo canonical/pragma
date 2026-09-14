@@ -26,17 +26,20 @@ import {
 } from "../rows/index.js";
 import type { SchemaFieldDefinition } from "../schema/index.js";
 import { createSelection } from "../selection/index.js";
+import { createSnapshot, type DataViewsSnapshot } from "../snapshot/index.js";
 import { copyCapabilities } from "../source/index.js";
 import { createSavedViews } from "../views/index.js";
-import { encodeQuery, type QueryIssue } from "../wire/index.js";
+import type { QueryIssue } from "../wire/index.js";
 import createActionRunner from "./createActionRunner.js";
 import createQueryCommands from "./createQueryCommands.js";
 import createRecordTyping from "./createRecordTyping.js";
 import createRequestCompleter from "./createRequestCompleter.js";
 import observePorts from "./observePorts.js";
+import readStartingPoint from "./readStartingPoint.js";
 import registerProviderHost from "./registerProviderHost.js";
 import resolveHistoryPolicy from "./resolveHistoryPolicy.js";
 import runSource from "./runSource.js";
+import spellLocation from "./spellLocation.js";
 import syncLocation from "./syncLocation.js";
 import type {
   DataViewsProvider,
@@ -60,7 +63,7 @@ const readSideOf = (
         subscribe: (listener) => location.subscribe(listener),
       };
 
-/** The issues a provider without a location publishes: none, ever. */
+/** The issues a provider with no location and nothing refused publishes: none, ever. */
 const NO_ISSUES: ReadonlyChannel<readonly QueryIssue[]> = protectChannel(
   createChannel<readonly QueryIssue[]>(Object.freeze([])),
 );
@@ -73,12 +76,15 @@ const NO_ISSUES: ReadonlyChannel<readonly QueryIssue[]> = protectChannel(
  * location, the presentation and the saved views itself — an application
  * hands it the ports and mounts.
  *
- * Construction starts nothing. `observe()` is ref-counted: the first
- * observer adopts the location, starts source execution, the location loop,
- * the presentation and the views, and asks for a page when nothing is
- * pending after that — the first page from idle, the current one again
- * after a release; the last release stops all of it, and the next observer
- * starts it again.
+ * Construction reads the location once — the query it carries, decoded as the
+ * location loop decodes it, is where the provider stands and what it refused is
+ * on `issues` — and starts nothing: no subscription and no request, so a server
+ * render carries the URL's query and stays quiet. `observe()` is ref-counted:
+ * the first observer adopts the location, starts source execution, the location
+ * loop, the presentation and the views, and asks for a page when nothing is
+ * pending after that — the first page from idle, the current one again after a
+ * problem, while ready rows nothing ran are taken up; the last release stops
+ * all of it, and the next observer starts it again.
  *
  * @note Impure by design: the provider is the one place the collection's
  * state lives, and observing it starts its ports — subscriptions on the
@@ -97,10 +103,32 @@ export default function createDataViewsProvider<
   // Copied once, so the declaration cannot change under the provider: what
   // a control reads is what the run checks requests against.
   const capabilities = copyCapabilities(source.capabilities);
-  const coordinator = createQueryCoordinator<TRow>({
-    slice: config.seed?.slice,
-    window: config.seed?.window,
+  // Where the provider starts: the snapshot and the location read once, with
+  // nothing subscribed and nothing requested, so a server render carries the
+  // URL's query.
+  const keepsViews = config.views !== undefined;
+  const starting = readStartingPoint({
+    collection,
+    capabilities,
+    location: config.location,
+    snapshot: config.snapshot,
+    keepsViews,
   });
+  // What the query the provider stands on was refused for: the channel a
+  // provider without a location reports, the location sync's otherwise.
+  const snapshotIssues: ReadonlyChannel<readonly QueryIssue[]> =
+    starting.issues.length === 0
+      ? NO_ISSUES
+      : protectChannel(
+          createChannel<readonly QueryIssue[]>(
+            Object.freeze([...starting.issues]),
+          ),
+        );
+  const coordinator = createQueryCoordinator<TRow>({
+    start: starting.start,
+    initial: starting.initial,
+  });
+  const openView = createChannel<string | null>(starting.view);
   const selection = createSelection();
   const state = createChannel<DataViewsState<TRow>>(coordinator.state, {
     equals: (a, b) => a === b,
@@ -135,6 +163,7 @@ export default function createDataViewsProvider<
     publish: publishState,
     transitions,
     history,
+    view: openView,
   });
 
   const complete = createRequestCompleter({
@@ -156,15 +185,16 @@ export default function createDataViewsProvider<
       command({ kind: "removePredicate", field, operator }),
     refresh: issueRefresh,
     adopt,
+    view: protectChannel(openView),
     transitions: protectChannel(transitions),
     location: readSideOf(config.location),
     spellQuery(query: Query): URLSearchParams | null {
       return config.location === undefined
         ? null
-        : encodeQuery({
+        : spellLocation({
             schema: collection.schema,
-            slice: query.slice,
-            window: query.window,
+            query,
+            view: openView.get(),
             preserve: config.location.read(),
           });
     },
@@ -177,7 +207,11 @@ export default function createDataViewsProvider<
     },
   };
 
-  const presentation = createPresentation({ store: config.presentation });
+  const presentation = createPresentation({
+    store: config.presentation,
+    // The snapshot's arrangement, with the view it was drawn under, or none.
+    restored: starting.restored,
+  });
   const views =
     config.views === undefined
       ? null
@@ -186,11 +220,10 @@ export default function createDataViewsProvider<
             schema: collection.schema,
             capabilities,
             state: host.state,
-            // A view's query is the view's authority, and opening one is a
-            // step Back returns from.
-            adopt(query: Query): void {
-              adopt(query, "view");
-            },
+            view: host.view,
+            transitions: host.transitions,
+            // A view's query is the view's authority, moved with its name.
+            adopt,
           },
           store: config.views,
           presentation,
@@ -198,21 +231,27 @@ export default function createDataViewsProvider<
   const location =
     config.location === undefined
       ? null
-      : syncLocation({ host, location: config.location });
+      : syncLocation({
+          host,
+          location: config.location,
+          keepsViews,
+          issues: starting.issues,
+        });
   const run = runSource({ host, source });
 
   const runAction = createActionRunner({ source, capabilities, selection });
 
   /**
-   * The ports, the location first: adopting it issues the request the
-   * source then executes, so the first page answers the location's query
-   * and never the seed's. A provider with no request in flight after they
-   * start is asked for its page — the first page when it is idle, and the
-   * current one again when an earlier observation settled it and then
-   * released the source, so the source is live again and a later change to
-   * the same query still reaches the rows. An adoption that issued a
-   * request, or one the source refused at once, has already answered for
-   * the observation and is not asked again.
+   * The ports, the location first: adopting it issues the request the source
+   * then executes, so the first page answers the location's query and never the
+   * snapshot's. Ready rows nothing ran — drawn by `refresh()` before hydrating,
+   * or left by a released observation — are taken up by the source run under
+   * the request they answer, so the source is live again with no request and no
+   * `refreshing` flash. Any other provider with no request in flight after the
+   * ports start is asked for its page: the first page when it is idle, or the
+   * current one again after a problem. An adoption that issued a request, or
+   * one the source refused at once, has already answered for the observation
+   * and is not asked again.
    */
   const ports: PortRun[] = [];
   if (location !== null) {
@@ -226,9 +265,12 @@ export default function createDataViewsProvider<
   const observation = observePorts({
     ports,
     afterStart() {
+      const { pendingRequestId, result } = coordinator.state;
       if (
-        coordinator.state.pendingRequestId === null &&
-        coordinator.state === before
+        pendingRequestId === null &&
+        coordinator.state === before &&
+        // Ready rows are the source run's to take up, not to ask for again.
+        result.status !== "ready"
       ) {
         issueRefresh();
       }
@@ -240,10 +282,23 @@ export default function createDataViewsProvider<
     capabilities,
     state: host.state,
     rows: rowsView,
-    issues: location?.issues ?? NO_ISSUES,
+    issues: location?.issues ?? snapshotIssues,
     selection,
     views,
     presentation,
+    readSnapshot(): DataViewsSnapshot {
+      const { slice, window } = coordinator.state;
+      return createSnapshot({
+        // What the URL carries, spelled as the location spells it.
+        query: spellLocation({
+          schema: collection.schema,
+          query: { slice, window },
+          view: openView.get(),
+          preserve: new URLSearchParams(),
+        }),
+        presentation: presentation.state.get().presentation,
+      });
+    },
     navigateWindow: (window: WindowNavigation) =>
       command({ kind: "navigateWindow", ...window }),
     setSort: (sort: readonly SortTerm[]) => command({ kind: "setSort", sort }),
@@ -254,6 +309,9 @@ export default function createDataViewsProvider<
       command({ kind: "setCollapsed", collapsed }),
     refresh(): void {
       issueRefresh();
+      // Unobserved, the source is read here: one that answers from what it
+      // holds has published before this returns.
+      run.completePending();
     },
     refusals,
     runAction,
@@ -268,10 +326,11 @@ export default function createDataViewsProvider<
       selection.clear();
       recordTyping?.forget();
       views?.forget();
+      openView.set(null);
       publishState();
       // Announced whether or not anything observes: the next observation
-      // reads that the last move was a reset, and writes the seed over a
-      // location still carrying the query from before.
+      // reads that the last move was a reset, and writes where the provider
+      // started over a location still carrying the query from before.
       const { slice, window } = coordinator.state;
       transitions.set({
         query: { slice, window },

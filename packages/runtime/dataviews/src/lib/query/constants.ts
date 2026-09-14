@@ -1,6 +1,6 @@
 /**
  * What the query grammar fixes: the operands each operator carries, and
- * the seed window and empty slice every collection starts from.
+ * the default window and empty slice every collection starts from.
  */
 
 import type { PredicateOperator, ResultWindow, Slice } from "./types.js";
@@ -19,10 +19,10 @@ export const OPERATOR_ARITY: Readonly<
 });
 
 /**
- * The window a collection starts on when nothing else says otherwise: the
- * first page of fifty, from the start of the result, with nothing
- * collapsed. One owner, so the coordinator's seed and a parameter set
- * carrying no window cannot drift apart.
+ * The window a collection starts on when nothing else says otherwise: the first
+ * page of fifty, from the start of the result, with nothing collapsed. One
+ * owner, so the window the coordinator starts on and a parameter set carrying
+ * no window cannot drift apart.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -36,7 +36,7 @@ export const DEFAULT_WINDOW: ResultWindow = Object.freeze({
 
 /**
  * The query that restricts nothing: no filter, no search, no ordering of
- * its own and no grouping. One owner, so the coordinator's seed, a
+ * its own and no grouping. One owner, so the query the coordinator starts on, a
  * parameter set carrying no query and a caller building one cannot drift
  * apart, and the twin of `DEFAULT_WINDOW` that completes a `Query`.
  *

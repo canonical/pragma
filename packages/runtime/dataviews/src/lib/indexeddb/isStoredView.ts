@@ -24,9 +24,8 @@ export default function isStoredView(record: unknown): record is StoredView {
     revision >= 1 &&
     typeof createdAt === "string" &&
     typeof updatedAt === "string" &&
-    (presentation === undefined ||
-      (typeof presentation === "object" &&
-        presentation !== null &&
-        !Array.isArray(presentation)))
+    typeof presentation === "object" &&
+    presentation !== null &&
+    !Array.isArray(presentation)
   );
 }

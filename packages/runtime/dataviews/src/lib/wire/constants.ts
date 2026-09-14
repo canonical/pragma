@@ -23,6 +23,13 @@ export const WRITTEN_QUERY_KEYS: readonly string[] = Object.freeze([
 ]);
 
 /**
+ * The annotation naming the saved view a location has open. It asks the source
+ * for nothing and never marks the view modified; the grammar reserves it, and
+ * `readOpenView` reads it.
+ */
+export const VIEW_KEY = "view";
+
+/**
  * Parameter names the grammar reserves: those it writes, plus the
  * annotation names it leaves to the host. A field's wire name may not
  * collide with one — the query would be ambiguous.
@@ -30,7 +37,7 @@ export const WRITTEN_QUERY_KEYS: readonly string[] = Object.freeze([
 export const RESERVED_QUERY_KEYS: readonly string[] = Object.freeze([
   ...WRITTEN_QUERY_KEYS,
   "as",
-  "view",
+  VIEW_KEY,
   "item",
 ]);
 

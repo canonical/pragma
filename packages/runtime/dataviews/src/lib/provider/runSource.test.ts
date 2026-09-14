@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import createManualSource from "../../../testing/createManualSource.js";
 import {
   byId,
@@ -212,7 +212,11 @@ describe("runSource refusals", () => {
   it("refuses a request before it costs the source a round trip", () => {
     const source = manual(declare({ ...permissive, sort: declareSort([], 0) }));
     const { host, release } = running(source.source);
-    host.adopt(query({ sort: [{ field: "cpu", direction: "asc" }] }), "view");
+    host.adopt(
+      query({ sort: [{ field: "cpu", direction: "asc" }] }),
+      "view",
+      null,
+    );
     expect(source.calls).toHaveLength(0);
     expect(problemOf(host.state.get())).toEqual({
       status: "refused",
@@ -237,6 +241,7 @@ describe("runSource refusals", () => {
     host.adopt(
       query({ search: "web", sort: [{ field: "cpu", direction: "asc" }] }),
       "view",
+      null,
     );
     expect(source.calls).toHaveLength(0);
     const problem = problemOf(host.state.get());
@@ -256,6 +261,7 @@ describe("runSource refusals", () => {
     host.adopt(
       query({ filter: [{ field: "cpu", operator: "gte", operands: [1] }] }),
       "view",
+      null,
     );
     expect(source.calls).toHaveLength(0);
     expect(problemOf(host.state.get())).toMatchObject({
@@ -270,7 +276,7 @@ describe("runSource refusals", () => {
     const { host, release } = running(source.source);
     host.refresh();
     source.callAt(0).deliver(succeeded([]));
-    host.adopt(query({ group: [{ field: "status" }] }), "view");
+    host.adopt(query({ group: [{ field: "status" }] }), "view", null);
     // Refused before the source is asked: the page stands.
     expect(source.calls).toHaveLength(1);
     expect(problemOf(host.state.get())).toMatchObject({
@@ -291,6 +297,7 @@ describe("runSource refusals", () => {
         window: { ...DEFAULT_WINDOW, collapsed: [["failed"]] },
       },
       "view",
+      null,
     );
     expect(source.calls).toHaveLength(1);
     expect(problemOf(host.state.get())).toMatchObject({
@@ -309,6 +316,7 @@ describe("runSource refusals", () => {
         window: { ...DEFAULT_WINDOW, page: 2, cursor: "c1" },
       },
       "view",
+      null,
     );
     expect(source.calls).toHaveLength(0);
     expect(problemOf(host.state.get())).toMatchObject({
@@ -333,7 +341,7 @@ describe("runSource refusals", () => {
     const { host, release } = running(source.source);
     host.refresh();
     expect(source.calls).toHaveLength(1);
-    host.adopt(query({ search: "web" }), "view");
+    host.adopt(query({ search: "web" }), "view", null);
     expect(source.calls).toHaveLength(1);
     expect(problemOf(host.state.get())).toMatchObject({
       status: "refused",
@@ -375,16 +383,19 @@ describe("runSource", () => {
     release();
   });
 
-  it("executes nothing when it observes a settled host", () => {
+  it("takes a settled host's source up under the request its rows answer, issuing none", () => {
     const source = manual();
     const { host, run } = build(source.source);
     const requestId = host.refresh();
     host.complete(requestId, succeeded(rows));
+    const settled = host.state.get();
     const release = run.observe();
-    expect(source.calls).toHaveLength(0);
-    expect(host.state.get().result.provenance?.requestId).toBe(requestId);
+    expect(source.calls).toHaveLength(1);
+    expect(source.callAt(0).request.requestId).toBe(requestId);
+    expect(host.state.get()).toBe(settled);
     expect(host.state.get().resultMatchesQuery).toBe(true);
     release();
+    expect(source.callAt(0).releases).toBe(1);
   });
 
   it("executes the request the provider's first observer issues", () => {
@@ -632,7 +643,7 @@ describe("runSource", () => {
       group: [],
     };
     const window = { ...DEFAULT_WINDOW, page: 3, size: 25 };
-    const requestId = host.adopt({ slice: adopted, window }, "view");
+    const requestId = host.adopt({ slice: adopted, window }, "view", null);
     expect(source.callAt(0).request).toEqual({
       requestId,
       slice: host.state.get().slice,
@@ -681,13 +692,13 @@ describe("runSource", () => {
       matches: true,
       problem: null,
     });
-    host.adopt(query({ filter: failing }), "view");
+    host.adopt(query({ filter: failing }), "view", null);
     expect(observed()).toEqual({
       rows: 3,
       matches: true,
       problem: null,
     });
-    host.adopt(query({ filter: failing, sort: byCpu }), "view");
+    host.adopt(query({ filter: failing, sort: byCpu }), "view", null);
     expect(observed()).toEqual({
       rows: 3,
       matches: false,
@@ -699,6 +710,7 @@ describe("runSource", () => {
         sort: byCpu,
       }),
       "view",
+      null,
     );
     expect(observed()).toEqual({
       rows: 3,
@@ -712,6 +724,7 @@ describe("runSource", () => {
         filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
       }),
       "view",
+      null,
     );
     expect(observed()).toEqual({
       rows: 6,
@@ -803,6 +816,29 @@ describe("runSource", () => {
     release();
   });
 
+  it("executes a request once when it hears of it again, after a listener ahead of it moved the query", () => {
+    const source = manual();
+    const { provider, host, run } = build(source.source);
+    // Heard before the run: the first request it sees, it replaces.
+    let armed = true;
+    host.state.subscribe(() => {
+      if (armed && host.state.get().pendingRequestId !== null) {
+        armed = false;
+        provider.setSearch("web");
+      }
+    });
+    const release = run.observe();
+    host.refresh();
+    // The replaced request never ran; the newer one ran once, although the
+    // run heard the older publication after it had started the newer one.
+    expect(source.calls).toHaveLength(1);
+    expect(source.latest().request.slice.search).toBe("web");
+    expect(source.latest().request.requestId).toBe(
+      host.state.get().pendingRequestId,
+    );
+    release();
+  });
+
   it("converges on a request another listener issued while it republished", () => {
     const source = manual();
     const { provider, host, release } = running(source.source);
@@ -886,6 +922,237 @@ describe("runSource", () => {
     counted.issueSilently();
     source.callAt(0).deliver(succeeded([]));
     expect(counted.host.state.get().result.counts?.matched).toEqual(exact(3));
+    release();
+  });
+});
+
+describe("runSource completePending", () => {
+  it("starts nothing for a source that can only answer by executing", () => {
+    const source = manual();
+    const { host, run } = build(source.source);
+    const requestId = host.refresh();
+    run.completePending();
+    expect(source.calls).toHaveLength(0);
+    expect(host.state.get().pendingRequestId).toBe(requestId);
+  });
+
+  it("publishes what the source reads within the call, holding its counts", () => {
+    const { host, run } = build(local());
+    host.refresh();
+    run.completePending();
+    expect(idsOf(host.state.get())).toEqual(["a", "b", "c"]);
+    expect(host.state.get().pendingRequestId).toBeNull();
+    const held = build({
+      ...local(),
+      capabilities: {
+        ...local().capabilities,
+        counts: { pageable: "at-least", matched: "unknown", total: "unknown" },
+      },
+    });
+    held.host.refresh();
+    held.run.completePending();
+    expect(held.host.state.get().result.counts?.pageable).toEqual({
+      kind: "at-least",
+      value: 3,
+    });
+  });
+
+  it("leaves the request pending when the source cannot answer yet", () => {
+    const { host, run } = build({
+      ...manual().source,
+      readDelivery: () => null,
+    });
+    const requestId = host.refresh();
+    run.completePending();
+    expect(host.state.get().pendingRequestId).toBe(requestId);
+  });
+
+  it("refuses a request the source cannot run, and fails one whose read throws", () => {
+    const unfilterable = manual(declare({}));
+    const refused = build({ ...unfilterable.source, readDelivery: () => null });
+    // Adopted past the command boundary, as a stored query would be.
+    refused.host.adopt(
+      query({
+        filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+      }),
+      "view",
+      null,
+    );
+    refused.run.completePending();
+    expect(problemOf(refused.host.state.get())?.status).toBe("refused");
+    expect(refused.host.state.get().pendingRequestId).toBeNull();
+    expect(unfilterable.calls).toHaveLength(0);
+    const cannot = build({
+      ...local(),
+      readDelivery: () => {
+        throw new Error("the rows are gone");
+      },
+    });
+    cannot.host.refresh();
+    cannot.run.completePending();
+    expect(problemOf(cannot.host.state.get())).toMatchObject({
+      status: "failed",
+      failure: { reason: "the rows are gone" },
+    });
+  });
+
+  it("executes nothing with nothing pending, and leaves an observed run's request to the live run", () => {
+    const idle = manual();
+    build(idle.source).run.completePending();
+    expect(idle.calls).toHaveLength(0);
+    const source = manual();
+    const readDelivery = vi.fn(() => succeeded(rows));
+    const { host, run, release } = running({ ...source.source, readDelivery });
+    host.refresh();
+    expect(source.calls).toHaveLength(1);
+    const pending = host.state.get().pendingRequestId;
+    run.completePending();
+    // Observed, the live run answers: nothing is read past it.
+    expect(readDelivery).not.toHaveBeenCalled();
+    expect(host.state.get().pendingRequestId).toBe(pending);
+    expect(source.calls).toHaveLength(1);
+    expect(source.callAt(0).releases).toBe(0);
+    release();
+  });
+});
+
+describe("runSource take-up", () => {
+  it("publishes a delivery over a ready result carrying no rows, comparing nothing absent", () => {
+    const source = manual();
+    const provider = createDataViewsProvider({
+      collection,
+      source: source.source,
+    });
+    const host = readProviderHost(provider);
+    // A host whose state lies, once asked to: ready, with no rows.
+    let lying = false;
+    const liar: ProviderHost = {
+      ...host,
+      state: {
+        get: () => {
+          const state = host.state.get();
+          return lying
+            ? { ...state, result: { ...state.result, rows: null } }
+            : state;
+        },
+        subscribe: host.state.subscribe,
+      },
+    };
+    const run = runSource({ host: liar, source: source.source });
+    const release = run.observe();
+    host.refresh();
+    source.latest().deliver(succeeded(rows));
+    expect(host.state.get().result.status).toBe("ready");
+    lying = true;
+    const published = vi.fn();
+    const stop = host.state.subscribe(published);
+    source.latest().deliver(succeeded(rows));
+    expect(published).toHaveBeenCalled();
+    expect(host.state.get().result.status).toBe("ready");
+    stop();
+    release();
+  });
+
+  it("executes under the request the rows answer, republishing nothing for the same page", () => {
+    const source = createManualSource<RowRecord>({
+      capabilities: permissive,
+      answer: () => pageOf(rows),
+    });
+    const { host, run } = build(source.source);
+    host.refresh();
+    run.completePending();
+    const drawn = host.state.get();
+    const release = run.observe();
+    expect(source.calls).toHaveLength(1);
+    expect(source.callAt(0).request.requestId).toBe(
+      drawn.result.provenance?.requestId,
+    );
+    expect(host.state.get()).toBe(drawn);
+    // A later, different answer is an external change, republished.
+    source.callAt(0).deliver(succeeded(rows.slice(0, 1)));
+    expect(idsOf(host.state.get())).toEqual(["a"]);
+    release();
+  });
+
+  it("republishes the same records once their counts or continuation differ", () => {
+    const source = manual();
+    const { host, release } = running(source.source);
+    host.refresh();
+    source.callAt(0).deliver(succeeded(rows));
+    const page = pageOf(rows);
+    const recounted = {
+      pageable: exact(9),
+      matched: exact(9),
+      total: exact(9),
+    };
+    // Each delivery differs from the one before it in one member alone.
+    const moves: readonly SourcePage[] = [
+      { ...page, more: true },
+      { ...page, more: true, counts: { ...page.counts, pageable: exact(9) } },
+      {
+        ...page,
+        more: true,
+        counts: { ...page.counts, pageable: exact(9), matched: exact(9) },
+      },
+      { ...page, more: true, counts: recounted },
+      {
+        ...page,
+        more: true,
+        counts: recounted,
+        cursors: { next: "c2", previous: null },
+      },
+      {
+        ...page,
+        more: true,
+        counts: recounted,
+        cursors: { next: "c2", previous: "c0" },
+      },
+    ];
+    for (const moved of moves) {
+      const before = host.state.get();
+      source.callAt(0).deliver({ status: "succeeded", page: moved });
+      expect(host.state.get()).not.toBe(before);
+    }
+    expect(host.state.get().result).toMatchObject({
+      more: true,
+      counts: recounted,
+      cursors: { next: "c2", previous: "c0" },
+    });
+    release();
+  });
+
+  it("republishes the same records once a count's kind or the group summaries differ", () => {
+    const source = manual();
+    const { host, release } = running(source.source);
+    host.refresh();
+    source.callAt(0).deliver(succeeded(rows));
+    const page = pageOf(rows);
+    const summary = { path: ["ready"], count: exact(2) };
+    // Each delivery differs from the one before it in one member alone.
+    const moves: readonly SourcePage[] = [
+      { ...page, counts: { ...page.counts, total: { kind: "unknown" } } },
+      page,
+      {
+        ...page,
+        counts: { ...page.counts, pageable: { kind: "at-least", value: 3 } },
+      },
+      { ...page, groups: [summary] },
+      { ...page, groups: [{ ...summary, count: exact(1) }] },
+    ];
+    for (const moved of moves) {
+      const before = host.state.get();
+      source.callAt(0).deliver({ status: "succeeded", page: moved });
+      expect(host.state.get()).not.toBe(before);
+    }
+    release();
+  });
+
+  it("takes up nothing over rows that are not ready", () => {
+    const source = manual();
+    const { host, run } = build(source.source);
+    host.complete(host.refresh(), failed("offline"));
+    const release = run.observe();
+    expect(source.calls).toHaveLength(0);
     release();
   });
 });
