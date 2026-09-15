@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createRef } from "react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import SidePanel from "./SidePanel.js";
+import SidePanel from "./Provider.js";
 import type { SidePanelHandle } from "./types.js";
 
 /*

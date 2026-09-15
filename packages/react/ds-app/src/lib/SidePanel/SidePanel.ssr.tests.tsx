@@ -1,7 +1,7 @@
 import { createRef } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import SidePanel from "./SidePanel.js";
+import SidePanel from "./Provider.js";
 import type { SidePanelHandle } from "./types.js";
 
 describe("SidePanel SSR", () => {

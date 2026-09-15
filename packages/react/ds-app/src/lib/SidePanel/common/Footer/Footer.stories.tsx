@@ -1,7 +1,7 @@
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import SidePanel from "../../SidePanel.js";
+import SidePanel from "../../Provider.js";
 import type { SidePanelHandle } from "../../types.js";
 import Footer from "./Footer.js";
 

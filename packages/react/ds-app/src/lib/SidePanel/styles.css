@@ -113,7 +113,7 @@
     escapes the panel's box — ds-global's Popover and ContextualMenu position
     their content with `position: fixed` — is both clipped at the panel edge
     and anchored to the panel instead of the viewport. Documented in
-    SidePanel.tsx; the fix belongs upstream, in overlays that use the top
+    Provider.tsx; the fix belongs upstream, in overlays that use the top
     layer rather than fixed positioning.
   */
 

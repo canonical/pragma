@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import SidePanelContext from "../Context.js";
+import Context from "../Context.js";
 import type { SidePanelContextValue } from "../types.js";
 
 /**
@@ -7,6 +7,6 @@ import type { SidePanelContextValue } from "../types.js";
  * degrade — `Header` simply omits its close button — rather than throwing.
  */
 export const useSidePanelContext = (): SidePanelContextValue | null =>
-  useContext(SidePanelContext);
+  useContext(Context);
 
 export default useSidePanelContext;
