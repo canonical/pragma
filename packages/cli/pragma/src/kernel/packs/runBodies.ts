@@ -4,12 +4,10 @@
  * Each factory returns a `VerbSpec.run` closure. Reads are plain async: the list
  * body admits the caller's filter values against the graph's vocabulary, then
  * runs ONE generated SELECT that carries the filters, the search and the page's
- * bounds (and, only when that comes back empty under a filter, one more to
- * learn whether the population itself is empty); the lookup body resolves names
- * → IRIs and fetches per the declared source, gated by the resolved disclosure
- * level; the sample body draws N random entities at the highest level. All store
- * access is through the runtime facade (lazy), so these factories carry no heavy
- * static import.
+ * bounds; the lookup body resolves names → IRIs and fetches per the declared
+ * source, gated by the resolved disclosure level; the sample body draws N random
+ * entities at the highest level. All store access is through the runtime facade
+ * (lazy), so these factories carry no heavy static import.
  */
 
 import { cliRecovery, PragmaError } from "../error/index.js";
@@ -121,56 +119,15 @@ export function makeListRun(
     );
     const hasMore = rows.length > limit;
     const applied = appliedFilters(shape, params, search?.term);
-    const probed =
-      rows.length === 0 && applied.length > 0
-        ? { populationEmpty: await populationIsEmpty(rt, shape, meta.source) }
-        : {};
     return {
       rows: hasMore ? rows.slice(0, limit) : rows,
       ...(hasMore
         ? { nextAfter: encodeCursor(offset + limit, fingerprint) }
         : {}),
       ...(applied.length > 0 ? { filters: applied } : {}),
-      ...probed,
       limit,
     };
   };
-}
-
-/**
- * Whether the story has nothing to filter: its own query, with every filter
- * dropped and cut to one row.
- *
- * Asked ONLY when a filtered read came back empty, because that is the only
- * answer two different emptinesses can hide behind. `token consumers --symbol
- * color.text` narrows a table that holds no bindings at all; reporting it as a
- * filter that missed reads as a mistyped symbol and withholds the story's own
- * explanation of the emptiness. The rows in hand cannot tell the two apart —
- * zero is zero — and no field of the filtered query answers it either, so the
- * population has to be asked about directly.
- *
- * One extra query, on one path, for one boolean: the same builder, the same
- * author text, no predicates and `LIMIT 1`. A `COUNT` would evaluate the whole
- * population to learn the same thing, and the count is not wanted — "is there
- * anything" is, which is the first row's existence. Every answer that had rows,
- * and every unfiltered answer, still runs exactly the one query it always did.
- */
-async function populationIsEmpty(
-  rt: PragmaRuntime,
-  shape: PackList,
-  source: StorySource,
-): Promise<boolean> {
-  const probe = await runSelect(
-    rt,
-    buildListQuery({
-      query: shape.query,
-      predicates: [],
-      window: { limit: 1, offset: 0 },
-      label: source.label,
-    }),
-    source,
-  );
-  return probe.length === 0;
 }
 
 /**

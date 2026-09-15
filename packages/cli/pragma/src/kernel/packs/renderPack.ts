@@ -103,7 +103,7 @@ export function listFormatters(
     heading: meta.heading,
     columns,
     prefixes: meta.prefixes,
-    emptyMessage: emptyMessage(meta.noun),
+    emptyMessage: `No ${meta.noun} entries found.`,
     emptyHint,
   };
   return {
@@ -133,27 +133,14 @@ export function listFormatters(
  * it there ("No token symbols in the store … run `pragma sources update`")
  * tells a reader with 745 symbols in the store that the store is empty and
  * prescribes a write that changes nothing. So a page narrowed by at least one
- * filter reports the NARROWING instead, naming the arguments the caller typed.
+ * filter reports the NARROWING instead, naming the arguments the caller typed;
+ * an unfiltered empty page keeps the story's recovery, which is the case it was
+ * written for.
  *
- * Unless there was nothing to narrow. A filter over an EMPTY population is the
- * population's question after all, and reporting only the filter there is the
- * same defect with the signs reversed: `token consumers --symbol color.text`
- * answered "No token matches `--symbol color.text`", which reads as a mistyped
- * symbol and buries the story's own account of a table that holds no bindings
- * yet. So an empty population keeps its recovery whether or not filters were in
- * force, and the filters are named in a clause of the kernel's own sentence, so
- * a reader can see they were applied and did not cause this.
- *
- * The page carries which case it is ({@link PackPage.populationEmpty}) because
- * only the run body can ask: a renderer sees rows, and zero rows looks the same
- * either way.
- *
- * @param page - The rendered page: its rows, the filters that cut them, and
- *   whether anything was there to cut.
+ * @param page - The rendered page (its rows and the filters that cut them).
  * @param meta - The noun, for the sentence.
  * @param base - The story's own empty copy.
- * @returns `base` unchanged, `base` with a filters clause on its message, or
- *   filter-shaped copy with no population hint.
+ * @returns `base` unchanged, or filter-shaped copy with no population hint.
  */
 function emptyCopy(
   page: PackPage,
@@ -162,30 +149,11 @@ function emptyCopy(
 ): RenderListOptions<PackRow> {
   const applied = page.filters ?? [];
   if (page.rows.length > 0 || applied.length === 0) return base;
-  if (page.populationEmpty === true) {
-    return { ...base, emptyMessage: emptyMessage(meta.noun, applied) };
-  }
   const { emptyHint: _population, ...rest } = base;
   return {
     ...rest,
     emptyMessage: `No ${meta.noun} matches ${listFilters(applied)}.`,
   };
-}
-
-/**
- * The kernel's own zero-row sentence, which the story's recovery then explains.
- *
- * `applied` adds the one clause that keeps an empty population's recovery
- * honest under a filter: the reader typed arguments, and a message that never
- * mentions them leaves them wondering whether they were even read.
- */
-function emptyMessage(
-  noun: string,
-  applied?: readonly PackAppliedFilter[],
-): string {
-  return applied && applied.length > 0
-    ? `No ${noun} entries found (with ${listFilters(applied)} applied).`
-    : `No ${noun} entries found.`;
 }
 
 /** The filters in force, as flags a reader can edit: `\`--kind input\`` … */

@@ -610,40 +610,4 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
       expect(row.symbol).toBeTruthy();
     }
   });
-
-  it("token consumers --symbol says what the unfiltered read says, plus the filter", async () => {
-    // The regression this pins, against the SHIPPED corpus rather than a
-    // fixture: `token consumers --symbol color.text` answered "No token matches
-    // `--symbol color.text`." — a sentence about a filter, over a table that
-    // records no bindings at all. It read as a mistyped symbol, and it withheld
-    // the story's account of the emptiness, which is the one thing this verb
-    // has to say until the design-system packs record bindings. The unfiltered
-    // read said that account the whole time; the filter is what lost it.
-    //
-    // So the expectation is DERIVED from the corpus, not pinned to it: whatever
-    // the unfiltered read reports about the population, the filtered read
-    // reports too. Once bindings exist the guard stops firing, which is the
-    // same policy as the test above — a test that failed on the packs recording
-    // bindings would be a test of the wrong thing.
-    const consumers = verb("token", "consumers");
-    const notice = (page: PackPage): string =>
-      consumers.output.formatters.notice?.(page as never) ?? "";
-    const bare = (await consumers.run({}, rt)) as PackPage;
-    if (bare.rows.length > 0) return;
-
-    const filtered = (await consumers.run(
-      { symbol: "color.text" },
-      rt,
-    )) as PackPage;
-    expect(filtered.rows).toEqual([]);
-    // The page says WHICH emptiness this is, because only the run body can ask.
-    expect(filtered.populationEmpty).toBe(true);
-    const said = notice(filtered);
-    expect(said).toContain("No component is recorded as using any token yet.");
-    expect(said).toContain("sources update");
-    // And the filter is named, in a clause — the reader typed it and has to see
-    // that it was applied and is not the cause.
-    expect(said).toContain("(with `--symbol color.text` applied)");
-    expect(said).not.toContain("No token matches");
-  });
 });
