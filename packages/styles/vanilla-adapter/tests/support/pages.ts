@@ -16,7 +16,7 @@ import layoutCss from "@canonical/styles/layout.css?inline";
 import tokensCss from "@canonical/styles/tokens.css?inline";
 import stylesCss from "@canonical/styles?inline";
 import vanilla456 from "vanilla-framework-4.56/scss/build.scss?inline";
-import vanilla458 from "vanilla-framework-4.58/scss/build.scss?inline";
+import vanilla459 from "vanilla-framework-4.59/scss/build.scss?inline";
 import { onTestFinished } from "vitest";
 import { commands } from "vitest/browser";
 import buttonCss from "../../../../react/ds-global/src/lib/component/Button/styles.css?inline";
@@ -32,7 +32,7 @@ import layersCss from "../../src/layers.css?raw";
 import type { MediaEmulation } from "../../vite.config.js";
 
 /** The Vanilla releases the fixtures run against: the sites' pin and the latest. */
-export const VANILLA_VERSIONS = ["4.56", "4.58"] as const;
+export const VANILLA_VERSIONS = ["4.56", "4.59"] as const;
 
 type VanillaVersion = (typeof VANILLA_VERSIONS)[number];
 
@@ -50,7 +50,7 @@ const vanillaLayer = (css: string): string =>
 
 const vanillaCss: Record<VanillaVersion, string> = {
   "4.56": vanillaLayer(vanilla456),
-  "4.58": vanillaLayer(vanilla458),
+  "4.59": vanillaLayer(vanilla459),
 };
 
 /** The component stylesheets, which both kinds of page load after their entry. */

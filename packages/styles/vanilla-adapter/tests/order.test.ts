@@ -281,7 +281,7 @@ describe("the order contract", () => {
     // first in its own entry (the README's installation, step 7). Appearing after the statement
     // puts it above the five and still below `app`; the higher layer's rule
     // is written first each time so that source order cannot be the reason.
-    const spec = mixedPage("4.58");
+    const spec = mixedPage("4.59");
     const doc = await render({
       ...spec,
       styles: [
@@ -301,9 +301,9 @@ describe("the order contract", () => {
   });
 
   it("order-independence: adapter.css may sit anywhere inside the pragma entry", async () => {
-    const spec = mixedPage("4.58", { adapter: "after" });
+    const spec = mixedPage("4.59", { adapter: "after" });
     const after = await render(spec);
-    const before = await render(mixedPage("4.58", { adapter: "before" }));
+    const before = await render(mixedPage("4.59", { adapter: "before" }));
     const failures = idsIn(spec.body).flatMap((id) =>
       differences(`#${id}`, computed(after, id), computed(before, id)),
     );
