@@ -14,6 +14,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
+| `tier` | string | no | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
@@ -28,6 +29,7 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | string[] | yes | Block names, prefixed names/IRIs, or glob patterns. |
+| `tier` | string | no | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 | `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default detailed). |
 
 ### block_sample
@@ -72,6 +74,7 @@ Read-only.
 | --- | --- | --- | --- |
 | `type` | string | no | Filter by concept type (e.g. Explanation, How-to guide). |
 | `search` | string | no | Search in name and summary. |
+| `tier` | string | no | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
@@ -86,6 +89,7 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | string[] | yes | Concept names, prefixed names/IRIs, or glob patterns. |
+| `tier` | string | no | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 | `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default standard). |
 
 ### config_get
@@ -297,6 +301,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
+| `tier` | string | no | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
@@ -311,6 +316,7 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | string[] | yes | Modifier names, prefixed names/IRIs, or glob patterns. |
+| `tier` | string | no | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 
 ### modifier_sample
 
@@ -487,7 +493,7 @@ Read-only.
 
 ### tier_list
 
-List all tiers in the design-system ontology. Use when understanding the tier hierarchy before setting a tier filter. Example: tier_list {}.
+List all tiers in the design-system ontology. Use when picking the tier to read with: the `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself. Example: tier_list {}.
 
 Read-only.
 

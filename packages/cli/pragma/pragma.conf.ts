@@ -55,8 +55,10 @@ over GraphQL or raw SPARQL.
 ## How it fits together
 
 - **Tiers** are a hierarchy (\`global\` > \`apps\` > \`apps/lxd\`): a lower tier
-  inherits and overrides the blocks of its ancestors, so scoping a query to a
-  tier walks that chain.
+  inherits and overrides the blocks of its ancestors, so scoping a read to a
+  tier walks that chain. Reads of a tiered entity ARE scoped — a list answers
+  from the top-level tiers, \`--tier apps_lxd\` from that tier and its
+  ancestors, \`--tier all\` from every tier.
 - **Channels** (\`normal\`, \`experimental\`, \`prerelease\`) gate visibility, so an
   in-progress block never leaks into a stable answer.
 
@@ -90,11 +92,16 @@ exactly the domain that was published.`;
  * layer does not know the pack grammar (`parsePackDefinition` does).
  */
 const designSystemStories: readonly PackDefinition[] = [
-  // `block list` is declared content (L-OPEN-9): one unfiltered SELECT over
-  // the four UIBlock classes, listing ALL blocks — experimental and alpha ones
-  // included, for everyone — until filtering returns in declared form. The
-  // hand-written tier-chain/channel filtering (and its `--all-tiers` escape)
-  // is removed with the code, an owner-signed consequence. Display parity
+  // `block list` is declared content: one SELECT over the four UIBlock
+  // classes, listing every block the TIER SCOPE admits — experimental and
+  // alpha ones included, for everyone, since no read filters by channel.
+  //
+  // Tier filtering did come back in declared form, and in the form the story
+  // declares rather than the form the query text does: `tierScope` below names
+  // the hierarchy, and the kernel compiles the scope into this query as a
+  // constraint on `?uri` (`--tier all` for the unscoped list this used to be).
+  // The retired `--all-tiers` escape is not back — `--tier all` answers the
+  // same question with the argument a caller already holds. Display parity
   // lives IN the query: `VALUES ?class` closes the type set, so the BINDs
   // that derive `name` (declared name, else the IRI's local name), `type`
   // (lowercased class local name), and `tier` (tier IRI's local name) operate
@@ -143,6 +150,30 @@ const designSystemStories: readonly PackDefinition[] = [
     toolDescription:
       "List all design system blocks with their type, tier, and modifier families. Use when browsing which blocks exist. Example: block_list {}.",
     colophon: DESIGN_SYSTEM_COLOPHON,
+    // Blocks are TIERED, so every read of them is SCOPED: `block list` answers
+    // from the top-level tiers, `--tier apps_lxd` from that tier and its
+    // ancestors, `--tier all` from every tier (kernel/packs/tierScope.ts states
+    // the rule once, for every noun that declares this).
+    //
+    // The four terms are the ones the graph already carries, and three of them
+    // this story already declared for its RANKING (`scopeWeight` below): the
+    // hierarchy is the `/` in a tier's own `ds:name`, because the shipped graph
+    // asserts no parent edge to read instead — `ds:apps_lxd` is a `ds:Tier`
+    // with a name and nothing else. Reading the hierarchy from one place is
+    // what keeps the scope and the lookup ranking from disagreeing about which
+    // tier is above which.
+    //
+    // `base` is the editorial half, declared here for the reason `weights` is:
+    // nothing in the graph says `global` is the tier the others build on — the
+    // colophon above says it, and the 119 global blocks every product screen
+    // is assembled from say it. Without `base`, `--tier apps_lxd` would answer
+    // with LXD's nine blocks and hide the Buttons and Inputs they sit in.
+    tierScope: {
+      type: "ds:Tier",
+      via: "ds:tier",
+      by: "ds:name",
+      base: "ds:global",
+    },
     list: {
       query: [
         "SELECT ?uri ?name ?type ?tier",
@@ -1186,6 +1217,16 @@ const designSystemStories: readonly PackDefinition[] = [
     description: "List all modifier families.",
     toolDescription:
       "List all modifier families with their values. Use when browsing which modifier families exist and the values each allows. Example: modifier_list {}.",
+    // Tiered like blocks — 11 of the modifier families carry a `ds:tier` — so
+    // the same scope, declared with the same four terms. The scope is per NOUN
+    // because being tiered is a fact about the entities, and the design
+    // system's token symbols and code standards carry nothing of the kind.
+    tierScope: {
+      type: "ds:Tier",
+      via: "ds:tier",
+      by: "ds:name",
+      base: "ds:global",
+    },
     list: {
       query: [
         "SELECT ?uri ?name",
@@ -1246,7 +1287,7 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "tier",
     description: "List all tiers in the design system ontology.",
     toolDescription:
-      "List all tiers in the design-system ontology. Use when understanding the tier hierarchy before setting a tier filter. Example: tier_list {}.",
+      "List all tiers in the design-system ontology. Use when picking the tier to read with: the `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself. Example: tier_list {}.",
     list: {
       query: [
         "SELECT ?uri ?name WHERE {",
@@ -1290,6 +1331,16 @@ const conceptStory: PackDefinition = {
   description: "List design-system concepts.",
   toolDescription:
     'List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: "Explanation" }.',
+  // Concepts carry a `ds:tier` too (4 of them do), so they are scoped on the
+  // same terms as blocks and modifier families. Its `list` publishes no tier
+  // COLUMN and does not need to: the scope constrains the entity through
+  // `ds:tier`, not a projected cell.
+  tierScope: {
+    type: "ds:Tier",
+    via: "ds:tier",
+    by: "ds:name",
+    base: "ds:global",
+  },
   list: {
     query: [
       "SELECT ?uri ?name ?type ?summary",

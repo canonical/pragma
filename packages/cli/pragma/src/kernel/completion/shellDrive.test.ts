@@ -351,12 +351,17 @@ const STRUCTURE = [
     at: "pragma block lookup --<TAB>",
     words: ["pragma", "block", "lookup", "--"],
     cword: 3,
+    // The globals, plus the ONE flag this verb declares: `--tier`, which the
+    // block story earns by declaring a tier hierarchy. A verb's own flags are
+    // in the inlined table like the globals, so offering it still execs
+    // nothing.
     offers: [
       "--detail",
       "--format",
       "--help",
       "--no-headers",
       "--quiet",
+      "--tier",
       "--verbose",
     ],
   },

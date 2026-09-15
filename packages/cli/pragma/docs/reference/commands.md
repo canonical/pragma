@@ -20,6 +20,7 @@ pragma block list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
+| `--tier` | `<string>` | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
@@ -40,7 +41,7 @@ Look up block details by name, IRI, or glob.
 Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { name: ["Button"] }.
 
 ```
-pragma block lookup <name...>
+pragma block lookup <name...> [options]
 ```
 
 **Arguments**
@@ -49,6 +50,12 @@ pragma block lookup <name...>
 | --- | --- | --- |
 | `<name...>` | yes | Block names, prefixed names/IRIs, or glob patterns. |
 
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--tier` | `<string>` | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
+
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `block_lookup` tool.
 
@@ -56,6 +63,7 @@ pragma block lookup <name...>
 
 ```bash
 pragma block lookup <name>
+pragma block lookup --tier all <name>  # every tier, not just the ones in scope
 ```
 
 ### pragma block sample
@@ -139,6 +147,7 @@ pragma concept list [options]
 | --- | --- | --- |
 | `--type` | `<string>` | Filter by concept type (e.g. Explanation, How-to guide). |
 | `--search` | `<string>` | Search in name and summary. |
+| `--tier` | `<string>` | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
@@ -159,7 +168,7 @@ Look up a concept's full documentation by name, IRI, or glob.
 Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Grid"] }.
 
 ```
-pragma concept lookup <name...>
+pragma concept lookup <name...> [options]
 ```
 
 **Arguments**
@@ -168,6 +177,12 @@ pragma concept lookup <name...>
 | --- | --- | --- |
 | `<name...>` | yes | Concept names, prefixed names/IRIs, or glob patterns. |
 
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--tier` | `<string>` | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
+
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `concept_lookup` tool.
 
@@ -175,6 +190,7 @@ pragma concept lookup <name...>
 
 ```bash
 pragma concept lookup <name>
+pragma concept lookup --tier all <name>  # every tier, not just the ones in scope
 ```
 
 ## config
@@ -608,6 +624,7 @@ pragma modifier list [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
+| `--tier` | `<string>` | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 
@@ -628,7 +645,7 @@ Look up modifier details by name, IRI, or glob.
 Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { name: ["importance"] }.
 
 ```
-pragma modifier lookup <name...>
+pragma modifier lookup <name...> [options]
 ```
 
 **Arguments**
@@ -637,6 +654,12 @@ pragma modifier lookup <name...>
 | --- | --- | --- |
 | `<name...>` | yes | Modifier names, prefixed names/IRIs, or glob patterns. |
 
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--tier` | `<string>` | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
+
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `modifier_lookup` tool.
 
@@ -644,6 +667,7 @@ pragma modifier lookup <name...>
 
 ```bash
 pragma modifier lookup <name>
+pragma modifier lookup --tier all <name>  # every tier, not just the ones in scope
 ```
 
 ### pragma modifier sample
@@ -1096,7 +1120,7 @@ pragma standard sample 3
 
 List all tiers in the design system ontology.
 
-List all tiers in the design-system ontology. Use when understanding the tier hierarchy before setting a tier filter. Example: tier_list {}.
+List all tiers in the design-system ontology. Use when picking the tier to read with: the `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself. Example: tier_list {}.
 
 ```
 pragma tier list [options]
