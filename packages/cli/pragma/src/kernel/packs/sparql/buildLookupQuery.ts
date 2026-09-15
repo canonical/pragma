@@ -49,7 +49,12 @@
  */
 
 import { activeExpands, activeFields } from "../disclosure.js";
-import type { PackExpand, PackLookup } from "../types.js";
+import {
+  type PackExpand,
+  type PackExpandField,
+  type PackLookup,
+  RESERVED_VARIABLE_PREFIX,
+} from "../types.js";
 import { escapeSparqlString, formatTerm } from "./escape.js";
 
 /**
@@ -524,27 +529,65 @@ export function buildLookupIrisQuery(lookup: PackLookup): string {
  *
  * Injection-safe: the only interpolated value is `entityUri`, the IRI the base
  * lookup already resolved from the store (never user input); the
- * relation/properties are validated pack terms. SPARQL expands are single-hop,
- * so every select entry here is a plain field.
+ * relation/properties, the ordering names and the entity's identity property
+ * are validated pack terms. SPARQL expands are single-hop, so every select
+ * entry here is a plain field.
+ *
+ * `lookup` is read for ONE thing — the entity's own identity property, which a
+ * `blankWhenSelf` field compares its value against. A lookup declaring no such
+ * field never binds it.
  */
 export function buildExpandQuery(
   expand: PackExpand,
   entityUri: string,
+  lookup?: Pick<PackLookup, "by">,
 ): string {
   const vars = expand.select.map((field) => `?${field.name}`).join(" ");
   const optionals = expand.select
     .map((field) =>
-      "property" in field
-        ? `  OPTIONAL { ?child ${formatTerm(field.property)} ?${field.name} . }`
-        : "",
+      "property" in field ? expandFieldClause(field, entityUri, lookup) : "",
     )
     .filter((line) => line !== "")
     .join("\n");
+  const order =
+    expand.orderBy && expand.orderBy.length > 0
+      ? `ORDER BY ${expand.orderBy.map((name) => `?${name}`).join(" ")}`
+      : "";
   return [
     `SELECT ${vars} WHERE {`,
     `  <${entityUri}> ${formatTerm(expand.relation)} ?child .`,
     optionals,
     "}",
+    order,
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
+/**
+ * The OPTIONAL clause reading one child field.
+ *
+ * A plain field is one line. A `blankWhenSelf` field binds the ENTITY's own
+ * identity value beside the child's and keeps the row only where the two
+ * differ — inside the OPTIONAL, so a match leaves the variable UNBOUND (the
+ * blank cell) rather than dropping the child row. Compared as strings, because
+ * the identity value is a literal and the cell may be read through a path that
+ * ends at one too.
+ */
+function expandFieldClause(
+  field: PackExpandField,
+  entityUri: string,
+  lookup?: Pick<PackLookup, "by">,
+): string {
+  const read = `?child ${formatTerm(field.property)} ?${field.name} .`;
+  if (!field.blankWhenSelf || !lookup) return `  OPTIONAL { ${read} }`;
+  const self = `?${RESERVED_VARIABLE_PREFIX}Self`;
+  return [
+    "  OPTIONAL {",
+    `    ${read}`,
+    `    <${entityUri}> ${formatTerm(lookup.by)} ${self} .`,
+    `    FILTER(STR(?${field.name}) != STR(${self}))`,
+    "  }",
   ].join("\n");
 }
 

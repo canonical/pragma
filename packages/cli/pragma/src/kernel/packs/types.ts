@@ -150,6 +150,22 @@ export interface PackExpandField {
   readonly label?: string;
   /** Explicit GraphQL field name (escape hatch). Ignored on the SPARQL path. */
   readonly graphqlField?: string;
+  /**
+   * Leave the cell BLANK when its value repeats the looked-up entity's own
+   * `by` value — for a relation an entity can point back at ITSELF along.
+   *
+   * The standing case is a block's token bindings: `ds:viaBlock` names the
+   * anatomy tree a binding was reached through, and the ontology defines it as
+   * present on every record and EQUAL to the block on the block's own tree. So
+   * a Button lookup printed "Button" in the via column of all 24 of its rows —
+   * a cell that is only ever news when it differs. Blank says "this block's
+   * own", which is the reading, and leaves the column carrying only the
+   * inherited trees.
+   *
+   * SPARQL lane only: the generated sub-SELECT can bind the entity's own name
+   * and filter against it, and a GraphQL document cannot.
+   */
+  readonly blankWhenSelf?: true;
 }
 
 /**
@@ -204,6 +220,72 @@ export interface PackExpand {
   readonly showWhenEmpty?: boolean;
   /** Minimum canonical disclosure level at which this expand is fetched. */
   readonly level?: string;
+  /**
+   * One sentence rendered under the section's heading, above the rows: how to
+   * READ them, when the columns do not say it themselves.
+   *
+   * The same seam a {@link PackSection} carries, for the same reason and
+   * through the same renderer field — a section's note was declarable only for
+   * a section whose body is one literal, and a TABLE can be the notation that
+   * needs reading just as much: a `rank` column is a position in a fallback
+   * chain, and nothing in the word "rank" says which chain or that first wins.
+   */
+  readonly note?: string;
+  /**
+   * Child field names to ORDER BY in the generated sub-SELECT, in order.
+   *
+   * Without one an expand's rows arrive in the store's own scan order, which
+   * SPARQL does not define and which no reader can predict. That is tolerable
+   * for a short list of names and wrong for a TABLE whose rows differ in one
+   * column: Button's 24 token bindings came back with `spacing.internal.inline.start`
+   * and `…end` adjacent, in no stated order, and a reader comparing two rows
+   * had no way to know whether the pair was two facts or one repeated.
+   *
+   * Names must be fields the `select` declares (the grammar refuses others),
+   * so the clause is composed only from validated identifiers. SPARQL lane
+   * only — a GraphQL connection's order is the schema's, not the story's.
+   */
+  readonly orderBy?: readonly string[];
+  /**
+   * Resolve THIS expand through the SPARQL lane even when the lookup is
+   * `source: "graphql"`.
+   *
+   * The lanes are not interchangeable, and a lookup is one or the other: the
+   * GraphQL lane can project a grandchild through a MULTI-valued relation
+   * (a nested expand), which the single-hop SPARQL sub-SELECT cannot, and the
+   * SPARQL lane can read property paths and any property the ontology defines,
+   * which the GraphQL lane cannot — a derived field name that the compiled
+   * schema does not carry drops out of the document in silence.
+   *
+   * The block lookup needs both at once, which is why this exists rather than
+   * a second lookup. Its modifier families are a nested expand and so must
+   * stay on the GraphQL lane; its token bindings must not, because
+   * `anatomy:styleKey` and `anatomy:styleState` — two of the six columns that
+   * IDENTIFY a binding — carry no `rdfs:domain`, so ke-graphql generates no
+   * field for them on `TokenBinding` and the two columns vanished without a
+   * word, leaving rows that differed only in a dropped column looking like
+   * duplicates.
+   *
+   * Only `"sparql"` is admissible: the SPARQL lane is every lookup's default,
+   * so an expand opting INTO GraphQL would be asking for a document the lookup
+   * never builds.
+   */
+  readonly source?: "sparql";
+}
+
+/**
+ * Which lane resolves one expand: its own declared {@link PackExpand.source},
+ * else the lookup's, else SPARQL.
+ *
+ * Read by BOTH lanes — the GraphQL document generator skips what it does not
+ * own, and the entity fetcher runs it — so the question is answered in one
+ * place rather than asked twice with two spellings.
+ */
+export function expandIsSparql(
+  lookup: Pick<PackLookup, "source">,
+  expand: Pick<PackExpand, "source">,
+): boolean {
+  return (expand.source ?? lookup.source ?? "sparql") === "sparql";
 }
 
 /**
