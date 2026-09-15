@@ -17,6 +17,10 @@
 #   status row      DOM `ds data-table-row status`
 #   status cell     DOM `ds data-table-body-cell status`, `data-status="<status>"`
 #   gap             DOM `ds data-table-gap`, hidden from assistive technology
+#   settings cell   design "settings action cell"
+#                   DOM `ds data-table-header-cell settings`
+#   announcement    DOM `ds data-table-announcement`, beside the root, read
+#                   and not drawn
 # The selection and status cells share the body cell's class for its shared
 # box, but they are role nodes here, not BodyCells: the table's `selectable`
 # prop and its outcome choose them, never a column.
@@ -44,7 +48,15 @@
 #                       live region; a settled outcome — failed, stale,
 #                       refresh-failed, no-data, no-results — wraps its text
 #                       in `role=status`, a passing state is silent.
-#   settings cell       "ContextualMenu trigger/items", when the part ships
+#   settings cell       "DataViews.Settings" (1.3.1, 2.1.1, 2.4.3, 2.5.7,
+#                       4.1.2-4.1.3): present only when the table is given
+#                       `DataViews.Settings` as its `settings`; the settings
+#                       menu's own file states its contract
+#   announcement        "DataViews.Settings"
+#                       (4.1.3): one polite live region, after the body,
+#                       saying what a change to the columns did — hidden,
+#                       shown or moved with its new position, always shown,
+#                       reset — which has no place on screen to be read from
 #   virtualized body    "DataTable virtualized rows" (1.3.1, 2.1.1, 2.4.3,
 #                       4.1.2): the root reports `aria-rowcount` and every
 #                       mounted row its `aria-rowindex` in logical order, the
@@ -68,7 +80,18 @@
 #     vocabulary.
 #   - Row tracks come from `--data-table-columns`, the solver's per-render
 #     publication — component-local geometry no stylesheet can know. The
-#     selection track precedes it and is the stylesheet's own.
+#     selection track precedes it and the settings track follows it, both
+#     the stylesheet's own and both present only when the header holds
+#     their cell; every body row keeps the settings track, empty.
+#   - The selection and settings cells are drawn as header cells, sharing
+#     the header cell's box, with `ds data-table-header-cell selection` and
+#     `ds data-table-header-cell settings` rather than a class named for the
+#     part that renders each: a recorded deviation from the code standards'
+#     kebab-case class names, so both cells take the header row's rules.
+#   - The announcement is hidden by clipping, unthemable geometry, and is
+#     rendered beside the root rather than inside it, since a table's
+#     children are its row groups: the DSL has no node for a region read and
+#     never drawn, nor for one outside the root it describes.
 #   - A selected row under the pointer takes
 #     `color/foreground/secondary/information/hover`; compound states
 #     (`@selected@hover`) are reserved, not permitted, in 0.3.0.
@@ -159,6 +182,13 @@ node:
                     cardinality: "1..*"
                 - node:
                     role: settings cell
+                    styles:
+                      layout.type: stack
+                      layout.align: center
+                      layout.justify: center
+                      layout.overflow: visible
+                      size.width: dimension/400
+                      spacing.internal.inline: 0
                     edges:
                       - uri: apps.subcomponent.data_table-settings_menu
                         relation:
@@ -224,5 +254,9 @@ node:
               role: gap
             relation:
               cardinality: "0..*"
+      relation:
+        cardinality: "1"
+    - node:
+        role: announcement
       relation:
         cardinality: "1"
