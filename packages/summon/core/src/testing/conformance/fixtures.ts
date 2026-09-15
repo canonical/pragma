@@ -58,7 +58,7 @@ export const CONFORMANCE_FIXTURES: readonly ConformanceFixture[] = [
       name: "@canonical/my-lib",
       type: "library",
       description: "A library.",
-      withReact: false,
+      framework: "none",
       withStorybook: false,
       withCli: false,
       withPrTemplate: false,

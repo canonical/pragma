@@ -1,0 +1,13 @@
+import { describe, expect, it } from "vitest";
+import { render } from "vitest-browser-svelte";
+import Component from "./Example.svelte";
+
+describe("Example component", () => {
+  it("renders the default greeting", async () => {
+    const page = render(Component);
+
+    await expect
+      .element(page.getByText("Hello from <%= shortName %>"))
+      .toBeInTheDocument();
+  });
+});
