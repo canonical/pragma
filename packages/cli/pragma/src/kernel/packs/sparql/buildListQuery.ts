@@ -1,6 +1,6 @@
 /**
- * Compile a list story's declared filters, its search term and one page's
- * bounds into the SPARQL the store actually runs.
+ * Compile a list story's declared filters, its search term, its tier scope and
+ * one page's bounds into the SPARQL the store actually runs.
  *
  * WHY IN THE QUERY. Filters used to be predicates over the rows a query had
  * already returned. That was injection-safe and order-preserving — the two
@@ -11,6 +11,12 @@
  * story declared a cap and the kernel had none to declare; the moment one
  * exists, every declared filter starts deciding over a truncated population.
  * Pagination is that cap, so the two move together and they move inward.
+ *
+ * The TIER SCOPE is here for that reason and not by analogy: it narrows the
+ * 252-row `block list` under a 300-row page today, so a page that started
+ * truncating would decide the default scope by where the window fell. It is the
+ * one clause that constrains the ENTITY rather than a projected cell — see
+ * {@link ListTierScope}.
  *
  * ONE SHAPE, ALWAYS. The author query becomes a sub-select inside a wrapping
  * SELECT that carries the predicates and the page bounds — whether or not there
