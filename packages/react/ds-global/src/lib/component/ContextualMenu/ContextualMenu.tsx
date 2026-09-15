@@ -29,6 +29,7 @@ const ContextualMenu = ({
   items,
   label,
   className,
+  surfaceClassName,
   preferredDirections,
   distance,
   gutter,
@@ -144,6 +145,7 @@ const ContextualMenu = ({
         "contextual-menu__surface",
         "modal",
         bestPosition?.positionName,
+        surfaceClassName,
       ]
         .filter(Boolean)
         .join(" ")}
