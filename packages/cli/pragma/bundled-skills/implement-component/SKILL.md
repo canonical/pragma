@@ -126,19 +126,29 @@ Then, and only then, the breakdown.
 1. **Read the spec.**
    - Documented block: `pragma block lookup <Name>` — anatomy, modifiers, properties in
      one read (MCP: block_lookup); `pragma graph inspect <uri>` for the full triple view.
-     A bare name can match blocks in several tiers, and `block lookup` silently picks
-     one — it resolves `ds:name` globally and cannot be steered to a tier. Take the
-     picked block's tier from the lookup's own `- Tier:` line, and check for other
-     tiers carrying the name with the name query below, then address the tier you
-     want by its IRI.
+     A bare name resolves `ds:name` globally, so where several tiers carry the name
+     the lookup answers with EVERY one of them — the full writeups concatenated, each
+     under its own `## <Name>` heading with its own `- Tier:` line. They are different
+     blocks, separately authored, not repeats of one: the global Badge and the
+     launchpad Badge have different summaries, properties and anatomies. So the read is
+     not "confirm the tier it picked" but "count the headings and pick": scroll the
+     whole answer, read every `- Tier:` line, and decide which block you are
+     implementing. Stopping at the first heading is how a reader silently implements
+     another tier's component.
+
+     To skip the disambiguation, address one block directly by its `ds:` IRI, which
+     `block lookup` accepts:
 
      ```bash
+     pragma block lookup ds:global.component.badge   # exactly one block
      pragma graph query "SELECT ?b WHERE { ?b ds:name ?n . FILTER(LCASE(?n) = LCASE('<Name>')) }"   # every tier carrying the name
      ```
 
-     If the lookup picked the wrong tier's block, read the one you want with
-     `pragma graph inspect <IRI from that row>` instead — step 2 derives the package
-     from the tier of the block confirmed HERE.
+     The bare dotted name is NOT a key: `block list` prints
+     `ds:apps_lxd.component.meter`, and pasting that row's name without its `ds:`
+     prefix comes back `ENTITY_NOT_FOUND`. Keep the prefix, or use the display name.
+     Step 2 derives the package from the tier of the block confirmed HERE, so make
+     that choice explicit before moving on.
 
      **Check the entry is a spec before building on it — whatever class it is.**
      A row resolving is not the same as a block being documented: many entries
@@ -175,18 +185,37 @@ Then, and only then, the breakdown.
      The inspect renders `ds:hasProperty` only as opaque blank-node labels; for the
      property content use the lookup's Properties section — only when the lookup
      resolved the block you want — or bind the property query to the block confirmed
-     above. (A `block list` row prints the `ds:` form — `graph inspect` takes it
-     as-is, but a SPARQL body needs the full IRI: join `https://ds.canonical.com/`
-     with the row's dotted name, e.g. for the global Button,
-     `<https://ds.canonical.com/global.component.button>`; the name query above
-     prints that full form directly. The bracketed prefixed form `<ds:…>` silently
-     returns an EMPTY table, not an error.)
+     above. (A `block list` row prints the `ds:` form, and both `graph inspect` and a
+     SPARQL body take it as-is — a prefixed name carrying dots parses. The full IRI
+     (`<https://ds.canonical.com/global.component.button>`) is accepted too, and is
+     what `graph query` prints back. What does NOT work is the bracketed prefixed
+     form `<ds:…>`: it silently returns an EMPTY table, not an error.)
 
      ```bash
-     pragma graph query "SELECT ?p ?v WHERE { <https://ds.canonical.com/<dotted name from that row>> ds:hasProperty ?x . ?x ?p ?v }"
+     pragma graph query "SELECT ?p ?v WHERE { ds:global.component.button ds:hasProperty ?x . ?x ?p ?v }"
      ```
    - New block: the `specs/…` file its specify flow produced.
-2. **Confirm the target package and tier.** The spec names its tier; `pragma tier list`
+2. **Check whether it is already implemented, before scaffolding anything.** The graph
+   records implementations, and a block that already has one is not a scaffolding job:
+
+   ```bash
+   pragma implementation list --search <Name>   # which library implements it, on which platform, and the source file
+   ```
+
+   A row names the library, the platform and a link to the head of the source. Read
+   what it points at before deciding: an implementation on the target platform means
+   the work is an EXTENSION of that file, not a new component next to it — and running
+   `pragma create` anyway leaves two components for one block. An implementation on
+   another platform (a react one when the target is svelte) is still the reference to
+   read for API and structure. Only when the search returns nothing for the target
+   platform is a fresh scaffold the right move. Search by display name: a match on the
+   block name also surfaces the groups built from it, so read the block name on each
+   row rather than taking the first.
+
+   If a same-platform implementation exists and the request was to build a new one,
+   that is a decision to raise with the person, not to resolve by scaffolding.
+
+3. **Confirm the target package and tier.** The spec names its tier; `pragma tier list`
    shows what exists. Where a package exists for the tier, its name follows a
    convention — the graph carries no package field: `@canonical/<framework>-ds-global`
    for the `global` tier, `@canonical/<framework>-ds-app` for the shared `apps` tier,
@@ -197,7 +226,7 @@ Then, and only then, the breakdown.
    resolves in the workspace before installing or scaffolding into it. Tiers outside
    `global`/`apps*` have no package convention today: there the target package is a
    decision to raise, not to derive.
-3. **Pull the applicable standards NOW.**
+4. **Pull the applicable standards NOW.**
 
    ```bash
    pragma standard categories                 # what categories exist today
@@ -243,11 +272,22 @@ Then, and only then, the breakdown.
    pragma graph query "SELECT ?s ?kind ?caption ?code WHERE { ?s cs:hasCategory <http://pragma.canonical.com/codestandards#testing.coverage> . { ?s cs:do ?x . BIND('do' AS ?kind) } UNION { ?s cs:dont ?x . BIND('dont' AS ?kind) } ?x cs:description ?caption . OPTIONAL { ?x cs:code ?code } }"
    ```
 
-   (Inside a SPARQL body a local name with more than one dot does not parse; a
-   single dot — `cs:testing.unit` — is fine.) `pragma standard lookup <name>` and
-   `pragma standard sample` resolve only the standards that carry a `cs:name`
-   title — today only a few do — so for the rest the graph query above is the read
-   path. (MCP: standard_categories / standard_list / graph_query / graph_inspect.)
+   Prefixed names with dots parse inside a SPARQL body, so `cs:testing.coverage` and
+   `cs:react.component.barrel_exports` can be written in place of the full `<…>` form
+   and answer identically. The full form is never wrong, and is what `graph query`
+   prints back.
+
+   **`pragma standard lookup <id>` is not the read path for most standards, so do not
+   start there.** It resolves only the standards carrying a `cs:name` title — today a
+   few do — and an id taken straight out of `standard list`'s own output
+   (`css.selectors.namespace`) comes back `ENTITY_NOT_FOUND` with the standard's title
+   offered as a "suggestion", which reads like a typo rather than like the tool
+   answering a different question. The reliable pair is the two reads above:
+   `pragma standard list --category <c>` for what exists, and the Do/Don't graph query
+   for the pairs. `pragma standard sample` has the same title-only limit. Treat a
+   `lookup` miss as saying nothing about whether the standard exists — the category
+   listing is what says that. (MCP: standard_categories / standard_list / graph_query /
+   graph_inspect.)
 
 ## Scaffold
 
@@ -258,7 +298,7 @@ pragma create component react src/components/Button
 - The framework is a tree segment — `pragma create component <framework> <path>` with
   `react`, `svelte`, or `lit` as the segment; the path's final segment is the
   PascalCase component name.
-- Run it from inside the target package confirmed in pre-flight step 2 — the path is
+- Run it from inside the target package confirmed in pre-flight step 3 — the path is
   package-relative (in the ds packages, components live at `src/lib/component/<Name>`,
   so the path there is `src/lib/component/Button`, not the generic example above).
 - Plan-first: preview with `--dry-run`, apply non-interactively with `--yes`, reverse
@@ -293,6 +333,135 @@ standards either way; when no pairs exist, work from those standards' descriptio
 
 A standard you disagree with is feedback for the standards repo, not a license to
 deviate silently.
+
+### The variable to write, and what it stands for
+
+The stylesheet is where the component meets the tokens, and the seam is queryable — so
+no custom property goes into a stylesheet on a guess. What the reads below cannot do is
+guarantee an answer: a symbol the anatomy names may have no counterpart in the live
+token graph, and that is a finding to raise, not a blank to fill. The rule that follows
+from it is the one to carry through this whole section: a name that does not resolve
+stops the work on that declaration; it never licenses a value.
+
+Six reads, each answering one question:
+
+```bash
+pragma block lookup Button                        # the anatomy the implementation owes: its nodes, keys and symbols
+pragma token list --search radius                 # which symbols exist around a word, when the exact name is unknown
+pragma token lookup color.text                    # one symbol: its type, description and every definition behind it
+pragma token values --symbol modifier.color.text  # what it resolves to at each position
+pragma variable lookup color-text                 # which CSS variable, declared where, emitting what
+pragma variable chain --variable color-text       # what that variable finally reaches
+```
+
+**`block lookup`** carries the `### Anatomy (DSL)` section — the structure and the
+style bindings the implementation owes. Read it as the contract, but read it with one
+caveat: the anatomies are being rewritten by hand and written back to the document, and
+until a block's rewrite has landed and the pack has been rebuilt, that section still
+answers with the retired notation (slash paths like `color/text/muted`, `stack`,
+`flow`, and `sth` placeholders). A slash path there is not a symbol to look up — the
+dotted name is, and `anatomy-author` carries the notation in full. The section that
+will list a block's token bindings directly arrives with those bindings; it is not in
+the lookup's output yet.
+
+Swapping the slashes for dots is a spelling change, and it is only the first thing to
+try. It succeeds where the symbol kept its name and fails where the taxonomy moved
+under it, and those two failures look identical at the prompt — both are
+`ENTITY_NOT_FOUND`. So a miss on the dotted name is not the end of the read; it is the
+start of a search:
+
+```bash
+pragma token list --search radius            # the family, under whatever name it has now
+pragma token list --type dimension --limit 1000
+```
+
+Three outcomes, and they are different findings. The search turns up the same decision
+under a new name — use it, and say in the PR that the anatomy still carries the old
+one. The search turns up a family that was restructured rather than renamed, so the
+decision the anatomy named no longer exists in that shape — that is a design question
+for the token owners, and it belongs in the PR as one. Or the search turns up nothing
+at all — also a finding, and the same answer: raise it. In none of the three do you
+pick a near-miss symbol or write a raw value, because a token-typed property in the
+anatomy is a design decision already made, and `cs:css.properties.values` — pulled in
+pre-flight — bans a raw value in exactly that place. A blocked declaration named in the
+PR is a better outcome than a stylesheet that resolves and is wrong.
+
+**`token list`** is the search read, and it needs its filters to be trusted. It pages
+at 300 rows sorted by name, so the first page of a bare `pragma token list` is colour
+tokens and nothing else — every dimension, number, fontWeight and typography symbol is
+off it. The output says so, in a heading that ends "and more exist" and a closing line
+offering an `--after` cursor, but a bare list piped into `grep` swallows both and reads
+as a system-wide absence. Never conclude "the graph has no such token" from an
+unnarrowed list. Narrow instead: `--search <word>` over name and description,
+`--type <type>` for one type's population, `--channel-of <symbol>` for the channels
+provisioning one symbol (it takes a SYMBOL, not a family name — a family there is an
+`INVALID_INPUT` error that lists what it would accept), and `--limit` raised past 300
+when a full population is what you actually want.
+
+**`token lookup <symbol>`** answers with the symbol's `- Type:` and `- Description:`, a
+`### Definitions` list naming the file each definition comes from, a `### Covered by`
+list of the modifier families that may rebind it, and a `### Values` list. That is what
+tells you whether the symbol you are about to consume is the right one — the
+description is written for exactly this decision. It does not tell you which STYLE KEY
+the symbol is legal on: each key admits symbols from its own namespaces, and neither
+`token lookup` nor `token list` knows about that rule. A symbol that resolves here can
+still be the wrong symbol for the property you are writing — `anatomy-author` carries
+the per-key namespaces, and `anatomies validate --authored` is what enforces them.
+
+**`token values --symbol <symbol>`** is one row per position. For a channel it shows
+the routing: `modifier.color.text | criticality.error | color.text.error` says that
+under `.error`, reading the channel gets you the error text colour. For a flat symbol
+it shows the resolved value per coordinate, `mode.dark` included.
+
+**`variable lookup <name>`** takes the custom property WITHOUT its leading dashes and
+is the read that tells you what to write in CSS. It answers with the `- Symbol:` the
+variable stands for, its `- Tier:` and `- Visibility:`, and a `### Declarations` list:
+one row per declaration, each naming the `selector` it is declared under, the
+`inAtRule` cascade layer, what it `emits`, and the `file:line` it is declared at. A
+`- Visibility: dt:visibility.internal` variable is not a component's to read directly
+— `modifier-color-text` is internal, and a component reads it only as the head of the
+chain the anatomy gives it.
+
+The verb has THREE outcomes, and the third is the one that catches people out:
+
+1. **It resolves and carries a `- Symbol:` line.** The variable stands for that symbol.
+   This is the ordinary case, and the symbol is what you check against the anatomy.
+2. **It resolves and carries NO `- Symbol:` line at all.** The variable is a derived
+   one — a state product or a delta, autogenerated rather than authored — and it stands
+   for no symbol. `hover--color-foreground-secondary` is one: it resolves, its `emits`
+   is an `oklch(from …)` expression, and there is no symbol behind it. Do not read the
+   missing line as a failed lookup, and do not treat the variable as a token. Ask what
+   it reaches instead:
+
+   ```bash
+   pragma variable chain --variable hover--color-foreground-secondary
+   ```
+
+3. **`ENTITY_NOT_FOUND`.** The graph has never heard of the name.
+
+That third outcome does NOT mean "yours to invent". It means one of two things, and
+which one depends on the anatomy. For a property the anatomy never mentions —
+`button-gap`, `icon-size`, a local alias the stylesheet declares for its own
+convenience — it is genuinely component-local: yours to declare, standing for no token,
+and that is the end of it. But for a token-typed property the anatomy DOES name, an
+unresolved name is a gap between the anatomy and the token graph: either the anatomy is
+still in the retired notation, and the rewrite has not landed for that block yet, or
+the token was retired. Neither is a licence to write a value. Stop that declaration and
+raise it, by the rule three paragraphs up.
+
+So the question to ask of every `ENTITY_NOT_FOUND` is not "is it in the graph" but
+"does the anatomy name it". The anatomy names it: raise it. The anatomy is silent:
+declare it locally.
+
+**`variable chain --variable <name>`** is the transitive walk — every
+`variable | variable | symbol` triple the variable reaches through what its
+declarations reference. Use it when `lookup`'s `emits` is another `var()` and you need
+to know where the indirection ends: `color-text` reaches `color.palette.black` and
+`color.palette.white`, which is `light-dark()` spelled out.
+
+The same reads are MCP tools — `block_lookup`, `token_list`, `token_lookup`,
+`token_values`, `variable_lookup`, `variable_chain` — taking the same arguments.
+`pragma capabilities` prints the current catalog, which grows between releases.
 
 ## Post-flight
 

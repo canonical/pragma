@@ -146,17 +146,25 @@ Start with a broad inventory, then drill into specific concerns:
 pragma block list      # every component, pattern, layout and subcomponent, with type and tier
 pragma modifier list   # every modifier family with its values
 pragma tier list       # the tiers blocks can live in
+pragma token list      # the design-token symbols, by their dotted names
+pragma variable list   # the CSS custom properties those symbols are emitted as
 pragma graph query "…" # the audit queries below
 pragma graph inspect <IRI-or-ds:name>  # every triple on one entity
+pragma sources status  # which pack is answering, and how many entities it holds
 ```
+
+Run `sources status` before the first query and record what it says in the report's
+scope line. Every count in an audit is a count from one pack at one version; a finding
+that does not say which pack answered cannot be compared against the next audit.
 
 Two graph-query mechanics to know (shared with the sibling skills):
 
-- Common prefixes (`ds:`, `cs:`) are applied automatically — no PREFIX preamble.
-- Inside a SPARQL body, a local name with more than one dot
-  (`ds:global.component.button`) does not parse — use the full IRI there
-  (`<https://ds.canonical.com/global.component.button>`). Single-dot and dot-free
-  prefixed names (`ds:global`, `ds:Component`) work as-is.
+- Common prefixes (`ds:`, `cs:`, `dt:`) are applied automatically — no PREFIX preamble.
+- A prefixed name carrying dots or slashes parses inside a SPARQL body, so write the
+  name the graph prints: `ds:global.component.button` and
+  `dt:s4/web/cond/layer-ds-modifiers/root` both resolve. The full IRI
+  (`<https://ds.canonical.com/global.component.button>`) is accepted too and answers
+  identically — reach for it only when the namespace has no declared prefix.
 
 Note that `block list` deliberately omits the `ds:Group` class — an audit that counts
 only the list under-counts. The queries below go to the graph directly, so they see
@@ -166,10 +174,21 @@ groups too.
 > output (counts, names, ratios) into documentation, PRs, or this skill.
 
 One more live-data rule: before trusting any query, confirm its predicates against the
-current ontology (`pragma ontology lookup ds`). The vocabulary evolves — for example,
-`ds:usage` subsumed the former `whenToUse`/`whenNotToUse` predicates, and queries
-against retired names return empty tables, not errors. An empty result must be
-distinguished from a wrong query before it becomes a finding.
+current ontology. The properties are a section of their own and the flag asks for it —
+`pragma ontology lookup ds` alone prints the classes:
+
+```bash
+pragma ontology lookup ds --properties   # ds: predicates: usage, summary, hasModifierFamily, …
+pragma ontology lookup dt --properties   # dt: predicates: covers, channelOf, …
+```
+
+Both namespaces matter, and they split along a line worth knowing: the block-side
+predicates live in `ds:`, and the token-side ones — `dt:covers`, `dt:channelOf` — live
+in `dt:`, so a token audit that only checks `ds:` never finds the predicate it needs.
+The vocabulary evolves — for example, `ds:usage` subsumed the former
+`whenToUse`/`whenNotToUse` predicates, and queries against retired names return empty
+tables, not errors. An empty result must be distinguished from a wrong query before it
+becomes a finding.
 
 ## Audit Dimensions
 
@@ -197,6 +216,84 @@ apply even where the audited app has no pragma dependency. Findings cut both way
 where the team's practice is right and the standard is not, the finding becomes a
 proposed change to the standard — the standards are open to contribution, and audits
 are where their gaps surface.
+
+### 6. Token Audit
+Which symbols exist, which families rebind them, and which blocks consume them?
+
+The token graph is queryable, and a coverage question about tokens is answered there
+rather than by reading stylesheets. The inventory reads first:
+
+```bash
+pragma token list --search focus          # which symbols exist around a word
+pragma token list --type color            # the population of one type
+pragma token list --channel-of color.text # the channels that provision one symbol
+pragma token consumers --symbol color.text   # which blocks consume a symbol, at which key and state
+```
+
+**`token list`** is the inventory. `--search <word>` matches name and description
+(`--search focus` answers `## Token (7)`, the focus-ring family and its channel);
+`--type <type>` filters by the symbol's own type; and `--limit` defaults to 300, so a
+count is a PAGE until the output says otherwise. It says so plainly — "Showing 300
+token entries, and more exist", with an `--after` cursor — so never read a count of
+300 as a population; raise `--limit` and read the real one (`--type color` is 473,
+not the 300 the default shows). `--channel-of` takes a SYMBOL, not a family name:
+`--channel-of color.text` answers with `modifier.color.text` and
+`surface.color.text`, the two channels that provision it. A family name there is an `INVALID_INPUT` error that lists the symbols
+it would accept.
+
+**A symbol's coverage — which families may rebind it — is `token lookup`'s
+`### Covered by` section**, not `modifier lookup`'s. `pragma modifier lookup
+Criticality` answers with the family's `### Values` (Error, Information, Success,
+Warning) and is the read for what a family offers; `pragma token lookup color.text`
+answers with the families that reach it. Audit from both ends: a family with values
+nothing covers, and a symbol no family covers, are different findings.
+
+The family end has no verb of its own — the predicate is `dt:covers`, and the query
+below is the read (the Family Coverage query under Key Queries lists it per family):
+
+```bash
+pragma graph query "SELECT ?symbol WHERE { ds:global.modifier_family.criticality dt:covers ?symbol }"
+```
+
+`modifier lookup` renders the family's values and nothing else, so the family's OWN
+documentation fields never appear in it — a family with a blank `ds:summary` looks
+identical to a documented one. For a quality finding about the family itself, inspect
+it: `pragma graph inspect ds:global.modifier_family.criticality`. This is the
+present-but-blank trap again, one level up from the blocks.
+
+`pragma variable lookup modifier-color-text` is the third view of the same fact, and
+the most concrete one: one declaration row per modifier, each naming the selector, the
+cascade layer, what it emits and the `file:line` — seventeen rows for that channel,
+which is the family coverage as the stylesheet actually implements it.
+
+**`token consumers` answers empty today, and that is a real finding, not a broken
+command.** No pack records which block consumes which symbol so far: the bindings come
+from the anatomies, the anatomies are being rewritten by hand, and the rows appear
+once the authored anatomies are applied to the document and the pack is bumped. Until
+then, do not report "no block consumes this symbol" as a coverage gap — the honest
+finding is that consumption is not yet measurable, and `anatomy-author` is where the
+work that makes it measurable happens.
+
+Read the empty answer carefully, because under a `--symbol` filter it is ambiguous by
+construction: it means either that nobody consumes THAT symbol, or that the store holds
+no bindings at all. The filtered message does not distinguish them, and its wording is
+in flux — do not learn it by heart. Run the verb unfiltered to tell them apart:
+
+```bash
+pragma token consumers                       # the store-wide answer: are there any bindings at all?
+pragma token consumers --symbol color.text   # then the one symbol
+```
+
+An unfiltered zero settles it — the store has no bindings, so no per-symbol result can
+mean anything yet. Only once the unfiltered read returns rows does a filtered zero
+become a statement about that symbol. A symbol name the store does not know is a
+different outcome again: `INVALID_INPUT`, with the accepted symbols listed, and it
+exits non-zero.
+
+The same reads are available as MCP tools — `token_list`, `token_lookup`,
+`token_consumers`, `variable_lookup`, `variable_chain`, `token_values` among them. Take
+the current list from `pragma capabilities` rather than from this paragraph: the
+catalog grows between releases.
 
 ## Key Queries
 
@@ -300,6 +397,23 @@ ORDER BY DESC(?usage)"
 
 **What it asks**: which families are core and which are unused. A zero-usage family is
 a question — premature abstraction, or adoption that has not landed yet?
+
+### Consistency: Family Coverage — how many symbols each family rebinds
+
+```bash
+pragma graph query "SELECT ?familyName (COUNT(?symbol) as ?symbols) WHERE {
+  ?family a ds:ModifierFamily ;
+          ds:name ?familyName .
+  OPTIONAL { ?family dt:covers ?symbol }
+} GROUP BY ?familyName
+ORDER BY DESC(?symbols)"
+```
+
+**What it asks**: the family end of the token audit — which families actually rebind
+symbols, and which declare values that reach no symbol at all. Keep the `OPTIONAL` as
+written: without it a family covering nothing drops out of the table, and those zero
+rows are the finding. Pair this with the per-component usage count above — a family can
+be widely covered in the token graph and carried by almost no component, or the reverse.
 
 ### Consistency: Components Without Modifier Families
 
@@ -433,6 +547,16 @@ they MEAN is judged against the team's intent:
   "looks" off) and label them differently in the report.
 - Follow up drill-downs with `pragma graph inspect <IRI>` on the specific blocks a
   query surfaced, and `pragma block lookup <Name>` for the human-readable view.
+- `block lookup` takes a DISPLAY name, a `ds:`-prefixed IRI, or a glob — not the bare
+  dotted name. A `block list` row prints `ds:apps_lxd.component.meter`; paste it with
+  the prefix and it resolves, drop the prefix and it is `ENTITY_NOT_FOUND`.
+- A display name shared across tiers answers with EVERY tier's block, concatenated —
+  one `## <Name>` heading and one `- Tier:` line each, and they are DIFFERENT blocks,
+  independently authored, not repeats of one. `pragma block lookup Badge` returns the
+  global, launchpad and portal Badges in a single answer. Read the `- Tier:` lines,
+  count the headings, and pick; an audit that reads only the first heading silently
+  scopes itself to one tier. To go straight to one, use its `ds:` IRI
+  (`pragma block lookup ds:global.component.badge`).
 
 ## Limitations
 

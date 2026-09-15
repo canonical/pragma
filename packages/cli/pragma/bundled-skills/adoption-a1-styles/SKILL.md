@@ -119,6 +119,30 @@ tokens. Two things come with it:
   fight specificity.
 - `color-scheme: light dark` on `:root` — the foundation is theme-aware out of the box.
 
+## Which variable to write
+
+The foundation's tokens arrive as CSS custom properties, and which one to write is a
+query rather than a guess:
+
+```bash
+pragma variable list --search background     # the variables around a word, with the symbol each stands for
+pragma variable lookup color-background      # one variable in full
+```
+
+`variable list` prints one row per variable — its name, the symbol it stands for, its
+tier, its visibility, its platform — and pages at `--limit` (the footer says when more
+exist). Filter to what an app may read with `--visibility public`: a variable marked
+`internal` is the design system's own plumbing, not an app's to reference.
+
+`variable lookup` takes the name WITHOUT its leading dashes and answers with the
+`- Symbol:` behind it and a `### Declarations` list — one row per declaration, each
+naming the `selector`, the `inAtRule` cascade layer, what it `emits` and the
+`file:line`. The layer in that row is the one the install's `@layer` order above is
+about, so a variable that is not doing what you expect is usually a layer question
+with a visible answer. A name the graph does not know comes back `ENTITY_NOT_FOUND`,
+which is what an app-local property looks like. (MCP: `variable_list`,
+`variable_lookup`.)
+
 ## Code standards are the gate
 
 Styling work in this track falls under the live code standards — the `styling`, `css`,
