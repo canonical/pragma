@@ -6,13 +6,19 @@
  * `lookup` both compile from the declared story, so parity is asserted directly
  * against the graph. Two halves:
  *
- * - `block list` — the UNFILTERED list. Every block in the store, whatever the
- *   tier or channel, including the UNTIERED subcomponent the old hand-written
- *   query's required `ds:tier` join dropped (A2, formerly reachable only under
- *   `--all-tiers`). The row shape the hand-written verb built in TypeScript —
- *   the name fallback, the lowercased type, the tier's local name — is now
- *   derived IN SPARQL by `BIND`/`COALESCE`, and this file is what holds those
- *   BINDs to the shapes the old `blockList.verb.ts` produced.
+ * - `block list` — the TIER-SCOPED list. Every block the scope admits,
+ *   whatever its channel, including the UNTIERED subcomponent the old
+ *   hand-written query's required `ds:tier` join dropped (A2, formerly
+ *   reachable only under `--all-tiers`) — an entity the scope cannot place is
+ *   not one it may hide, so no scope drops it either. This fixture declares one
+ *   tier, `global`, so the scope admits everything in it and the row-shape
+ *   cases below read what they always read; what the scope decides is asserted
+ *   in `kernel/packs/tierScope.test.ts` and, over the shipped pack's fifteen
+ *   tiers, in `block.tierRank.exec.test.ts`. The row shape the hand-written
+ *   verb built in TypeScript — the name fallback, the lowercased type, the
+ *   tier's local name — is now derived IN SPARQL by `BIND`/`COALESCE`, and this
+ *   file is what holds those BINDs to the shapes the old `blockList.verb.ts`
+ *   produced.
  * - `block lookup` — unchanged GraphQL content parity, moved here from the
  *   deleted `capabilities/block/parity.test.ts`. Button and Modal resolve with
  *   the same content a direct SPARQL oracle returns (summary, guidance,
@@ -66,7 +72,7 @@ async function lookup(name: string): Promise<Record<string, unknown>> {
   return out.results.at(0) as Record<string, unknown>;
 }
 
-describe("block list parity — the declared, unfiltered list", () => {
+describe("block list parity — the declared, tier-scoped list", () => {
   it("lists EVERY block, including the untiered subcomponent (A2)", async () => {
     // `ds:button.icon` is a `ds:Subcomponent` with NO `ds:tier`. The
     // hand-written query inner-joined `?c ds:tier ?t` in its default view and

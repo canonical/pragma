@@ -168,10 +168,12 @@ describe("default-pack journey — sources update, build, boot (E1)", () => {
       expect(outcome.exitCode).toBe(0);
       expect(readActivePack(cwd)).toMatch(/^[0-9a-f]{64}$/);
       // A SEPARATE, fresh runtime boots the just-built pack from the pointer and
-      // answers a read over it. Since L-OPEN-9 the list is unfiltered, so the
-      // cold-boot read returns the pack's WHOLE block set — the beta-gated Beta
-      // Badge and the untiered Orphan Widget included. That makes this the
-      // strictest form of the assert (an exact set, not a tolerant subset).
+      // answers a read over it. The cold-boot read returns the pack's WHOLE
+      // block set — the beta-gated Beta Badge (no channel filters) and the
+      // untiered Orphan Widget (no scope hides an entity it cannot place)
+      // included, and every tier this fixture declares is top-level, so the
+      // tier scope admits the rest. That makes this the strictest form of the
+      // assert (an exact set, not a tolerant subset).
       expect(await blockListNames(cwd)).toEqual([
         "Beta Badge",
         "Button",

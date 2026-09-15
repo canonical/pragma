@@ -104,9 +104,10 @@ describe("MCP lifecycle — cold store recovers after sources_update (E2, C1)", 
     const names = (warm.data as { name: string }[])
       .map((row) => row.name)
       .sort();
-    // The whole pack — `block_list` is the declared, unfiltered list since
-    // L-OPEN-9, so no channel hides Beta Badge and no tier join hides the
-    // untiered Orphan Widget.
+    // The whole pack: no channel hides Beta Badge, no tier join hides the
+    // untiered Orphan Widget, and the tier scope admits the rest because every
+    // tier this fixture declares is top-level. Add a nested one upstream and
+    // this set becomes the default scope's, not the pack's.
     expect(names).toEqual(["Beta Badge", "Button", "Card", "Orphan Widget"]);
   });
 });
