@@ -43,8 +43,8 @@ const isActivationKey = (event: KeyboardEvent<HTMLButtonElement>): boolean =>
  * controls that affect how the entire column behaves.
  *
  * That is the design system's description of the block. What this
- * implementation covers: sorting and resizing, with no reordering or
- * pinning yet.
+ * implementation covers: sorting and resizing, and hiding and moving the
+ * column from its menu; no drag reordering and no pinning.
  *
  * A sortable header is a real link to the next ordering until scripts take
  * over, and a button after: activating it sorts by this column alone,
@@ -57,7 +57,9 @@ const isActivationKey = (event: KeyboardEvent<HTMLButtonElement>): boolean =>
  * carries `aria-sort`. An activation the source refuses changes nothing
  * and says why, politely. Once scripts run, a menu beside the control
  * carries the same sort for a reader who uses neither a precise pointer
- * nor a modifier key.
+ * nor a modifier key, and hides the column or moves it past the column
+ * beside it; a column that can be neither sorted, hidden nor moved has no
+ * menu.
  *
  * @implements ds:apps.subcomponent.data_table-header_cell
  */
@@ -73,6 +75,8 @@ export default function HeaderCell({
   removable,
   onPlace,
   onRemoveFromSort,
+  offers,
+  onChangeColumn,
   onClearRefusal,
   interaction,
   resizable,
@@ -208,13 +212,22 @@ export default function HeaderCell({
           {reason}
         </span>
       ) : null}
-      {sortable && hydrated ? (
+      {/* Offered once scripts run, wherever the menu has something to do. */}
+      {hydrated &&
+      (sortable ||
+        offers.hide ||
+        offers["move-left"] ||
+        offers["move-right"]) ? (
         <HeaderMenu
           columnId={column.id}
           header={column.header}
+          sortable={sortable}
           removable={removable}
+          hideable={column.hideable !== false}
+          offers={offers}
           onPlace={onPlace}
           onRemoveFromSort={onRemoveFromSort}
+          onChangeColumn={onChangeColumn}
         />
       ) : null}
       {/* A focusable handle whose keys resize only once scripts run: none

@@ -36,7 +36,7 @@ describe("regression 0021 — a closed menu stayed mounted", () => {
       />,
     );
     const findTrigger = () =>
-      screen.getByRole("button", { name: "Sort options for Name" });
+      screen.getByRole("button", { name: "Column options for Name" });
     fireEvent.click(findTrigger());
     expect(
       document.querySelector(".contextual-menu__surface"),

@@ -10,6 +10,7 @@ import type {
   SizingBounds,
 } from "@canonical/dataviews-core/bindings";
 import type { DataTableColumn } from "../../types.js";
+import type { HeaderColumnChange, HeaderColumnOffers } from "../types.js";
 
 /** Where one column's field stands in the ordering in force. */
 export type SortPrecedence = {
@@ -81,6 +82,16 @@ export type HeaderCellProps = {
   readonly onPlace: (columnId: string, direction: SortDirection) => void;
   /** Take a column out of the reader's ordering, from its menu. */
   readonly onRemoveFromSort: (columnId: string) => void;
+  /**
+   * Which changes to its visibility and place the column takes now. The
+   * table's, one object per column while the arrangement holds.
+   */
+  readonly offers: HeaderColumnOffers;
+  /** Hide or move a column, from its menu; one identity for every column. */
+  readonly onChangeColumn: (
+    columnId: string,
+    change: HeaderColumnChange,
+  ) => void;
   /** Let a refusal's reason go, once focus leaves the header and its menu. */
   readonly onClearRefusal: () => void;
   readonly interaction: GridInteraction;

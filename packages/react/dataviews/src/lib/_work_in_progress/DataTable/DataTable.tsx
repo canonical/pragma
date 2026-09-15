@@ -20,6 +20,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
 } from "react";
 import {
   type EntryRenderer,
@@ -112,8 +113,9 @@ const renderVirtualizedBody = (
  * — and exactly one of them, the first term's, carries `aria-sort`. Without
  * scripting each sortable header is a real link to the next ordering, from
  * the first page, where the provider has a location to lead to; once
- * scripts run, a menu beside each sortable header sorts ascending or
- * descending, or removes the column from the reader's ordering.
+ * scripts run, a menu beside each header sorts ascending or descending, or
+ * removes the column from the reader's ordering, where it offers sorting,
+ * and hides the column or moves it left or right.
  *
  * Given `DataViews.Settings` as its `settings`, the header ends in a settings
  * cell holding it: a menu hiding, showing and moving each column, and
@@ -244,15 +246,18 @@ export default function DataTable<
   });
 
   // The columns' visibility and places, as the settings menu offers them
-  // and every change to them is announced.
+  // and every change to them is announced. The header row takes the focus a
+  // hidden column's own controls leave.
+  const headerRow = useRef<HTMLDivElement>(null);
   const {
     settings: columnSettings,
+    readOffers,
     resettable,
     announcer,
     changeColumn,
     resetColumns,
     listDestinations,
-  } = useColumnManagement({ provider, columns });
+  } = useColumnManagement({ provider, columns, headerRow });
   // One value while none of it changes, so a frame of a resize re-renders
   // no settings menu.
   const menu = useMemo<SettingsMenuProps>(
@@ -343,6 +348,7 @@ export default function DataTable<
           {/* biome-ignore lint/a11y/useSemanticElements: <tr> is only valid inside a <table>, and this grid is deliberately not one */}
           {/* biome-ignore lint/a11y/useFocusableInteractive: the row is structure, not a widget — the focusable controls live in its cells */}
           <div
+            ref={headerRow}
             role="row"
             className="ds data-table-row"
             aria-rowindex={virtualization === undefined ? undefined : 1}
@@ -378,6 +384,8 @@ export default function DataTable<
                   removable={headerSort.stated.has(field)}
                   onPlace={headerSort.placeColumn}
                   onRemoveFromSort={headerSort.removeFromSort}
+                  offers={readOffers(column.id)}
+                  onChangeColumn={changeColumn}
                   interaction={interaction}
                   resizable={
                     column.resizable === true && position < rendered.length - 1

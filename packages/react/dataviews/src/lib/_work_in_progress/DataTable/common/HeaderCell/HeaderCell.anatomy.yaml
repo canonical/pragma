@@ -1,7 +1,7 @@
 ---
-# DataTable.HeaderCell — one column heading: its label, the sort control and
-# the column's sort menu when the column offers sorting, and the resize handle
-# when it offers resizing.
+# DataTable.HeaderCell — one column heading: its label, the sort control when
+# the column offers sorting, the column's menu when it can be sorted, hidden
+# or moved, and the resize handle when it offers resizing.
 #
 # Anatomy DSL 0.3.0, checked in review against the DSL's JSON schema.
 # A named subcomponent, not a role: it carries a contract of its own — sort,
@@ -138,8 +138,10 @@ node:
         role: reason
       relation:
         cardinality: "0..1"
-    # Once scripts run, on a sortable column: the column's menu, the design
-    # system's ContextualMenu, carrying its sort.
+    # Once scripts run, on a column that can be sorted, hidden or moved: the
+    # column's menu, the design system's ContextualMenu, carrying its sort
+    # where it offers one, then Hide column where it may be hidden, and Move
+    # column left and right, each disabled where it would change nothing.
     - node:
         uri: global.component.contextual_menu
       relation:

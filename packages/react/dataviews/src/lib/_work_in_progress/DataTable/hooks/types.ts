@@ -22,7 +22,7 @@ import type {
 } from "../common/index.js";
 import type { DataTableColumn } from "../types.js";
 
-/** What the column management hook reads: the provider and the declared columns. */
+/** What the column management hook reads: the provider, the declared columns and the header row. */
 export type UseColumnManagementProps<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
@@ -30,6 +30,8 @@ export type UseColumnManagementProps<
   readonly provider: DataViewsProvider<TFields, TRow>;
   /** The columns as declared, in their declared order. */
   readonly columns: readonly DataTableColumn[];
+  /** The header row, whose controls take the focus a hidden column leaves. */
+  readonly headerRow: RefObject<HTMLDivElement | null>;
 };
 
 /** The table's column management, as its menus and its announcement read it. */
@@ -38,6 +40,11 @@ export type UseColumnManagementResult = {
   readonly settings: readonly ColumnSetting[];
   /** Whether a reset would change the viewer's own layer. */
   readonly resettable: boolean;
+  /**
+   * The changes one declared column takes now, one object per column while
+   * those changes hold; throws for a column the table does not declare.
+   */
+  readonly readOffers: (columnId: string) => ColumnSetting["offers"];
   /** The announcement the table renders, which says what each change did. */
   readonly announcer: RefObject<AnnouncementHandle | null>;
   /** Apply one change to one column; one identity for every column. */

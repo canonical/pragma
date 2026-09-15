@@ -568,7 +568,7 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
     await page.keyboard.press("Tab");
     await expect(
       page.getByRole("button", {
-        name: "Sort options for Status",
+        name: "Column options for Status",
         exact: true,
       }),
     ).toBeFocused();
@@ -594,13 +594,13 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
     await openStory(page, findStory(TABLE, "Sortable").id);
     const host = page.getByRole("columnheader", { name: "Host", exact: true });
     const trigger = page.getByRole("button", {
-      name: "Sort options for Host",
+      name: "Column options for Host",
       exact: true,
     });
     await tabTo(page, trigger);
     await page.keyboard.press("Enter");
     const menu = page.getByRole("menu", {
-      name: "Sort options for Host",
+      name: "Column options for Host",
       exact: true,
     });
     await expect(menu).toBeVisible();
@@ -612,6 +612,58 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
     await expect(host).toHaveAttribute("aria-sort", "ascending");
     await expect(menu).toBeHidden();
     await expect(trigger).toBeFocused();
+  });
+
+  test("Sortable: a header's menu hides its column, and focus goes to the next heading's control", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(TABLE, "Sortable").id);
+    const trigger = page.getByRole("button", {
+      name: "Column options for Host",
+      exact: true,
+    });
+    await tabTo(page, trigger);
+    await page.keyboard.press("Enter");
+    const menu = page.getByRole("menu", {
+      name: "Column options for Host",
+      exact: true,
+    });
+    await expect(menu).toBeVisible();
+    // The menu moves focus to its first item frames after it opens: pressing
+    // before then would move nothing.
+    await expect(
+      page.getByRole("menuitem", { name: "Sort ascending" }),
+    ).toBeFocused();
+    // Past the two sorts, over the separator, to the column's own changes,
+    // each press waiting for the focus it moves.
+    const hide = page.getByRole("menuitem", {
+      name: "Hide column",
+      exact: true,
+    });
+    /** The text of the element holding focus. */
+    const readFocused = () =>
+      page.evaluate(() => document.activeElement?.textContent ?? null);
+    for (let press = 0; press < 4; press += 1) {
+      if (await hide.evaluate((item) => item === document.activeElement)) {
+        break;
+      }
+      const before = await readFocused();
+      await page.keyboard.press("ArrowDown");
+      await expect.poll(readFocused).not.toBe(before);
+    }
+    await expect(hide).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(menu).toBeHidden();
+    await expect(
+      page.getByRole("columnheader", { name: "Host", exact: true }),
+    ).toHaveCount(0);
+    await expect(page.locator(".ds.data-table-announcement")).toHaveText(
+      "Host hidden",
+    );
+    // The hidden column's controls are gone: focus stays in the header row.
+    await expect(
+      page.locator("[role='columnheader'] button:focus"),
+    ).toHaveCount(1);
   });
 
   test("Settings ArrangedByTheViewer: Enter opens the settings menu, Enter hides a column from it, focus returns to its button", async ({
