@@ -5,11 +5,12 @@ import { API_SCENARIOS } from "./constants.js";
 import foldStoredText from "./foldStoredText.js";
 import readRestQuery from "./readRestQuery.js";
 import selectRecords from "./selectRecords.js";
-import spellContainsPattern from "./spellContainsPattern.js";
+import spellLikePattern from "./spellLikePattern.js";
 import type {
   ApiProblem,
   ApiRecord,
   ApiScenario,
+  ApiTextMatch,
   MockApiConfig,
 } from "./types.js";
 
@@ -27,9 +28,9 @@ type RestPage = {
  * escaped into a `LIKE` pattern and compiled once per query, and both sides
  * folded, as `lower(value) LIKE lower(pattern) ESCAPE '\'` compares them.
  */
-const matchText = (text: string) => {
+const matchText = (operator: ApiTextMatch["operator"], text: string) => {
   const matches = compileLikePattern(
-    foldStoredText(spellContainsPattern(text)),
+    foldStoredText(spellLikePattern(operator, text)),
   );
   return (value: string): boolean => matches(foldStoredText(value));
 };
@@ -41,7 +42,8 @@ const respondWithProblem = (status: number, reason: string) =>
 /**
  * The REST machine endpoint, `GET /api/<scenario>/machines`, once for every
  * scenario: it reads the flat query grammar as its own parameters, filters
- * with `LIKE`, orders by one term, pages by number and counts exactly.
+ * statuses with `IN` and `NOT IN` and text with `LIKE`, orders by one term,
+ * pages by number and counts exactly.
  *
  * Each handler is stateless: what a request is answered with depends on its
  * path and its parameters alone, so handlers never carry anything from one

@@ -48,7 +48,7 @@ describe("regression 0063 — a repeated spelling landed writes still in flight"
     const provider = createDataViewsProvider({
       collection,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       location,
@@ -58,7 +58,7 @@ describe("regression 0063 — a repeated spelling landed writes still in flight"
     const filterBy = (status: string) => {
       host.setPredicate({
         field: "status",
-        operator: "eq",
+        operator: "isAny",
         operands: [status],
       });
     };

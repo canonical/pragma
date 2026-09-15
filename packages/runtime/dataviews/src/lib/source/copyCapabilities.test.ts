@@ -15,19 +15,19 @@ describe("copyCapabilities", () => {
   });
 
   it("keeps the declared operators of a field that has them", () => {
-    const copy = copyCapabilities(declared({ filter: { status: ["eq"] } }));
-    expect(copy.filter["status"]).toEqual(["eq"]);
+    const copy = copyCapabilities(declared({ filter: { status: ["isAny"] } }));
+    expect(copy.filter["status"]).toEqual(["isAny"]);
   });
 
   it("does not change when the declaration is mutated afterwards", () => {
-    const filter: Record<string, PredicateOperator[]> = { status: ["eq"] };
+    const filter: Record<string, PredicateOperator[]> = { status: ["isAny"] };
     const copy = copyCapabilities(declared({ filter }));
     filter["status"]?.push("isSet");
-    expect(copy.filter["status"]).toEqual(["eq"]);
+    expect(copy.filter["status"]).toEqual(["isAny"]);
   });
 
   it("reads a field named for a prototype member as absent", () => {
-    const copy = copyCapabilities(declared({ filter: { status: ["eq"] } }));
+    const copy = copyCapabilities(declared({ filter: { status: ["isAny"] } }));
     expect(copy.filter.toString).toBeUndefined();
   });
 
@@ -141,7 +141,7 @@ describe("copyCapabilities", () => {
   it("freezes every part of the copy", () => {
     const copy = copyCapabilities(
       declared({
-        filter: { status: ["eq"] },
+        filter: { status: ["isAny"] },
         search: { fields: ["name"] },
         sort: declareSort(["cpu"]),
       }),

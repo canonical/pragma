@@ -10,17 +10,17 @@ import type { ApiScenario } from "../api/index.js";
 import { type Machine, machineCollection } from "../fixtures.js";
 
 /**
- * What the REST endpoint executes, and so all the parts may offer: equality
- * on status, bounds on cores, text in the name and the region but not the
- * owner, search over the name and the owner, one ordered term, pages by
- * number and exact counts.
+ * What the REST endpoint executes, and so all the parts may offer: the
+ * statuses a machine is any or none of, bounds on cores, text the name and
+ * the region contain or start with but none in the owner, search over the
+ * name and the owner, one ordered term, pages by number and exact counts.
  */
 const REST_CAPABILITIES = declareCapabilities(machineCollection, {
   filter: {
-    status: ["eq"],
+    status: ["isAny", "isNone"],
     cores: ["gte", "lte"],
-    name: ["contains"],
-    region: ["contains"],
+    name: ["contains", "startsWith"],
+    region: ["contains", "startsWith"],
   },
   search: ["name", "owner"],
   sort: {

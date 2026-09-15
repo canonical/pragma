@@ -44,12 +44,86 @@ describe("decodeQuery", () => {
     expect(decoded.issues).toEqual([]);
   });
 
-  it("reads repeated equality operands as one set predicate", () => {
+  it("reads repeated isAny operands as one set predicate", () => {
     const decoded = decode("status=failed&status=cancelled");
     expect(decoded.slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed", "cancelled"] },
+      { field: "status", operator: "isAny", operands: ["failed", "cancelled"] },
     ]);
     expect(decoded.issues).toEqual([]);
+  });
+
+  it("reads isAny under its bare and its delimited spelling as one set", () => {
+    // The bare field is any-of, as any-of was always spelled.
+    expect(decode("status__isAny=failed&status__isAny=ready").slice).toEqual(
+      decode("status=failed&status=ready").slice,
+    );
+    // Both spellings on one link address one predicate, holding both sets.
+    const mixed = decode(
+      "status=failed&status__isAny=ready&status__isAny=failed",
+    );
+    expect(mixed.slice.filter).toEqual([
+      {
+        field: "status",
+        operator: "isAny",
+        operands: ["failed", "ready", "failed"],
+      },
+    ]);
+    expect(mixed.issues).toEqual([]);
+    // Written back, the delimited spelling is respelled bare, once per option.
+    expect(
+      encodeQuery({
+        schema: machines(),
+        slice: mixed.slice,
+        window: null,
+      }).toString(),
+    ).toBe("status=failed&status=ready");
+  });
+
+  it("reads isNone as its own set, beside any-of on the same field", () => {
+    const decoded = decode(
+      "status__isNone=ready&status__isNone=cancelled&status=failed",
+    );
+    expect(decoded.slice.filter).toEqual([
+      { field: "status", operator: "isNone", operands: ["ready", "cancelled"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
+    ]);
+    expect(decode("status__isNone=deployed").issues).toEqual([
+      {
+        parameter: "status__isNone",
+        code: "invalid",
+        reason: '"deployed" is not an option of "status"',
+      },
+    ]);
+  });
+
+  it("reads the text a text field starts with, literally and once", () => {
+    const decoded = decode(`name__startsWith=${encodeURIComponent(" 50%_")}`);
+    expect(decoded.slice.filter).toEqual([
+      { field: "name", operator: "startsWith", operands: [" 50%_"] },
+    ]);
+    expect(decode("name__startsWith=a&name__startsWith=b").issues).toEqual([
+      {
+        parameter: "name__startsWith",
+        code: "malformed",
+        reason:
+          '"name__startsWith" takes one value; the extra values were ignored',
+      },
+    ]);
+    expect(decode("status__startsWith=f").issues).toEqual([
+      {
+        parameter: "status__startsWith",
+        code: "invalid",
+        reason:
+          'choices field "status" does not accept the startsWith operator',
+      },
+    ]);
+    expect(decode("name__isAny=web").issues).toEqual([
+      {
+        parameter: "name__isAny",
+        code: "invalid",
+        reason: 'text field "name" does not accept the isAny operator',
+      },
+    ]);
   });
 
   it("parses bounds to the field's own type, never a coerced string", () => {
@@ -267,7 +341,7 @@ describe("decodeQuery", () => {
     ]);
   });
 
-  it("orders by a text field, which is never filtered by equality", () => {
+  it("orders by a text field, which is never filtered by a set operator", () => {
     // Sortable and filterable are different capabilities: a name column is
     // ordered, and filtered only by the text it contains.
     expect(decode("sort=name__asc").slice.sort).toEqual([
@@ -279,7 +353,7 @@ describe("decodeQuery", () => {
       {
         parameter: "name",
         code: "invalid",
-        reason: 'text field "name" does not accept the eq operator',
+        reason: 'text field "name" does not accept the isAny operator',
       },
     ]);
   });
@@ -384,7 +458,7 @@ describe("decodeQuery", () => {
       {
         parameter: "owner",
         code: "invalid",
-        reason: 'flag field "owner" does not accept the eq operator',
+        reason: 'flag field "owner" does not accept the isAny operator',
       },
     ]);
     expect(decode("status__gte=ready").issues).toEqual([
@@ -438,14 +512,14 @@ describe("decodeQuery", () => {
     });
     // Blank beside a value: the value is the clause.
     expect(decode("status=&status=failed").slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
   });
 
   it("keeps the operands that pass and reports the ones that do not", () => {
     const decoded = decode("status=failed&status=melted");
     expect(decoded.slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(decoded.issues).toEqual([
       {
@@ -484,7 +558,7 @@ describe("decodeQuery", () => {
 
   it("refuses each clause the source cannot execute, and only those", () => {
     const capabilities = declare({
-      filter: { status: ["eq"], cpu: ["gte"] },
+      filter: { status: ["isAny"], cpu: ["gte"] },
       sort: declareSort(["cpu"], 1),
     });
     const decoded = decodeQuery({
@@ -496,7 +570,7 @@ describe("decodeQuery", () => {
     });
     expect(decoded.slice).toEqual({
       filter: [
-        { field: "status", operator: "eq", operands: ["ready"] },
+        { field: "status", operator: "isAny", operands: ["ready"] },
         { field: "cpu", operator: "gte", operands: [4] },
       ],
       search: null,
@@ -666,7 +740,7 @@ describe("decodeQuery", () => {
         },
         {
           field: "status",
-          operator: "eq" as const,
+          operator: "isAny" as const,
           operands: ["cancelled", "failed"],
         },
       ],

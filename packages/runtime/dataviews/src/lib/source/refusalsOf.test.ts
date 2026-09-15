@@ -21,7 +21,7 @@ const query = (
 
 /** A source that can execute the whole fixture query. */
 const permissive: SourceCapabilities = declare({
-  filter: { status: ["eq"], cpu: ["gte", "lte"] },
+  filter: { status: ["isAny"], cpu: ["gte", "lte"] },
   search: { fields: ["name"] },
   sort: declareSort(["cpu"], 2),
   group: { fields: ["status"], levels: 2, summaries: "counts", collapse: true },
@@ -34,7 +34,9 @@ describe("refusalsOf", () => {
         permissive,
         query(
           {
-            filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+            filter: [
+              { field: "status", operator: "isAny", operands: ["failed"] },
+            ],
             search: "web",
             sort: [{ field: "cpu", direction: "asc" }],
             group: [{ field: "status" }],
@@ -54,7 +56,7 @@ describe("refusalsOf", () => {
       refusalsOf(
         permissive,
         query({
-          filter: [{ field: "zone", operator: "eq", operands: ["eu-west"] }],
+          filter: [{ field: "zone", operator: "isAny", operands: ["eu-west"] }],
         }),
       ),
     ).toEqual([
@@ -62,7 +64,7 @@ describe("refusalsOf", () => {
         part: "filter",
         code: "undeclared-field",
         field: "zone",
-        operator: "eq",
+        operator: "isAny",
         reason: 'field "zone" cannot be filtered',
       },
     ]);
@@ -338,7 +340,7 @@ describe("refusalsOf", () => {
         declare({}),
         query(
           {
-            filter: [{ field: "zone", operator: "eq", operands: ["eu"] }],
+            filter: [{ field: "zone", operator: "isAny", operands: ["eu"] }],
             search: "web",
             sort: [{ field: "cpu", direction: "asc" }],
             group: [{ field: "status" }],
@@ -354,8 +356,8 @@ describe("refusalsOf", () => {
       permissive,
       query({
         filter: [
-          { field: "zone", operator: "eq", operands: ["b", "a"] },
-          { field: "zone", operator: "eq", operands: ["a", "b"] },
+          { field: "zone", operator: "isAny", operands: ["b", "a"] },
+          { field: "zone", operator: "isAny", operands: ["a", "b"] },
         ],
       }),
     );

@@ -60,7 +60,7 @@ const machines = machineCollection();
 
 /** Everything the fixture queries need: a status filter, search and two sortable fields. */
 const permissive: SourceCapabilities = declareCapabilities(machines, {
-  filter: { status: ["eq"], cpu: ["gte", "lte"] },
+  filter: { status: ["isAny"], cpu: ["gte", "lte"] },
   search: ["name"],
   sort: { fields: ["cpu", "updated"], terms: 2 },
   counts: { pageable: "exact", matched: "exact", total: "exact" },
@@ -103,7 +103,7 @@ const DEFAULT_PARAMS = `page=${DEFAULT_WINDOW.page}&size=${DEFAULT_WINDOW.size}`
 
 const STATUS_FAILED: Predicate = {
   field: "status",
-  operator: "eq",
+  operator: "isAny",
   operands: ["failed"],
 };
 
@@ -275,7 +275,7 @@ describe("createDataViewsProvider construction", () => {
     expect(calls).toHaveLength(0);
     const state = provider.state.get();
     expect(state.slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(state.slice.sort).toEqual([{ field: "cpu", direction: "desc" }]);
     expect(state.window).toMatchObject({ page: 2, size: 10 });
@@ -376,7 +376,7 @@ describe("createDataViewsProvider construction", () => {
     // the old one are never asked for again.
     expect(calls).toHaveLength(1);
     expect(calls.at(0)?.request.slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["cancelled"] },
+      { field: "status", operator: "isAny", operands: ["cancelled"] },
     ]);
     release();
   });
@@ -397,7 +397,7 @@ describe("createDataViewsProvider construction", () => {
     const release = provider.observe();
     expect(calls).toHaveLength(1);
     expect(calls.at(0)?.request.slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["cancelled"] },
+      { field: "status", operator: "isAny", operands: ["cancelled"] },
     ]);
     expect(calls.at(0)?.request.window.page).toBe(1);
     expect(provider.state.get().slice.filter.at(0)?.operands).toEqual([
@@ -684,7 +684,7 @@ describe("createDataViewsProvider snapshot", () => {
     });
     const started = provider.state.get();
     expect(started.slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(started.window).toMatchObject({ page: 3, size: 10 });
     expect(started.result.status).toBe("idle");
@@ -1087,7 +1087,7 @@ describe("createDataViewsProvider host", () => {
     provider.setSearch("yak");
     provider.setSort([{ field: "cpu", direction: "asc" }]);
     provider.navigateWindow({ page: 2 });
-    host.removePredicate("status", "eq");
+    host.removePredicate("status", "isAny");
     provider.setGroup([{ field: "status" }]);
     provider.setCollapsed([["failed"]]);
     provider.setGroup([]);
@@ -1196,7 +1196,7 @@ describe("createDataViewsProvider host", () => {
       host.setPredicate({ field: "owner", operator: "isSet", operands: [] }),
     ).toEqual([expect.objectContaining({ code: "undeclared-field" })]);
     expect(provider.state.get().slice.filter).toEqual([STATUS_FAILED]);
-    expect(host.removePredicate("status", "eq")).toEqual([]);
+    expect(host.removePredicate("status", "isAny")).toEqual([]);
     expect(provider.state.get().slice.filter).toEqual([]);
   });
 

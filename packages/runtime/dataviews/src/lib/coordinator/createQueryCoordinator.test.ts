@@ -34,7 +34,7 @@ const window = (overrides: Partial<ResultWindow> = {}): ResultWindow => ({
 
 const statusPredicate = (...operands: string[]): Predicate => ({
   field: "status",
-  operator: "eq",
+  operator: "isAny",
   operands,
 });
 
@@ -74,7 +74,7 @@ const refused = (reason: string): Completion => ({
       part: "filter",
       code: "undeclared-field",
       field: "zone",
-      operator: "eq",
+      operator: "isAny",
       reason,
     },
   ],
@@ -363,7 +363,7 @@ describe("createQueryCoordinator", () => {
           part: "filter",
           code: "undeclared-field",
           field: "zone",
-          operator: "eq",
+          operator: "isAny",
           reason: 'field "zone" cannot be filtered',
         },
       ],
@@ -646,7 +646,11 @@ describe("createQueryCoordinator", () => {
     });
     const respeled = slice({
       filter: [
-        { operands: ["cancelled", "failed"], operator: "eq", field: "status" },
+        {
+          operands: ["cancelled", "failed"],
+          operator: "isAny",
+          field: "status",
+        },
       ],
       sort: [{ direction: "asc", field: "name" }],
       group: [{ field: "zone" }],
@@ -659,7 +663,7 @@ describe("createQueryCoordinator", () => {
     const coordinator = createQueryCoordinator();
     const predicate = {
       field: "status",
-      operator: "eq" as const,
+      operator: "isAny" as const,
       operands: ["failed"],
     };
     const path = ["failed"];

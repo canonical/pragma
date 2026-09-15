@@ -27,12 +27,25 @@ export type MockApiConfig = {
   readonly latency?: number | undefined;
 };
 
+/** What one text field's value must contain or start with. */
+export type ApiTextMatch = {
+  readonly field: string;
+  readonly operator: "contains" | "startsWith";
+  readonly text: string;
+};
+
 /** The query one request asks, as the endpoint reads it. */
 export type ApiQuery = {
-  /** Each text field, with the text its value must contain. */
-  readonly contains: Readonly<Record<string, string>>;
-  /** The statuses a record must have one of; empty for any. */
-  readonly statuses: readonly string[];
+  /** The text each text field's value must contain or start with. */
+  readonly text: readonly ApiTextMatch[];
+  /**
+   * The statuses a record must have one of, and those it must have none of;
+   * each empty for no restriction.
+   */
+  readonly statuses: {
+    readonly isAny: readonly string[];
+    readonly isNone: readonly string[];
+  };
   /** The inclusive bounds on cores. */
   readonly cores: { readonly gte: number | null; readonly lte: number | null };
   /** Free text looked for in the searched fields, or null. */

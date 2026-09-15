@@ -54,8 +54,14 @@ describe("useDataViews", () => {
     expect(result.current.setSort).toBe(provider.setSort);
     expect(result.current.runAction).toBe(provider.runAction);
     // One handle per field and legal operator.
-    expect(Object.keys(result.current.filters.name)).toEqual(["contains"]);
-    expect(Object.keys(result.current.filters.status)).toEqual(["eq"]);
+    expect(Object.keys(result.current.filters.name)).toEqual([
+      "contains",
+      "startsWith",
+    ]);
+    expect(Object.keys(result.current.filters.status)).toEqual([
+      "isAny",
+      "isNone",
+    ]);
     expect(Object.keys(result.current.filters.cores).sort()).toEqual([
       "gte",
       "lte",
@@ -144,10 +150,10 @@ describe("useDataViews", () => {
     expect(refusals).not.toHaveLength(0);
     expect(provider.state.get().slice.sort).toEqual([]);
     act(() => {
-      result.current.filters.status.eq.set(["failed"]);
+      result.current.filters.status.isAny.set(["failed"]);
     });
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(source.latest().request.slice.search).toBe("alpha");
   });
@@ -164,7 +170,7 @@ describe("useDataViews", () => {
     );
     const { provider } = createMachineProvider({
       capabilities: declareCapabilities(machines, {
-        filter: { status: ["eq"], cores: ["gte", "lte"] },
+        filter: { status: ["isAny"], cores: ["gte", "lte"] },
         search: ["name"],
         counts: COUNTED_EXACTLY,
         actions: { stop: { targets: "explicit", limit: null } },

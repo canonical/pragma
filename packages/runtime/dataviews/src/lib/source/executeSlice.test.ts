@@ -54,13 +54,13 @@ describe("executeSlice", () => {
     expect(executeSlice(rows, emptySlice, buildExecuteConfig())).toEqual(rows);
   });
 
-  it("matches equality against the operand set", () => {
+  it("matches isAny against the operand set", () => {
     expect(
       ids(
         executeSlice(
           rows,
           slice({
-            filter: [{ field: "cpu", operator: "eq", operands: [8, 4] }],
+            filter: [{ field: "cpu", operator: "isAny", operands: [8, 4] }],
           }),
           buildExecuteConfig(),
         ),
@@ -72,31 +72,48 @@ describe("executeSlice", () => {
     expect(
       executeSlice(
         rows,
-        slice({ filter: [{ field: "cpu", operator: "eq", operands: ["4"] }] }),
+        slice({
+          filter: [{ field: "cpu", operator: "isAny", operands: ["4"] }],
+        }),
         buildExecuteConfig(),
       ),
     ).toEqual([]);
   });
 
-  it("matches a null operand against a null value, absent fields never", () => {
+  it("matches no null or absent value, whatever the operands", () => {
+    // Only a choice value — a string or a number — is any or none of the
+    // operands: a null value is empty, as an absent one is.
     expect(
       ids(
         executeSlice(
           rows,
           slice({
-            filter: [{ field: "owner", operator: "eq", operands: [null] }],
+            filter: [{ field: "owner", operator: "isAny", operands: [null] }],
           }),
           buildExecuteConfig(),
         ),
       ),
-    ).toEqual(["b"]);
+    ).toEqual([]);
+    expect(
+      ids(
+        executeSlice(
+          rows,
+          slice({
+            filter: [{ field: "owner", operator: "isNone", operands: ["x"] }],
+          }),
+          buildExecuteConfig(),
+        ),
+      ),
+    ).toEqual(["a", "d"]);
   });
 
-  it("never matches equality on a value outside the operand domain", () => {
+  it("never matches a set operator on a value outside the operand domain", () => {
     expect(
       executeSlice(
         [{ id: "a", tags: ["x"] }],
-        slice({ filter: [{ field: "tags", operator: "eq", operands: ["x"] }] }),
+        slice({
+          filter: [{ field: "tags", operator: "isAny", operands: ["x"] }],
+        }),
         buildExecuteConfig(),
       ),
     ).toEqual([]);
@@ -160,7 +177,7 @@ describe("executeSlice", () => {
 
   it("matches nothing for a range over a field the schema does not define", () => {
     // Nothing can say how such a field's values compare, so no row is in
-    // any range of it; an equality over it still reads the row's value.
+    // any range of it; an isAny over it still reads the row's value.
     expect(
       ids(
         executeSlice(
@@ -276,6 +293,42 @@ describe("executeSlice", () => {
     expect(findContaining(50)).toEqual([]);
   });
 
+  it("finds text a value starts with, case-insensitively and literally", () => {
+    const named = [
+      { id: "upper", name: "WEB-01" },
+      { id: "inside", name: "api.web" },
+      { id: "percent", name: "50% full" },
+      { id: "decomposed", name: "École" },
+      { id: "number", name: 50 },
+      { id: "absent" },
+    ];
+    const findStarting = (operand: unknown) =>
+      ids(
+        executeSlice(
+          named,
+          slice({
+            filter: [
+              {
+                field: "name",
+                operator: "startsWith",
+                operands: [operand as string],
+              },
+            ],
+          }),
+          buildExecuteConfig(),
+        ),
+      );
+    expect(findStarting("web")).toEqual(["upper"]);
+    // A percent sign is a character, never a wildcard.
+    expect(findStarting("%")).toEqual([]);
+    expect(findStarting("50%")).toEqual(["percent"]);
+    expect(findStarting("ÉCOLE")).toEqual(["decomposed"]);
+    // An accented letter is not its base letter.
+    expect(findStarting("e")).toEqual([]);
+    // Only a string holds text, and only text is looked for.
+    expect(findStarting(50)).toEqual([]);
+  });
+
   it("folds search as contains folds", () => {
     const folded = [
       { id: "greek", name: "ΟΔΟΣΤΡΩΜΑ" },
@@ -353,13 +406,13 @@ describe("executeSlice", () => {
         executeSlice(
           rows,
           slice({
-            filter: [{ field: "ready", operator: "eq", operands: [true] }],
-            search: "a",
+            filter: [{ field: "cpu", operator: "isNone", operands: [12] }],
+            search: "l",
           }),
           buildExecuteConfig({ searchFields: ["name"] }),
         ),
       ),
-    ).toEqual(["a", "c"]);
+    ).toEqual(["a", "d"]);
   });
 
   it("orders numbers ascending and descending", () => {

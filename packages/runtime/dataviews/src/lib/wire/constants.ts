@@ -41,10 +41,16 @@ export const RESERVED_QUERY_KEYS: readonly string[] = Object.freeze([
   "item",
 ]);
 
-/** The operators written with the delimiter. `eq` is the bare field name. */
+/**
+ * The operators a key may carry after the delimiter. `isAny` is written as
+ * the bare field name, and read under both spellings as one predicate.
+ */
 export const SUFFIXED_OPERATORS = Object.freeze([
+  "isAny",
+  "isNone",
   "gte",
   "lte",
   "isSet",
   "contains",
+  "startsWith",
 ] as const satisfies readonly PredicateOperator[]);

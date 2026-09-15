@@ -306,7 +306,7 @@ const relay = () => {
 
 /** A forward connection: a status filter, no search, no declareSort, a total. */
 const connectionCapabilities: SourceCapabilities = declare({
-  filter: { status: ["eq"] },
+  filter: { status: ["isAny"] },
   counts: { pageable: "exact", matched: "exact", total: "unknown" },
   pagination: { kind: "cursor", backward: false, durable: false },
 });
@@ -508,7 +508,7 @@ describe("createRelaySource over relay-runtime", () => {
     const build = vi.fn(operation);
     const filtered: Slice = {
       ...emptySlice,
-      filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+      filter: [{ field: "status", operator: "isAny", operands: ["failed"] }],
     };
     createRelaySource<MachinesOperation>({
       capabilities: connectionCapabilities,
@@ -605,13 +605,13 @@ describe("createRelaySource over relay-runtime", () => {
     const spelled: Slice = {
       ...emptySlice,
       filter: [
-        { field: "status", operator: "eq", operands: ["ready", "failed"] },
+        { field: "status", operator: "isAny", operands: ["ready", "failed"] },
       ],
     };
     const respelled: Slice = {
       ...emptySlice,
       filter: [
-        { field: "status", operator: "eq", operands: ["failed", "ready"] },
+        { field: "status", operator: "isAny", operands: ["failed", "ready"] },
       ],
     };
     adapter.execute(request({ slice: spelled }), delivery());
@@ -630,7 +630,7 @@ describe("createRelaySource over relay-runtime", () => {
     fetchAt(0).respond();
     const failed: Slice = {
       ...emptySlice,
-      filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+      filter: [{ field: "status", operator: "isAny", operands: ["failed"] }],
     };
     expect(
       readRefusals(adapter, { slice: failed, window: paged({ page: 2 }) }),
@@ -710,7 +710,7 @@ describe("createRelaySource over relay-runtime", () => {
     const adapter = source(environment);
     const failed: Slice = {
       ...emptySlice,
-      filter: [{ field: "status", operator: "eq", operands: ["missing"] }],
+      filter: [{ field: "status", operator: "isAny", operands: ["missing"] }],
     };
     const deliver = delivery();
     adapter.execute(request({ slice: failed }), deliver);
@@ -1271,10 +1271,14 @@ describe("createRelaySource bound to a collection", () => {
     // The observation's own fetch is the first one abandoned.
     host.setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["failed"],
     });
-    host.setPredicate({ field: "status", operator: "eq", operands: ["ready"] });
+    host.setPredicate({
+      field: "status",
+      operator: "isAny",
+      operands: ["ready"],
+    });
     expect(fetchAt(0).cancelled).toBe(true);
     expect(fetchAt(1).cancelled).toBe(true);
 

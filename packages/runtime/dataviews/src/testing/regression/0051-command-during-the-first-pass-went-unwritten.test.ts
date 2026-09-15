@@ -30,7 +30,7 @@ const collection = createCollection({
 /** The predicate a listener's command moves the host to. */
 const RUNNING: Predicate = {
   field: "status",
-  operator: "eq",
+  operator: "isAny",
   operands: ["running"],
 };
 
@@ -46,7 +46,7 @@ const buildProvider = (moved: string, steps: (() => void)[]) => {
   const provider = createDataViewsProvider({
     collection,
     source: createManualSource({
-      capabilities: declare({ filter: { status: ["eq"] } }),
+      capabilities: declare({ filter: { status: ["isAny"] } }),
       answer: answering([]),
     }).source,
     location,

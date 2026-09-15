@@ -15,24 +15,6 @@ import type { ExecuteSliceConfig } from "./types.js";
 const isAbsent = (value: unknown): boolean =>
   value === null || value === undefined;
 
-const nullRank = rankOperand(null);
-
-/**
- * The operand rank of a row value, or null when the value is outside the
- * operand domain. Ranks are the same total order canonical slices use, so
- * equality here agrees with query canonicalization exactly.
- */
-const rankOf = (value: unknown): string | null => {
-  switch (typeof value) {
-    case "string":
-    case "number":
-    case "boolean":
-      return rankOperand(value);
-    default:
-      return value === null ? nullRank : null;
-  }
-};
-
 /** One predicate compiled to a per-row test, with its operands resolved
  * once instead of once per row. */
 type CompiledPredicate = {
@@ -53,14 +35,18 @@ const compilePredicate = (
   switch (predicate.operator) {
     case "isSet":
       return { field, test: (value) => !isAbsent(value) };
-    case "eq": {
+    case "isAny":
+    case "isNone": {
       const ranks = new Set(predicate.operands.map(rankOperand));
+      const holds = predicate.operator === "isAny";
       return {
         field,
-        test: (value) => {
-          const rank = rankOf(value);
-          return rank !== null && ranks.has(rank);
-        },
+        // Only a choice value — a string or a number — is any or none of
+        // the options: an absent value, null or a value of another type is
+        // neither, as no predicate matches an empty value.
+        test: (value) =>
+          (typeof value === "string" || typeof value === "number") &&
+          ranks.has(rankOperand(value)) === holds,
       };
     }
     case "gte":
@@ -86,7 +72,8 @@ const compilePredicate = (
         },
       };
     }
-    case "contains": {
+    case "contains":
+    case "startsWith": {
       const [operand] = predicate.operands;
       // Text looks for text: an operand that is not a string is held by no
       // value, and neither is text in a value that is not a string.
@@ -94,10 +81,13 @@ const compilePredicate = (
         return { field, test: () => false };
       }
       const needle = foldText(operand);
+      const holds =
+        predicate.operator === "contains"
+          ? (folded: string) => folded.includes(needle)
+          : (folded: string) => folded.startsWith(needle);
       return {
         field,
-        test: (value) =>
-          typeof value === "string" && foldText(value).includes(needle),
+        test: (value) => typeof value === "string" && holds(foldText(value)),
       };
     }
   }

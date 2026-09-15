@@ -173,7 +173,7 @@ export const filterStatusBy = (
   operands: readonly PredicateOperand[],
 ): Slice => ({
   ...EMPTY_SLICE,
-  filter: [{ field: "status", operator: "eq", operands }],
+  filter: [{ field: "status", operator: "isAny", operands }],
 });
 
 /** One display status of each kind, with a reason where the kind carries one. */

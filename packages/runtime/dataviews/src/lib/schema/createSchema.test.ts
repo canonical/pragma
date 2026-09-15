@@ -140,7 +140,7 @@ describe("createSchema", () => {
     // non-option, and the bound copy keeps min 0 / max 5 despite the edit.
     (options as string[]).push("deployed");
     (numeric as { max: number }).max = 10;
-    expect(schema.predicateFor("status", "eq", ["deployed"])).toEqual({
+    expect(schema.predicateFor("status", "isAny", ["deployed"])).toEqual({
       status: "invalid",
       reason: '"deployed" is not an option of "status"',
     });
@@ -175,11 +175,11 @@ describe("createSchema", () => {
   });
 
   it("names the operators each kind accepts, and none for an unknown field", () => {
-    expect(schema.listOperators("status")).toEqual(["eq"]);
+    expect(schema.listOperators("status")).toEqual(["isAny", "isNone"]);
     expect(schema.listOperators("cpu")).toEqual(["gte", "lte"]);
     expect(schema.listOperators("updated")).toEqual(["gte", "lte"]);
     expect(schema.listOperators("owner")).toEqual(["isSet"]);
-    expect(schema.listOperators("name")).toEqual(["contains"]);
+    expect(schema.listOperators("name")).toEqual(["contains", "startsWith"]);
     expect(schema.listOperators("zone")).toEqual([]);
   });
 
@@ -188,9 +188,9 @@ describe("createSchema", () => {
       status: "valid",
       predicate: { field: "name", operator: "contains", operands: ["alder"] },
     });
-    expect(schema.predicateFor("name", "eq", ["alder"])).toEqual({
+    expect(schema.predicateFor("name", "isAny", ["alder"])).toEqual({
       status: "invalid",
-      reason: 'text field "name" does not accept the eq operator',
+      reason: 'text field "name" does not accept the isAny operator',
     });
     expect(schema.predicateFor("status", "contains", ["fail"])).toEqual({
       status: "invalid",
@@ -324,12 +324,12 @@ describe("createSchema", () => {
 
   it("builds predicates with the kind's legal operators", () => {
     expect(
-      schema.predicateFor("status", "eq", ["failed", "cancelled"]),
+      schema.predicateFor("status", "isAny", ["failed", "cancelled"]),
     ).toEqual({
       status: "valid",
       predicate: {
         field: "status",
-        operator: "eq",
+        operator: "isAny",
         operands: ["failed", "cancelled"],
       },
     });
@@ -366,7 +366,7 @@ describe("createSchema", () => {
   it("rejects every operator no field kind accepts", () => {
     const cases: [
       string,
-      "eq" | "gte" | "lte" | "isSet",
+      "isAny" | "gte" | "lte" | "isSet",
       readonly (string | number)[],
       string,
     ][] = [
@@ -388,7 +388,12 @@ describe("createSchema", () => {
         [],
         'choices field "status" does not accept the isSet operator',
       ],
-      ["cpu", "eq", [4], 'number field "cpu" does not accept the eq operator'],
+      [
+        "cpu",
+        "isAny",
+        [4],
+        'number field "cpu" does not accept the isAny operator',
+      ],
       [
         "cpu",
         "isSet",
@@ -397,9 +402,9 @@ describe("createSchema", () => {
       ],
       [
         "updated",
-        "eq",
+        "isAny",
         ["2026-01-01"],
-        'date field "updated" does not accept the eq operator',
+        'date field "updated" does not accept the isAny operator',
       ],
       [
         "updated",
@@ -409,9 +414,9 @@ describe("createSchema", () => {
       ],
       [
         "owner",
-        "eq",
+        "isAny",
         ["x"],
-        'flag field "owner" does not accept the eq operator',
+        'flag field "owner" does not accept the isAny operator',
       ],
       [
         "owner",
@@ -435,9 +440,9 @@ describe("createSchema", () => {
   });
 
   it("rejects operands that violate the operator's grammar arity", () => {
-    expect(schema.predicateFor("status", "eq", [])).toEqual({
+    expect(schema.predicateFor("status", "isAny", [])).toEqual({
       status: "invalid",
-      reason: "eq predicate needs at least one operand",
+      reason: "isAny predicate needs at least one operand",
     });
     expect(schema.predicateFor("cpu", "gte", [])).toEqual({
       status: "invalid",
@@ -454,7 +459,7 @@ describe("createSchema", () => {
   });
 
   it("enforces schema semantics on direct operands", () => {
-    expect(schema.predicateFor("status", "eq", ["deployed"])).toEqual({
+    expect(schema.predicateFor("status", "isAny", ["deployed"])).toEqual({
       status: "invalid",
       reason: '"deployed" is not an option of "status"',
     });
@@ -497,7 +502,7 @@ describe("createSchema", () => {
   });
 
   it("reports unknown fields from the direct path too", () => {
-    expect(schema.predicateFor("zone", "eq", ["north"])).toEqual({
+    expect(schema.predicateFor("zone", "isAny", ["north"])).toEqual({
       status: "invalid",
       reason: 'unknown field "zone"',
     });
@@ -511,12 +516,12 @@ describe("createSchema", () => {
       status: "valid",
       operands: [2],
     });
-    expect(numeric.predicateFor("priority", "eq", [2, 3])).toEqual({
+    expect(numeric.predicateFor("priority", "isAny", [2, 3])).toEqual({
       status: "valid",
-      predicate: { field: "priority", operator: "eq", operands: [2, 3] },
+      predicate: { field: "priority", operator: "isAny", operands: [2, 3] },
     });
     // Strict matching: the string "2" is not the number option 2.
-    expect(numeric.predicateFor("priority", "eq", ["2"])).toEqual({
+    expect(numeric.predicateFor("priority", "isAny", ["2"])).toEqual({
       status: "invalid",
       reason: '"2" is not an option of "priority"',
     });

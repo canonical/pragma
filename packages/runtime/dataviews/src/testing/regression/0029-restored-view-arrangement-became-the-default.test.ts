@@ -43,7 +43,7 @@ describe("regression 0029 — a restored view arrangement became the default", (
     const provider = createDataViewsProvider({
       collection,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       location,

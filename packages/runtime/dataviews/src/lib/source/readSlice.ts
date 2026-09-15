@@ -11,10 +11,12 @@ import type { SliceReading } from "./types.js";
  * the schema does not define is left out: it can carry no applied value
  * of any kind, and the declaration would have refused it before this.
  *
- * A number or date filter reads as its bounds, `gte` and `lte`, each
- * present only when the slice carries it; a `choices` filter as the set of
- * its options; a flag as `true`; a text filter as the text it contains. The
- * search text and the ordered sort terms come as they are, canonicalized.
+ * A field whose kind accepts several operators reads as a record of them,
+ * each present only when the slice carries it: a number or date filter as
+ * its bounds, `gte` and `lte`; a `choices` filter as the sets `isAny` and
+ * `isNone`; a text filter as the text it `contains` and `startsWith`. A flag,
+ * whose kind accepts one, reads as `true`. The search text and the ordered
+ * sort terms come as they are, canonicalized.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -26,19 +28,19 @@ export default function readSlice<
   const { schema } = collection;
   const canonical = canonicalizeSlice(slice);
   const filters: Record<string, unknown> = {};
-  /** The range bounds read so far, one record per bounded field. */
-  const bounds: Record<string, Record<string, unknown>> = {};
+  /** What each field read so far holds, by operator, for a kind with several. */
+  const byField: Record<string, Record<string, unknown>> = {};
   for (const predicate of canonical.filter) {
     const definition = schema.findField(predicate.field);
     if (definition === undefined) {
       continue;
     }
     const applied = resolveFieldKind(definition.kind).readApplied(predicate);
-    if (predicate.operator === "gte" || predicate.operator === "lte") {
-      const range = bounds[predicate.field] ?? {};
-      range[predicate.operator] = applied;
-      bounds[predicate.field] = range;
-      filters[predicate.field] = range;
+    if (schema.listOperators(predicate.field).length > 1) {
+      const byOperator = byField[predicate.field] ?? {};
+      byOperator[predicate.operator] = applied;
+      byField[predicate.field] = byOperator;
+      filters[predicate.field] = byOperator;
     } else {
       filters[predicate.field] = applied;
     }

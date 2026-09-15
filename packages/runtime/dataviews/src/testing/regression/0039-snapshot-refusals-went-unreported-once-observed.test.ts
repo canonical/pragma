@@ -25,7 +25,7 @@ const collection = createCollection({
   ],
 });
 
-const capabilities = declare({ filter: { status: ["eq"] } });
+const capabilities = declare({ filter: { status: ["isAny"] } });
 
 describe("regression 0039 — a snapshot's refusals went unreported once observed", () => {
   it("keeps reporting them until the location carries a query of its own", () => {

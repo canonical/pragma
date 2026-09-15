@@ -79,16 +79,22 @@ export type MemoryViewStore = {
   readonly drop: (id: string) => void;
 };
 
-/** One record the cases look through, by its identity and its text. */
-export type ContainsRecord = {
+/** One record the operator cases look through. */
+export type OperatorRecord = {
   readonly id: string;
   /** Deliberately wider than text: the cases include values that are not. */
   readonly name?: unknown;
+  /** Deliberately wider than a status, for the same reason. */
+  readonly status?: unknown;
 };
 
-/** One operand and the records whose text holds it, in record order. */
-export type ContainsCase = {
-  readonly operand: string;
+/**
+ * One operator with its operands and the records it holds, in record order.
+ * A text operator looks at `name`, a choice operator at `status`.
+ */
+export type OperatorCase = {
+  readonly operator: "contains" | "startsWith" | "isAny" | "isNone";
+  readonly operands: readonly string[];
   readonly matches: readonly string[];
   /** What the case pins, for a failure to say. */
   readonly pins: string;

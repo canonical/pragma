@@ -388,12 +388,13 @@ export type CapabilityDeclaration<
 };
 
 /**
- * One slice read by field, typed from the schema: a `choices` filter as
- * the set of its options, a number or date filter as its bounds, a flag
- * as `true` when set, a text filter as the text it contains, each present
- * only when the slice carries it — plus the search text and the ordered sort
- * terms. An adapter finds the status filter by name instead of scanning
- * predicates and stringifying operands.
+ * One slice read by field, typed from the schema: a field whose kind accepts
+ * several operators as a record keyed by operator — a number or date filter
+ * as its bounds, a `choices` filter as the sets it is any and none of, a text
+ * filter as the text it contains and starts with — and a flag as `true` when
+ * set, each present only when the slice carries it; plus the search text and
+ * the ordered sort terms. An adapter finds the status filter by name instead
+ * of scanning predicates and stringifying operands.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -401,13 +402,16 @@ export type CapabilityDeclaration<
 export type SliceReading<TFields extends readonly SchemaFieldDefinition[]> = {
   readonly filters: {
     readonly [TDefinition in TFields[number] as TDefinition["field"]]?: TDefinition extends {
-      readonly kind: "number" | "date";
+      readonly kind: "flag";
     }
-      ? {
-          readonly gte?: AppliedOf<TDefinition>;
-          readonly lte?: AppliedOf<TDefinition>;
-        }
-      : AppliedOf<TDefinition>;
+      ? AppliedOf<TDefinition>
+      : TDefinition extends {
+            readonly kind: infer TKind extends keyof FieldKindOperators;
+          }
+        ? {
+            readonly [TOperator in FieldKindOperators[TKind]]?: AppliedOf<TDefinition>;
+          }
+        : never;
   };
   readonly search: string | null;
   readonly sort: readonly SortTerm[];

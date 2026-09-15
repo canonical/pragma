@@ -66,7 +66,7 @@ describe("useDataViewsFilter", () => {
     const { result } = renderHook(
       () => ({
         cores: useDataViewsFilter(machines, "cores", "lte"),
-        status: useDataViewsFilter(machines, "status", "eq"),
+        status: useDataViewsFilter(machines, "status", "isAny"),
       }),
       { wrapper: inRoot(machineProvider) },
     );
@@ -79,9 +79,9 @@ describe("useDataViewsFilter", () => {
     // the compiler's.
     const rejectedAddresses = (): void => {
       // @ts-expect-error a text field contains, it is never equal
-      useDataViewsFilter(machines, "name", "eq");
+      useDataViewsFilter(machines, "name", "isAny");
       // @ts-expect-error a number is bounded, never equal
-      useDataViewsFilter(machines, "cores", "eq");
+      useDataViewsFilter(machines, "cores", "isAny");
     };
     expect(rejectedAddresses).toBeTypeOf("function");
     act(() => {
@@ -143,7 +143,7 @@ describe("useDataViewsFilter", () => {
     const machineProvider = createMachineProvider();
     const { provider } = machineProvider;
     const { result } = renderHook(
-      () => useDataViewsFilter(machines, "status", "eq"),
+      () => useDataViewsFilter(machines, "status", "isAny"),
       { wrapper: inRoot(machineProvider) },
     );
     act(() => {
@@ -154,7 +154,7 @@ describe("useDataViewsFilter", () => {
       value: new Set(["failed", "running"]),
     });
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed", "running"] },
+      { field: "status", operator: "isAny", operands: ["failed", "running"] },
     ]);
   });
 
@@ -215,7 +215,7 @@ describe("useDataViewsFilter", () => {
     act(() => {
       readProviderHost(provider).setPredicate({
         field: "status",
-        operator: "eq",
+        operator: "isAny",
         operands: ["failed"],
       });
       provider.setSearch("alpha");
@@ -249,7 +249,7 @@ describe("useDataViewsFilter", () => {
     const machineProvider = createMachineProvider();
     // Off the schema at runtime, as a JavaScript caller may spell it.
     const field: string = "zone";
-    const operator: PredicateOperator = "eq";
+    const operator: PredicateOperator = "isAny";
     expect(() =>
       renderHook(() => useDataViewsFilter(machines, field as "cores", "gte"), {
         wrapper: inRoot(machineProvider),
@@ -260,6 +260,6 @@ describe("useDataViewsFilter", () => {
         () => useDataViewsFilter(machines, "cores", operator as "gte"),
         { wrapper: inRoot(machineProvider) },
       ),
-    ).toThrow("the root holds no filter for cores eq");
+    ).toThrow("the root holds no filter for cores isAny");
   });
 });

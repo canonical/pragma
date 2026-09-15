@@ -68,7 +68,7 @@ describe("DataViews SSR", () => {
     // server observes nothing, so nothing was asked for it.
     expect(html).toContain('data-testid="status">idle<');
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(subscribe).not.toHaveBeenCalled();
     expect(write).not.toHaveBeenCalled();

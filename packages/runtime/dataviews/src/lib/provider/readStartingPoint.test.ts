@@ -13,7 +13,7 @@ const machines = createCollection({
   ],
 });
 
-const capabilities = declare({ filter: { status: ["eq"] } });
+const capabilities = declare({ filter: { status: ["isAny"] } });
 
 describe("readStartingPoint", () => {
   it("stands on the location's query and view when it carries one, keeping the snapshot's query to reset to", () => {
@@ -27,7 +27,7 @@ describe("readStartingPoint", () => {
       keepsViews: true,
     });
     expect(point.initial?.slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(point.start?.slice.filter.at(0)?.operands).toEqual(["running"]);
     expect(point.view).toBe("v1");

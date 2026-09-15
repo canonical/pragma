@@ -106,7 +106,7 @@ describe("resolveDisplayStatus", () => {
     const coordinator = loaded([]);
     const { requestId } = coordinator.dispatch({
       kind: "setPredicate",
-      predicate: { field: "status", operator: "eq", operands: ["failed"] },
+      predicate: { field: "status", operator: "isAny", operands: ["failed"] },
     });
     coordinator.complete(readIssuedRequest(requestId), delivery([]));
     expect(resolveDisplayStatus(coordinator.state)).toEqual({

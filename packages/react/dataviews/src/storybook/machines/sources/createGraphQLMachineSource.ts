@@ -18,18 +18,19 @@ import { type Machine, machineCollection } from "../fixtures.js";
 import MachinesQuery from "./MachinesQuery.js";
 
 /**
- * What the GraphQL endpoint executes, and so all the parts may offer:
- * equality on status, bounds on cores, text in the name, the region and the
- * owner, search over the name and the owner, one ordered term, and forward
- * pages by cursor with no counts at all.
+ * What the GraphQL endpoint executes, and so all the parts may offer: the
+ * statuses a machine is any or none of, bounds on cores, text the name, the
+ * region and the owner contain, text the name and the owner — but not the
+ * region — start with, search over the name and the owner, one ordered term,
+ * and forward pages by cursor with no counts at all.
  */
 const GRAPHQL_CAPABILITIES = declareCapabilities(machineCollection, {
   filter: {
-    status: ["eq"],
+    status: ["isAny", "isNone"],
     cores: ["gte", "lte"],
-    name: ["contains"],
+    name: ["contains", "startsWith"],
     region: ["contains"],
-    owner: ["contains"],
+    owner: ["contains", "startsWith"],
   },
   search: ["name", "owner"],
   sort: {
@@ -43,11 +44,14 @@ const GRAPHQL_CAPABILITIES = declareCapabilities(machineCollection, {
 /** The filter input of a GraphQL `machines` query. */
 type MachineWhere = {
   readonly status?: readonly string[] | null | undefined;
+  readonly statusIsNone?: readonly string[] | null | undefined;
   readonly coresGte?: number | null | undefined;
   readonly coresLte?: number | null | undefined;
   readonly nameContains?: string | null | undefined;
+  readonly nameStartsWith?: string | null | undefined;
   readonly regionContains?: string | null | undefined;
   readonly ownerContains?: string | null | undefined;
+  readonly ownerStartsWith?: string | null | undefined;
   readonly search?: string | null | undefined;
 };
 
@@ -96,12 +100,19 @@ const readVariables = ({
     first,
     after,
     where: {
-      status: filters.status === undefined ? null : [...filters.status],
+      status:
+        filters.status?.isAny === undefined ? null : [...filters.status.isAny],
+      statusIsNone:
+        filters.status?.isNone === undefined
+          ? null
+          : [...filters.status.isNone],
       coresGte: filters.cores?.gte ?? null,
       coresLte: filters.cores?.lte ?? null,
-      nameContains: filters.name ?? null,
-      regionContains: filters.region ?? null,
-      ownerContains: filters.owner ?? null,
+      nameContains: filters.name?.contains ?? null,
+      nameStartsWith: filters.name?.startsWith ?? null,
+      regionContains: filters.region?.contains ?? null,
+      ownerContains: filters.owner?.contains ?? null,
+      ownerStartsWith: filters.owner?.startsWith ?? null,
       search,
     },
     orderBy: sort.map(({ field, direction }) => ({

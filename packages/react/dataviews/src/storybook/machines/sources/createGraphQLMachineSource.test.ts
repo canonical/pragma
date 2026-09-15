@@ -82,7 +82,7 @@ describe("createGraphQLMachineSource", () => {
         slice: {
           ...EMPTY_SLICE,
           filter: [
-            { field: "status", operator: "eq", operands: ["failed"] },
+            { field: "status", operator: "isAny", operands: ["failed"] },
             { field: "cores", operator: "gte", operands: [4] },
             { field: "cores", operator: "lte", operands: [16] },
             { field: "name", operator: "contains", operands: ["web"] },

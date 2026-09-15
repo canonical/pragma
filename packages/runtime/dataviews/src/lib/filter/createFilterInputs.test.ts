@@ -34,7 +34,7 @@ const provider = (location?: ReturnType<typeof createMemoryLocation>) =>
     source: createManualSource({
       capabilities: declare({
         filter: {
-          status: ["eq"],
+          status: ["isAny"],
           cpu: ["gte", "lte"],
           owner: ["isSet"],
           updated: ["gte", "lte"],
@@ -59,11 +59,12 @@ describe("createFilterInputs", () => {
       "updated",
     ]);
     expect(Object.keys(handles.cpu).sort()).toEqual(["gte", "lte"]);
-    expect(Object.keys(handles.name)).toEqual(["contains"]);
+    expect(Object.keys(handles.name)).toEqual(["contains", "startsWith"]);
+    expect(Object.keys(handles.status)).toEqual(["isAny", "isNone"]);
     expectTypeOf(handles.name.contains.applied).toEqualTypeOf<
       ReadonlyChannel<EmptyOr<string>>
     >();
-    expectTypeOf(handles.status.eq.applied).toEqualTypeOf<
+    expectTypeOf(handles.status.isAny.applied).toEqualTypeOf<
       ReadonlyChannel<EmptyOr<ReadonlySet<"failed" | "cancelled">>>
     >();
     expectTypeOf(handles.cpu.gte.applied).toEqualTypeOf<
@@ -92,7 +93,7 @@ describe("createFilterInputs", () => {
     const p = createDataViewsProvider({
       collection: machines,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
       }).source,
       location,
     });
@@ -147,7 +148,9 @@ describe("createFilterInputs", () => {
     host.adopt(
       {
         slice: {
-          filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+          filter: [
+            { field: "status", operator: "isAny", operands: ["failed"] },
+          ],
           search: null,
           sort: [],
           group: [],
@@ -157,9 +160,11 @@ describe("createFilterInputs", () => {
       "adopt",
       null,
     );
-    expect(inputs.handles.status.eq.applied.get()).toEqual({ kind: "empty" });
+    expect(inputs.handles.status.isAny.applied.get()).toEqual({
+      kind: "empty",
+    });
     const stop = inputs.observe();
-    expect(inputs.handles.status.eq.applied.get()).toEqual({
+    expect(inputs.handles.status.isAny.applied.get()).toEqual({
       kind: "value",
       value: new Set(["failed"]),
     });
@@ -178,7 +183,9 @@ describe("createFilterInputs", () => {
       "adopt",
       null,
     );
-    expect(inputs.handles.status.eq.applied.get()).toEqual({ kind: "empty" });
+    expect(inputs.handles.status.isAny.applied.get()).toEqual({
+      kind: "empty",
+    });
     expect(inputs.handles.cpu.gte.state.get()).toEqual({
       input: "8",
       feedback: { status: "none" },

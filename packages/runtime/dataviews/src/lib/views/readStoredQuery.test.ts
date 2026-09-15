@@ -13,7 +13,7 @@ const collection = createCollection({
 
 const host = {
   schema: collection.schema,
-  capabilities: declare({ filter: { status: ["eq"] } }),
+  capabilities: declare({ filter: { status: ["isAny"] } }),
 };
 
 const buildStored = (query: string): SavedView => buildStoredView({ query });
@@ -25,7 +25,7 @@ describe("readStoredQuery", () => {
       host,
     );
     expect(slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(issues).toEqual([]);
   });

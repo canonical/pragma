@@ -102,11 +102,11 @@ const controls: {
       handle={findFilterHandle<ReadonlySet<PredicateOperand>>(
         context.filters,
         definition.field,
-        "eq",
+        "isAny",
       )}
       label={name}
       field={definition.field}
-      declared={declares(context, definition.field, "eq")}
+      declared={declares(context, definition.field, "isAny")}
       onLeave={context.focusGroup}
     />
   ),

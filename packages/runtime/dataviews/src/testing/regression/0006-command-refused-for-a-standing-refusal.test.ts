@@ -40,7 +40,7 @@ describe("regression 0006 — a command is refused only for what it incurs", () 
         slice: {
           ...EMPTY_SLICE,
           filter: [
-            { field: "status", operator: "eq", operands: ["failed"] },
+            { field: "status", operator: "isAny", operands: ["failed"] },
             { field: "cpu", operator: "gte", operands: [4] },
           ],
         },
@@ -49,7 +49,7 @@ describe("regression 0006 — a command is refused only for what it incurs", () 
       "view",
       null,
     );
-    expect(host.removePredicate("status", "eq")).toEqual([]);
+    expect(host.removePredicate("status", "isAny")).toEqual([]);
     expect(provider.state.get().slice.filter).toEqual([
       { field: "cpu", operator: "gte", operands: [4] },
     ]);

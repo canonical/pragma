@@ -38,7 +38,7 @@ const collection = createCollection({
 
 const FAILED: Predicate = {
   field: "status",
-  operator: "eq",
+  operator: "isAny",
   operands: ["failed"],
 };
 
@@ -60,7 +60,7 @@ describe("regression 0058 — a queued write landing within a write skipped its 
     const provider = createDataViewsProvider({
       collection,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       location,

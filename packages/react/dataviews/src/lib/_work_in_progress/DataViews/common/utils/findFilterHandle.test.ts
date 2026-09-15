@@ -15,7 +15,9 @@ const rootHandles = () => {
 describe("findFilterHandle", () => {
   it("reads the handle the root holds at a field and operator", () => {
     const handles = rootHandles();
-    expect(findFilterHandle(handles, "status", "eq")).toBe(handles.status.eq);
+    expect(findFilterHandle(handles, "status", "isAny")).toBe(
+      handles.status.isAny,
+    );
     expect(findFilterHandle(handles, "cores", "lte")).toBe(handles.cores.lte);
     expect(findFilterHandle(handles, "cores", "gte")).not.toBe(
       handles.cores.lte,
@@ -24,18 +26,18 @@ describe("findFilterHandle", () => {
 
   it("reports a field or operator the root holds no handle for", () => {
     const handles = rootHandles();
-    expect(() => findFilterHandle(handles, "zone", "eq")).toThrow(
-      "the root holds no filter for zone eq",
+    expect(() => findFilterHandle(handles, "zone", "isAny")).toThrow(
+      "the root holds no filter for zone isAny",
     );
-    expect(() => findFilterHandle(handles, "cores", "eq")).toThrow(
-      "the root holds no filter for cores eq",
+    expect(() => findFilterHandle(handles, "cores", "isAny")).toThrow(
+      "the root holds no filter for cores isAny",
     );
-    // A text field is filtered by the text it contains, never by equality.
+    // A text field is filtered by the text it contains, never by a set.
     expect(findFilterHandle(handles, "name", "contains")).toBe(
       handles.name.contains,
     );
-    expect(() => findFilterHandle(handles, "name", "eq")).toThrow(
-      "the root holds no filter for name eq",
+    expect(() => findFilterHandle(handles, "name", "isAny")).toThrow(
+      "the root holds no filter for name isAny",
     );
   });
 });

@@ -33,7 +33,7 @@ describe("regression 0050 — a lagging location hung the first pass", () => {
     const provider = createDataViewsProvider({
       collection,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       location,
@@ -42,7 +42,7 @@ describe("regression 0050 — a lagging location hung the first pass", () => {
     onTestFinished(provider.observe());
     expect(write).toHaveBeenCalled();
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
   });
 });

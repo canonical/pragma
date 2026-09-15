@@ -19,11 +19,14 @@ const rulesOf = (kind: FieldKind) => ({
 
 describe("resolveFieldKind", () => {
   it("declares the operators each kind accepts", () => {
-    expect(resolveFieldKind("choices").operators).toEqual(["eq"]);
+    expect(resolveFieldKind("choices").operators).toEqual(["isAny", "isNone"]);
     expect(resolveFieldKind("number").operators).toEqual(["gte", "lte"]);
     expect(resolveFieldKind("flag").operators).toEqual(["isSet"]);
     expect(resolveFieldKind("date").operators).toEqual(["gte", "lte"]);
-    expect(resolveFieldKind("text").operators).toEqual(["contains"]);
+    expect(resolveFieldKind("text").operators).toEqual([
+      "contains",
+      "startsWith",
+    ]);
   });
 
   it("parses a text input through the kind, or says the kind takes none", () => {
@@ -79,7 +82,7 @@ describe("resolveFieldKind", () => {
     const choices = resolveFieldKind("choices");
     const applied = choices.readApplied({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["failed", 2],
     });
     expect(applied).toEqual(new Set(["failed", 2]));

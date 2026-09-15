@@ -22,7 +22,7 @@ const collection = createCollection({
   ],
 });
 
-const capabilities = declare({ filter: { status: ["eq"] } });
+const capabilities = declare({ filter: { status: ["isAny"] } });
 
 /** Whether a snapshot's query names an open view. */
 const isNamingView = (query: string) => new URLSearchParams(query).has("view");

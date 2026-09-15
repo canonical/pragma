@@ -53,7 +53,7 @@ export const machine = (
 
 /** What every machine declaration shares: its filters, its search and its counts. */
 const MACHINE_DECLARATION = {
-  filter: { status: ["eq"], cores: ["gte", "lte"] },
+  filter: { status: ["isAny"], cores: ["gte", "lte"] },
   search: ["name"],
   counts: COUNTED_EXACTLY,
 } as const satisfies CapabilityDeclaration<MachineFields>;

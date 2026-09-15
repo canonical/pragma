@@ -62,7 +62,7 @@ const machinesWithoutCpu = createCollection({
 
 /** Everything the scenarios command: every filter, search, a two-field ordering. */
 const permissive: SourceCapabilities = declare({
-  filter: { status: ["eq"], cpu: ["gte", "lte"], owner: ["isSet"] },
+  filter: { status: ["isAny"], cpu: ["gte", "lte"], owner: ["isSet"] },
   search: { fields: ["name"] },
   sort: declareSort(["cpu", "status"]),
 });
@@ -199,7 +199,7 @@ describe("syncLocation", () => {
     });
     const release = sync.observe();
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed", "cancelled"] },
+      { field: "status", operator: "isAny", operands: ["failed", "cancelled"] },
     ]);
     expect(provider.state.get().window).toEqual(windowAt({ page: 2 }));
     release();
@@ -369,7 +369,7 @@ describe("syncLocation", () => {
     inputs.handles.cpu.gte.edit("4");
     location.write(new URLSearchParams("status=ready&page=2"));
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["ready"] },
+      { field: "status", operator: "isAny", operands: ["ready"] },
     ]);
     expect(provider.state.get().window).toEqual(windowAt({ page: 2 }));
     // The authoritative query wins: the stale input session is discarded.
@@ -434,11 +434,15 @@ describe("syncLocation", () => {
     const { provider, host, sync } = setUp({ location });
     const release = sync.observe();
     writes.length = 0;
-    host.setPredicate({ field: "status", operator: "eq", operands: ["ready"] });
+    host.setPredicate({
+      field: "status",
+      operator: "isAny",
+      operands: ["ready"],
+    });
     provider.setSearch("yak");
     provider.setSort([{ field: "cpu", direction: "asc" }]);
     provider.navigateWindow({ page: 2 });
-    host.removePredicate("status", "eq");
+    host.removePredicate("status", "isAny");
     expect(writes.map(([, mode]) => mode)).toEqual([
       "push",
       "replace",
@@ -488,7 +492,11 @@ describe("syncLocation", () => {
     const { provider, host, sync } = setUp({ location, history: "replace" });
     const release = sync.observe();
     writes.length = 0;
-    host.setPredicate({ field: "status", operator: "eq", operands: ["ready"] });
+    host.setPredicate({
+      field: "status",
+      operator: "isAny",
+      operands: ["ready"],
+    });
     provider.setSort([{ field: "cpu", direction: "asc" }]);
     provider.navigateWindow({ page: 2 });
     expect(writes.map(([, mode]) => mode)).toEqual([
@@ -509,7 +517,7 @@ describe("syncLocation", () => {
     host.adopt(
       {
         slice: {
-          filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
+          filter: [{ field: "status", operator: "isAny", operands: ["ready"] }],
           search: null,
           sort: [],
           group: [],
@@ -544,7 +552,7 @@ describe("syncLocation", () => {
     // A command keeps the view's id beside the query it moves.
     host.setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["failed"],
     });
     host.adopt({ slice: opened.slice, window: opened.window }, "revert", "v1");
@@ -613,7 +621,11 @@ describe("syncLocation", () => {
     expect(location.read().toString()).toBe("status=melted");
 
     // Moving the query does: the user has replaced what was refused.
-    host.setPredicate({ field: "status", operator: "eq", operands: ["ready"] });
+    host.setPredicate({
+      field: "status",
+      operator: "isAny",
+      operands: ["ready"],
+    });
     expect(location.read().toString()).toBe("status=ready&page=1&size=50");
     expect(sync.issues.get()).toEqual([]);
     release();
@@ -641,7 +653,7 @@ describe("syncLocation", () => {
     first();
     location.write(new URLSearchParams("status=ready&page=1&size=50"));
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["ready"] },
+      { field: "status", operator: "isAny", operands: ["ready"] },
     ]);
     second();
   });
@@ -743,7 +755,7 @@ describe("syncLocation", () => {
     writes.length = 0;
     const second = sync.observe();
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(writes).toEqual([["status=failed&page=1&size=50", "replace"]]);
     second();
@@ -763,7 +775,7 @@ describe("syncLocation", () => {
     );
     const release = sync.observe();
     expect(host.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(host.state.get().window.page).toBe(1);
     expect(location.read().toString()).toBe("status=failed&page=1&size=50");
@@ -786,7 +798,7 @@ describe("syncLocation", () => {
     writes.length = 0;
     const again = sync.observe();
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(writes).toEqual([["status=failed&page=1&size=50", "replace"]]);
     again();
@@ -812,11 +824,11 @@ describe("syncLocation", () => {
     const release = sync.observe();
     location.write(new URLSearchParams("status=failed&status=melted"));
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     // Back where the loop last wrote — but the location has moved since,
     // so it is owed the write.
-    host.removePredicate("status", "eq");
+    host.removePredicate("status", "isAny");
     expect(location.read().toString()).toBe("page=1&size=50");
     expect(sync.issues.get()).toEqual([]);
     release();
@@ -873,7 +885,11 @@ describe("syncLocation", () => {
     const { host, sync } = setUp({ location });
     const release = sync.observe();
     expect(sync.issues.get()).toEqual([MELTED]);
-    host.setPredicate({ field: "status", operator: "eq", operands: ["ready"] });
+    host.setPredicate({
+      field: "status",
+      operator: "isAny",
+      operands: ["ready"],
+    });
     expect(location.read().toString()).toBe("status=ready&page=1&size=50");
     expect(sync.issues.get()).toEqual([]);
     release();
@@ -882,11 +898,11 @@ describe("syncLocation", () => {
   it("refuses a clause the host's source cannot execute rather than adopting it", () => {
     const { provider, location, sync } = setUp({
       href: "/machines?status=ready&cpu__gte=4&sort=cpu__asc",
-      capabilities: declare({ filter: { status: ["eq"], cpu: ["lte"] } }),
+      capabilities: declare({ filter: { status: ["isAny"], cpu: ["lte"] } }),
     });
     const release = sync.observe();
     expect(provider.state.get().slice).toEqual({
-      filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
+      filter: [{ field: "status", operator: "isAny", operands: ["ready"] }],
       search: null,
       sort: [],
       group: [],
@@ -1119,7 +1135,7 @@ describe("syncLocation", () => {
     const { provider, sync } = setUp({
       location,
       capabilities: declare({
-        filter: { status: ["eq"] },
+        filter: { status: ["isAny"] },
         sort: declareSort(["status"]),
       }),
     });
@@ -1566,7 +1582,7 @@ describe("syncLocation", () => {
     // followed by a second fetch for the query the location carried all along.
     expect(manual.calls).toHaveLength(1);
     expect(manual.callAt(0).request.slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(manual.callAt(0).request.window).toEqual(windowAt());
     expect(location.read().toString()).toBe("status=failed&page=1&size=50");
@@ -1614,7 +1630,7 @@ describe("syncLocation", () => {
       const provider = createDataViewsProvider({
         collection: machines,
         source: createManualSource({
-          capabilities: declare({ filter: { status: ["eq"] } }),
+          capabilities: declare({ filter: { status: ["isAny"] } }),
         }).source,
         location,
       });
@@ -1626,7 +1642,7 @@ describe("syncLocation", () => {
       expect(() =>
         readProviderHost(provider).setPredicate({
           field: "status",
-          operator: "eq",
+          operator: "isAny",
           operands: ["ready"],
         }),
       ).toThrow("history refused");
@@ -1640,7 +1656,7 @@ describe("syncLocation", () => {
       const provider = createDataViewsProvider({
         collection: machines,
         source: createManualSource({
-          capabilities: declare({ filter: { status: ["eq"] } }),
+          capabilities: declare({ filter: { status: ["isAny"] } }),
         }).source,
         location,
         snapshot: { query: "status=failed&owner__isSet=1", presentation: {} },

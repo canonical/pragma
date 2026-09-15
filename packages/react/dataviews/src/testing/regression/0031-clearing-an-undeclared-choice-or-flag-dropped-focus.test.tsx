@@ -42,7 +42,7 @@ const UNDECLARED = declareCapabilities(collection, {});
 
 /** What a source declaring both fields offers. */
 const DECLARED = declareCapabilities(collection, {
-  filter: { status: ["eq"], spare: ["isSet"] },
+  filter: { status: ["isAny"], spare: ["isSet"] },
 });
 
 /** Filters over a source, with one predicate standing. */
@@ -73,7 +73,11 @@ const renderStanding = (
 
 describe("regression 0031 — clearing an undeclared choice or flag dropped focus", () => {
   it("moves focus to the filters' group when the last choice is unchecked", () => {
-    renderStanding({ field: "status", operator: "eq", operands: ["failed"] });
+    renderStanding({
+      field: "status",
+      operator: "isAny",
+      operands: ["failed"],
+    });
     const failed = screen.getByRole("checkbox", { name: "failed" });
     failed.focus();
     fireEvent.click(failed);
@@ -92,7 +96,7 @@ describe("regression 0031 — clearing an undeclared choice or flag dropped focu
 
   it("keeps focus on a declared choice, which stays to be checked again", () => {
     renderStanding(
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
       DECLARED,
     );
     const failed = screen.getByRole("checkbox", { name: "failed" });

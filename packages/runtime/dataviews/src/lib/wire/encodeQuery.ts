@@ -1,4 +1,8 @@
-import { canonicalizeSlice, type PredicateOperand } from "../query/index.js";
+import {
+  canonicalizeSlice,
+  OPERATOR_ARITY,
+  type PredicateOperand,
+} from "../query/index.js";
 import { OPERATOR_DELIMITER } from "./constants.js";
 import isOwnedKey from "./isOwnedKey.js";
 import spellWireKey from "./spellWireKey.js";
@@ -43,10 +47,10 @@ const operandText = (operand: PredicateOperand): string =>
  * Write one query and its window as URL parameters.
  *
  * The slice is canonicalized first, so the same query always produces the
- * same parameters: equality operands are a set, ordered sort terms keep
- * their precedence, and an empty search is no search. Only the grammar's
- * own keys are replaced in `preserve` — every host parameter survives, in
- * its original order and with its duplicates.
+ * same parameters: set operands are a set, `isAny` is the bare field name,
+ * ordered sort terms keep their precedence, and an empty search is no
+ * search. Only the grammar's own keys are replaced in `preserve` — every
+ * host parameter survives, in its original order and with its duplicates.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -70,11 +74,13 @@ export default function encodeQuery(
       continue;
     }
     for (const operand of predicate.operands) {
-      // An option is matched by its own string form; a bound is read by
-      // the number grammar.
+      // A set operator's option is matched by its own string form; a bound
+      // is read by the number grammar.
       params.append(
         key,
-        predicate.operator === "eq" ? String(operand) : operandText(operand),
+        OPERATOR_ARITY[predicate.operator] === "many"
+          ? String(operand)
+          : operandText(operand),
       );
     }
   }

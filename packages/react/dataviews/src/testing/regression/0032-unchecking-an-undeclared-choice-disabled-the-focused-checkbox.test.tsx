@@ -50,7 +50,7 @@ describe("regression 0032 — unchecking an undeclared choice disabled the focus
             filter: [
               {
                 field: "status",
-                operator: "eq",
+                operator: "isAny",
                 operands: ["ready", "failed"],
               },
             ],

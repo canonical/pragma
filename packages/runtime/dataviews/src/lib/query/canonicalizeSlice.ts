@@ -1,11 +1,12 @@
 import addressPredicate from "./addressPredicate.js";
 import collapseSortTerms from "./collapseSortTerms.js";
+import { OPERATOR_ARITY } from "./constants.js";
 import rankOperand from "./rankOperand.js";
 import type { GroupTerm, Predicate, PredicateOperand, Slice } from "./types.js";
 
-/** Canonicalize one predicate: equality operands become an ordered set. */
+/** Canonicalize one predicate: a set operator's operands become an ordered set. */
 const canonicalPredicate = (predicate: Predicate): Predicate => {
-  if (predicate.operator !== "eq") {
+  if (OPERATOR_ARITY[predicate.operator] !== "many") {
     return {
       field: predicate.field,
       operator: predicate.operator,
@@ -39,7 +40,7 @@ const compareByAddress = (a: Predicate, b: Predicate): number =>
     : -1;
 
 /**
- * Normalize a slice to its canonical form: equality operands are sets,
+ * Normalize a slice to its canonical form: set operands are sets,
  * predicates are ordered by address, sort and group terms keep their order
  * with a repeated sort field collapsed to its first occurrence, and an empty
  * search is no search. Idempotent:

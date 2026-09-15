@@ -87,7 +87,7 @@ const opened = async (command: "Save as…" | "Delete…"): Promise<Element> => 
   act(() => {
     readProviderHost(provider).setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["running"],
     });
   });

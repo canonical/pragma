@@ -83,7 +83,7 @@ describe("public surface", () => {
     });
     const release = provider.observe();
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(location.read().toString()).toBe("status=failed&page=1&size=50");
     expect(provider.issues.get()).toEqual([]);
@@ -124,6 +124,7 @@ describe("public surface", () => {
   it("hands framework bindings their shared machinery from ./bindings", () => {
     expect(Object.keys(bindings).sort()).toEqual([
       "DISPLAY_STATUS_PHASES",
+      "applyQueryCommand",
       "areDisplayStatusesEqual",
       "areListsEqual",
       "areSizingsEqual",

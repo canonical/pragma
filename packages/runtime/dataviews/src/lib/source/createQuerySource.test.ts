@@ -37,7 +37,7 @@ const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
 
 /** A constrained REST endpoint: one sort term, exact matched counts. */
 const endpoint: SourceCapabilities = declare({
-  filter: { status: ["eq"] },
+  filter: { status: ["isAny"] },
   search: { fields: ["name"] },
   sort: declareSort(["cpu"], 1),
   counts: { pageable: "exact", matched: "exact", total: "exact" },
@@ -143,13 +143,13 @@ describe("createQuerySource over @tanstack/query-core", () => {
     const spelled: Slice = {
       ...emptySlice,
       filter: [
-        { field: "status", operator: "eq", operands: ["ready", "failed"] },
+        { field: "status", operator: "isAny", operands: ["ready", "failed"] },
       ],
     };
     const respelled: Slice = {
       ...emptySlice,
       filter: [
-        { field: "status", operator: "eq", operands: ["failed", "ready"] },
+        { field: "status", operator: "isAny", operands: ["failed", "ready"] },
       ],
     };
 

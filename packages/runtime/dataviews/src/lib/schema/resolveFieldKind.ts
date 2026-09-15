@@ -59,7 +59,7 @@ const compareBooleans = (
     : null;
 
 const CHOICES: FieldKindRules<ChoicesField> = {
-  operators: ["eq"],
+  operators: ["isAny", "isNone"],
   rejectDefinition: (definition) => {
     if (definition.options.length === 0) {
       return `choices field "${definition.field}" requires at least one option`;
@@ -244,7 +244,7 @@ const DATE: FieldKindRules<DateField> = {
 };
 
 const TEXT: FieldKindRules<TextField> = {
-  operators: ["contains"],
+  operators: ["contains", "startsWith"],
   rejectDefinition: () => null,
   input: {
     kind: "text",

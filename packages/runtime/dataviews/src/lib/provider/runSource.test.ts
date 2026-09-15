@@ -38,7 +38,7 @@ const collection = createCollection({
 
 /** Everything the fixture queries need, and three exact counts. */
 const permissive: SourceCapabilities = declare({
-  filter: { status: ["eq"], cpu: ["gte", "lte"] },
+  filter: { status: ["isAny"], cpu: ["gte", "lte"] },
   search: { fields: ["name"] },
   sort: declareSort(["cpu"], 2),
   counts: { pageable: "exact", matched: "exact", total: "exact" },
@@ -255,7 +255,7 @@ describe("runSource refusals", () => {
   it("treats a field declared with no operator list as unfilterable", () => {
     // Legal per the declaration type, and it must not read as "any operator".
     const source = manual(
-      declare({ ...permissive, filter: { status: ["eq"], cpu: [] } }),
+      declare({ ...permissive, filter: { status: ["isAny"], cpu: [] } }),
     );
     const { host, release } = running(source.source);
     host.adopt(
@@ -449,14 +449,14 @@ describe("runSource", () => {
     const { provider, host, release } = running(source.source);
     host.setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["failed"],
     });
     provider.setSearch("web");
     provider.navigateWindow({ page: 2, size: 10 });
     const last = source.latest().request;
     expect(last.slice).toEqual({
-      filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+      filter: [{ field: "status", operator: "isAny", operands: ["failed"] }],
       search: "web",
       sort: [],
       group: [],
@@ -683,7 +683,7 @@ describe("runSource", () => {
       };
     };
     const failing: Slice["filter"] = [
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ];
     const byCpu: Slice["sort"] = [{ field: "cpu", direction: "asc" }];
     host.refresh();
@@ -706,7 +706,7 @@ describe("runSource", () => {
     });
     host.adopt(
       query({
-        filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
+        filter: [{ field: "status", operator: "isAny", operands: ["ready"] }],
         sort: byCpu,
       }),
       "view",
@@ -721,7 +721,7 @@ describe("runSource", () => {
     expect(host.state.get().slice.sort).toEqual(byCpu);
     host.adopt(
       query({
-        filter: [{ field: "status", operator: "eq", operands: ["ready"] }],
+        filter: [{ field: "status", operator: "isAny", operands: ["ready"] }],
       }),
       "view",
       null,
@@ -973,7 +973,7 @@ describe("runSource completePending", () => {
     // Adopted past the command boundary, as a stored query would be.
     refused.host.adopt(
       query({
-        filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+        filter: [{ field: "status", operator: "isAny", operands: ["failed"] }],
       }),
       "view",
       null,

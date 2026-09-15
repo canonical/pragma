@@ -148,7 +148,7 @@ describe("DataTable SSR", () => {
       expect(query.window.page).toBe(1);
       expect(query.window.size).toBe(25);
       expect(query.slice.filter).toEqual([
-        { field: "status", operator: "eq", operands: ["failed"] },
+        { field: "status", operator: "isAny", operands: ["failed"] },
       ]);
       expect(query.slice.search).toBe("al");
       expect(links.at(at)?.get("tab")).toBe("inventory");

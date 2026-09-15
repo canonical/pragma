@@ -571,7 +571,7 @@ describe("public surface types", () => {
       { field: "owner", kind: "flag" },
     ]);
     type Machines = FilterHandles<typeof machines.fields>;
-    expectTypeOf<Machines["status"]["eq"]["applied"]>().toEqualTypeOf<
+    expectTypeOf<Machines["status"]["isAny"]["applied"]>().toEqualTypeOf<
       ReadonlyChannel<EmptyOr<ReadonlySet<"failed" | "cancelled">>>
     >();
     expectTypeOf<Machines["cpu"]["gte"]["applied"]>().toEqualTypeOf<

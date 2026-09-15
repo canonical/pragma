@@ -27,7 +27,7 @@ const collection = createCollection({
   ],
 });
 
-const capabilities = declare({ filter: { status: ["eq"] } });
+const capabilities = declare({ filter: { status: ["isAny"] } });
 
 describe("regression 0038 — a view arrangement was lost without a presentation store", () => {
   it("keeps the arrangement drawn under the view once the view's own preferences are read", async () => {

@@ -29,7 +29,7 @@ describe("regression 0049 — a second move during the first pass went unheard",
     const provider = createDataViewsProvider({
       collection,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       location,

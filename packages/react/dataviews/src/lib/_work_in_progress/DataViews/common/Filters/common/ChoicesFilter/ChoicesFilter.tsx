@@ -39,7 +39,7 @@ export default function ChoicesFilter({
         <label key={String(option)} className="option">
           <input
             type="checkbox"
-            name={spellWireKey(fieldName, "eq")}
+            name={spellWireKey(fieldName, "isAny")}
             value={String(option)}
             checked={selected.has(option)}
             // Undeclared, the set may only shrink: adding an option would

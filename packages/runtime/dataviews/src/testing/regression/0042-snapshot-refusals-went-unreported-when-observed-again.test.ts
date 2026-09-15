@@ -35,7 +35,7 @@ const buildProvider = () => {
   const provider = createDataViewsProvider({
     collection,
     source: createManualSource({
-      capabilities: declare({ filter: { status: ["eq"] } }),
+      capabilities: declare({ filter: { status: ["isAny"] } }),
       answer: answering([]),
     }).source,
     location,
@@ -54,7 +54,7 @@ const buildProvider = () => {
 /** The predicate a command moves the host to. */
 const RUNNING: Predicate = {
   field: "status",
-  operator: "eq",
+  operator: "isAny",
   operands: ["running"],
 };
 
