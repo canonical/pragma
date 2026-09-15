@@ -117,7 +117,14 @@ export function makeListRun(
       params.tier,
       meta.source,
     );
+    // The scope as the query builder takes it, or nothing: a story with no
+    // declared hierarchy, and a read that asked for every tier, both compile
+    // the query they always did.
     const tiers = scope ? scopeIris(scope) : [];
+    const listScope =
+      meta.tierScope && tiers.length > 0
+        ? { entity: ENTITY_VARIABLE, via: meta.tierScope.via, tiers }
+        : undefined;
     const limit = readLimit(params.limit);
     // The cursor is spendable only on the read that issued it, and the read IS
     // the author query plus the admitted arguments — the tier scope among them.
@@ -132,7 +139,7 @@ export function makeListRun(
       // unscoped read has no scope to name. Adding an empty one unconditionally
       // would re-hash every cursor every unscoped story has ever issued, for a
       // component that says nothing about them.
-      ...(tiers.length > 0 ? [JSON.stringify(tiers)] : []),
+      ...(listScope ? [JSON.stringify(tiers)] : []),
     ]);
     const offset = readCursor(params.after, fingerprint);
     const rows = await runSelect(
@@ -141,15 +148,7 @@ export function makeListRun(
         query: shape.query,
         predicates,
         ...(search ? { search } : {}),
-        ...(tiers.length > 0
-          ? {
-              scope: {
-                entity: ENTITY_VARIABLE,
-                via: (meta.tierScope as PackTierScope).via,
-                tiers,
-              },
-            }
-          : {}),
+        ...(listScope ? { scope: listScope } : {}),
         window: { limit: limit + 1, offset },
         label: meta.source.label,
       }),
