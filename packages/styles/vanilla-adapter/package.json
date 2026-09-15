@@ -55,7 +55,7 @@
     "sass": "^1.104.0",
     "typescript": "^5.9.3",
     "vanilla-framework-4.56": "npm:vanilla-framework@4.56.0",
-    "vanilla-framework-4.58": "npm:vanilla-framework@4.59.0",
+    "vanilla-framework-4.58": "npm:vanilla-framework@4.58.0",
     "vite": "^8.0.1",
     "vitest": "^4.0.18"
   },
