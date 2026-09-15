@@ -54,7 +54,7 @@
     "@storybook/icons": "^2.0.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.12",
+    "@biomejs/biome": "2.5.13",
     "@canonical/biome-config": "^0.37.0",
     "@canonical/storybook-config": "^0.37.0",
     "@canonical/typescript-config-react": "^0.37.0",
