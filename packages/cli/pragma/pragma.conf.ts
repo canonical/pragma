@@ -505,11 +505,11 @@ const designSystemStories: readonly PackDefinition[] = [
         variables: ["name", "description"],
         description: "Search name and description.",
       },
-      emptyRecovery: {
-        message:
-          "No token symbols in the store. The @canonical/token-ontology pack provides them, and a symbol is only addressable once that pack publishes its name literals.",
-        cli: "sources update",
-      },
+      // No `emptyRecovery`: this list is empty only on an install whose store
+      // holds no token pack at all, and the kernel's generic hint already names
+      // both fixes for that (broaden the filter, or build the store). Anything a
+      // story added here would be a sentence about an empty store printed to
+      // readers who have 745 symbols and only missed with a filter.
     },
     verbs: [
       {
@@ -608,7 +608,7 @@ const designSystemStories: readonly PackDefinition[] = [
         },
         emptyRecovery: {
           message:
-            "No resolved token values in the store. The @canonical/token-ontology pack provides them, and a value is only addressable by symbol once that pack publishes its name literals.",
+            "Resolved token values come from the @canonical/token-ontology pack, and a value is only addressable by symbol once that pack publishes its name literals — a store built without that pack carries none.",
           cli: "sources update",
         },
       },
@@ -773,11 +773,17 @@ const designSystemStories: readonly PackDefinition[] = [
         },
         // Deliberately `sources update`: unlike `standard list`, this story's
         // data does NOT ride the embedded snapshot — the binding records are
-        // written by the design-system packs, so an empty answer here really is
-        // a store that predates them.
+        // written by the design-system packs, so an empty answer here can be a
+        // store that predates them.
+        //
+        // CAN be, not is — which is why the message opens on the two cases
+        // rather than asserting one. This text prints under a filtered miss too
+        // (`--symbol color.text`), where "nothing is recorded at all" would be a
+        // claim the answer cannot support, so it names both readings and hands
+        // the reader the one command that separates them.
         emptyRecovery: {
           message:
-            "No component is recorded as using any token yet. Which components use which tokens comes from the component anatomies in the design-system document, and this copy of the graph was built before any anatomy named its tokens — so the answer is empty for every token, not only this one. It fills in once the anatomies are written and the graph is rebuilt. If you asked about a CSS variable rather than a token: some variables are computed from others (the `--hover--…` and `--disabled--…` ones, for example) and stand for no token, so nothing is ever recorded as using them; `pragma variable chain --variable <name>` shows what such a variable ends up as.",
+            "Either no component uses this token, or no component is recorded as using any token yet — which components use which tokens comes from the component anatomies in the design-system document, and a copy of the graph built before any anatomy named its tokens is empty for every token. Run the same command without `--symbol` to tell the two apart: an empty unfiltered answer means the graph predates the anatomies and fills in once they are written and the graph is rebuilt. If you asked about a CSS variable rather than a token: some variables are computed from others (the `--hover--…` and `--disabled--…` ones, for example) and stand for no token, so nothing is ever recorded as using them; `pragma variable chain --variable <name>` shows what such a variable ends up as.",
           cli: "sources update",
         },
       },
@@ -1041,7 +1047,7 @@ const designSystemStories: readonly PackDefinition[] = [
       },
       emptyRecovery: {
         message:
-          "No platform variables in the store. The @canonical/token-ontology pack provides them, and a variable is only addressable once that pack publishes its name literals.",
+          "Platform variables come from the @canonical/token-ontology pack, and a variable is only addressable once that pack publishes its name literals — a store built without that pack carries none.",
         cli: "sources update",
       },
     },
@@ -1110,7 +1116,7 @@ const designSystemStories: readonly PackDefinition[] = [
         ],
         emptyRecovery: {
           message:
-            "No resolution walk in the store. The @canonical/token-ontology pack provides the declarations the walk follows, and the walk is only addressable by name once that pack publishes its name literals.",
+            "A resolution walk follows the declarations the @canonical/token-ontology pack provides, and the walk is only addressable by name once that pack publishes its name literals — a store built without that pack carries none.",
           cli: "sources update",
         },
       },
@@ -1328,7 +1334,7 @@ const conceptStory: PackDefinition = {
     },
     emptyRecovery: {
       message:
-        "No concepts in the store. The @canonical/design-system pack provides them; refresh the local store.",
+        "Concepts come from the @canonical/design-system pack, and a local store built without it carries none — refresh it.",
       cli: "sources update",
     },
   },
@@ -1457,7 +1463,7 @@ const implementationStory: PackDefinition = {
     },
     emptyRecovery: {
       message:
-        "No implementations in the store. The @canonical/ds-implementations pack provides them; refresh the local store.",
+        "Implementations come from the @canonical/ds-implementations pack, and a local store built without it carries none — refresh it.",
       cli: "sources update",
     },
   },

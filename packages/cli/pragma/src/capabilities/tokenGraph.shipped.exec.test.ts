@@ -594,7 +594,7 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
         page as never,
       );
       expect(notice).toContain(
-        "No component is recorded as using any token yet.",
+        "no component is recorded as using any token yet",
       );
       expect(notice).toContain("sources update");
       return;
