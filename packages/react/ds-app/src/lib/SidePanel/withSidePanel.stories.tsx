@@ -1,7 +1,7 @@
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { userEvent } from "storybook/test";
-import SidePanel from "./SidePanel.js";
+import SidePanel from "./Provider.js";
 import withSidePanel from "./withSidePanel.js";
 
 /**

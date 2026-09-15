@@ -1,13 +1,8 @@
 import type React from "react";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useImperativeHandle,
-  useRef,
-} from "react";
-import SidePanelContext from "./Context.js";
+import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
+import Context from "./Context.js";
 import { Content, Footer, Header } from "./common/index.js";
+import useSidePanelState from "./hooks/useSidePanelState.js";
 import type { SidePanelHandle, SidePanelProps } from "./types.js";
 import "./styles.css";
 
@@ -53,7 +48,7 @@ const componentCssClassName = "ds side-panel";
  *
  * @implements ds:apps.pattern.side_panel
  */
-const SidePanel = ({
+const Provider = ({
   closeOnEscape = true,
   className,
   children,
@@ -65,7 +60,9 @@ const SidePanel = ({
   ...props
 }: SidePanelProps): React.ReactElement => {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
+  // The id that names the panel and the dismissal the header's close button
+  // calls — the provider state, centralised in its own hook.
+  const { close, titleId } = useSidePanelState(dialogRef);
   /** Where focus was before the panel opened, so it can be handed back. */
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   /**
@@ -93,20 +90,16 @@ const SidePanel = ({
     onOpenChange?.(true);
   }, [onOpenChange]);
 
-  const closePanel = useCallback(() => {
-    dialogRef.current?.close();
-  }, []);
-
   // The panel keeps its own dialog ref (show()/close() run through it) and
   // exposes the imperative handle — not the raw element — to a consumer ref.
   useImperativeHandle(
     ref,
     (): SidePanelHandle => ({
       open: openPanel,
-      close: closePanel,
+      close,
       element: dialogRef.current,
     }),
-    [openPanel, closePanel],
+    [openPanel, close],
   );
 
   // Hand focus back if the panel disappears while still open.
@@ -149,57 +142,57 @@ const SidePanel = ({
   }, []);
 
   return (
-    <dialog
-      ref={dialogRef}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      // The header's heading names the panel. Without a header the consumer
-      // supplies `aria-label`, and pointing at an absent element is worse than
-      // not pointing at all — so the two are mutually exclusive.
-      aria-label={ariaLabel}
-      aria-labelledby={ariaLabel === undefined ? titleId : undefined}
-      // Focusable so that opening can place focus on the panel itself.
-      tabIndex={-1}
-      // A non-modal dialog gets no `cancel` event, so Escape is handled here.
-      // Bound to the dialog rather than the document on purpose: Escape while
-      // focus is out in the application belongs to the application.
-      onKeyDown={(event) => {
-        onKeyDown?.(event);
-        if (
-          closeOnEscape &&
-          event.key === "Escape" &&
-          !event.defaultPrevented
-        ) {
-          closePanel();
-        }
-      }}
-      // Every close funnels through the platform's `close` event — the
-      // handle's `close()`, a dismissal gesture, or a path the component did
-      // not drive at all (a `<form method="dialog">` submits one). Tidy up the
-      // open state, hand focus back, and report it, in that one place.
-      onClose={(event) => {
-        onClose?.(event);
-        openRef.current = false;
-        const dialog = dialogRef.current;
-        // Hand focus back only if it is still inside the panel; the user may
-        // have moved on to the application, and stealing focus back would be
-        // rude.
-        if (dialog?.contains(document.activeElement)) {
-          previouslyFocusedRef.current?.focus();
-        }
-        previouslyFocusedRef.current = null;
-        onOpenChange?.(false);
-      }}
-      {...props}
-    >
-      <SidePanelContext.Provider value={{ close: closePanel, titleId }}>
+    <Context.Provider value={{ close, titleId }}>
+      <dialog
+        ref={dialogRef}
+        className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        // The header's heading names the panel. Without a header the consumer
+        // supplies `aria-label`, and pointing at an absent element is worse than
+        // not pointing at all — so the two are mutually exclusive.
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabel === undefined ? titleId : undefined}
+        // Focusable so that opening can place focus on the panel itself.
+        tabIndex={-1}
+        // A non-modal dialog gets no `cancel` event, so Escape is handled here.
+        // Bound to the dialog rather than the document on purpose: Escape while
+        // focus is out in the application belongs to the application.
+        onKeyDown={(event) => {
+          onKeyDown?.(event);
+          if (
+            closeOnEscape &&
+            event.key === "Escape" &&
+            !event.defaultPrevented
+          ) {
+            close();
+          }
+        }}
+        // Every close funnels through the platform's `close` event — the
+        // handle's `close()`, a dismissal gesture, or a path the component did
+        // not drive at all (a `<form method="dialog">` submits one). Tidy up the
+        // open state, hand focus back, and report it, in that one place.
+        onClose={(event) => {
+          onClose?.(event);
+          openRef.current = false;
+          const dialog = dialogRef.current;
+          // Hand focus back only if it is still inside the panel; the user may
+          // have moved on to the application, and stealing focus back would be
+          // rude.
+          if (dialog?.contains(document.activeElement)) {
+            previouslyFocusedRef.current?.focus();
+          }
+          previouslyFocusedRef.current = null;
+          onOpenChange?.(false);
+        }}
+        {...props}
+      >
         {children}
-      </SidePanelContext.Provider>
-    </dialog>
+      </dialog>
+    </Context.Provider>
   );
 };
 
-SidePanel.Header = Header;
-SidePanel.Content = Content;
-SidePanel.Footer = Footer;
+Provider.Content = Content;
+Provider.Footer = Footer;
+Provider.Header = Header;
 
-export default SidePanel;
+export default Provider;

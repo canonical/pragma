@@ -1,7 +1,7 @@
 import { Button } from "@canonical/react-ds-global";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import SidePanel from "./SidePanel.js";
+import SidePanel from "./Provider.js";
 import type { WithSidePanelRender } from "./types.js";
 import withSidePanel from "./withSidePanel.js";
 

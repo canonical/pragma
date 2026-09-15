@@ -1,6 +1,6 @@
 import { Button, withTooltip } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import SidePanel from "./SidePanel.js";
+import SidePanel from "./Provider.js";
 import type { SidePanelHandle } from "./types.js";
 
 const meta: Meta<typeof SidePanel> = {

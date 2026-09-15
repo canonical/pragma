@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import SidePanel from "../../SidePanel.js";
+import SidePanel from "../../Provider.js";
 import type { SidePanelHandle } from "../../types.js";
 import Content from "./Content.js";
 
