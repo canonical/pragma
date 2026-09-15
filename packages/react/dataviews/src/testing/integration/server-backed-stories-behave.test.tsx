@@ -9,7 +9,9 @@ import { composeStories, setProjectAnnotations } from "@storybook/react-vite";
 import { screen, within } from "@testing-library/react";
 import { afterAll, describe, expect, it } from "vitest";
 import preview from "../../../.storybook/preview.js";
+import { FACETED_FILTER_STORIES } from "../../../testing/fixtures.js";
 import serveMockApi from "../../../testing/serveMockApi.js";
+import * as filtersStories from "../../lib/_work_in_progress/DataViews/common/Filters/Filters.stories.js";
 import * as graphqlStories from "../../lib/_work_in_progress/DataViews/DataViews.graphql.stories.js";
 import * as restStories from "../../lib/_work_in_progress/DataViews/DataViews.rest.stories.js";
 import {
@@ -32,6 +34,16 @@ const endpoints = {
   "GraphQL API": composeStories(graphqlStories),
 };
 
+describe("the filters' faceted stories behave", () => {
+  for (const [name, Story] of Object.entries(composeStories(filtersStories))) {
+    if (FACETED_FILTER_STORIES.has(name)) {
+      it(`Filters ${name}`, async () => {
+        await Story.run();
+      });
+    }
+  }
+});
+
 describe("server-backed stories behave", () => {
   for (const [endpoint, stories] of Object.entries(endpoints)) {
     for (const [name, Story] of Object.entries(stories)) {
@@ -48,7 +60,7 @@ describe("server-backed stories behave", () => {
     expect(screen.getByLabelText(searchLabel)).toBeInTheDocument();
     expect(screen.getByRole("table", { name: tableLabel })).toBeInTheDocument();
     expect(
-      screen.getByRole("group", { name: labels.status }),
+      screen.getByRole("group", { name: `${labels.status} is any of` }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(`${labels.cores} from`)).toBeInTheDocument();
     expect(

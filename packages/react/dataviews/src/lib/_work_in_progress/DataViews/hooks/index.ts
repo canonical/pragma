@@ -7,4 +7,6 @@ export { default as useDataViewsRoot } from "./useDataViewsRoot.js";
 export { default as useDestination } from "./useDestination.js";
 export { default as useFacets } from "./useFacets.js";
 export { default as useFilterHandle } from "./useFilterHandle.js";
+export { default as useMoreFiltersPin } from "./useMoreFiltersPin.js";
 export { default as useProviderState } from "./useProviderState.js";
+export { default as useRestrictedFields } from "./useRestrictedFields.js";

@@ -18,24 +18,26 @@ const RANGE_WORDING = { gte: "Lowest", lte: "Highest" } as const;
  *
  * Emptying the input is incomplete, not a removal: the applied bound stays
  * until it is explicitly cleared, which is what the clear control is for;
- * clearing moves focus to the input while the source declares the bound,
- * and otherwise to the filters' group, as the control leaves with it. A
- * number is a native number input carrying the schema's bounds, so the
- * browser validates it before any script runs and the same bounds the schema
- * enforces are the ones it announces; a date is a native date input.
- * The control is named as the wire spells the clause, so a GET submission
- * is the same destination the edit writes. Where the source's facet answers
- * the applied query, a hint beside the input offers the least value a
- * matching record holds for the lower bound, and the greatest for the upper,
- * computed over the whole matching set with this field's bounds lifted.
+ * clearing moves focus to the input while the control stays, and to the
+ * filters' group when it leaves with the bound — undeclared, or shown only
+ * because it is restricted. A number is a native number input carrying the
+ * schema's bounds, so the browser validates it before any script runs and the
+ * same bounds the schema enforces are the ones it announces; a date is a
+ * native date input. The control is named as the wire spells the clause, so a
+ * GET submission is the same destination the edit writes. Where the source's
+ * facet answers the applied query, a hint beside the input offers the least
+ * value a matching record holds for the lower bound ("Lowest") and the
+ * greatest for the upper ("Highest"), from the range computed over the whole
+ * matching set with this field's bounds lifted.
  */
 export default function BoundFilter({
   handle,
   label,
   bound,
   definition,
-  range,
+  offered,
   declared,
+  leavesWhenCleared,
   onLeave,
 }: BoundFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
@@ -48,16 +50,11 @@ export default function BoundFilter({
   const feedbackId = `${inputId}-feedback`;
   const hintId = `${inputId}-hint`;
   const message = describeFilterFeedback(field.feedback, retained);
-  const offered =
-    range === null ? null : range[bound === "gte" ? "min" : "max"];
-  const hint =
-    offered === null || offered === undefined
-      ? null
-      : `${RANGE_WORDING[bound]}: ${offered}`;
-  const describedBy = [
-    ...(hint === null ? [] : [hintId]),
-    ...(message === null ? [] : [feedbackId]),
-  ].join(" ");
+  const hint = offered === null ? null : `${RANGE_WORDING[bound]}: ${offered}`;
+  const describedBy =
+    [hint === null ? null : hintId, message === null ? null : feedbackId]
+      .filter((id) => id !== null)
+      .join(" ") || undefined;
   const name = `${label} ${BOUND_WORDING[bound]}`;
   // The schema's bounds, natively: an out-of-range value is refused by the
   // browser at baseline and by the schema once scripted.
@@ -88,7 +85,7 @@ export default function BoundFilter({
           field.feedback.status === "invalid" ||
           field.feedback.status === "refused"
         }
-        aria-describedby={describedBy === "" ? undefined : describedBy}
+        aria-describedby={describedBy}
         onChange={(event) => {
           // A number input hands over nothing while its text is not yet a
           // number — "-", "1e": nothing is edited until it is one, so the
@@ -107,10 +104,11 @@ export default function BoundFilter({
           onClick={() => {
             field.clear();
             // The control with focus leaves with the bound. The input stays
-            // while the source declares the bound, so focus goes there;
-            // otherwise the whole control leaves, and its parent places
-            // focus rather than the document.
-            if (declared) {
+            // unless the control leaves with its last restriction —
+            // undeclared, or shown only because it is restricted — so focus
+            // goes there; otherwise its parent places focus rather than the
+            // document.
+            if (!leavesWhenCleared) {
               inputRef.current?.focus();
             } else {
               onLeave();

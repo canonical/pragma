@@ -225,4 +225,45 @@ describe("DataViews.Filters SSR", () => {
     expect(params.getAll("status__isNone")).toEqual(["failed"]);
     expect(params.get("status__contains")).toBe("fail");
   });
+
+  it("renders the fields not shown by default as a native disclosure whose controls still submit", () => {
+    const html = renderToString(
+      <DataViews
+        provider={createDataViewsProvider({
+          collection,
+          source: createManualSource<Row>({ capabilities: everything }).source,
+          location: createMemoryLocation({ href: "/machines?cpu__gte=4" }),
+        })}
+      >
+        <Filters primary={["status"]} />
+      </DataViews>,
+    );
+    const opens = html.indexOf(
+      '<details class="more"><summary class="summary">More filters</summary>',
+    );
+    expect(opens).toBeGreaterThan(-1);
+    // Restricted, so outside the disclosure; unrestricted, so inside it.
+    expect(html.indexOf('name="cpu__gte"')).toBeLessThan(opens);
+    expect(html.indexOf('name="status"')).toBeLessThan(opens);
+    expect(html.indexOf('name="updated__gte"')).toBeGreaterThan(opens);
+    expect(html.indexOf('name="owner__isSet"')).toBeGreaterThan(opens);
+  });
+
+  it("renders a none-of set and the text a field starts with into controls a submission keeps", () => {
+    const html = renderToString(
+      <DataViews
+        provider={createDataViewsProvider({
+          collection,
+          source: createManualSource<Row>({ capabilities: withText }).source,
+          location: createMemoryLocation({
+            href: "/machines?status__isNone=failed&name__startsWith=we",
+          }),
+        })}
+      >
+        <Filters />
+      </DataViews>,
+    );
+    expect(html).toContain('name="status__isNone" checked="" value="failed"');
+    expect(html).toMatch(/<input[^>]*name="name__startsWith"[^>]*value="we"/);
+  });
 });

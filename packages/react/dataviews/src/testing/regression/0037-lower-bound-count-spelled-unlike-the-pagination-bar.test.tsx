@@ -12,11 +12,10 @@ import {
   createDataViewsProvider,
   createPage,
   declareCapabilities,
-  type Facet,
-  type Source,
 } from "@canonical/dataviews-core";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import createManualSource from "../../../testing/createManualSource.js";
 import { DataViews } from "../../lib/_work_in_progress/DataViews/index.js";
 
 type Row = { readonly id: string };
@@ -26,24 +25,10 @@ const collection = createCollection({
   fields: [{ field: "status", kind: "choices", options: ["failed", "ready"] }],
 });
 
-/** A source answering the status facet with the values and counts given. */
-const createAnswering = (
-  values: Extract<Facet, { readonly kind: "values" }>["values"],
-): Source<Row> => ({
-  capabilities: declareCapabilities(collection, {
-    filter: { status: true },
-    facets: ["status"],
-  }),
-  execute: (_request, deliver) => {
-    deliver({
-      status: "succeeded",
-      page: createPage({
-        rows: [],
-        facets: { status: { kind: "values", values } },
-      }),
-    });
-    return () => {};
-  },
+/** A source filtering and faceting the status. */
+const STATUS_FACETED = declareCapabilities(collection, {
+  filter: { status: true },
+  facets: ["status"],
 });
 
 describe("regression 0037 — lower-bound count spelled unlike the pagination bar", () => {
@@ -52,9 +37,24 @@ describe("regression 0037 — lower-bound count spelled unlike the pagination ba
       <DataViews
         provider={createDataViewsProvider({
           collection,
-          source: createAnswering([
-            { value: "failed", count: { kind: "at-least", value: 5 } },
-          ]),
+          source: createManualSource<Row>({
+            capabilities: STATUS_FACETED,
+            answer: () =>
+              createPage({
+                rows: [],
+                facets: {
+                  status: {
+                    kind: "values",
+                    values: [
+                      {
+                        value: "failed",
+                        count: { kind: "at-least", value: 5 },
+                      },
+                    ],
+                  },
+                },
+              }),
+          }).source,
           facets: ["status"],
         })}
       >

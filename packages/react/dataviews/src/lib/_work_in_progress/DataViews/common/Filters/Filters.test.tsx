@@ -23,10 +23,12 @@ import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import createManualSource from "../../../../../../testing/createManualSource.js";
+import createRecordingLocation from "../../../../../../testing/createRecordingLocation.js";
 import expectNoAxeViolations from "../../../../../../testing/expectNoAxeViolations.js";
 import { COUNTED_EXACTLY } from "../../../../../../testing/fixtures.js";
+import toggleDisclosure from "../../../../../../testing/toggleDisclosure.js";
 import DataViews from "../../Provider.js";
 import Filters from "./Filters.js";
 
@@ -118,7 +120,9 @@ describe("DataViews.Filters", () => {
     expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
     expect(screen.queryByLabelText("owner from")).toBeNull();
     expect(screen.getByRole("group", { name: "Filters" })).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "status" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "status is any of" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("checkbox", { name: "failed" }),
     ).toBeInTheDocument();
@@ -151,13 +155,15 @@ describe("DataViews.Filters", () => {
     expect(
       screen.getByRole("group", { name: "Narrow the machines" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Status" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Status is any of" }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Cores from")).toBeInTheDocument();
     // A field with no entry keeps its own name.
     expect(screen.getByLabelText("updated to")).toBeInTheDocument();
   });
 
-  it("edits the applied query through the equality set", () => {
+  it("edits the applied query through the any-of set", () => {
     const provider = makeProvider();
     mount(provider);
     fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
@@ -394,6 +400,28 @@ describe("DataViews.Filters", () => {
     ).toHaveAttribute("type", "submit");
   });
 
+  it("has no axe violations as a server draws a standing set and its move link", async () => {
+    const html = renderToString(
+      <DataViews
+        provider={createDataViewsProvider({
+          collection,
+          source: createManualSource<Row>({ capabilities: everything }).source,
+          location: createMemoryLocation({ href: "/machines?status=failed" }),
+        })}
+      >
+        <Filters />
+      </DataViews>,
+    );
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    onTestFinished(() => {
+      container.remove();
+    });
+    expect(container.querySelector("a.switch")).not.toBeNull();
+    await expectNoAxeViolations(container);
+  });
+
   it("intercepts a submission, which has nothing left to apply", () => {
     const { container } = mount(makeProvider());
     const form = container.querySelector("form");
@@ -454,7 +482,9 @@ describe("DataViews.Filters", () => {
         filter: { status: ["isAny"], cpu: ["gte"] },
       }),
     );
-    expect(screen.getByRole("group", { name: "status" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "status is any of" }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("cpu from")).toBeInTheDocument();
     expect(screen.queryByLabelText("cpu to")).toBeNull();
     expect(screen.queryByLabelText("updated from")).toBeNull();
@@ -772,7 +802,7 @@ describe("DataViews.Filters", () => {
     ];
 
     /** A provider over the array source, asking for the status and cpu facets. */
-    const faceted = (): DataViewsProvider<Fields, Row> =>
+    const createFacetedProvider = (): DataViewsProvider<Fields, Row> =>
       createDataViewsProvider({
         collection,
         source: createArraySource<Row>({ rows: records, collection }),
@@ -780,7 +810,7 @@ describe("DataViews.Filters", () => {
       });
 
     it("shows beside each option how many matching records hold it, without renaming it", () => {
-      const provider = faceted();
+      const provider = createFacetedProvider();
       mount(provider);
       expect(
         screen.getByRole("checkbox", { name: "failed" }),
@@ -792,6 +822,13 @@ describe("DataViews.Filters", () => {
       expect(
         screen.getByRole("checkbox", { name: "cancelled" }),
       ).toHaveAccessibleDescription("0");
+      // The field's own restriction never narrows its counts: ready would read
+      // none were status not lifted from its own facet.
+      fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
+      expect(
+        screen.getByRole("checkbox", { name: "ready" }),
+      ).toHaveAccessibleDescription("1");
+      fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
       // Another field's restriction narrows the counts...
       fireEvent.change(screen.getByLabelText("cpu from"), {
         target: { value: "10" },
@@ -809,11 +846,46 @@ describe("DataViews.Filters", () => {
       ).toHaveAccessibleDescription("1");
     });
 
-    it("shows no count while no result answers the applied query", () => {
-      mount(makeProvider());
-      expect(
-        screen.getByRole("checkbox", { name: "failed" }),
-      ).not.toHaveAttribute("aria-describedby");
+    it("shows counts only while the result answers the applied query", () => {
+      const manual = createManualSource<Row>({
+        capabilities: declareCapabilities(collection, {
+          filter: { status: true },
+          facets: ["status"],
+        }),
+      });
+      const provider = createDataViewsProvider({
+        collection,
+        source: manual.source,
+        facets: ["status"],
+      });
+      mount(provider);
+      /** Answer the latest request with a count of failed machines. */
+      const answerWith = (count: number): void => {
+        act(() => {
+          manual.latest().deliver({
+            status: "succeeded",
+            page: createPage({
+              rows: [],
+              facets: {
+                status: {
+                  kind: "values",
+                  values: [
+                    { value: "failed", count: { kind: "exact", value: count } },
+                  ],
+                },
+              },
+            }),
+          });
+        });
+      };
+      answerWith(2);
+      const failed = screen.getByRole("checkbox", { name: "failed" });
+      expect(failed).toHaveAccessibleDescription("2");
+      // Another query is pending: the counts it answers are not yet known.
+      fireEvent.click(screen.getByRole("checkbox", { name: "ready" }));
+      expect(failed).not.toHaveAttribute("aria-describedby");
+      answerWith(1);
+      expect(failed).toHaveAccessibleDescription("1");
     });
 
     it("spells a lower bound on a count, and nothing for a count unknown", () => {
@@ -850,25 +922,28 @@ describe("DataViews.Filters", () => {
       );
       expect(
         screen.getByRole("checkbox", { name: "failed" }),
-      ).toHaveAccessibleDescription("5+");
+      ).toHaveAccessibleDescription("at least 5");
       expect(
         screen.getByRole("checkbox", { name: "ready" }),
       ).not.toHaveAttribute("aria-describedby");
     });
 
     it("offers the least and greatest value beside the bounds, over the field's own bounds lifted", () => {
-      mount(faceted());
+      mount(createFacetedProvider());
       const from = screen.getByLabelText("cpu from");
       expect(from).toHaveAccessibleDescription("Lowest: 4");
       expect(screen.getByLabelText("cpu to")).toHaveAccessibleDescription(
         "Highest: 16",
       );
+      // A bound of its own never narrows the range it is chosen from.
+      fireEvent.change(from, { target: { value: "10" } });
+      expect(from).toHaveAccessibleDescription("Lowest: 4");
       fireEvent.click(screen.getByRole("checkbox", { name: "ready" }));
       expect(from).toHaveAccessibleDescription("Lowest: 8");
       // The hint stays beside what an invalid edit says.
       fireEvent.change(from, { target: { value: "99" } });
       expect(from).toHaveAccessibleDescription(
-        "Lowest: 8 99 is above the maximum of 64.",
+        "Lowest: 8 99 is above the maximum of 64. The previous restriction still applies.",
       );
     });
 
@@ -920,6 +995,103 @@ describe("DataViews.Filters", () => {
       });
       // Held by the set though the facet lists no record holding it.
       expect(screen.getByRole("checkbox", { name: "ap" })).toBeChecked();
+    });
+
+    it("lists each field's server-owned options from its own facet", () => {
+      type Zoned = { readonly id: string };
+      const zoned = createCollection({
+        identify: (row: Zoned) => row.id,
+        fields: [
+          { field: "region", kind: "choices" },
+          { field: "zone", kind: "choices" },
+        ],
+      });
+      const answering = createManualSource<Zoned>({
+        capabilities: declareCapabilities(zoned, {
+          filter: { region: true, zone: true },
+          facets: ["region", "zone"],
+        }),
+        answer: () =>
+          createPage({
+            rows: [],
+            facets: {
+              region: {
+                kind: "values",
+                values: [{ value: "eu", count: { kind: "exact", value: 1 } }],
+              },
+              zone: { kind: "values", values: [] },
+            },
+          }),
+      });
+      const { container } = render(
+        <DataViews
+          provider={createDataViewsProvider({
+            collection: zoned,
+            source: answering.source,
+            facets: ["region", "zone"],
+          })}
+        >
+          <Filters primary={["region"]} />
+        </DataViews>,
+      );
+      expect(
+        screen.getAllByRole("checkbox").map((box) => box.getAttribute("name")),
+      ).toEqual(["region"]);
+      // The zone's facet lists nothing: no control, so nothing to disclose.
+      expect(container.querySelector("details")).toBeNull();
+    });
+
+    it("keeps the server's options listed, without counts, once a request fails", () => {
+      type Placed = { readonly id: string };
+      const places = createCollection({
+        identify: (row: Placed) => row.id,
+        fields: [{ field: "region", kind: "choices" }],
+      });
+      const manual = createManualSource<Placed>({
+        capabilities: declareCapabilities(places, {
+          filter: { region: true },
+          facets: ["region"],
+        }),
+      });
+      render(
+        <DataViews
+          provider={createDataViewsProvider({
+            collection: places,
+            source: manual.source,
+            facets: ["region"],
+          })}
+        >
+          <Filters />
+        </DataViews>,
+      );
+      act(() => {
+        manual.latest().deliver({
+          status: "succeeded",
+          page: createPage({
+            rows: [],
+            facets: {
+              region: {
+                kind: "values",
+                values: [
+                  { value: "eu", count: { kind: "exact", value: 2 } },
+                  { value: "us", count: { kind: "exact", value: 1 } },
+                ],
+              },
+            },
+          }),
+        });
+      });
+      fireEvent.click(screen.getByRole("checkbox", { name: "eu" }));
+      act(() => {
+        manual.latest().deliver({
+          status: "failed",
+          failure: { reason: "offline", cause: null, transient: null },
+        });
+      });
+      expect(screen.getByRole("checkbox", { name: "eu" })).toBeChecked();
+      expect(screen.getByRole("checkbox", { name: "us" })).not.toHaveAttribute(
+        "aria-describedby",
+      );
     });
 
     it("lists each of the server's options once, and no value that is no option", () => {
@@ -983,18 +1155,23 @@ describe("DataViews.Filters", () => {
             source: createManualSource<Placed>({
               capabilities: declareCapabilities(places, {
                 filter: { region: true },
+                facets: ["region"],
               }),
             }).source,
+            // Asked for, and not yet answered: nothing lists the options.
+            facets: ["region"],
           })}
         >
           <Filters />
         </DataViews>,
       );
-      expect(screen.queryByRole("group", { name: "region" })).toBeNull();
+      expect(
+        screen.queryByRole("group", { name: "region is any of" }),
+      ).toBeNull();
     });
 
     it("moves a standing set to none-of and back, each as one step", () => {
-      const provider = faceted();
+      const provider = createFacetedProvider();
       mount(provider);
       // Nothing stands, so nothing moves.
       expect(
@@ -1012,7 +1189,7 @@ describe("DataViews.Filters", () => {
       expect(failed).toBeChecked();
       expect(failed).toHaveAttribute("name", "status__isNone");
       // Any-of stays offered beside it, holding nothing.
-      const included = screen.getByRole("group", { name: "status" });
+      const included = screen.getByRole("group", { name: "status is any of" });
       expect(
         within(included).getByRole("checkbox", { name: "failed" }),
       ).not.toBeChecked();
@@ -1026,8 +1203,126 @@ describe("DataViews.Filters", () => {
       ]);
     });
 
+    it("moves a standing set through its button as one entry of history", () => {
+      const recorded = createRecordingLocation({ href: "/machines" });
+      mount(
+        createDataViewsProvider({
+          collection,
+          source: createArraySource<Row>({ rows: records, collection }),
+          facets: ["status", "cpu"],
+          location: recorded.location,
+        }),
+      );
+      fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
+      const before = recorded.writes.length;
+      fireEvent.click(
+        screen.getByRole("button", { name: "Match none of these instead" }),
+      );
+      expect(recorded.writes.slice(before)).toEqual([
+        ["status__isNone=failed&page=1&size=50", "push"],
+      ]);
+    });
+
+    it("leads with its move link, before any script runs, where its button writes the location", () => {
+      /** A provider standing on failed machines with a bound, on page three. */
+      const createStanding = () => {
+        const location = createMemoryLocation({
+          href: "/machines?tab=overview&status=failed&cpu__gte=4&page=3&size=10",
+        });
+        return {
+          location,
+          provider: createDataViewsProvider({
+            collection,
+            source: createManualSource<Row>({ capabilities: everything })
+              .source,
+            location,
+          }),
+        };
+      };
+      /** Parameters as sorted key=value pairs, so spellings compare by content. */
+      const listParams = (params: URLSearchParams): readonly string[] =>
+        [...params].map(([key, value]) => `${key}=${value}`).sort();
+      const server = createStanding();
+      const href = /<a class="switch" href="\?([^"]*)">/
+        .exec(
+          renderToString(
+            <DataViews provider={server.provider}>
+              <Filters />
+            </DataViews>,
+          ),
+        )
+        ?.at(1)
+        ?.replaceAll("&amp;", "&");
+      expect(href).toBeDefined();
+      const client = createStanding();
+      mount(client.provider);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Match none of these instead" }),
+      );
+      expect(listParams(new URLSearchParams(href))).toEqual(
+        listParams(client.location.read()),
+      );
+    });
+
+    it("lists hundreds of the server's options once each, in first-seen order", () => {
+      type Placed = { readonly id: string };
+      const places = createCollection({
+        identify: (row: Placed) => row.id,
+        fields: [{ field: "region", kind: "choices" }],
+      });
+      // Two hundred options, each listed twice: as the facet spelled it,
+      // and again as its text.
+      const spelled = Array.from({ length: 200 }, (_unused, at) => ({
+        value: at % 2 === 0 ? `r${at}` : at,
+        count: { kind: "exact" as const, value: 1 },
+      }));
+      const listing: Source<Placed> = {
+        capabilities: declareCapabilities(places, {
+          filter: { region: true },
+          facets: ["region"],
+        }),
+        execute: (_request, deliver) => {
+          deliver({
+            status: "succeeded",
+            page: createPage({
+              rows: [],
+              facets: {
+                region: {
+                  kind: "values",
+                  values: [
+                    ...spelled,
+                    ...spelled.map(({ value, count }) => ({
+                      value: String(value),
+                      count,
+                    })),
+                  ],
+                },
+              },
+            }),
+          });
+          return () => {};
+        },
+      };
+      render(
+        <DataViews
+          provider={createDataViewsProvider({
+            collection: places,
+            source: listing,
+            facets: ["region"],
+          })}
+        >
+          <Filters />
+        </DataViews>,
+      );
+      const values = screen
+        .getAllByRole("checkbox")
+        .map((checkbox) => checkbox.getAttribute("value"));
+      expect(values).toHaveLength(200);
+      expect(values.slice(0, 3)).toEqual(["r0", "1", "r2"]);
+    });
+
     it("moves no set onto one already standing, so no restriction is overwritten", () => {
-      const provider = faceted();
+      const provider = createFacetedProvider();
       mount(provider);
       adopt(provider, [
         { field: "status", operator: "isAny", operands: ["ready"] },
@@ -1040,7 +1335,7 @@ describe("DataViews.Filters", () => {
         screen.queryByRole("button", { name: "Match any of these instead" }),
       ).toBeNull();
       // Once the other set is gone, the move is offered again.
-      const included = screen.getByRole("group", { name: "status" });
+      const included = screen.getByRole("group", { name: "status is any of" });
       fireEvent.click(
         within(included).getByRole("checkbox", { name: "ready" }),
       );
@@ -1050,7 +1345,7 @@ describe("DataViews.Filters", () => {
     });
 
     it("moves focus to the filters when a set offered only while it stands leaves", () => {
-      const provider = faceted();
+      const provider = createFacetedProvider();
       mount(provider);
       adopt(provider, [
         { field: "status", operator: "isNone", operands: ["failed"] },
@@ -1077,8 +1372,10 @@ describe("DataViews.Filters", () => {
         "name",
         "status__isNone",
       );
-      expect(excluded).toBeInTheDocument();
-      expect(screen.queryByRole("group", { name: "status" })).toBeNull();
+      expect(excluded).toBeVisible();
+      expect(
+        screen.queryByRole("group", { name: "status is any of" }),
+      ).toBeNull();
     });
 
     it("offers a text input for the text a field starts with", () => {
@@ -1090,6 +1387,200 @@ describe("DataViews.Filters", () => {
       expect(provider.state.get().slice.filter).toEqual([
         { field: "name", operator: "startsWith", operands: ["we"] },
       ]);
+    });
+  });
+
+  describe("primary filters", () => {
+    /** The filters' disclosure of the fields not shown by default. */
+    const findDisclosure = (container: HTMLElement): HTMLDetailsElement => {
+      const details = container.querySelector("details");
+      if (details === null) {
+        throw new Error("expected the More filters disclosure");
+      }
+      return details;
+    };
+
+    it("draws no More filters when every field left over is one the source cannot filter", () => {
+      // The source declares every field but the text one, marked or not.
+      const { container } = mount(makeProvider(), {
+        primary: ["status", "cpu", "updated", "owner"],
+      });
+      expect(container.querySelector("details")).toBeNull();
+    });
+
+    it("shows every declared-filterable field when none is marked primary", () => {
+      const { container } = mount(makeProvider(), { primary: [] });
+      expect(container.querySelector("details")).toBeNull();
+      expect(screen.getByLabelText("cpu from")).toBeVisible();
+      expect(screen.getByRole("checkbox", { name: "owner" })).toBeVisible();
+    });
+
+    it("shows the primary fields' controls, in the order marked, and the others under More filters", async () => {
+      const { container } = mount(makeProvider(), {
+        primary: ["owner", "status"],
+      });
+      const details = findDisclosure(container);
+      expect(details.open).toBe(false);
+      expect(screen.getByText("More filters").tagName).toBe("SUMMARY");
+      const owner = screen.getByRole("checkbox", { name: "owner" });
+      const failed = screen.getByRole("checkbox", { name: "failed" });
+      expect(owner).toBeVisible();
+      expect(failed).toBeVisible();
+      // Marked owner first, then status.
+      const checkboxes = screen.getAllByRole("checkbox");
+      expect(checkboxes.indexOf(owner)).toBeLessThan(
+        checkboxes.indexOf(failed),
+      );
+      const cpu = screen.getByLabelText("cpu from");
+      expect(details).toContainElement(cpu);
+      expect(cpu).not.toBeVisible();
+      await toggleDisclosure(container, true);
+      expect(cpu).toBeVisible();
+    });
+
+    it("always shows the control of a field carrying a restriction", () => {
+      const provider = makeProvider();
+      const { container } = mount(provider, { primary: ["status"] });
+      adopt(provider, [{ field: "cpu", operator: "gte", operands: [4] }]);
+      const details = findDisclosure(container);
+      expect(details).not.toContainElement(screen.getByLabelText("cpu from"));
+      expect(screen.getByLabelText("cpu from")).toBeVisible();
+      expect(screen.getByLabelText("cpu to")).toBeVisible();
+      expect(details).toContainElement(screen.getByLabelText("updated from"));
+    });
+
+    it("keeps a control where it is while More filters is open, and brings it out once closed", async () => {
+      const provider = makeProvider();
+      const { container } = mount(provider, { primary: ["status"] });
+      const details = findDisclosure(container);
+      await toggleDisclosure(container, true);
+      const cpu = screen.getByLabelText("cpu from");
+      cpu.focus();
+      fireEvent.change(cpu, { target: { value: "4" } });
+      expect(provider.state.get().slice.filter).toEqual([
+        { field: "cpu", operator: "gte", operands: [4] },
+      ]);
+      // Neither moved nor replaced while the disclosure is open.
+      expect(details).toContainElement(cpu);
+      expect(cpu).toHaveFocus();
+      await toggleDisclosure(container, false);
+      expect(details).not.toContainElement(screen.getByLabelText("cpu from"));
+      expect(screen.getByLabelText("cpu from")).toHaveValue(4);
+    });
+
+    it("closes More filters when the marks move, since its placement was pinned under the old ones", async () => {
+      const provider = makeProvider();
+      const { container, rerender } = mount(provider, { primary: ["status"] });
+      await toggleDisclosure(container, true);
+      rerender(
+        <DataViews provider={provider}>
+          <Filters primary={["status", "owner"]} />
+        </DataViews>,
+      );
+      expect(findDisclosure(container).open).toBe(false);
+      expect(findDisclosure(container)).toContainElement(
+        screen.getByLabelText("cpu from"),
+      );
+    });
+
+    it("moves focus to the filters when a field shown only for its restriction loses it", () => {
+      const provider = makeProvider(withText);
+      mount(provider, { primary: ["status"] });
+      const group = screen.getByRole("group", { name: "Filters" });
+      adopt(provider, [{ field: "cpu", operator: "gte", operands: [4] }]);
+      fireEvent.click(screen.getByRole("button", { name: "Clear cpu from" }));
+      expect(group).toHaveFocus();
+
+      adopt(provider, [{ field: "owner", operator: "isSet", operands: [] }]);
+      fireEvent.click(screen.getByRole("checkbox", { name: "owner" }));
+      expect(provider.state.get().slice.filter).toEqual([]);
+      expect(group).toHaveFocus();
+
+      adopt(provider, [
+        { field: "name", operator: "contains", operands: ["web"] },
+      ]);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Clear name contains" }),
+      );
+      expect(group).toHaveFocus();
+    });
+
+    it("keeps focus on a bound whose field keeps another restriction", () => {
+      const provider = makeProvider();
+      mount(provider, { primary: ["status"] });
+      adopt(provider, [
+        { field: "cpu", operator: "gte", operands: [4] },
+        { field: "cpu", operator: "lte", operands: [32] },
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: "Clear cpu from" }));
+      expect(screen.getByLabelText("cpu from")).toHaveFocus();
+    });
+
+    it("moves focus to the filters when a choice set shown only for its restriction is emptied", () => {
+      const provider = makeProvider();
+      mount(provider, { primary: ["cpu"] });
+      adopt(provider, [
+        { field: "status", operator: "isAny", operands: ["failed"] },
+      ]);
+      fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
+      expect(screen.getByRole("group", { name: "Filters" })).toHaveFocus();
+    });
+
+    it("discloses the server's options under More filters once a facet lists them", () => {
+      type Placed = { readonly id: string; readonly region: string };
+      const places = createCollection({
+        identify: (row: Placed) => row.id,
+        fields: [
+          { field: "status", kind: "choices", options: ["failed", "ready"] },
+          { field: "region", kind: "choices" },
+        ],
+      });
+      const { container } = render(
+        <DataViews
+          provider={createDataViewsProvider({
+            collection: places,
+            source: createArraySource<Placed>({
+              rows: [
+                { id: "a", region: "eu" },
+                { id: "b", region: "us" },
+              ],
+              collection: places,
+            }),
+            facets: ["region"],
+          })}
+        >
+          <Filters primary={["status"]} />
+        </DataViews>,
+      );
+      const details = findDisclosure(container);
+      expect(details).toContainElement(
+        screen.getByRole("checkbox", { name: "eu" }),
+      );
+      expect(screen.getByRole("checkbox", { name: "us" })).not.toBeVisible();
+    });
+
+    it("refuses a primary mark for a field the collection lacks", () => {
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        expect(() => mount(makeProvider(), { primary: ["zone"] })).toThrow(
+          'the schema has no field "zone" to mark primary',
+        );
+      } finally {
+        errors.mockRestore();
+      }
+    });
+
+    it("has no axe violations with More filters open", async () => {
+      const { container } = mount(makeProvider(), { primary: ["status"] });
+      await toggleDisclosure(container, true);
+      await expectNoAxeViolations(container);
+    });
+
+    it("has no axe violations with a restriction shown beside the primary fields", async () => {
+      const provider = makeProvider();
+      const { container } = mount(provider, { primary: ["status"] });
+      adopt(provider, [{ field: "cpu", operator: "gte", operands: [4] }]);
+      await expectNoAxeViolations(container);
     });
   });
 });

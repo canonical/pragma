@@ -281,3 +281,36 @@ export const NoneOfApplied: Story = {
     ).toBeVisible();
   },
 };
+
+/** What the primary-filters story renders, as source text. */
+const primaryComposition = `<DataViews provider={provider}>
+  <DataViews.Filters primary={["status"]} labels={{ status: "Status", cores: "Cores", name: "Host", region: "Region", owner: "Owner" }} />
+  <DataTable provider={provider} columns={columns} label="Machines" />
+</DataViews>`;
+
+/**
+ * Primary filters: the status is marked primary, so its control shows by
+ * default and the other fields wait under "More filters". Cores carries a
+ * restriction — at least sixteen — so its control shows beside the status
+ * rather than hiding what filters the rows.
+ */
+export const PrimaryFilters: Story = {
+  args: { primary: ["status"] },
+  parameters: consumerCode({
+    parts,
+    declarations: columnsCode,
+    query: atLeastSixteenCores,
+    render: primaryComposition,
+  }),
+  render: renderWith({ query: atLeastSixteenCores }),
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole("checkbox", { name: "failed" }),
+    ).toBeVisible();
+    await expect(canvas.getByLabelText("Cores from")).toBeVisible();
+    const host = canvas.getByLabelText("Host contains");
+    await expect(host).not.toBeVisible();
+    await userEvent.click(canvas.getByText("More filters"));
+    await waitFor(() => expect(host).toBeVisible());
+  },
+};

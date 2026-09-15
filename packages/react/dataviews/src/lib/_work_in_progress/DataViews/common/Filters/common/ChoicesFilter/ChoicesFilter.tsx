@@ -1,9 +1,17 @@
-import type { Count, PredicateOperand, Query } from "@canonical/dataviews-core";
-import { spellWireKey } from "@canonical/dataviews-core/bindings";
+import type { PredicateOperand } from "@canonical/dataviews-core";
+import {
+  applyQueryCommand,
+  spellWireKey,
+} from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
 import { type ReactElement, useId } from "react";
-import { useIsHydrated } from "../../../../../../hooks/index.js";
+import {
+  useHydrationFocusHandoff,
+  useIsHydrated,
+} from "../../../../../../hooks/index.js";
 import { useFilterHandle } from "../../../../hooks/index.js";
+import { NO_RECORDS } from "../constants.js";
+import { spellCount } from "../utils/index.js";
 import type { ChoicesFilterProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters-choices";
@@ -11,28 +19,16 @@ const componentCssClassName = "ds data-views-filters-choices";
 const NONE_SELECTED: ReadonlySet<PredicateOperand> = new Set();
 
 /** What each set operator adds to the field's name in the legend. */
-const LEGEND_WORDING = { isAny: "", isNone: " is none of" } as const;
+const LEGEND_WORDING = { isAny: " is any of", isNone: " is none of" } as const;
+
+/** The other set operator, which a standing set may move to. */
+const ALTERNATIVE_OPERATOR = { isAny: "isNone", isNone: "isAny" } as const;
 
 /** What the control moving a set to each operator says. */
 const SWITCH_WORDING = {
   isAny: "Match any of these instead",
   isNone: "Match none of these instead",
 } as const;
-
-/**
- * A count as it is shown beside its option: exact, a lower bound, or
- * nothing where the source counted nothing.
- */
-const spellCount = (count: Count): string | null => {
-  switch (count.kind) {
-    case "exact":
-      return String(count.value);
-    case "at-least":
-      return `${count.value}+`;
-    case "unknown":
-      return null;
-  }
-};
 
 /**
  * One closed-set filter: a checkbox per option, so the applied set is
@@ -45,11 +41,13 @@ const spellCount = (count: Count): string | null => {
  * removes the control with the last, so focus moves to the filters' group.
  *
  * The options are the schema's, or, where the options are the server's, the
- * values the source's facet lists with any the set already holds. Beside
- * each option is how many matching records hold it, from the facet, which
- * the source computes over the whole matching set with this field's own
- * restriction lifted; the count describes its checkbox rather than naming
- * it, and is absent while no facet answers the applied query.
+ * values the latest facet lists with any the set already holds: they stay
+ * until a newer result lists others — while a query is pending, or after it
+ * fails, as the rows on screen are — and a restriction in force is never
+ * hidden. Beside each option is how many matching records hold it, from the
+ * facet, which the source computes over the whole matching set with this
+ * field's own restriction lifted; the count describes its checkbox rather
+ * than naming it, and is absent while no facet answers the applied query.
  *
  * While a set stands, the source declares the other set operator on the
  * field and nothing stands under it, the set can move there: a real link
@@ -58,70 +56,80 @@ const spellCount = (count: Count): string | null => {
  */
 export default function ChoicesFilter({
   options,
-  values,
+  serverOwned,
+  counts,
   handle,
   operator,
-  alternative,
+  alternativeDeclared,
   alternativeHandle,
   host,
   label,
   field: fieldName,
   declared,
-  offered,
+  leavesWhenCleared,
   onLeave,
 }: ChoicesFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
-  const other = useFilterHandle(alternativeHandle);
+  const alternativeField = useFilterHandle(alternativeHandle);
   const hydrated = useIsHydrated();
+  // The move link a server rendered and the button replacing it: the button
+  // takes the link's focus, or the reader who tabbed to the move before
+  // hydration is left on nothing.
+  const { link: moveLink, button: moveButton } = useHydrationFocusHandoff({
+    hydrated,
+  });
   const baseId = useId();
   const standing = field.applied.kind === "value";
   const selected = standing ? field.applied.value : NONE_SELECTED;
-  // The server's options are what its facet lists, and any the set holds
-  // that the facet does not, so a restriction in force is never hidden.
-  const listed =
-    options ??
-    [...(values ?? []).map(({ value }) => value), ...selected].filter(
-      (value, place, all): value is string | number =>
-        (typeof value === "string" || typeof value === "number") &&
-        all.indexOf(value) === place,
-    );
-  if ((!offered && !standing) || listed.length === 0) {
+  // Offered while nothing stands: any-of wherever it is declared; none-of
+  // only where any-of is not, and otherwise reached by moving a standing set.
+  const offered = declared && (operator === "isAny" || !alternativeDeclared);
+  if (!offered && !standing) {
     return null;
   }
-  const counts =
-    values === null
-      ? null
-      : new Map(values.map(({ value, count }) => [String(value), count]));
-  /** The query a set moved to the alternative leads to, from the first page. */
-  const spellMove = (to: "isAny" | "isNone"): string | null => {
+  // Each option once as its text, the set's own after those listed.
+  const listed = serverOwned
+    ? [...new Set([...options, ...Array.from(selected, String)])]
+    : options;
+  if (listed.length === 0) {
+    return null;
+  }
+  /**
+   * Where moving the set to the alternative leads: the query the core's own
+   * transition makes of the applied one, so the link and the button arrive
+   * at the same place.
+   */
+  const spellMove = (to: ChoicesFilterProps["operator"]): string | null => {
+    // Read once, as rendered: the link is drawn only before hydration, when
+    // nothing moves the query under it; once hydrated the button stands in.
     const { slice, window } = host.state.get();
-    const moved: Query = {
-      slice: {
-        ...slice,
-        filter: [
-          ...slice.filter.filter(
-            (predicate) =>
-              predicate.field !== fieldName ||
-              (predicate.operator !== operator && predicate.operator !== to),
-          ),
-          { field: fieldName, operator: to, operands: [...selected] },
-        ],
-      },
-      window: { ...window, page: 1, cursor: null },
-    };
-    const params = host.spellQuery(moved);
+    const moved = applyQueryCommand(slice, window, {
+      kind: "setPredicate",
+      predicate: { field: fieldName, operator: to, operands: [...selected] },
+      replaces: operator,
+    });
+    const params = host.spellQuery({
+      slice: moved.slice,
+      window: moved.window,
+    });
     return params === null ? null : `?${params}`;
   };
   const renderSwitch = (): ReactElement | null => {
     // A set moves only onto an empty one: moving onto a standing set would
     // overwrite a restriction in force.
-    if (alternative === null || !standing || other.applied.kind === "value") {
+    if (
+      !alternativeDeclared ||
+      !standing ||
+      alternativeField.applied.kind === "value"
+    ) {
       return null;
     }
+    const alternative = ALTERNATIVE_OPERATOR[operator];
     const text = SWITCH_WORDING[alternative];
     if (hydrated) {
       return (
         <Button
+          ref={moveButton}
           type="button"
           importance="tertiary"
           className="switch"
@@ -144,7 +152,7 @@ export default function ChoicesFilter({
     }
     const destination = spellMove(alternative);
     return destination === null ? null : (
-      <a className="switch" href={destination}>
+      <a ref={moveLink} className="switch" href={destination}>
         {text}
       </a>
     );
@@ -158,9 +166,7 @@ export default function ChoicesFilter({
         const count =
           counts === null
             ? null
-            : spellCount(
-                counts.get(String(option)) ?? { kind: "exact", value: 0 },
-              );
+            : spellCount(counts.get(String(option)) ?? NO_RECORDS);
         return (
           <div key={String(option)} className="option">
             <label>
@@ -184,7 +190,13 @@ export default function ChoicesFilter({
                   } else {
                     field.set(next);
                   }
-                  if (!declared || (next.length === 0 && !offered)) {
+                  if (
+                    !declared ||
+                    // An option listed only because the set held it leaves
+                    // with the set's hold on it, whatever else stays.
+                    (serverOwned && !options.includes(String(option))) ||
+                    (next.length === 0 && (!offered || leavesWhenCleared))
+                  ) {
                     // The checkbox that had focus leaves with the set — an
                     // undeclared one, or one offered only while it stands —
                     // or is disabled as an option the set may not regain:

@@ -1,13 +1,10 @@
 import type {
-  Facet,
+  Count,
   FilterHandle,
   PredicateOperand,
   PredicateOperator,
 } from "@canonical/dataviews-core";
 import type { ProviderHost } from "@canonical/dataviews-core/bindings";
-
-/** One value a values facet lists, with its count. */
-type FacetValue = Extract<Facet, { readonly kind: "values" }>["values"][number];
 
 /** The operators a closed-set filter edits. */
 type ChoicesOperator = Extract<PredicateOperator, "isAny" | "isNone">;
@@ -21,24 +18,30 @@ type ChoicesOperator = Extract<PredicateOperator, "isAny" | "isNone">;
  */
 export type ChoicesFilterProps = {
   /**
-   * The field's option values, in schema order; undefined where the options
-   * are the server's, which the facet then lists.
+   * The options the control lists, in order: the schema's, or, where the
+   * options are the server's, those the latest facet lists, as text.
    */
-  readonly options: readonly (string | number)[] | undefined;
+  readonly options: readonly (string | number)[];
   /**
-   * The values the source's facet over the field lists, each with its count,
-   * or null while no facet answers the applied query.
+   * Whether the options are the server's: the set may then hold one no facet
+   * lists yet, which is listed beside them so a restriction in force is never
+   * hidden.
    */
-  readonly values: readonly FacetValue[] | null;
+  readonly serverOwned: boolean;
+  /**
+   * How many matching records hold each option, keyed by its text, from the
+   * facet answering the applied query, or null while none does.
+   */
+  readonly counts: ReadonlyMap<string, Count> | null;
   /** The root's handle for this field's predicate under `operator`. */
   readonly handle: FilterHandle<ReadonlySet<PredicateOperand>>;
   /** Which set the control edits: the options a value is any or none of. */
   readonly operator: ChoicesOperator;
   /**
-   * The other set operator the source declares on the field, which a set
-   * standing here may move to, or null when it declares none.
+   * Whether the source declares the other set operator on the field, which a
+   * set standing here may move to.
    */
-  readonly alternative: ChoicesOperator | null;
+  readonly alternativeDeclared: boolean;
   /**
    * The root's handle for the field's predicate under the other set
    * operator: a set moves there only while nothing stands there, so a move
@@ -57,10 +60,12 @@ export type ChoicesFilterProps = {
    */
   readonly declared: boolean;
   /**
-   * Whether the control is offered while nothing stands: the any-of set
-   * wherever it is declared, the none-of set only where any-of is not.
+   * Whether focus goes to the parent once the restriction the control clears
+   * was the field's last: the control is about to leave — an undeclared
+   * restriction, or a field shown only because it is restricted, under
+   * primary filters — rather than stay where focus could return to it.
    */
-  readonly offered: boolean;
+  readonly leavesWhenCleared: boolean;
   /**
    * Place focus when the control leaves with the restriction it removed or
    * moved, or disables the checkbox that had focus, as an undeclared one

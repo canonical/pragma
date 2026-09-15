@@ -13,11 +13,10 @@ import {
   createDataViewsProvider,
   createPage,
   declareCapabilities,
-  type Facet,
-  type Source,
 } from "@canonical/dataviews-core";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import createManualSource from "../../../testing/createManualSource.js";
 import { DataViews } from "../../lib/_work_in_progress/DataViews/index.js";
 
 type Row = { readonly id: string };
@@ -27,24 +26,10 @@ const collection = createCollection({
   fields: [{ field: "status", kind: "choices", options: ["failed", "ready"] }],
 });
 
-/** A source answering the status facet with the values and counts given. */
-const createAnswering = (
-  values: Extract<Facet, { readonly kind: "values" }>["values"],
-): Source<Row> => ({
-  capabilities: declareCapabilities(collection, {
-    filter: { status: true },
-    facets: ["status"],
-  }),
-  execute: (_request, deliver) => {
-    deliver({
-      status: "succeeded",
-      page: createPage({
-        rows: [],
-        facets: { status: { kind: "values", values } },
-      }),
-    });
-    return () => {};
-  },
+/** A source filtering and faceting the status. */
+const STATUS_FACETED = declareCapabilities(collection, {
+  filter: { status: true },
+  facets: ["status"],
 });
 
 describe("regression 0038 — any-of group named without its operator", () => {
@@ -53,7 +38,14 @@ describe("regression 0038 — any-of group named without its operator", () => {
       <DataViews
         provider={createDataViewsProvider({
           collection,
-          source: createAnswering([]),
+          source: createManualSource<Row>({
+            capabilities: STATUS_FACETED,
+            answer: () =>
+              createPage({
+                rows: [],
+                facets: { status: { kind: "values", values: [] } },
+              }),
+          }).source,
           facets: ["status"],
         })}
       >

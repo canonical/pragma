@@ -1,6 +1,7 @@
 import { spellWireKey } from "@canonical/dataviews-core/bindings";
-import type { ReactElement } from "react";
+import { type ReactElement, useId } from "react";
 import { useFilterHandle } from "../../../../hooks/index.js";
+import { spellCount } from "../utils/index.js";
 import type { FlagFilterProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters-flag";
@@ -12,20 +13,26 @@ const componentCssClassName = "ds data-views-filters-flag";
  * checkbox is named as the wire spells presence, and its value is the
  * marker the encoder writes, so a GET submission is the same clause.
  * Unchecking an undeclared flag removes the control, so focus moves to the
- * filters' group.
+ * filters' group. Beside the checkbox is how many matching records set the
+ * field, from the facet, describing the checkbox while a facet answers the
+ * applied query.
  */
 export default function FlagFilter({
   handle,
+  count,
   label,
   field: fieldName,
   declared,
+  leavesWhenCleared,
   onLeave,
 }: FlagFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
+  const countId = useId();
   const applied = field.applied.kind === "value";
   if (!declared && !applied) {
     return null;
   }
+  const spelled = count === null ? null : spellCount(count);
   return (
     <div className={componentCssClassName}>
       <label className="option">
@@ -34,10 +41,11 @@ export default function FlagFilter({
           name={spellWireKey(fieldName, "isSet")}
           value="1"
           checked={applied}
+          aria-describedby={spelled === null ? undefined : countId}
           onChange={() => {
             if (applied) {
               field.clear();
-              if (!declared) {
+              if (leavesWhenCleared) {
                 // The control leaves with the checkbox that had focus.
                 onLeave();
               }
@@ -48,6 +56,11 @@ export default function FlagFilter({
         />
         {label}
       </label>
+      {spelled === null ? null : (
+        <span id={countId} className="count">
+          {spelled}
+        </span>
+      )}
     </div>
   );
 }

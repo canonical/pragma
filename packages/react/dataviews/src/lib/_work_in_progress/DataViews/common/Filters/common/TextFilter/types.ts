@@ -25,6 +25,13 @@ export type TextFilterProps = {
    */
   readonly declared: boolean;
   /**
+   * Whether focus goes to the parent once the restriction the control clears
+   * was the field's last: the control is about to leave — an undeclared
+   * restriction, or a field shown only because it is restricted, under
+   * primary filters — rather than stay where focus could return to it.
+   */
+  readonly leavesWhenCleared: boolean;
+  /**
    * Place focus when the control leaves with the restriction it removed,
    * as an undeclared one does once cleared: the parent owns where it goes.
    */

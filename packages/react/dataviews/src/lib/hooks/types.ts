@@ -1,10 +1,13 @@
 /**
  * Hook domain types for the hooks every part shares: the value hook that
- * observes one channel and the cell hook a column's own renderer reads.
- * Each hook declares its result type here.
+ * observes one channel, the cell hook a column's own renderer reads, whether
+ * scripts have taken over, and the focus a server's link hands to the button
+ * replacing it. Each hook declares its result type, and its props type where
+ * it takes a config object, here.
  */
 
 import type { ReadonlyChannel, RowRecord } from "@canonical/dataviews-core";
+import type { RefObject } from "react";
 
 /** What `useDataViewsValue` returns: the channel's current value, or the part `select` picks. */
 export type UseDataViewsValueResult<T> = T;
@@ -26,6 +29,22 @@ export type UseDataViewsCellResult<TRow extends object = RowRecord> = {
   readonly fields: Readonly<Record<string, ReadonlyChannel<unknown>>>;
   /** Whether the row is in the collection's selection. */
   readonly selected: ReadonlyChannel<boolean>;
+};
+
+/** What `useHydrationFocusHandoff` takes: whether scripts have taken over. */
+export type UseHydrationFocusHandoffProps = {
+  readonly hydrated: boolean;
+};
+
+/**
+ * What `useHydrationFocusHandoff` returns: the ref for the link a server
+ * renders, and the ref for the button that replaces it once hydrated.
+ */
+export type UseHydrationFocusHandoffResult = {
+  /** The link a server renders, attached only before hydration. */
+  readonly link: RefObject<HTMLAnchorElement | null>;
+  /** The button that replaces the link once hydrated, and takes its focus. */
+  readonly button: RefObject<HTMLButtonElement | null>;
 };
 
 /**

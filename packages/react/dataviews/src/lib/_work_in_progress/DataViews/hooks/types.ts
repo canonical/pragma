@@ -18,6 +18,7 @@ import type {
   SortTerm,
   SourceRefusal,
 } from "@canonical/dataviews-core";
+import type { RefObject, ToggleEvent } from "react";
 import type { ContextOptions, DataViewsProps } from "../types.js";
 
 /**
@@ -43,17 +44,6 @@ export type UseAppliedSearchProps = {
 /** What the applied-search hook returns: the applied search, empty for none. */
 export type UseAppliedSearchResult = string;
 
-/** What the facets hook takes: the provider whose result's facets it reads. */
-export type UseFacetsProps = {
-  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
-};
-
-/**
- * What the facets hook returns: the facets of the result answering the
- * applied query, keyed by field, or null while no result answers it.
- */
-export type UseFacetsResult = Readonly<Record<string, Facet>> | null;
-
 /** What the applied-sort hook takes: the provider whose ordering it reads. */
 export type UseAppliedSortProps = {
   readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
@@ -64,6 +54,62 @@ export type UseAppliedSortProps = {
  * they read the same.
  */
 export type UseAppliedSortResult = readonly SortTerm[];
+
+/** What the restricted-fields hook takes: the provider whose query it reads. */
+export type UseRestrictedFieldsProps = {
+  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
+};
+
+/**
+ * What the restricted-fields hook returns: how many predicates the applied
+ * query holds on each field it restricts, at one identity while that reads
+ * the same.
+ */
+export type UseRestrictedFieldsResult = ReadonlyMap<string, number>;
+
+/** What the facets hook takes: the provider whose result's facets it reads. */
+export type UseFacetsProps = {
+  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
+};
+
+/** What the facets hook returns, each keyed by field. */
+export type UseFacetsResult = {
+  /**
+   * The facets of the result answering the applied query, or null while no
+   * result answers it: what counts and ranges are read from.
+   */
+  readonly answered: Readonly<Record<string, Facet>> | null;
+  /**
+   * The facets the latest result answered, whichever query it answered, or
+   * null before any: what the server's options are listed from, so they stay
+   * until a newer result lands.
+   */
+  readonly latest: Readonly<Record<string, Facet>> | null;
+};
+
+/**
+ * What the More filters pin takes: the marks a pin is placed under, and the
+ * fields shown by default, read as the disclosure opens.
+ */
+export type UseMoreFiltersPinProps = {
+  /** The primary marks, joined into the one key a pin is placed under. */
+  readonly marks: string;
+  /** The fields shown by default as things stand, read as the disclosure opens. */
+  readonly listShownFields: () => readonly string[];
+};
+
+/** What the More filters pin returns. */
+export type UseMoreFiltersPinResult = {
+  /**
+   * The fields placed outside while the disclosure is open; null while it is
+   * closed, or when the marks moved since it opened.
+   */
+  readonly pinned: ReadonlySet<string> | null;
+  /** The disclosure's element, read in the commit where the filters hydrate. */
+  readonly detailsRef: RefObject<HTMLDetailsElement | null>;
+  /** Place or release the pin as the disclosure toggles. */
+  readonly handleToggle: (event: ToggleEvent<HTMLDetailsElement>) => void;
+};
 
 /** What the destination hook takes: the provider, and the query a state leads to. */
 export type UseDestinationProps = {
