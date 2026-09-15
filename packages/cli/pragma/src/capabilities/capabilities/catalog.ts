@@ -31,10 +31,19 @@ import type {
  * each other. `system` projects the distribution's identity rather than naming
  * a domain — the live tool catalog the same handshake carries already says
  * which nouns exist. `querying` is verbatim from the old shell (the SPARQL
- * model is still accurate for v2); `model` stopped claiming reads are
- * tier/channel-SCOPED when the hand-written filtering was removed (L-OPEN-9)
- * — the hierarchy is graph data now, not a query gate; `mutations` is new in
- * v2, surfacing the plan-first/confirm gate.
+ * model is still accurate for v2); `mutations` is new in v2, surfacing the
+ * plan-first/confirm gate.
+ *
+ * `model` is the one that has had to be rewritten twice, and both times because
+ * it was describing a gate that had moved. It stopped claiming reads were
+ * tier/channel-scoped when the hand-written filtering was removed (the
+ * hierarchy became graph data, not a query gate) — and "Reads are unscoped —
+ * every list shows everything" became false the day the tier scope landed. An
+ * agent reading it took a scoped `block_list` for the whole design system,
+ * which is the exact misreading the sentence existed to prevent. So it now says
+ * what is true of each half separately: the TIER hierarchy gates a read of a
+ * tiered noun and names the argument that widens it, while the CHANNEL is still
+ * data on the entity and gates nothing.
  */
 export const CONVENTIONS = {
   // `help` is authored as a bare phrase (`--help` renders it as one), so the
@@ -43,7 +52,7 @@ export const CONVENTIONS = {
   // otherwise reads "recipe graph.. A CLI and MCP server…".
   system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION} (a CLI and MCP server over a knowledge graph).`,
   model:
-    "The graph models a tier hierarchy (e.g. global > apps > apps/lxd) and release channels (normal, experimental, prerelease) as DATA on each entity. Reads are unscoped — every list shows everything; filter by inspecting an entity's tier/release fields or with graph_query.",
+    'The tier hierarchy (global > apps > apps_lxd) SCOPES every read of a tiered entity: lists answer from the top-level tiers, lookups prefer them. Pass tier: "<name>" for a tier plus its ancestors, or tier: "all" for every tier; each answer states its scope. Channels scope nothing.',
   querying:
     "All queries run against an RDF triple store. Prefixed IRIs (e.g. prefix:name) identify entities. Use ontology_list to discover the active namespaces.",
   mutations:

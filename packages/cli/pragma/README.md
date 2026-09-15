@@ -4,7 +4,8 @@
 
 | You want to… | Run |
 |---|---|
-| See every block in the design system | `pragma block list` — all 251, each with its tier |
+| See the blocks you build with | `pragma block list` — the top-level tiers, each row with its tier |
+| See a product tier's blocks, and the global ones under them | `pragma block list --tier apps_lxd` (`--tier all` for every tier) |
 | Read a block's full spec — anatomy, modifiers, properties | `pragma block lookup Button` |
 | Find the design system's name for something you already know | `pragma block lookup 'Nav*'` — lookups take names or globs |
 | Know which tier something belongs to | `pragma tier list`, `pragma tier lookup <name>` |
@@ -85,7 +86,7 @@ What this distribution's graph answers today:
 
 | Ask | Answer |
 |---|---|
-| `pragma block list` | **251** blocks — components, patterns, layouts, and subcomponents, each with its tier |
+| `pragma block list` | **173** blocks — components, patterns, layouts and subcomponents of the five top-level tiers, each row with its tier. **252** with `--tier all`: the other 79 sit in the ten product tiers below, and `--tier apps_lxd` adds one of those to the global blocks it builds on |
 | `pragma tier list` | **15** tiers — `global`, `apps` plus nine app tiers, `sites` plus one, `stores`, `documentation` |
 | `pragma modifier list` | **11** modifier families — Importance (Primary/Secondary/Tertiary), Anticipation (Caution/Constructive/Destructive), Criticality, Density, Lifecycle, Mode, Release, Surface, and three more |
 | `pragma standard categories` | **21** code-standard categories — react 16, css 15, lit 13, svelte 12, rust 11, storybook 11, code 10, … |

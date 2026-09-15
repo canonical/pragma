@@ -26,7 +26,9 @@ pragma block list
 pragma block lookup Button
 ```
 
-`block list` is every block in the design system with its tier; `block lookup Button` is one block's full spec — summary, guidelines, anatomy, properties. Lookups take names or globs (`'Nav*'`), so a rough idea of the name is enough.
+`block list` is the blocks of the five top-level tiers, each with its tier — the design system's shared vocabulary, without the 79 that belong to an individual product's tier. The heading says which tiers it answered from, and one argument changes that: `--tier apps_lxd` adds LXD's blocks to the global ones they build on, `--tier all` shows every tier. Set the default once with `pragma config set tier apps_lxd`.
+
+`block lookup Button` is one block's full spec — summary, guidelines, anatomy, properties. The same scope decides WHICH Button: several tiers have one, and a bare name answers with the in-scope one. A name that lives only outside the scope is still answered, with a line saying where from. Lookups take names or globs (`'Nav*'`), so a rough idea of the name is enough.
 
 ## Where to go next
 
