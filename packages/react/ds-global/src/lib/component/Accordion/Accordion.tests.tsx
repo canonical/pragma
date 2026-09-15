@@ -142,3 +142,33 @@ describe("Accordion.Item styles contract: header surface stepping", () => {
     );
   });
 });
+
+describe("Accordion.Item styles contract: h6 density seating", () => {
+  // The h6 seating is pure CSS (Chromatic owns the visual gate), so this asserts
+  // the stylesheet's contract directly: an <h6> heading brings its own FIXED
+  // line box (heading-6 line-height + typography-engine padding nudges) into
+  // the header, which overflows the dense cells (the comfy cells only fit it
+  // by coincidence) — inside a density scope it must inherit the seat line
+  // and drop the nudges.
+  const stylesheet = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      "common",
+      "Item",
+      "styles.css",
+    ),
+    "utf-8",
+  )
+    .replace(/\s+/g, " ")
+    .replace(/\( /g, "(")
+    .replace(/ \)/g, ")");
+
+  it("seats the h6 on the seat line and zeroes its nudges in a density scope", () => {
+    expect(stylesheet).toContain(
+      ":is(.comfortable, .dense, .app, .site, .docs) .ds.accordion-item > .header > .heading { line-height: var(--control-seat-line);",
+    );
+    expect(stylesheet).toContain(
+      "& h6 { padding-block: 0; line-height: inherit; }",
+    );
+  });
+});
