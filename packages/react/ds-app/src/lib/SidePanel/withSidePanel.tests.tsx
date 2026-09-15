@@ -2,6 +2,7 @@ import { Button } from "@canonical/react-ds-global";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import SidePanel from "./SidePanel.js";
+import type { WithSidePanelRender } from "./types.js";
 import withSidePanel from "./withSidePanel.js";
 
 /*
@@ -34,13 +35,16 @@ const getDialog = (container: HTMLElement): HTMLDialogElement => {
   return dialog;
 };
 
+/** The factory every test shares: a labelled panel with a body. */
+const labelledPanel: WithSidePanelRender = ({ ref }) => (
+  <SidePanel ref={ref} aria-label="Panel">
+    <SidePanel.Content>Body</SidePanel.Content>
+  </SidePanel>
+);
+
 describe("withSidePanel", () => {
   it("renders the trigger and a closed panel", () => {
-    const ToggledButton = withSidePanel(
-      Button,
-      <SidePanel.Content>Body</SidePanel.Content>,
-      { "aria-label": "Panel" },
-    );
+    const ToggledButton = withSidePanel(Button, labelledPanel);
     const { container } = render(<ToggledButton>Open panel</ToggledButton>);
     expect(
       screen.getByRole("button", { name: "Open panel" }),
@@ -49,11 +53,7 @@ describe("withSidePanel", () => {
   });
 
   it("opens the panel when the trigger is pressed", () => {
-    const ToggledButton = withSidePanel(
-      Button,
-      <SidePanel.Content>Body</SidePanel.Content>,
-      { "aria-label": "Panel" },
-    );
+    const ToggledButton = withSidePanel(Button, labelledPanel);
     const { container } = render(<ToggledButton>Open panel</ToggledButton>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open panel" }));
@@ -61,11 +61,7 @@ describe("withSidePanel", () => {
   });
 
   it("toggles: a second press closes the panel again", () => {
-    const ToggledButton = withSidePanel(
-      Button,
-      <SidePanel.Content>Body</SidePanel.Content>,
-      { "aria-label": "Panel" },
-    );
+    const ToggledButton = withSidePanel(Button, labelledPanel);
     const { container } = render(<ToggledButton>Open panel</ToggledButton>);
     const trigger = screen.getByRole("button", { name: "Open panel" });
 
@@ -78,32 +74,24 @@ describe("withSidePanel", () => {
 
   it("runs the consumer's own onClick alongside the toggle", () => {
     const onClick = vi.fn();
-    const ToggledButton = withSidePanel(
-      Button,
-      <SidePanel.Content>Body</SidePanel.Content>,
-      { "aria-label": "Panel" },
-    );
+    const ToggledButton = withSidePanel(Button, labelledPanel);
     render(<ToggledButton onClick={onClick}>Open panel</ToggledButton>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open panel" }));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it("hands function children a close that closes the panel", () => {
-    const ToggledButton = withSidePanel(
-      Button,
-      (close) => (
-        <>
-          <SidePanel.Content>Body</SidePanel.Content>
-          <SidePanel.Footer>
-            <button onClick={close} type="button">
-              Dismiss
-            </button>
-          </SidePanel.Footer>
-        </>
-      ),
-      { "aria-label": "Panel" },
-    );
+  it("hands the factory a close that closes the panel", () => {
+    const ToggledButton = withSidePanel(Button, ({ ref, close }) => (
+      <SidePanel ref={ref} aria-label="Panel">
+        <SidePanel.Content>Body</SidePanel.Content>
+        <SidePanel.Footer>
+          <button onClick={close} type="button">
+            Dismiss
+          </button>
+        </SidePanel.Footer>
+      </SidePanel>
+    ));
     const { container } = render(<ToggledButton>Open panel</ToggledButton>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open panel" }));
@@ -113,27 +101,24 @@ describe("withSidePanel", () => {
     expect(getDialog(container)).not.toHaveAttribute("open");
   });
 
-  it("forwards panel props to the panel", () => {
-    const ToggledButton = withSidePanel(
-      Button,
-      <SidePanel.Content>Body</SidePanel.Content>,
-      { "aria-label": "Filters", closeOnOutsideClick: true },
-    );
+  it("renders the panel the factory composes, props and all", () => {
+    const ToggledButton = withSidePanel(Button, ({ ref }) => (
+      <SidePanel ref={ref} aria-label="Filters" closeOnEscape={false}>
+        <SidePanel.Content>Body</SidePanel.Content>
+      </SidePanel>
+    ));
     const { container } = render(<ToggledButton>Open panel</ToggledButton>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open panel" }));
     expect(getDialog(container)).toHaveAttribute("aria-label", "Filters");
 
-    // closeOnOutsideClick reached the panel: an outside press closes it.
-    fireEvent.pointerDown(document.body);
-    expect(getDialog(container)).not.toHaveAttribute("open");
+    // closeOnEscape sits on the panel the factory wrote: Escape is ignored.
+    fireEvent.keyDown(getDialog(container), { key: "Escape" });
+    expect(getDialog(container)).toHaveAttribute("open");
   });
 
   it("names the wrapped component after its trigger", () => {
-    const ToggledButton = withSidePanel(
-      Button,
-      <SidePanel.Content>Body</SidePanel.Content>,
-    );
+    const ToggledButton = withSidePanel(Button, labelledPanel);
     expect(ToggledButton.displayName).toBe("withSidePanel(Button)");
   });
 });

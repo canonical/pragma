@@ -1,11 +1,13 @@
+import { createRef } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import SidePanel from "./SidePanel.js";
+import type { SidePanelHandle } from "./types.js";
 
 describe("SidePanel SSR", () => {
   it("renders its parts without hydration errors", () => {
     const html = renderToString(
-      <SidePanel>
+      <SidePanel ref={createRef<SidePanelHandle>()}>
         <SidePanel.Header>Panel title</SidePanel.Header>
         <SidePanel.Content>Test content</SidePanel.Content>
         <SidePanel.Footer>Actions</SidePanel.Footer>
@@ -28,7 +30,7 @@ describe("SidePanel SSR", () => {
 
   it("never paints an open dialog on the server", () => {
     const html = renderToString(
-      <SidePanel>
+      <SidePanel ref={createRef<SidePanelHandle>()}>
         <SidePanel.Content>Test content</SidePanel.Content>
       </SidePanel>,
     );
@@ -47,7 +49,7 @@ describe("SidePanel SSR", () => {
 
   it("does not claim to be modal", () => {
     const html = renderToString(
-      <SidePanel aria-label="Filters">
+      <SidePanel ref={createRef<SidePanelHandle>()} aria-label="Filters">
         <SidePanel.Content>Test content</SidePanel.Content>
       </SidePanel>,
     );
