@@ -178,9 +178,17 @@ function renderData(
     // (`mcp/registerVerb.ts#noticeMeta`) — the two machine surfaces stay
     // byte-equal.
     const notice = verb.output.formatters.notice?.(data);
+    // The machine half of the same seam: facts the read wants to hand an agent
+    // as data rather than prose (`meta.scope`). MCP merges the same seam into
+    // the same keys (`mcp/registerVerb.ts#readMeta`).
+    const extra = verb.output.formatters.meta?.(data);
     return {
       stdout: `${JSON.stringify(
-        successEnvelope(projection, notice ? { ...meta, notice } : meta),
+        successEnvelope(projection, {
+          ...meta,
+          ...(extra ?? {}),
+          ...(notice ? { notice } : {}),
+        }),
       )}\n`,
       exitCode: 0,
     };

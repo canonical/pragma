@@ -40,14 +40,17 @@ import {
   sampleDefaultCount,
 } from "./sample.js";
 import { storyIssues } from "./storyRules.js";
-import type {
-  PackDefinition,
-  PackFilter,
-  PackList,
-  PackLookup,
-  PackPage,
-  PackSearch,
-  StorySource,
+import {
+  EVERY_TIER,
+  type PackDefinition,
+  type PackFilter,
+  type PackList,
+  type PackLookup,
+  type PackPage,
+  type PackSearch,
+  type PackTierScope,
+  type StorySource,
+  TIER_PARAM,
 } from "./types.js";
 
 // The run bodies pull the SPARQL/GraphQL fetch layer; they are dynamic-imported
@@ -81,6 +84,8 @@ export function compilePack(
   const { noun } = definition;
   const verbs: VerbSpec[] = [];
 
+  const tierScope = definition.tierScope;
+
   if (definition.list) {
     verbs.push(
       compileListVerb(definition.list, {
@@ -90,6 +95,7 @@ export function compilePack(
         doc: definition.toolDescription,
         source,
         prefixes,
+        ...(tierScope ? { tierScope } : {}),
       }),
     );
   }
@@ -103,12 +109,15 @@ export function compilePack(
         doc: verb.toolDescription,
         source,
         prefixes,
+        ...(tierScope ? { tierScope } : {}),
       }),
     );
   }
 
   if (definition.lookup) {
-    verbs.push(compileLookupVerb(definition.lookup, noun, source, prefixes));
+    verbs.push(
+      compileLookupVerb(definition.lookup, noun, source, prefixes, tierScope),
+    );
     if (definition.lookup.sample) {
       verbs.push(compileSampleVerb(definition.lookup, noun, source, prefixes));
     }
@@ -220,6 +229,8 @@ interface ListVerbMeta {
   readonly doc?: string;
   readonly source: StorySource;
   readonly prefixes: Readonly<Record<string, string>>;
+  /** The noun's declared tier hierarchy, when its entities are tiered. */
+  readonly tierScope?: PackTierScope;
 }
 
 /** Compile the `list` verb or an extra list-shaped verb. */
@@ -227,6 +238,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
   const params = [
     ...projectFilters(shape.filters),
     ...projectSearch(shape.search),
+    ...tierParams(meta.tierScope),
     ...PAGE_PARAMS,
   ];
   const filterExample = shape.filters?.find((f) => f.values !== undefined);
@@ -258,7 +270,10 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
       runBodies().then((m) =>
-        m.makeListRun(shape, { source: meta.source })(params, rt),
+        m.makeListRun(shape, {
+          source: meta.source,
+          ...(meta.tierScope ? { tierScope: meta.tierScope } : {}),
+        })(params, rt),
       ),
   };
   return asVerb(verb);
@@ -270,6 +285,7 @@ function compileLookupVerb(
   noun: string,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  tierScope?: PackTierScope,
 ): VerbSpec {
   // Derive-by-default: every lookup completes its `<name>` from the pack index
   // (empty type = any, the reader handles it), UNLESS the pack opts out
@@ -303,19 +319,53 @@ function compileLookupVerb(
     summary:
       lookup.description ?? `Look up ${noun} details by name, IRI, or glob.`,
     ...(lookup.toolDescription ? { doc: lookup.toolDescription } : {}),
-    params: [nameParam],
+    params: [nameParam, ...tierParams(tierScope)],
     output: { formatters: lookupFormatters(lookup, prefixes) },
-    examples: [{ cmd: `${BIN_NAME} ${noun} lookup <name>` }],
+    examples: [
+      { cmd: `${BIN_NAME} ${noun} lookup <name>` },
+      ...(tierScope
+        ? [
+            {
+              cmd: `${BIN_NAME} ${noun} lookup --tier all <name>`,
+              note: "every tier, not just the ones in scope",
+            },
+          ]
+        : []),
+    ],
     ...(lookup.disclosure
       ? { disclosure: disclosureSpec(lookup.disclosure) }
       : {}),
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
       runBodies().then((m) =>
-        m.makeLookupRun(lookup, noun, source, prefixes)(params, rt),
+        m.makeLookupRun(lookup, noun, source, prefixes, tierScope)(params, rt),
       ),
   };
   return asVerb(verb);
+}
+
+/**
+ * The `--tier` parameter a TIERED noun's reads carry (`tier` over MCP).
+ *
+ * Kernel-added, like the page: being tiered is declared, but the argument that
+ * steers the scope is the kernel's to name — one spelling across every tiered
+ * noun, so an agent that learned `--tier` on `block list` can use it on
+ * `concept list` without asking. The help text names the default and the
+ * escape, because a scope a caller cannot see is exactly the hidden behaviour
+ * CONSTITUTION §VI rules out.
+ *
+ * Not `repeatable`: a repeated `--tier` would be two chains, and the scope is
+ * one chain. The run body refuses an array rather than quietly taking the last.
+ */
+function tierParams(tierScope: PackTierScope | undefined): ParamSpec[] {
+  if (!tierScope) return [];
+  return [
+    {
+      kind: "string",
+      name: TIER_PARAM,
+      doc: `Read this tier and its ancestors (default: the top-level tiers; "${EVERY_TIER}" for every tier).`,
+    },
+  ];
 }
 
 /** Compile the `sample` verb (N random exemplars at the highest level). */

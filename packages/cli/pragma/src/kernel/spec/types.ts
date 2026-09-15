@@ -192,6 +192,23 @@ export interface Formatters<T> {
   readonly llm: (d: T) => string;
   readonly json: (d: T) => string;
   readonly notice?: (d: T) => string | undefined;
+  /**
+   * The MACHINE half of the notice seam: facts about the read that belong in
+   * the envelope's `meta` as DATA, merged there by both projectors under the
+   * keys this returns.
+   *
+   * `notice` is a sentence, and a sentence is the right shape for a human
+   * reading stderr and the wrong shape for an agent deciding what to do next.
+   * The standing case is the tier scope: `meta.scope` names the tiers a list
+   * answered from, so a caller that wants the rest can widen the read without
+   * parsing prose for tier names. Both machine surfaces read this ONE seam, the
+   * way they already read one `notice`, so CLI-JSON and MCP stay byte-equal.
+   *
+   * Plain and llm ignore it — they carry the same facts in their own register
+   * (the notice on stderr, the heading in the condensed form). Return
+   * `undefined` (or omit the member) when the read has nothing to add.
+   */
+  readonly meta?: (d: T) => Record<string, unknown> | undefined;
 }
 
 /** A usage example shown in verb help. */

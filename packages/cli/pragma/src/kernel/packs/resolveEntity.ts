@@ -36,6 +36,7 @@ import {
   buildLookupNamesQuery,
   buildLookupQuery,
   buildNameResolveQuery,
+  SCOPE_TIER_VARIABLE,
 } from "./sparql/buildLookupQuery.js";
 import { runSelect } from "./sparql/runSelect.js";
 import type {
@@ -55,6 +56,32 @@ export interface LookupError {
 }
 
 /**
+ * The tier scope a name resolve answers under, as the resolver needs it.
+ *
+ * Built by the run body from the noun's declaration and the caller's arguments
+ * ({@link ../tierScope}); the resolver only has to know which tiers count and
+ * how to say so.
+ */
+export interface LookupScope {
+  /** The entity → tier edge, a validated pack term. */
+  readonly via: string;
+  /** The in-scope tier IRIs. */
+  readonly tiers: readonly string[];
+  /** The scope in the words a reader can type back (`global, apps`). */
+  readonly label: string;
+}
+
+/** A name whose only matches were outside the tier scope. */
+export interface OutOfScopeAnswer {
+  /** The name (or IRI, or glob expansion) that was looked up. */
+  readonly query: string;
+  /** The tiers the answers actually came from, as local names. */
+  readonly tiers: readonly string[];
+  /** The scope that held none of them, in the words `--tier` accepts. */
+  readonly scope: string;
+}
+
+/**
  * The result of a (possibly multi-name) lookup.
  *
  * `results` may be LONGER than the arguments that produced it: a name several
@@ -62,10 +89,23 @@ export interface LookupError {
  * naming the ones not answered with, because there are none — an earlier draft
  * kept the single-entity arity and carried the rest as IRIs in a notice, which
  * is a sentence about an address where the payload is the address.
+ *
+ * The tier scope narrows that: for a SCOPED noun the in-scope matches are the
+ * answer, and the out-of-scope ones are not returned — `block lookup button`
+ * answers with the global Button alone. A name whose matches are ALL out of
+ * scope is answered anyway, from the tiers it does live in, and says so through
+ * {@link outOfScope}: refusing it would be answering "no such block" about a
+ * block that exists, which is the one thing a lookup must never do.
  */
 export interface LookupOutput {
   readonly results: PackEntity[];
   readonly errors: LookupError[];
+  /**
+   * The names answered from OUTSIDE the tier scope, because the scope held
+   * nothing they reached. Absent when every answer was in scope — the ordinary
+   * case, and the case the payload speaks for itself in.
+   */
+  readonly outOfScope?: OutOfScopeAnswer[];
 }
 
 /** What the resolver needs from the runtime: the store + the query facade. */
@@ -84,6 +124,7 @@ export async function resolveLookup(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
+  scope?: LookupScope,
 ): Promise<LookupOutput> {
   if (queries.length === 0) {
     throw PragmaError.invalidInput("names", "(empty)", {
@@ -106,16 +147,18 @@ export async function resolveLookup(
   );
   const results: PackEntity[] = [];
   const errors: LookupError[] = [...expanded.globErrors];
+  const outOfScope: OutOfScopeAnswer[] = [];
   const settled = await Promise.allSettled(
     expanded.names.map((query) =>
-      lookupOne(rt, lookup, noun, query, source, prefixes, level),
+      lookupOne(rt, lookup, noun, query, source, prefixes, level, scope),
     ),
   );
   for (const [index, outcome] of settled.entries()) {
     const query = expanded.names[index];
     if (query === undefined) continue;
     if (outcome.status === "fulfilled") {
-      results.push(...outcome.value);
+      results.push(...outcome.value.entities);
+      if (outcome.value.outOfScope) outOfScope.push(outcome.value.outOfScope);
       continue;
     }
     const error = outcome.reason;
@@ -136,7 +179,11 @@ export async function resolveLookup(
       });
     }
   }
-  return { results, errors };
+  return {
+    results,
+    errors,
+    ...(outOfScope.length > 0 ? { outOfScope } : {}),
+  };
 }
 
 /**
@@ -235,15 +282,16 @@ async function lookupOne(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
-): Promise<PackEntity[]> {
+  scope?: LookupScope,
+): Promise<{ entities: PackEntity[]; outOfScope?: OutOfScopeAnswer }> {
   const graphqlSourced = lookup.source === "graphql";
   const rows = await runSelect(
     rt,
-    buildResolveQuery(lookup, query, prefixes, level),
+    buildResolveQuery(lookup, query, prefixes, level, scope),
     source,
   );
-  const bases = firstRowPerEntity(rows);
-  if (bases.length === 0) {
+  const resolved = firstRowPerEntity(rows);
+  if (resolved.length === 0) {
     const candidates = await listEntityNames(rt, lookup, source);
     throw PragmaError.notFound(noun, query, {
       suggestions: suggestNames(query, candidates),
@@ -256,8 +304,12 @@ async function lookupOne(
     });
   }
 
+  const chosen = applyScope(resolved, query, scope);
+  const bases = chosen.rows.map(withoutScopeVariable);
+  const fallback = chosen.outOfScope ? { outOfScope: chosen.outOfScope } : {};
+
   if (graphqlSourced) {
-    return Promise.all(
+    const entities = await Promise.all(
       bases.map((base) =>
         fetchGraphqlLookup(
           rt,
@@ -273,6 +325,7 @@ async function lookupOne(
         ),
       ),
     );
+    return { entities, ...fallback };
   }
 
   const entities: PackEntity[] = [];
@@ -287,7 +340,64 @@ async function lookupOne(
     }
     entities.push(entity);
   }
-  return entities;
+  return { entities, ...fallback };
+}
+
+/**
+ * Narrow a resolve to the tier scope — or, when the scope holds none of what
+ * the name reached, answer from outside it and say so.
+ *
+ * THE FALLBACK IS THE POINT, and it is why the scope is not a `FILTER` in the
+ * resolve query. A scoped filter would turn `block lookup back-link` — an LXD
+ * component, out of the default scope — into ENTITY_NOT_FOUND with suggestions,
+ * i.e. into "no such block" about a block the store holds and `block list
+ * --tier apps_lxd` prints. A name a reader typed is evidence they mean
+ * something; the scope decides WHICH of several it means, never whether it
+ * exists.
+ *
+ * An entity with no tier at all is treated as IN scope. It cannot be placed, so
+ * it cannot be placed outside — and being unplaceable is not grounds for being
+ * unfindable.
+ */
+function applyScope(
+  rows: readonly PackRow[],
+  query: string,
+  scope: LookupScope | undefined,
+): { rows: readonly PackRow[]; outOfScope?: OutOfScopeAnswer } {
+  if (!scope) return { rows };
+  const inScope = new Set(scope.tiers);
+  const kept = rows.filter((row) => {
+    const tier = row[SCOPE_TIER_VARIABLE];
+    return tier === undefined || tier === "" || inScope.has(tier);
+  });
+  if (kept.length > 0) return { rows: kept };
+  const tiers = [
+    ...new Set(
+      rows
+        .map((row) => row[SCOPE_TIER_VARIABLE] ?? "")
+        .filter((tier) => tier !== "")
+        .map(scopeTierName),
+    ),
+  ];
+  return { rows, outOfScope: { query, tiers, scope: scope.label } };
+}
+
+/** A tier IRI as the scope reports it: the local name `--tier` accepts. */
+function scopeTierName(iri: string): string {
+  return iri.replace(/^.*[#/]/, "");
+}
+
+/**
+ * Drop the kernel's scope variable from a resolved row.
+ *
+ * The sparql-sourced lane spreads its resolve row straight into the entity it
+ * answers with, so a variable the kernel added for its own decision would land
+ * in `--format json` as a field the story never declared.
+ */
+function withoutScopeVariable(row: PackRow): PackRow {
+  if (!(SCOPE_TIER_VARIABLE in row)) return row;
+  const { [SCOPE_TIER_VARIABLE]: _tier, ...rest } = row;
+  return rest;
 }
 
 /** Collapse a ranked resolve to one row per entity, keeping the best-ranked. */
@@ -316,13 +426,18 @@ function buildResolveQuery(
   query: string,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
+  scope?: LookupScope,
 ): string {
   const graphqlSourced = lookup.source === "graphql";
   if (!looksLikeIri(query)) {
     return graphqlSourced
-      ? buildNameResolveQuery(lookup, query)
-      : buildLookupQuery(lookup, query, level);
+      ? buildNameResolveQuery(lookup, query, scope?.via)
+      : buildLookupQuery(lookup, query, level, scope?.via);
   }
+  // An IRI-ADDRESSED form is never scoped, and that is not an omission. An IRI
+  // reaches exactly one entity, so there is nothing for a scope to choose
+  // between — the whole job the scope does. A caller who pastes
+  // `ds:apps_lxd.component.back_link` has already said which tier they mean.
   const resolved = resolveUri(query, prefixes);
   if (!isEmbeddableIri(resolved)) {
     throw PragmaError.invalidInput("name", query, {

@@ -55,6 +55,44 @@ export const RESERVED_STORY_PARAMS: readonly string[] = [
  */
 export const RESERVED_VARIABLE_PREFIX = "__pragma";
 
+/**
+ * The `--tier` value that turns the tier scope OFF — every tier, the way every
+ * read answered before the scope existed.
+ *
+ * A word rather than a second flag (this distribution retired an `--all-tiers`
+ * once already): `--tier all` answers the same question the flag already asks,
+ * so there is one argument to learn and one to document.
+ *
+ * Declared HERE, in the zod-free grammar, for the reason
+ * {@link RESERVED_VARIABLE_PREFIX} is: the compiler that puts the flag on a
+ * verb runs on the storeless `--help` fast path, and the run body that reads it
+ * lives behind a dynamic import. Both must read one spelling.
+ */
+export const EVERY_TIER = "all";
+
+/**
+ * The parameter name the kernel puts on a TIER-SCOPED noun's reads (`--tier`,
+ * `tier` over MCP).
+ *
+ * Not in {@link RESERVED_STORY_PARAMS}, because it is reserved CONDITIONALLY:
+ * an unscoped noun may still declare a `tier` filter of its own, and one does —
+ * `variable list --tier` filters the token graph's `dt:tier`, a different
+ * predicate in a different namespace from the `ds:tier` this scope reads. The
+ * rule that a SCOPED story may not claim it lives in {@link ./storyRules}.
+ */
+export const TIER_PARAM = "tier";
+
+/**
+ * The SELECT variable a list-shaped story publishes its entity IRI in.
+ *
+ * A convention this package already depends on twice — the condensed renderer
+ * titles a row from `uri`/`name`, and every shipped list's IRI column is `uri`
+ * — stated here because the tier scope is compiled in as a constraint on that
+ * variable, and because both the storeless declaration rules and the query
+ * builder behind the dynamic import must read one spelling of it.
+ */
+export const ENTITY_VARIABLE = "uri";
+
 /** A list column: a SELECT variable to display. */
 export interface PackColumn {
   /** SELECT variable name (without `?`). */
@@ -525,6 +563,25 @@ export interface PackPage {
   readonly nextAfter?: string;
   /** The limit this page was cut to, for the notice that reports it. */
   readonly limit: number;
+  /**
+   * The tier scope this read was narrowed to, absent when the story is not
+   * tiered or the caller asked for every tier.
+   *
+   * Carried for the same reason {@link filters} is: the rows cannot say that a
+   * whole part of the population was never considered. A reader who sees 175
+   * blocks under a heading that says `(175)` reads it as the design system; the
+   * scope is how the answer admits it is one tier chain of it.
+   */
+  readonly scope?: PageTierScope;
+}
+
+/** The tier scope a page was read under, as a caller can read it back. */
+export interface PageTierScope {
+  /**
+   * The in-scope tiers, in the spelling the `--tier` flag and the `Tier` column
+   * use (the tier IRI's local name), base first and then shallowest first.
+   */
+  readonly tiers: readonly string[];
 }
 
 /** One filter a list read was narrowed by, as the caller spelled it. */
@@ -576,6 +633,60 @@ export interface PackDefinition {
    * modules) by `pragma colophon`, after pragma's own built-in colophon.
    */
   readonly colophon?: string;
+  /**
+   * The tier hierarchy this noun's entities carry, which SCOPES every read of
+   * them. Absent means unscoped — the read answers from every tier, as every
+   * read did before the scope existed.
+   */
+  readonly tierScope?: PackTierScope;
+}
+
+/**
+ * The tier hierarchy this noun's entities belong to, and the scope every read
+ * of them is narrowed by.
+ *
+ * DECLARED PER NOUN, because being tiered is a property of the entities: the
+ * design system's blocks, modifier families and concepts carry a `ds:tier`, and
+ * its token symbols, variables and code standards carry nothing of the kind. A
+ * noun that declares this gets the scope compiled into every list it declares
+ * and applied to its lookup; a noun that does not is read exactly as before.
+ *
+ * WHY THE HIERARCHY IS A NAME AND NOT AN EDGE. The shipped graph asserts no
+ * parent predicate on a tier — `ds:apps_lxd` is `a ds:Tier` with a
+ * `ds:name "Apps/LXD"`, and that slash IS the hierarchy: `Apps/LXD` sits under
+ * `Apps`, which sits under nothing. So the parent of a tier is the tier whose
+ * name is its own name minus the last `/` segment, exactly the derivation
+ * {@link PackScopeWeight} already ranks by ("the depth is the `/` count in the
+ * tier's OWN `ds:name`, not in its IRI"). Reading the hierarchy from the same
+ * place twice is what keeps the ranking and the scope from disagreeing about
+ * which tier is above which. The day a parent edge is asserted upstream, `by`
+ * gives way to it and every reader here changes in one place.
+ */
+export interface PackTierScope {
+  /** The class whose instances ARE the tiers (e.g. `ds:Tier`). */
+  readonly type: string;
+  /** The entity → tier edge (e.g. `ds:tier`), same term as `scopeWeight.via`. */
+  readonly via: string;
+  /**
+   * The tier property holding its path-shaped name (e.g. `ds:name`), whose
+   * `/`-separated segments ARE the hierarchy: `Apps/LXD` is a child of `Apps`,
+   * and a name with no `/` is top-level.
+   */
+  readonly by: string;
+  /**
+   * The tier every other tier builds on, in scope whenever a scope is in force
+   * (e.g. `ds:global`).
+   *
+   * DECLARED, not inferred: nothing in the graph says which of the top-level
+   * tiers is the base — the design system's own colophon does ("`global` >
+   * `apps` > `apps/lxd`: a lower tier inherits and overrides the blocks of its
+   * ancestors"), and that is editorial judgement the ontology has not made yet,
+   * so it belongs in the declaration layer beside `weights` and `scopeWeight`.
+   * Without it a narrowed read would hide the very blocks the narrow tier
+   * inherits: `--tier apps_lxd` would answer with LXD's nine and not the 119
+   * global ones every LXD screen is actually built from.
+   */
+  readonly base?: string;
 }
 
 /** A validated pack definition paired with where it was declared. */
