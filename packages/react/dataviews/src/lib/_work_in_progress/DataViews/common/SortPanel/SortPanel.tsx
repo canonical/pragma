@@ -44,7 +44,9 @@ const moveTerm = (
  * direction, and can be moved up, moved down or removed; every change goes
  * through `setSort`, as a header's does. While the reader states no term,
  * the panel says what orders the rows instead: the source's own order, or
- * that nothing does.
+ * that nothing does. A term whose column a table hides is listed all the
+ * same: hiding a column changes no ordering, so the panel is where a hidden
+ * sorted column's sort is still seen and changed.
  *
  * Before scripts run, each move and removal is a real link to the ordering
  * it leads to, spelled by the provider's encoder from the first page, where

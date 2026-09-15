@@ -142,6 +142,19 @@ describe("DataViews.SortPanel", () => {
     );
   });
 
+  it("lists a term whose column a table hides, since hiding orders nothing", () => {
+    const { provider } = mount(statusFirst);
+    act(() => {
+      provider.presentation.arrange({ "table.hidden": ["status", "cores"] });
+    });
+    expect(listTerms()).toEqual([
+      "status, ascending",
+      "cores, descending",
+      "name, ascending",
+    ]);
+    expect(findControl("status", "Move down")).toBeEnabled();
+  });
+
   it("names the panel by its label and each term by its field", () => {
     const { provider } = createMachineProvider({
       rows: [machine("m-1", "alpha")],
