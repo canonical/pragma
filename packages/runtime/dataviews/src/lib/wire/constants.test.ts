@@ -4,9 +4,12 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { HIDDEN_KEY, ORDER_KEY } from "../presentation/index.js";
 import { createSchema } from "../schema/index.js";
 import {
+  HIDDEN_QUERY_KEY,
   OPERATOR_DELIMITER,
+  ORDER_QUERY_KEY,
   RESERVED_QUERY_KEYS,
   SUFFIXED_OPERATORS,
 } from "./constants.js";
@@ -27,9 +30,17 @@ describe("the wire grammar's names", () => {
       "as",
       "view",
       "item",
+      "table.order",
+      "table.hidden",
     ]);
     expect(Object.isFrozen(RESERVED_QUERY_KEYS)).toBe(true);
     expect(Object.isFrozen(SUFFIXED_OPERATORS)).toBe(true);
+  });
+
+  it("spells the arrangement's parameters as the presentation stores them", () => {
+    // A link decodes into the presentation by name, so the two must agree.
+    expect(ORDER_QUERY_KEY).toBe(ORDER_KEY);
+    expect(HIDDEN_QUERY_KEY).toBe(HIDDEN_KEY);
   });
 
   it("spells isAny as the bare field name and the rest with the delimiter", () => {

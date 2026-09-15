@@ -135,6 +135,7 @@ import * as dataviews from "./index.js";
 import type {
   Applicability,
   ArrangedColumn,
+  ColumnCommandConfig,
   ColumnLayout,
   ColumnLayoutConfig,
   ColumnLayoutState,
@@ -152,6 +153,7 @@ import type {
   FlexSizing,
   GridInteraction,
   GridInteractionState,
+  MoveColumnConfig,
   ProviderHost,
   QueryCommand,
   QueryCommandResult,
@@ -160,6 +162,7 @@ import type {
   RowScopes,
   RowScopesConfig,
   SizingBounds,
+  SpellColumnArrangementConfig,
 } from "./lib/bindings/index.js";
 import * as bindings from "./lib/bindings/index.js";
 import type {
@@ -303,6 +306,7 @@ type EveryPublicType = [
 type EveryBindingType = [
   Applicability,
   ArrangedColumn,
+  ColumnCommandConfig,
   ColumnLayout,
   ColumnLayoutConfig,
   ColumnLayoutState,
@@ -320,6 +324,7 @@ type EveryBindingType = [
   FlexSizing,
   GridInteraction,
   GridInteractionState,
+  MoveColumnConfig,
   ProviderHost,
   QueryCommand,
   QueryCommandResult,
@@ -328,6 +333,7 @@ type EveryBindingType = [
   RowScopes<RowRecord>,
   RowScopesConfig<RowRecord>,
   SizingBounds,
+  SpellColumnArrangementConfig,
 ];
 
 /** Every type the saved-view entry point exports, as one enumerable tuple. */

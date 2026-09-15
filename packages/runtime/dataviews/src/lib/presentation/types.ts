@@ -126,6 +126,12 @@ export type PresentationState = {
    */
   readonly presentation: ViewPresentation;
   /**
+   * The viewer's own changes where a change is written now: the open view's
+   * own preferences, or the default arrangement with no view open. What a
+   * reset can clear, since everything beneath it is the view's or declared.
+   */
+  readonly own: ViewPresentation;
+  /**
    * Why presentation changes are not being read or saved, or null. Never
    * set without a store: the in-memory presentation is kept for the session
    * and claims nothing about durability.
@@ -191,20 +197,33 @@ export type OwnedPresentation = Presentation & {
 export type PresentationConfig = {
   /** Where the viewer's layers live; in memory for the session when left out. */
   readonly store?: PresentationStore | undefined;
-  /** The arrangement a snapshot put back; none when left out. */
-  readonly restored?: RestoredArrangement | undefined;
+  /**
+   * The arrangement a snapshot put back, with the view it was in force
+   * under; none when left out. With no view it is the default arrangement:
+   * the store decides it once read, and without a store it is kept for the
+   * session. With a view it is that view's arrangement as it was drawn, shown
+   * until the view's own preferences are read or another view, or none, is
+   * shown, whereupon the view's own layers take over and nothing of it
+   * becomes the default. Without a store it is kept as that view's own
+   * preferences for the session.
+   */
+  readonly restored?: ViewArrangement | undefined;
+  /**
+   * The arrangement a followed link carries, with the view the link named;
+   * none when left out. It is the viewer's explicit choice, so it is drawn
+   * over every layer from the first render, and once the presentation is
+   * first observed it becomes the viewer's own change to that view, or to
+   * the default arrangement with no view named, written like any other
+   * change: no read of the store after it can undo it.
+   */
+  readonly linked?: ViewArrangement | undefined;
 };
 
 /**
- * An arrangement a snapshot put back, with the saved view it was in force
- * under. With no view it is the default arrangement: the store decides it
- * once read, and without a store it is kept for the session. With a view it
- * is that view's arrangement as it was drawn, shown until the view's own
- * preferences are read or another view, or none, is shown, whereupon the
- * view's own layers take over and nothing of it becomes the default. Without
- * a store it is kept as that view's own preferences for the session.
+ * An arrangement with the saved view it belongs to, or null for the default
+ * arrangement: what a snapshot put back or a followed link carries.
  */
-export type RestoredArrangement = {
+export type ViewArrangement = {
   readonly view: string | null;
   readonly presentation: ViewPresentation;
 };
@@ -299,4 +318,57 @@ export type ArrangedColumn<TColumn extends DeclaredColumn = DeclaredColumn> = {
   readonly hidden: boolean;
   /** The width the arrangement holds, unbounded; null for none usable. */
   readonly width: number | null;
+};
+
+/**
+ * What a column command reads: the columns a renderer declares, the
+ * arrangement in force, and the column the command changes.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type ColumnCommandConfig<
+  TColumn extends DeclaredColumn = DeclaredColumn,
+> = {
+  /** The columns as the renderer declares them, in their declared order. */
+  readonly columns: readonly TColumn[];
+  /** The arrangement in force. */
+  readonly presentation: ViewPresentation;
+  /** The column to change. */
+  readonly id: string;
+};
+
+/**
+ * What moving a column reads: a column command's inputs, and which way the
+ * column moves among the shown columns.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type MoveColumnConfig<TColumn extends DeclaredColumn = DeclaredColumn> =
+  ColumnCommandConfig<TColumn> & {
+    /**
+     * Before the shown column preceding it, `-1`, or after the shown column
+     * following it, `1`.
+     */
+    readonly offset: -1 | 1;
+  };
+
+/**
+ * What spelling a column arrangement into link parameters reads: the
+ * parameters to carry it over, the columns a renderer declares, and the
+ * arrangement, or null for none.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type SpellColumnArrangementConfig<
+  TColumn extends DeclaredColumn = DeclaredColumn,
+> = {
+  /** The parameters the link carries; left unchanged. */
+  readonly params: URLSearchParams;
+  /** The columns as the renderer declares them, in their declared order. */
+  readonly columns: readonly TColumn[];
+  /** The arrangement the link carries, or null to carry none. */
+  readonly presentation: ViewPresentation | null;
 };

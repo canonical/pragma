@@ -1,14 +1,16 @@
 /**
  * The machinery every framework binding shares and no application calls:
  * the column geometry a table solves, the arrangement it places its columns
- * by, the row channels a body renders from, the table's status, the entries
- * of its body and the pagination facts a bar offers — each projected from
- * the published state — the filter records a root builds, the check a
- * binding tells a provider by, the provider's internal host, the query
- * transition a command makes with the command and its result, the list comparison, the ordering in force and
- * the next one a header's activation, or its menu's choice, leads to, and
- * the wire key a form control is named by. React uses it now; a Svelte
- * binding would use the same names rather than solve its own geometry.
+ * by and the changes that hide, show, move and reset them, the row channels
+ * a body renders from, the table's status, the entries of its body and the
+ * pagination facts a bar offers — each projected from the published state —
+ * the filter records a root builds, the check a binding tells a provider
+ * by, the provider's internal host, the query transition a command makes
+ * with the command and its result, the list comparison, the ordering in
+ * force and the next one a header's activation, or its menu's choice, leads
+ * to, the wire key a form control is named by, and the parameters a link
+ * carries an arrangement in. React uses it now; a Svelte binding would use
+ * the same names rather than solve its own geometry.
  */
 
 export type {
@@ -52,9 +54,19 @@ export {
 } from "../geometry/index.js";
 export type {
   ArrangedColumn,
+  ColumnCommandConfig,
   DeclaredColumn,
+  MoveColumnConfig,
+  SpellColumnArrangementConfig,
 } from "../presentation/index.js";
-export { resolveColumnArrangement } from "../presentation/index.js";
+export {
+  hideColumn,
+  moveColumn,
+  resetColumnArrangement,
+  resolveColumnArrangement,
+  showColumn,
+  spellColumnArrangement,
+} from "../presentation/index.js";
 export type { ProviderHost } from "../provider/index.js";
 export { isDataViewsProvider, readProviderHost } from "../provider/index.js";
 export type { QueryCommand, QueryCommandResult } from "../query/index.js";

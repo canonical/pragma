@@ -10,6 +10,7 @@ import type { DataViewsSnapshot } from "../snapshot/index.js";
 import type { SourceCapabilities } from "../source/index.js";
 import { decodeQuery, readOpenView } from "../wire/index.js";
 import isCarryingQuery from "./isCarryingQuery.js";
+import readLocatedArrangement from "./readLocatedArrangement.js";
 import type { StartingPoint } from "./types.js";
 
 /** What a starting point is read from: the provider's configuration. */
@@ -58,7 +59,12 @@ const parseSnapshot = (value: unknown): DataViewsSnapshot | null => {
  * and keeps views. The location is read once: when it carries a query, that
  * query is where the provider stands, with what it refused. The open view is
  * read from the same parameters the query came from — the location's, or the
- * snapshot's. Nothing is subscribed and nothing requested.
+ * snapshot's. A column order or hidden columns the location carries — a
+ * link followed where no script keeps the arrangement — are the linked
+ * arrangement, with the view the provider stands on: drawn over every layer,
+ * so a server render and its hydration draw the columns the link named, and
+ * the viewer's own change to that view once observed. Nothing is subscribed
+ * and nothing requested.
  *
  * @note Impure by design: it reads the location port once, which is what
  * standing on the location's query before anything observes it takes.
@@ -97,6 +103,7 @@ export default function readStartingPoint<
   // beneath another view or none, where nothing would let it go.
   const restoresArrangement =
     snapshotView === null || (keepsViews && snapshotView === view);
+  const located = readLocatedArrangement(params);
   return {
     start:
       fromSnapshot === null
@@ -119,5 +126,9 @@ export default function readStartingPoint<
       handed !== null && restoresArrangement
         ? { view: snapshotView, presentation: handed.presentation }
         : undefined,
+    linked:
+      located === null
+        ? undefined
+        : { view: keepsViews ? view : null, presentation: located },
   };
 }

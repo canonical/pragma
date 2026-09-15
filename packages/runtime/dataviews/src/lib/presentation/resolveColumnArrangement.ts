@@ -1,27 +1,11 @@
 import { HIDDEN_KEY, ORDER_KEY } from "./constants.js";
+import listStoredIds from "./listStoredIds.js";
 import spellWidthKey from "./spellWidthKey.js";
 import type {
   ArrangedColumn,
   DeclaredColumn,
-  JsonValue,
   ViewPresentation,
 } from "./types.js";
-
-/** The column ids a stored list names among the known ones, once each. */
-const listKnownIds = (
-  stored: JsonValue | undefined,
-  known: ReadonlySet<string>,
-): Set<string> => {
-  const ids = new Set<string>();
-  if (Array.isArray(stored)) {
-    for (const id of stored) {
-      if (typeof id === "string" && known.has(id)) {
-        ids.add(id);
-      }
-    }
-  }
-  return ids;
-};
 
 /**
  * The declared columns in the stored order, a column the order does not
@@ -88,16 +72,16 @@ export default function resolveColumnArrangement<
   presentation: ViewPresentation,
 ): readonly ArrangedColumn<TColumn>[] {
   const known = new Set(columns.map((column) => column.id));
-  const order = orderColumns(
-    columns,
-    listKnownIds(presentation[ORDER_KEY], known),
-  );
+  /** The ids a stored list names among the declared columns, once each. */
+  const listKnownIds = (key: string): Set<string> =>
+    new Set(listStoredIds(presentation[key]).filter((id) => known.has(id)));
+  const order = orderColumns(columns, listKnownIds(ORDER_KEY));
   const hideable = new Set(
     columns
       .filter((column) => column.hideable !== false)
       .map((column) => column.id),
   );
-  const hidden = listKnownIds(presentation[HIDDEN_KEY], known);
+  const hidden = listKnownIds(HIDDEN_KEY);
   for (const id of hidden) {
     if (!hideable.has(id)) {
       hidden.delete(id);

@@ -5,7 +5,7 @@ import {
 } from "../observable/index.js";
 import { describeError } from "../source/index.js";
 import arePresentationsEqual from "./arePresentationsEqual.js";
-import { INITIAL_PRESENTATION_STATE, NO_PRESENTATION } from "./constants.js";
+import { NO_PRESENTATION } from "./constants.js";
 import createMemoryPresentationStore from "./createMemoryPresentationStore.js";
 import createPreferenceLayer from "./createPreferenceLayer.js";
 import createPreferenceWriter from "./createPreferenceWriter.js";
@@ -47,6 +47,12 @@ type ReadKey = "default" | "view";
  * go, so it never becomes the default. Without a store the session keeps it
  * as that view's own preferences.
  *
+ * A linked arrangement — one a followed link carries — is drawn over every
+ * layer from the start. The first observation writes it as the viewer's own
+ * change to the view the link named, or to the default arrangement, and it
+ * stops being drawn apart once that view, or none, is shown: from then on it
+ * is the viewer's own layer, which no later read undoes.
+ *
  * Constructing it reads and subscribes to nothing: the store is first read
  * when something observes the presentation, or a view is shown.
  *
@@ -72,16 +78,16 @@ export default function createPresentation(
     restored !== undefined && restoredView !== null
       ? restored.presentation
       : NO_PRESENTATION;
+  /** The view a followed link named, whose own changes its arrangement becomes. */
+  const linkedView = config.linked?.view ?? null;
+  /**
+   * The arrangement a followed link carries, drawn over every layer until it
+   * has been adopted and its view, or none, is shown.
+   */
+  let linked: ViewPresentation = config.linked?.presentation ?? NO_PRESENTATION;
+  /** Whether the link's arrangement is the viewer's own change yet. */
+  let adopted = config.linked === undefined;
   const store = config.store ?? createMemoryPresentationStore({ restored });
-  const state = createChannel<PresentationState>(
-    restored === undefined
-      ? INITIAL_PRESENTATION_STATE
-      : Object.freeze({
-          presentation: Object.freeze({ ...restored.presentation }),
-          presentationReason: null,
-        }),
-    { equals: areFieldsEqual },
-  );
   const defaults: KeptLayer = {
     layer: createPreferenceLayer(restoredDefaults),
     target: "default",
@@ -94,6 +100,23 @@ export default function createPresentation(
   let saved: ViewPresentation = NO_PRESENTATION;
   /** The view whose own layer `own` is, or null while `own` is the defaults. */
   let shown: string | null = null;
+
+  /** The arrangement in force, and the viewer's own layer beneath the link. */
+  const compose = (): Pick<PresentationState, "presentation" | "own"> => ({
+    presentation: Object.freeze({
+      ...defaults.layer.values,
+      ...restoredUnderView,
+      ...saved,
+      ...(shown === null ? {} : own.layer.values),
+      ...linked,
+    }),
+    // A link not yet adopted is the viewer's own choice already.
+    own: Object.freeze({ ...own.layer.values, ...(adopted ? {} : linked) }),
+  });
+  const state = createChannel<PresentationState>(
+    Object.freeze({ ...compose(), presentationReason: null }),
+    { equals: areFieldsEqual },
+  );
   /** The latest read of each target. */
   const reads: Record<ReadKey, number> = { default: 0, view: 0 };
   /** Why a target's preferences could not be read, or null. */
@@ -119,12 +142,7 @@ export default function createPresentation(
   /** Publish the arrangement in force and what there is to report. */
   function publish(): void {
     const current = state.get();
-    const presentation: ViewPresentation = Object.freeze({
-      ...defaults.layer.values,
-      ...restoredUnderView,
-      ...saved,
-      ...(shown === null ? {} : own.layer.values),
-    });
+    const composed = compose();
     let unsaved = false;
     for (const { layer } of layers.values()) {
       if (layer.hasFailed()) {
@@ -134,9 +152,15 @@ export default function createPresentation(
     }
     state.set(
       Object.freeze({
-        presentation: arePresentationsEqual(presentation, current.presentation)
+        presentation: arePresentationsEqual(
+          composed.presentation,
+          current.presentation,
+        )
           ? current.presentation
-          : presentation,
+          : composed.presentation,
+        own: arePresentationsEqual(composed.own, current.own)
+          ? current.own
+          : composed.own,
         presentationReason:
           readFailures.default ??
           readFailures.view ??
@@ -229,6 +253,20 @@ export default function createPresentation(
         stopHearing = store.subscribe(() => {
           readPreferences();
         });
+        if (!adopted) {
+          // A followed link is the viewer's own choice: written to the view
+          // it named, or the defaults, like any change, before the first
+          // read, which then cannot undo it.
+          adopted = true;
+          writer.persist(
+            linkedView === null ? defaults : findLayer(linkedView),
+            linked,
+          );
+          if (linkedView === shown) {
+            linked = NO_PRESENTATION;
+          }
+          publish();
+        }
         readPreferences();
       }
       let observing = true;
@@ -278,6 +316,11 @@ export default function createPresentation(
         // what the last view's read said is the last view's.
         forgetViewRead();
         readShownView();
+      }
+      // Adopted, the link is its view's own layer: drawn apart no longer,
+      // whether that view is the one shown or another view, or none, is.
+      if (adopted) {
+        linked = NO_PRESENTATION;
       }
       publish();
     },

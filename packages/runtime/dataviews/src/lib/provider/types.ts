@@ -12,7 +12,7 @@ import type { Channel, ReadonlyChannel } from "../observable/index.js";
 import type {
   Presentation,
   PresentationStore,
-  RestoredArrangement,
+  ViewArrangement,
 } from "../presentation/index.js";
 import type {
   GroupPath,
@@ -516,7 +516,9 @@ export type StartingPoint = {
   /** The saved view open beside the query the provider stands on. */
   readonly view: string | null;
   /** The snapshot's arrangement, with the view it was drawn under, if any. */
-  readonly restored: RestoredArrangement | undefined;
+  readonly restored: ViewArrangement | undefined;
+  /** The arrangement a followed link carries, with the view it named, if any. */
+  readonly linked: ViewArrangement | undefined;
 };
 
 /** One port's run: starts on `observe()`, stops through its release. */

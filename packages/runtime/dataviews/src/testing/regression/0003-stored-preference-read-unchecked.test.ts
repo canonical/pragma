@@ -79,6 +79,7 @@ describe("regression 0003 — a stored preference is read unchecked", () => {
       expect(presentation.state.get()).toEqual({
         presentationReason: null,
         presentation: { density: "compact" },
+        own: { density: "compact" },
       });
     });
     release();

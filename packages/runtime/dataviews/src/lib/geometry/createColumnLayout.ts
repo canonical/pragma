@@ -154,22 +154,5 @@ export default function createColumnLayout(
       }
       presentation.arrange({ [spellWidthKey(id)]: sizing.px });
     },
-    removeOverride(id: string): void {
-      if (readOverride(id) === undefined) {
-        return;
-      }
-      // Null rather than absent: it stands over a width the open view was
-      // saved with, so the column returns to its declared sizing.
-      presentation.arrange({ [spellWidthKey(id)]: null });
-    },
-    clearOverrides(): void {
-      const ids = Object.keys(read().overrides);
-      if (ids.length === 0) {
-        return;
-      }
-      presentation.arrange(
-        Object.fromEntries(ids.map((id) => [spellWidthKey(id), null])),
-      );
-    },
   };
 }

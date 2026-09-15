@@ -121,10 +121,6 @@ export type ColumnLayout = {
   readonly effective: (id: string) => ColumnSizing;
   /** Write a fixed width to the presentation (a resize commit). */
   readonly setOverride: (id: string, sizing: FixedSizing) => void;
-  /** Drop one column's override, restoring its declared sizing. */
-  readonly removeOverride: (id: string) => void;
-  /** Drop every override, restoring all declared sizing. */
-  readonly clearOverrides: () => void;
 };
 
 /**
