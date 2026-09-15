@@ -49,7 +49,7 @@
     "@canonical/ke-graphql": "^0.37.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.13",
+    "@biomejs/biome": "2.5.11",
     "@canonical/biome-config": "^0.37.0",
     "@canonical/prism-contract": "^0.37.0",
     "@canonical/typescript-config": "^0.37.0",
