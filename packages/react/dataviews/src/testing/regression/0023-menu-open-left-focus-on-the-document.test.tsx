@@ -30,7 +30,7 @@ describe("regression 0023 — opening a menu left focus on the document", () => 
       />,
     );
     const findTrigger = () =>
-      screen.getByRole("button", { name: "Sort options for Name" });
+      screen.getByRole("button", { name: "Column options for Name" });
     const trigger = findTrigger();
     trigger.focus();
     fireEvent.click(trigger);

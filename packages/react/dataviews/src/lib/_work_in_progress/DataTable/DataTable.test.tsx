@@ -23,6 +23,7 @@ import {
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -463,7 +464,7 @@ describe("DataTable", () => {
       { id: "cores", header: "Cores", sortable: true },
     ],
   ) => {
-    const { provider } = createMachineProvider({
+    const { provider, source } = createMachineProvider({
       rows: [machine("m-1", "alpha"), machine("m-2", "beta", "failed", 8)],
       capabilities: declareMachineOrdering(terms, defaultSort),
     });
@@ -474,7 +475,7 @@ describe("DataTable", () => {
         label="Machines"
       />,
     );
-    return { provider, view };
+    return { provider, source, view };
   };
 
   /** The sort button of the header with this name. */
@@ -873,7 +874,7 @@ describe("DataTable", () => {
     // Within the header: it stands.
     fireEvent.blur(findSortButton("Status"), {
       relatedTarget: screen.getByRole("button", {
-        name: "Sort options for Status",
+        name: "Column options for Status",
       }),
     });
     expect(findStatusReason()).not.toBeEmptyDOMElement();
@@ -958,7 +959,8 @@ describe("DataTable", () => {
     });
     const status = screen.getByRole("columnheader", { name: "Status" });
     expect(status).toHaveAttribute("aria-sort", "descending");
-    expect(within(status).queryByRole("button")).toBeNull();
+    // No sort control: its menu hides and moves the column, and sorts nothing.
+    expect(within(status).queryByRole("button", { name: "Status" })).toBeNull();
     expect(status.querySelector(".sort-reason")).toBeNull();
     expect(status).toHaveAccessibleDescription("descending, 1st of 2");
     expect(status.querySelector(".precedence")).toHaveTextContent("1");
@@ -1017,10 +1019,10 @@ describe("DataTable", () => {
   /** Open one column's header menu from its trigger. */
   const openMenuOf = (name: string): HTMLElement => {
     fireEvent.click(
-      screen.getByRole("button", { name: `Sort options for ${name}` }),
+      screen.getByRole("button", { name: `Column options for ${name}` }),
     );
     // The menu mounts as it opens, replacing the button that opened it.
-    return screen.getByRole("button", { name: `Sort options for ${name}` });
+    return screen.getByRole("button", { name: `Column options for ${name}` });
   };
 
   /** Choose an item of the open header menu. */
@@ -1037,7 +1039,7 @@ describe("DataTable", () => {
     ]);
     // Closed, the menu unmounts: its button, in the trigger's place, has focus.
     expect(
-      screen.getByRole("button", { name: "Sort options for Status" }),
+      screen.getByRole("button", { name: "Column options for Status" }),
     ).toHaveFocus();
     expect(findHeader("Status")).toHaveAttribute("aria-sort", "descending");
   });
@@ -1100,12 +1102,102 @@ describe("DataTable", () => {
     ]);
     // Closed, the menu unmounts: its button, in the trigger's place, has focus.
     expect(
-      screen.getByRole("button", { name: "Sort options for Status" }),
+      screen.getByRole("button", { name: "Column options for Status" }),
     ).toHaveFocus();
   });
 
-  it("offers a header menu only on a sortable column, once scripts run", () => {
+  it("offers a header menu on every column that can be sorted, hidden or moved, once scripts run", () => {
     renderOrderingTable(
+      3,
+      [],
+      [
+        { id: "name", header: "Name", sortable: true },
+        { id: "status", header: "Status" },
+        { id: "cores", header: "Cores", hideable: false },
+      ],
+    );
+    expect(
+      screen.getByRole("button", { name: "Column options for Name" }),
+    ).toHaveAttribute("aria-haspopup", "menu");
+    openMenuOf("Status");
+    // No sort where the column offers none; standing in the middle, both moves.
+    expect(
+      screen.getAllByRole("menuitem").map((item) => item.textContent),
+    ).toEqual(["Hide column", "Move column left", "Move column right"]);
+    fireEvent.keyDown(document, { key: "Escape" });
+    openMenuOf("Cores");
+    // A column that may not be hidden is offered no Hide.
+    expect(
+      screen.getAllByRole("menuitem").map((item) => item.textContent),
+    ).toEqual(["Move column left", "Move column right"]);
+    expect(
+      screen.getByRole("menuitem", { name: "Move column right" }),
+    ).toHaveClass("disabled");
+  });
+
+  it("offers no header menu on a column that can be neither sorted, hidden nor moved", () => {
+    renderOrderingTable(
+      3,
+      [],
+      [{ id: "name", header: "Name", hideable: false }],
+    );
+    expect(
+      screen.queryByRole("button", { name: "Column options for Name" }),
+    ).toBeNull();
+    cleanup();
+    // The last column shown, hideable, with nowhere to move: nothing either.
+    renderOrderingTable(3, [], [{ id: "name", header: "Name" }]);
+    expect(
+      screen.queryByRole("button", { name: "Column options for Name" }),
+    ).toBeNull();
+    cleanup();
+    // A column that cannot be hidden and stands first can still move right.
+    renderOrderingTable(
+      3,
+      [],
+      [
+        { id: "name", header: "Name", hideable: false },
+        { id: "status", header: "Status", hideable: false },
+      ],
+    );
+    openMenuOf("Name");
+    expect(
+      screen.getByRole("menuitem", { name: "Move column left" }),
+    ).toHaveClass("disabled");
+  });
+
+  it("hides a column from its header menu, announces it, and hands focus to the heading now in its place", () => {
+    const { provider, source } = renderOrderingTable(
+      3,
+      [],
+      [
+        { id: "name", header: "Name", sortable: true },
+        { id: "status", header: "Status" },
+        { id: "cores", header: "Cores", sortable: true },
+      ],
+    );
+    const slice = provider.state.get().slice;
+    const requests = source.calls.length;
+    openMenuOf("Status");
+    choose("Hide column");
+    expect(
+      screen.queryByRole("columnheader", { name: "Status" }),
+    ).not.toBeInTheDocument();
+    expect(
+      document.querySelector(".ds.data-table-announcement"),
+    ).toHaveTextContent("Status hidden");
+    // Cores stands where Status stood: its first control takes the focus.
+    expect(findSortButton("Cores")).toHaveFocus();
+    expect(provider.state.get().slice).toBe(slice);
+    expect(source.calls).toHaveLength(requests);
+    // The last column's menu, once hidden, hands focus to the new last one.
+    openMenuOf("Cores");
+    choose("Hide column");
+    expect(findSortButton("Name")).toHaveFocus();
+  });
+
+  it("disables Hide on the last column shown, from its own header menu", () => {
+    const { provider } = renderOrderingTable(
       3,
       [],
       [
@@ -1113,12 +1205,16 @@ describe("DataTable", () => {
         { id: "status", header: "Status" },
       ],
     );
-    expect(
-      screen.getByRole("button", { name: "Sort options for Name" }),
-    ).toHaveAttribute("aria-haspopup", "menu");
-    expect(
-      screen.queryByRole("button", { name: "Sort options for Status" }),
-    ).toBeNull();
+    act(() => {
+      provider.presentation.arrange({ "table.hidden": ["status"] });
+    });
+    openMenuOf("Name");
+    const hide = screen.getByRole("menuitem", { name: "Hide column" });
+    expect(hide).toHaveClass("disabled");
+    fireEvent.click(hide);
+    expect(provider.presentation.state.get().presentation).toEqual({
+      "table.hidden": ["status"],
+    });
   });
 
   it("draws a settings cell and nothing else in a table declaring no columns", () => {
@@ -1138,6 +1234,36 @@ describe("DataTable", () => {
     expect(
       screen.getByRole("menuitem", { name: "Reset table settings" }),
     ).toHaveClass("disabled");
+  });
+
+  it("moves a column from its header menu, announcing where it stands, focus kept on its trigger, asking the source for nothing", () => {
+    const { provider, source } = renderOrderingTable(
+      3,
+      [],
+      [
+        { id: "name", header: "Name", sortable: true },
+        { id: "status", header: "Status" },
+        { id: "cores", header: "Cores" },
+      ],
+    );
+    const slice = provider.state.get().slice;
+    const requests = source.calls.length;
+    openMenuOf("Name");
+    choose("Move column right");
+    expect(
+      screen
+        .getAllByRole("columnheader")
+        .map((header) => header.getAttribute("aria-labelledby"))
+        .map((id) => document.getElementById(id ?? "")?.textContent),
+    ).toEqual(["Status", "Name", "Cores"]);
+    expect(
+      document.querySelector(".ds.data-table-announcement"),
+    ).toHaveTextContent("Name moved to position 2 of 3");
+    expect(
+      screen.getByRole("button", { name: "Column options for Name" }),
+    ).toHaveFocus();
+    expect(provider.state.get().slice).toBe(slice);
+    expect(source.calls).toHaveLength(requests);
   });
 
   it("has no axe violation with a header menu open", async () => {
@@ -1171,7 +1297,7 @@ describe("DataTable", () => {
     expect(status).toHaveTextContent(
       "Sort unchanged: this source orders by at most 1 term",
     );
-    expect(status).toHaveTextContent("Sort options for Status");
+    expect(status).toHaveTextContent("Column options for Status");
     // Yet every header, with a control or without, is named by its label.
     for (const name of ["Name", "Status", "Cores"]) {
       expect(
@@ -2436,7 +2562,7 @@ describe("DataTable", () => {
     expect(within(name).getByRole("button", { name: "Name" })).toBeVisible();
     // Offered, and at rest claiming no sort: nothing orders the rows yet.
     expect(name).not.toHaveAttribute("aria-sort");
-    expect(within(status).queryByRole("button")).toBeNull();
+    expect(within(status).queryByRole("button", { name: "Status" })).toBeNull();
     expect(status).not.toHaveAttribute("aria-sort");
   });
 
@@ -2450,7 +2576,12 @@ describe("DataTable", () => {
     render(
       <DataTable provider={provider} columns={columns} label="Machines" />,
     );
-    expect(screen.queryByRole("button")).toBeNull();
+    // No sort control on either column; their menus only hide and move.
+    expect(screen.queryByRole("button", { name: "Name" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Status" })).toBeNull();
+    expect(
+      screen.queryByRole("menuitem", { name: "Sort ascending" }),
+    ).toBeNull();
     expect(screen.getAllByRole("columnheader")[0]).not.toHaveAttribute(
       "aria-sort",
     );

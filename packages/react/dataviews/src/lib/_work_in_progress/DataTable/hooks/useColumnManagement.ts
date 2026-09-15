@@ -15,7 +15,7 @@ import {
   showColumn,
   spellColumnArrangement,
 } from "@canonical/dataviews-core/bindings";
-import { useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { useDataViewsValue } from "../../../hooks/index.js";
 import type {
   AnnouncementHandle,
@@ -91,11 +91,16 @@ const listShownIds = (
  * is changes nothing, except that asking to hide a column declared
  * `hideable: false` announces that it is always shown. The commands read
  * the latest arrangement and columns, not this render's, and hold one
- * identity each. A reset clears the viewer's own layer alone, so it is
- * offered only while that layer holds something to clear.
+ * identity each. When hiding a column takes the focus with it — its own
+ * header's menu is gone — focus moves to the nearest heading holding a
+ * control: the one now standing where it stood, then those after it, then
+ * those before it, and the table's settings last. A reset clears the
+ * viewer's own layer alone, so it is offered only while that layer holds
+ * something to clear.
  *
  * Each column's offers are read from one resolution of the arrangement, and
- * a column keeps its offers object while its changes hold.
+ * a column keeps its offers object while its changes hold, so a width
+ * committed renders no header's menu again.
  */
 export default function useColumnManagement<
   TFields extends readonly SchemaFieldDefinition[],
@@ -103,6 +108,7 @@ export default function useColumnManagement<
 >({
   provider,
   columns,
+  headerRow,
 }: UseColumnManagementProps<TFields, TRow>): UseColumnManagementResult {
   const { presentation } = provider;
   const declared = useStableValue(columns, areColumnsEqual);
@@ -124,6 +130,22 @@ export default function useColumnManagement<
   // which changes no column's visibility or place.
   const settings = useStableValue(derived, areColumnSettingsEqual);
   previous.current = settings;
+  // Each column's offers by its id, so a header reads its own at once on
+  // every render of the header row.
+  const offersById = useMemo(
+    () => new Map(settings.map(({ column, offers }) => [column.id, offers])),
+    [settings],
+  );
+  const readOffers = useCallback(
+    (columnId: string): ColumnSetting["offers"] => {
+      const offers = offersById.get(columnId);
+      if (offers === undefined) {
+        throw new Error(`no column "${columnId}" is declared`);
+      }
+      return offers;
+    },
+    [offersById],
+  );
   // The viewer's own changes where a change is written now: what a reset can
   // clear, so an open view's saved arrangement beneath never keeps it on.
   const own = useDataViewsValue(presentation.state, (shown) => shown.own);
@@ -138,6 +160,48 @@ export default function useColumnManagement<
   const announce = (subject: ColumnAnnouncement): void => {
     announcer.current?.announce(subject);
   };
+
+  // Where a hidden column stood among the shown ones, until the render that
+  // removed it has recovered the focus it may have taken. Run after every
+  // render, reading a ref: the render that removed a column is not one the
+  // effect could name by what it reads.
+  const recoverAt = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const at = recoverAt.current;
+    const row = headerRow.current;
+    if (at === null || row === null) {
+      return;
+    }
+    recoverAt.current = null;
+    const active = row.ownerDocument.activeElement;
+    // Focus kept somewhere — a menu's button took it back — is left there.
+    if (active !== null && active !== row.ownerDocument.body) {
+      return;
+    }
+    // Arrays from the lists, not spreads: a node list is iterable only where
+    // the DOM's iterable typings are loaded.
+    const cells = Array.from(
+      row.querySelectorAll<HTMLElement>(
+        ":scope > [role='columnheader']:not(.selection):not(.settings)",
+      ),
+    );
+    const nearest = Math.max(0, Math.min(at, cells.length - 1));
+    // The heading now standing where the hidden column stood, then those
+    // after it, then those before it, nearest first, then the settings: the
+    // first holding a control takes the focus.
+    const candidates = [
+      ...cells.slice(nearest),
+      ...cells.slice(0, nearest).reverse(),
+      ...Array.from(row.querySelectorAll<HTMLElement>(":scope > .settings")),
+    ];
+    for (const cell of candidates) {
+      const control = cell.querySelector<HTMLElement>("button, a[href]");
+      if (control !== null) {
+        control.focus();
+        return;
+      }
+    }
+  });
 
   const changeColumn = useStableCallback(
     (columnId: string, change: ColumnChange) => {
@@ -157,8 +221,10 @@ export default function useColumnManagement<
         }
         return;
       }
+      const before = listShownIds(columns, current).indexOf(columnId);
       presentation.arrange(patch);
       if (change === "hide") {
+        recoverAt.current = before;
         announce({ kind: "hidden", column });
         return;
       }
@@ -224,6 +290,7 @@ export default function useColumnManagement<
 
   return {
     settings,
+    readOffers,
     resettable,
     announcer,
     changeColumn,

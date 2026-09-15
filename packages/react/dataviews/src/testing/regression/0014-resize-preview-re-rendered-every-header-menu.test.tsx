@@ -63,7 +63,7 @@ describe("regression 0014 — a resize preview re-rendered every header menu", (
     // Status's menu stays open through the resize: a closed menu is only its
     // button, so an open one is the menu a resize could render again.
     fireEvent.click(
-      screen.getByRole("button", { name: "Sort options for Status" }),
+      screen.getByRole("button", { name: "Column options for Status" }),
     );
     expect(screen.getByRole("menu", { hidden: true })).toBeInTheDocument();
     expect(renders.count).toBeGreaterThan(0);
@@ -73,7 +73,11 @@ describe("regression 0014 — a resize preview re-rendered every header menu", (
         .style.getPropertyValue("--data-table-columns");
     const before = readTracks();
     renders.count = 0;
-    fireEvent.keyDown(screen.getByRole("separator"), { key: "ArrowRight" });
+    // The resize handle, named for its column: the open menu draws a
+    // separator of its own between the sort and the column's place.
+    fireEvent.keyDown(screen.getByRole("separator", { name: "Name" }), {
+      key: "ArrowRight",
+    });
     // The geometry moved, and not one menu rendered for it.
     expect(readTracks()).not.toBe(before);
     expect(screen.getByRole("menu", { hidden: true })).toBeInTheDocument();
