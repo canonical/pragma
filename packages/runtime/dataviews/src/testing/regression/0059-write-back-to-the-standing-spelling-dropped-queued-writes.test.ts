@@ -44,7 +44,7 @@ describe("regression 0059 — a write back to the standing spelling dropped queu
     const provider = createDataViewsProvider({
       collection,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       location,
@@ -53,10 +53,10 @@ describe("regression 0059 — a write back to the standing spelling dropped queu
     const host = readProviderHost(provider);
     host.setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["failed"],
     });
-    host.removePredicate("status", "eq");
+    host.removePredicate("status", "isAny");
     expect(pending).toHaveLength(2);
     let published = 0;
     provider.state.subscribe(() => {

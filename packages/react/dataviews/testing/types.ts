@@ -1,4 +1,5 @@
 import type {
+  Facet,
   HistoryMode,
   Query,
   QueryLocation,
@@ -13,6 +14,12 @@ import type {
   SourceRequest,
   ViewStore,
 } from "@canonical/dataviews-core";
+
+/** One value a values facet lists, with how many matching records hold it. */
+export type FacetValue = Extract<
+  Facet,
+  { readonly kind: "values" }
+>["values"][number];
 
 /** A channel a test publishes on: the read side plus `set`. */
 export type FakeChannel<T> = ReadonlyChannel<T> & {
@@ -79,17 +86,51 @@ export type MemoryViewStore = {
   readonly drop: (id: string) => void;
 };
 
-/** One record the cases look through, by its identity and its text. */
-export type ContainsRecord = {
+/** One record the operator cases look through. */
+export type OperatorRecord = {
   readonly id: string;
   /** Deliberately wider than text: the cases include values that are not. */
   readonly name?: unknown;
+  /** Deliberately wider than a status, for the same reason. */
+  readonly status?: unknown;
 };
 
-/** One operand and the records whose text holds it, in record order. */
-export type ContainsCase = {
-  readonly operand: string;
+/**
+ * One operator with its operands and the records it holds, in record order.
+ * A text operator looks at `name`, a choice operator at `status`.
+ */
+export type OperatorCase = {
+  readonly operator: "contains" | "startsWith" | "isAny" | "isNone";
+  readonly operands: readonly string[];
   readonly matches: readonly string[];
+  /** What the case pins, for a failure to say. */
+  readonly pins: string;
+};
+
+/** One record the facet cases compute over. */
+export type FacetRecord = {
+  readonly id: string;
+  readonly name: string;
+  /** Deliberately wider than a status: the cases include values that are not. */
+  readonly status?: unknown;
+  /** Deliberately wider than a number, for the same reason. */
+  readonly cores?: unknown;
+};
+
+/**
+ * One query and the facets it answers: each status with how many matching
+ * records hold it, and the least and greatest cores.
+ */
+export type FacetCase = {
+  readonly query: {
+    readonly isAny?: readonly string[];
+    readonly isNone?: readonly string[];
+    readonly gte?: number;
+    readonly lte?: number;
+    readonly search?: string;
+  };
+  readonly status: readonly (readonly [string | number, number])[];
+  readonly cores: readonly [number | null, number | null];
   /** What the case pins, for a failure to say. */
   readonly pins: string;
 };

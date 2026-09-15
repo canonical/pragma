@@ -95,21 +95,23 @@ const controls: {
     name: string,
   ) => ReactElement | null;
 } = {
-  choices: (context, definition, name) => (
-    <ChoicesFilter
-      key={definition.field}
-      options={definition.options}
-      handle={findFilterHandle<ReadonlySet<PredicateOperand>>(
-        context.filters,
-        definition.field,
-        "eq",
-      )}
-      label={name}
-      field={definition.field}
-      declared={declares(context, definition.field, "eq")}
-      onLeave={context.focusGroup}
-    />
-  ),
+  // A choice whose options are the server's has none to draw here yet.
+  choices: (context, definition, name) =>
+    definition.options === undefined ? null : (
+      <ChoicesFilter
+        key={definition.field}
+        options={definition.options}
+        handle={findFilterHandle<ReadonlySet<PredicateOperand>>(
+          context.filters,
+          definition.field,
+          "isAny",
+        )}
+        label={name}
+        field={definition.field}
+        declared={declares(context, definition.field, "isAny")}
+        onLeave={context.focusGroup}
+      />
+    ),
   flag: (context, definition, name) => (
     <FlagFilter
       key={definition.field}

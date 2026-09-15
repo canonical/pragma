@@ -37,6 +37,35 @@ describe("createRestHandlers", () => {
     expect(readIds(body)).toEqual(["m-01", "m-02", "m-07", "m-10"]);
   });
 
+  it("reads the statuses a machine is any and none of", async () => {
+    const excluded = await requestRest(
+      "live",
+      "status__isNone=running&status__isNone=pending",
+    );
+    // Neither running nor pending: the three failed machines.
+    expect(excluded.body).toMatchObject({ matched: 3 });
+    // Both spellings of any-of are one set of statuses.
+    const either = await requestRest(
+      "live",
+      "status=failed&status__isAny=pending",
+    );
+    const listed = await requestRest("live", "status=failed&status=pending");
+    expect(readIds(either.body)).toEqual(readIds(listed.body));
+    const both = await requestRest(
+      "live",
+      "status=failed&status=pending&status__isNone=failed",
+    );
+    // Failed or pending, and not failed: the three pending machines.
+    expect(both.body).toMatchObject({ matched: 3 });
+  });
+
+  it("looks for text a value starts with", async () => {
+    const { body } = await requestRest("live", "name__startsWith=B");
+    expect(readIds(body)).toEqual(["m-02"]);
+    const inside = await requestRest("live", "region__startsWith=west");
+    expect(inside.body).toMatchObject({ matched: 0 });
+  });
+
   it("requires every text and every predicate at once", async () => {
     const { body } = await requestRest(
       "live",
@@ -62,6 +91,12 @@ describe("createRestHandlers", () => {
   it("refuses what it cannot run rather than answering more", async () => {
     for (const [params, reason] of [
       ["owner__contains=ex", 'this endpoint does not accept "owner__contains"'],
+      [
+        "owner__startsWith=ex",
+        'this endpoint does not accept "owner__startsWith"',
+      ],
+      ["status__isNone=deployed", '"deployed" is not a status'],
+      ["cores__isNone=4", 'this endpoint does not accept "cores__isNone"'],
       [
         "name__contains__x=web",
         'this endpoint does not accept "name__contains__x"',

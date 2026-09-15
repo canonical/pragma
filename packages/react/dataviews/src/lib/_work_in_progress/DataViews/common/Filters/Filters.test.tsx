@@ -159,12 +159,12 @@ describe("DataViews.Filters", () => {
     mount(provider);
     fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "ready" }));
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed", "ready"] },
+      { field: "status", operator: "isAny", operands: ["failed", "ready"] },
     ]);
     expect(screen.getByRole("checkbox", { name: "failed" })).toBeChecked();
     expect(
@@ -173,8 +173,32 @@ describe("DataViews.Filters", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["ready"] },
+      { field: "status", operator: "isAny", operands: ["ready"] },
     ]);
+  });
+
+  it("draws no control for a choice whose options are the server's", () => {
+    const regions = createCollection({
+      identify: (row: Row) => row.id,
+      fields: [{ field: "region", kind: "choices" }],
+    });
+    render(
+      <DataViews
+        provider={createDataViewsProvider({
+          collection: regions,
+          facets: ["region"],
+          source: createManualSource<Row>({
+            capabilities: declareCapabilities(regions, {
+              filter: { region: true },
+              facets: ["region"],
+            }),
+          }).source,
+        })}
+      >
+        <Filters />
+      </DataViews>,
+    );
+    expect(screen.queryByRole("group", { name: "region" })).toBeNull();
   });
 
   it("removes the predicate when the last option is cleared", () => {
@@ -448,7 +472,7 @@ describe("DataViews.Filters", () => {
     mount(
       makeProvider({
         ...everything,
-        filter: { status: ["eq"], cpu: ["gte"] },
+        filter: { status: ["isAny"], cpu: ["gte"] },
       }),
     );
     expect(screen.getByRole("group", { name: "status" })).toBeInTheDocument();
@@ -463,7 +487,7 @@ describe("DataViews.Filters", () => {
     mount(provider);
     expect(screen.queryByRole("checkbox")).toBeNull();
     adopt(provider, [
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
       { field: "cpu", operator: "lte", operands: [8] },
       { field: "owner", operator: "isSet", operands: [] },
     ]);
@@ -490,7 +514,7 @@ describe("DataViews.Filters", () => {
     const provider = makeProvider();
     mount(provider);
     adopt(provider, [
-      { field: "status", operator: "eq", operands: ["cancelled"] },
+      { field: "status", operator: "isAny", operands: ["cancelled"] },
       { field: "cpu", operator: "gte", operands: [8] },
     ]);
     expect(screen.getByRole("checkbox", { name: "cancelled" })).toBeChecked();
@@ -511,10 +535,12 @@ describe("DataViews.Filters", () => {
       target: { value: "4" },
     });
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
       { field: "cpu", operator: "gte", operands: [4] },
     ]);
-    adopt(provider, [{ field: "status", operator: "eq", operands: ["ready"] }]);
+    adopt(provider, [
+      { field: "status", operator: "isAny", operands: ["ready"] },
+    ]);
     expect(screen.getByRole("checkbox", { name: "ready" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "failed" })).not.toBeChecked();
     expect(screen.getByLabelText("cpu from")).toHaveValue(null);

@@ -39,6 +39,7 @@ import type {
   EmptyOr,
   EmptyPlacement,
   EncodeQueryConfig,
+  Facet,
   FieldKind,
   FieldValidation,
   FilterFeedback,
@@ -152,6 +153,8 @@ import type {
   GridInteraction,
   GridInteractionState,
   ProviderHost,
+  QueryCommand,
+  QueryCommandResult,
   ResolvedColumn,
   RowChannels,
   RowScopes,
@@ -202,6 +205,7 @@ type EveryPublicType = [
   DisplayStatus,
   EmptyOr<unknown>,
   EmptyPlacement,
+  Facet,
   EncodeQueryConfig,
   FieldKind,
   FieldValidation,
@@ -317,6 +321,8 @@ type EveryBindingType = [
   GridInteraction,
   GridInteractionState,
   ProviderHost,
+  QueryCommand,
+  QueryCommandResult,
   ResolvedColumn,
   RowChannels<RowRecord>,
   RowScopes<RowRecord>,
@@ -571,7 +577,7 @@ describe("public surface types", () => {
       { field: "owner", kind: "flag" },
     ]);
     type Machines = FilterHandles<typeof machines.fields>;
-    expectTypeOf<Machines["status"]["eq"]["applied"]>().toEqualTypeOf<
+    expectTypeOf<Machines["status"]["isAny"]["applied"]>().toEqualTypeOf<
       ReadonlyChannel<EmptyOr<ReadonlySet<"failed" | "cancelled">>>
     >();
     expectTypeOf<Machines["cpu"]["gte"]["applied"]>().toEqualTypeOf<

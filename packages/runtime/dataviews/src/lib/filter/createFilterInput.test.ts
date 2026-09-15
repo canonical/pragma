@@ -224,7 +224,7 @@ describe("createFilterInput", () => {
     const status = createFilterInput({
       schema: machines.schema,
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       host,
     });
     const seen = vi.fn();

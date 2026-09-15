@@ -21,6 +21,7 @@ import type {
   PredicateOperator,
   Query,
   QueryCommand,
+  SetOperator,
   SortTerm,
   WindowNavigation,
 } from "../query/index.js";
@@ -34,7 +35,11 @@ import type {
 import type { SchemaFieldDefinition } from "../schema/index.js";
 import type { Selection } from "../selection/index.js";
 import type { DataViewsSnapshot } from "../snapshot/index.js";
-import type { Source, SourceCapabilities } from "../source/index.js";
+import type {
+  FacetFieldNameOf,
+  Source,
+  SourceCapabilities,
+} from "../source/index.js";
 import type {
   SavedViews,
   ViewAdoptionCause,
@@ -253,6 +258,16 @@ export type DataViewsProviderConfig<
    * empty query at the first page.
    */
   readonly snapshot?: DataViewsSnapshot | undefined;
+  /**
+   * The fields whose facets every request asks the source for — the options
+   * and counts Filters shows beside a choice, the range beside a number or a
+   * date — each one the source declares: a field it does not is refused, and
+   * the provider throws when it is built, before anything executes. A
+   * filterable `choices` field whose options are the server's must be named,
+   * since its facet is where its options come from, and the provider throws
+   * otherwise. None when left out.
+   */
+  readonly facets?: readonly FacetFieldNameOf<TFields>[] | undefined;
 };
 
 /**
@@ -335,8 +350,15 @@ export type ProviderHost<
   DataViewsProvider<TFields, TRow>,
   "collection" | "capabilities" | "state" | "refusals"
 > & {
-  /** Replace the predicate at its address; the window returns to page one. */
-  readonly setPredicate: (predicate: Predicate) => readonly SourceRefusal[];
+  /**
+   * Replace the predicate at its address, and the one at the same field
+   * under `replaces` when given, as one transition; the window returns to
+   * page one.
+   */
+  readonly setPredicate: (
+    predicate: Predicate,
+    replaces?: SetOperator,
+  ) => readonly SourceRefusal[];
   /** Remove the predicate at an address; the window returns to page one. */
   readonly removePredicate: (
     field: string,
@@ -448,6 +470,8 @@ export type SourceRunConfig<
 > = {
   readonly host: ProviderHost<TFields, TRow>;
   readonly source: Source<TRow>;
+  /** The fields whose facets every request asks for, each one declared. */
+  readonly facets: readonly string[];
 };
 
 /** Configuration of the location sync: the host and the location. */

@@ -1,26 +1,91 @@
 import {
+  type Count,
   createPage,
   createQuerySource,
   declareCapabilities,
   encodeQuery,
+  type Facet,
   type Source,
 } from "@canonical/dataviews-core";
 import { QueryClient, QueryObserver } from "@tanstack/query-core";
-import type { ApiScenario } from "../api/index.js";
+import type { ApiScenario, FacetValue } from "../api/index.js";
 import { type Machine, machineCollection } from "../fixtures.js";
 
+/** Whether a value is a count, of a kind the envelope names. */
+const isCount = (value: unknown): value is Count =>
+  typeof value === "object" &&
+  value !== null &&
+  "kind" in value &&
+  (value.kind === "unknown" ||
+    ((value.kind === "exact" || value.kind === "at-least") &&
+      "value" in value &&
+      typeof value.value === "number"));
+
+/** Whether a value is one value of a values facet, with its count. */
+const isFacetValue = (value: unknown): value is FacetValue =>
+  typeof value === "object" &&
+  value !== null &&
+  "value" in value &&
+  (typeof value.value === "string" ||
+    typeof value.value === "number" ||
+    value.value === true) &&
+  "count" in value &&
+  isCount(value.count);
+
+/** Whether a value is one end of a range facet. */
+const isRangeEnd = (value: unknown): value is string | number | null =>
+  value === null || typeof value === "string" || typeof value === "number";
+
 /**
- * What the REST endpoint executes, and so all the parts may offer: equality
- * on status, bounds on cores, text in the name and the region but not the
- * owner, search over the name and the owner, one ordered term, pages by
- * number and exact counts.
+ * The facets an answer carries, read rather than trusted: a range with two
+ * ends, or values each with a count, and anything else left out.
+ */
+const readAnsweredFacets = (
+  answered: unknown,
+): Readonly<Record<string, Facet>> | undefined => {
+  if (typeof answered !== "object" || answered === null) {
+    return undefined;
+  }
+  const facets: Record<string, Facet> = {};
+  for (const [field, facet] of Object.entries(answered)) {
+    if (typeof facet !== "object" || facet === null || !("kind" in facet)) {
+      continue;
+    }
+    if (
+      facet.kind === "range" &&
+      "min" in facet &&
+      "max" in facet &&
+      isRangeEnd(facet.min) &&
+      isRangeEnd(facet.max)
+    ) {
+      facets[field] = { kind: "range", min: facet.min, max: facet.max };
+    } else if (
+      facet.kind === "values" &&
+      "values" in facet &&
+      Array.isArray(facet.values)
+    ) {
+      facets[field] = {
+        kind: "values",
+        values: facet.values.filter(isFacetValue),
+      };
+    }
+  }
+  return facets;
+};
+
+/**
+ * What the REST endpoint executes, and so all the parts may offer: the
+ * statuses a machine is any or none of, bounds on cores, text the name and
+ * the region contain or start with but none in the owner, search over the
+ * name and the owner, one ordered term, pages by number, exact counts, and
+ * the facets of the status and the cores.
  */
 const REST_CAPABILITIES = declareCapabilities(machineCollection, {
   filter: {
-    status: ["eq"],
+    status: ["isAny", "isNone"],
     cores: ["gte", "lte"],
-    name: ["contains"],
-    region: ["contains"],
+    name: ["contains", "startsWith"],
+    region: ["contains", "startsWith"],
   },
   search: ["name", "owner"],
   sort: {
@@ -29,6 +94,7 @@ const REST_CAPABILITIES = declareCapabilities(machineCollection, {
     tiebreak: "opaque",
   },
   counts: { pageable: "exact", matched: "exact", total: "exact" },
+  facets: ["status", "cores"],
 });
 
 /**
@@ -52,12 +118,15 @@ export default function createRestMachineSource(
   return createQuerySource<Machine>({
     capabilities: REST_CAPABILITIES,
     queryKey: ["machines", "rest", scenario],
-    fetchPage: async ({ slice, window }) => {
+    fetchPage: async ({ slice, window, facets }) => {
       const params = encodeQuery({
         schema: machineCollection.schema,
         slice,
         window,
       });
+      for (const field of facets) {
+        params.append("facet", field);
+      }
       const response = await fetch(
         new URL(
           `/api/${scenario}/machines?${params}`,
@@ -94,6 +163,8 @@ export default function createRestMachineSource(
           "total" in body && typeof body.total === "number"
             ? body.total
             : undefined,
+        // Each facet read, never trusted: one of another shape is left out.
+        facets: "facets" in body ? readAnsweredFacets(body.facets) : undefined,
       });
     },
     createObserver: (query) => new QueryObserver(client, query),

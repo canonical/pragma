@@ -42,14 +42,14 @@ describe("regression 0010 — a location notifying on subscribe erased the snaps
     const provider = createDataViewsProvider({
       collection: machines,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
       }).source,
       location,
       snapshot: { query: "status=failed", presentation: {} },
     });
     const release = provider.observe();
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(location.read().getAll("status")).toEqual(["failed"]);
     release();

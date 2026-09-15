@@ -15,7 +15,7 @@ const failed = {
   slice: {
     ...EMPTY_SLICE,
     filter: [
-      { field: "status", operator: "eq" as const, operands: ["failed"] },
+      { field: "status", operator: "isAny" as const, operands: ["failed"] },
     ],
   },
   window: DEFAULT_WINDOW,

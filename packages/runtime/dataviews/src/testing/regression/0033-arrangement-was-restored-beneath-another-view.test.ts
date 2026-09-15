@@ -33,7 +33,7 @@ describe("regression 0033 — an arrangement was restored beneath another view",
     const provider = createDataViewsProvider({
       collection: machines,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
       }).source,
       location: createMemoryLocation({ href: "/machines?status=failed" }),
       views: createStandInViewStore(),
@@ -47,7 +47,7 @@ describe("regression 0033 — an arrangement was restored beneath another view",
     const provider = createDataViewsProvider({
       collection: machines,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
       }).source,
       snapshot,
     });

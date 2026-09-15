@@ -34,12 +34,13 @@ describe("declareCapabilities", () => {
       pagination: { kind: "offset" },
       selection: { scope: "explicit" },
       actions: {},
+      facets: [],
     });
   });
 
   it("builds the complete record from what is declared", () => {
     const declared = declareCapabilities(machines, {
-      filter: { status: ["eq"], cpu: true },
+      filter: { status: ["isAny"], cpu: true },
       search: ["name", "note"],
       sort: {
         fields: ["cpu", "name"],
@@ -54,7 +55,7 @@ describe("declareCapabilities", () => {
       actions: { stop: { targets: "explicit", limit: 10 } },
     });
     expect(declared).toEqual({
-      filter: { status: ["eq"], cpu: ["gte", "lte"] },
+      filter: { status: ["isAny"], cpu: ["gte", "lte"] },
       search: { fields: ["name", "note"] },
       sort: {
         fields: ["cpu", "name"],
@@ -69,6 +70,7 @@ describe("declareCapabilities", () => {
       pagination: { kind: "cursor", backward: false, durable: true },
       selection: { scope: "explicit" },
       actions: { stop: { targets: "explicit", limit: 10 } },
+      facets: [],
     });
     expect(Object.isFrozen(declared)).toBe(true);
     expect(Object.isFrozen(declared.filter)).toBe(true);
@@ -112,7 +114,7 @@ describe("declareCapabilities", () => {
     // JavaScript author meets the same refusal at construction.
     expect(() =>
       declareCapabilities(machines, {
-        filter: { zone: ["eq"] },
+        filter: { zone: ["isAny"] },
       } as unknown as Declaration),
     ).toThrow('the schema has no field "zone" to filter');
     expect(() =>
@@ -148,10 +150,10 @@ describe("declareCapabilities", () => {
 
   it("checks the declaration against the schema at compile time", () => {
     expectTypeOf<NonNullable<Declaration["filter"]>>().toEqualTypeOf<{
-      readonly status?: readonly "eq"[] | true;
+      readonly status?: readonly ("isAny" | "isNone")[] | true;
       readonly cpu?: readonly ("gte" | "lte")[] | true;
       readonly owner?: readonly "isSet"[] | true;
-      readonly name?: readonly "contains"[] | true;
+      readonly name?: readonly ("contains" | "startsWith")[] | true;
     }>();
     expect(
       declareCapabilities(machines, { filter: { name: ["contains"] } }).filter,
@@ -163,5 +165,26 @@ describe("declareCapabilities", () => {
     // refuses both and an author has nothing to spell.
     expectTypeOf<Declaration>().not.toHaveProperty("group");
     expectTypeOf<Declaration>().not.toHaveProperty("selection");
+  });
+
+  it("declares the facets a source computes, refusing text and unknown fields", () => {
+    expect(
+      declareCapabilities(machines, { facets: ["status", "cpu", "status"] })
+        .facets,
+    ).toEqual(["status", "cpu"]);
+    expect(declareCapabilities(machines, {}).facets).toEqual([]);
+    expect(() =>
+      declareCapabilities(machines, {
+        facets: ["name"],
+      } as unknown as Declaration),
+    ).toThrow('text field "name" has no facet');
+    expect(() =>
+      declareCapabilities(machines, {
+        facets: ["zone"],
+      } as unknown as Declaration),
+    ).toThrow('the schema has no field "zone" to compute a facet for');
+    expectTypeOf<NonNullable<Declaration["facets"]>[number]>().toEqualTypeOf<
+      "status" | "cpu" | "owner"
+    >();
   });
 });

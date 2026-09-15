@@ -3,17 +3,22 @@ import {
   SORTED_FIELDS,
   STATUS_ORDER,
 } from "./constants.js";
-import type { ApiProblem, ApiQuery } from "./types.js";
+import isFacetField from "./isFacetField.js";
+import type { ApiProblem, ApiQuery, ApiTextMatch } from "./types.js";
 
 /**
- * The text fields this endpoint looks through for text, each with the
- * `where` member holding the text it must contain.
+ * The `where` members holding text a text field must contain or start with,
+ * each with the field and how it matches.
  */
-const CONTAINS_MEMBERS = {
-  name: "nameContains",
-  region: "regionContains",
-  owner: "ownerContains",
-} as const satisfies Readonly<Record<string, string>>;
+const TEXT_MEMBERS: Readonly<
+  Record<string, Pick<ApiTextMatch, "field" | "operator">>
+> = {
+  nameContains: { field: "name", operator: "contains" },
+  nameStartsWith: { field: "name", operator: "startsWith" },
+  regionContains: { field: "region", operator: "contains" },
+  ownerContains: { field: "owner", operator: "contains" },
+  ownerStartsWith: { field: "owner", operator: "startsWith" },
+};
 
 /** A query and the forward page of it the GraphQL endpoint is asked for. */
 type GraphQLRequest = {
@@ -26,9 +31,10 @@ type GraphQLRequest = {
 /** The members the endpoint's filter input declares. */
 const WHERE_MEMBERS: readonly string[] = [
   "status",
+  "statusIsNone",
   "coresGte",
   "coresLte",
-  ...Object.values(CONTAINS_MEMBERS),
+  ...Object.keys(TEXT_MEMBERS),
   "search",
 ];
 
@@ -116,8 +122,10 @@ const readOrderBy = (value: unknown): ApiQuery["sort"] | ApiProblem => {
 
 /**
  * Read the GraphQL endpoint's variables, as its resolver would: a forward
- * page by `first` and `after`, a `where` input whose text members hold the
- * text each field must contain, and an `orderBy` of at most one term.
+ * page by `first` and `after`, a `where` input whose `status` lists the
+ * statuses a machine is any of and `statusIsNone` those it is none of, whose
+ * text members hold the text each field must contain or start with, an
+ * `orderBy` of at most one term, and the `facets` the answer must carry.
  *
  * The variables arrive as JSON, so each is read, never trusted: a variable
  * or member left out or given as null is not given, and a list input given
@@ -140,6 +148,7 @@ export default function readGraphQLQuery(
     after = null,
     where = null,
     orderBy = null,
+    facets = null,
   } = variables;
   if (typeof first !== "number" || !Number.isSafeInteger(first) || first < 1) {
     return { reason: `"first" is not a positive whole number` };
@@ -161,34 +170,50 @@ export default function readGraphQLQuery(
   }
   const {
     status = null,
+    statusIsNone = null,
     coresGte = null,
     coresLte = null,
     search = null,
   } = filter;
-  const given = coerceListInput(status);
-  const unknown = given.find((candidate) => !isStatus(candidate));
+  const anyOf = coerceListInput(status);
+  const noneOf = coerceListInput(statusIsNone);
+  const unknown = [...anyOf, ...noneOf].find(
+    (candidate) => !isStatus(candidate),
+  );
   if (unknown !== undefined) {
     return { reason: `${JSON.stringify(unknown)} is not a status` };
   }
-  const statuses = given.filter(isStatus);
+  const statuses = {
+    isAny: anyOf.filter(isStatus),
+    isNone: noneOf.filter(isStatus),
+  };
   if (coresGte !== null && typeof coresGte !== "number") {
     return { reason: `${JSON.stringify(coresGte)} is not a number of cores` };
   }
   if (coresLte !== null && typeof coresLte !== "number") {
     return { reason: `${JSON.stringify(coresLte)} is not a number of cores` };
   }
-  const contains: Record<string, string> = {};
-  for (const [field, member] of Object.entries(CONTAINS_MEMBERS)) {
-    const text = filter[member] ?? null;
-    if (text !== null && typeof text !== "string") {
-      return { reason: `${JSON.stringify(text)} is not text` };
+  const text: ApiTextMatch[] = [];
+  for (const [member, match] of Object.entries(TEXT_MEMBERS)) {
+    const matched = filter[member] ?? null;
+    if (matched !== null && typeof matched !== "string") {
+      return { reason: `${JSON.stringify(matched)} is not text` };
     }
-    if (text !== null && text !== "") {
-      contains[field] = text;
+    if (matched !== null && matched !== "") {
+      text.push({ ...match, text: matched });
     }
   }
   if (search !== null && typeof search !== "string") {
     return { reason: `${JSON.stringify(search)} is not text` };
+  }
+  const faceted = coerceListInput(facets);
+  const unfaceted = faceted.find(
+    (field) => typeof field !== "string" || !isFacetField(field),
+  );
+  if (unfaceted !== undefined) {
+    return {
+      reason: `this endpoint computes no facet for ${JSON.stringify(unfaceted)}`,
+    };
   }
   const sort = readOrderBy(orderBy);
   if (sort !== null && "reason" in sort) {
@@ -196,11 +221,12 @@ export default function readGraphQLQuery(
   }
   return {
     query: {
-      contains,
+      text,
       statuses,
       cores: { gte: coresGte, lte: coresLte },
       search: search === null || search === "" ? null : search,
       sort,
+      facets: [...new Set(faceted.filter(isFacetField))],
     },
     offset,
     first,

@@ -33,7 +33,7 @@ export default function createQuerySource<TRow extends object = RowRecord>(
     ...(config.refusals === undefined ? {} : { refusals: config.refusals }),
     execute(request, deliver) {
       const observer = config.createObserver({
-        queryKey: [...config.queryKey, spellQueryKey(request)],
+        queryKey: [...config.queryKey, spellQueryKey(request), request.facets],
         queryFn: () => config.fetchPage(request),
       });
       let delivered: Delivered<TRow> | null = null;

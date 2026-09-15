@@ -15,6 +15,7 @@ import type {
   Predicate,
   PredicateOperator,
   Query,
+  SetOperator,
   SortTerm,
   WindowNavigation,
 } from "../query/index.js";
@@ -103,6 +104,29 @@ export default function createDataViewsProvider<
   // Copied once, so the declaration cannot change under the provider: what
   // a control reads is what the run checks requests against.
   const capabilities = copyCapabilities(source.capabilities);
+  // Asked for once and for every request, so a facet the source does not
+  // compute is refused here, before anything executes.
+  const facets = Object.freeze([...new Set<string>(config.facets ?? [])]);
+  for (const field of facets) {
+    if (!capabilities.facets.includes(field)) {
+      throw new Error(`this source declares no facet for "${field}"`);
+    }
+  }
+  // A choice whose options are the server's is offered only from its facet:
+  // one the source filters but nobody asks the facet of would offer nothing,
+  // and say nothing about why.
+  for (const definition of collection.schema.fields) {
+    if (
+      definition.kind === "choices" &&
+      definition.options === undefined &&
+      Object.hasOwn(capabilities.filter, definition.field) &&
+      !facets.includes(definition.field)
+    ) {
+      throw new Error(
+        `the options of "${definition.field}" are the server's, so the provider must ask for its facet`,
+      );
+    }
+  }
   // Where the provider starts: the snapshot and the location read once, with
   // nothing subscribed and nothing requested, so a server render carries the
   // URL's query.
@@ -179,8 +203,8 @@ export default function createDataViewsProvider<
     capabilities,
     state: protectChannel(state),
     refusals,
-    setPredicate: (predicate: Predicate) =>
-      command({ kind: "setPredicate", predicate }),
+    setPredicate: (predicate: Predicate, replaces?: SetOperator) =>
+      command({ kind: "setPredicate", predicate, replaces }),
     removePredicate: (field: string, operator: PredicateOperator) =>
       command({ kind: "removePredicate", field, operator }),
     refresh: issueRefresh,
@@ -237,7 +261,7 @@ export default function createDataViewsProvider<
           keepsViews,
           issues: starting.issues,
         });
-  const run = runSource({ host, source });
+  const run = runSource({ host, source, facets });
 
   const runAction = createActionRunner({ source, capabilities, selection });
 

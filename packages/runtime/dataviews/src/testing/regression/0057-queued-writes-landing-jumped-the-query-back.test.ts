@@ -50,7 +50,7 @@ const buildLagging = () => {
   const provider = createDataViewsProvider({
     collection,
     source: createManualSource({
-      capabilities: declare({ filter: { status: ["eq"] } }),
+      capabilities: declare({ filter: { status: ["isAny"] } }),
       answer: answering([]),
     }).source,
     location,
@@ -65,7 +65,7 @@ const buildLagging = () => {
       for (const status of statuses) {
         host.setPredicate({
           field: "status",
-          operator: "eq",
+          operator: "isAny",
           operands: [status],
         });
       }
@@ -90,7 +90,7 @@ describe("regression 0057 — queued writes landing jumped the query back", () =
     landAll();
     expect(published).toBe(0);
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["ready"] },
+      { field: "status", operator: "isAny", operands: ["ready"] },
     ]);
   });
 
@@ -101,7 +101,7 @@ describe("regression 0057 — queued writes landing jumped the query back", () =
     landAll();
     expect(memory.read().get("status")).toBe("failed");
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
   });
 });

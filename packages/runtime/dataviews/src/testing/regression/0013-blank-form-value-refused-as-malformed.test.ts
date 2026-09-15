@@ -32,7 +32,7 @@ describe("regression 0013 — a blank form value is no clause", () => {
       collection: machines,
       source: createManualSource({
         capabilities: declare({
-          filter: { status: ["eq"], cpu: ["gte", "lte"] },
+          filter: { status: ["isAny"], cpu: ["gte", "lte"] },
           search: { fields: ["name"] },
         }),
       }).source,
@@ -41,7 +41,7 @@ describe("regression 0013 — a blank form value is no clause", () => {
     const release = provider.observe();
     expect(provider.issues.get()).toEqual([]);
     expect(provider.state.get().slice).toEqual({
-      filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+      filter: [{ field: "status", operator: "isAny", operands: ["failed"] }],
       search: null,
       sort: [],
       group: [],

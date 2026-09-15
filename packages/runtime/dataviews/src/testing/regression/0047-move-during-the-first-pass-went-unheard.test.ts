@@ -24,7 +24,7 @@ const collection = createCollection({
 
 const createSource = () =>
   createManualSource({
-    capabilities: declare({ filter: { status: ["eq"] } }),
+    capabilities: declare({ filter: { status: ["isAny"] } }),
     answer: answering([]),
   }).source;
 

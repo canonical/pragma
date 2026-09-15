@@ -32,12 +32,13 @@ const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
   requestId: "i1:r1",
   slice: emptySlice,
   window: DEFAULT_WINDOW,
+  facets: [],
   ...overrides,
 });
 
 /** A constrained REST endpoint: one sort term, exact matched counts. */
 const endpoint: SourceCapabilities = declare({
-  filter: { status: ["eq"] },
+  filter: { status: ["isAny"] },
   search: { fields: ["name"] },
   sort: declareSort(["cpu"], 1),
   counts: { pageable: "exact", matched: "exact", total: "exact" },
@@ -48,6 +49,7 @@ const exact = (value: number) => ({ kind: "exact" as const, value });
 const page = (rows: readonly RowRecord[], matched: number): SourcePage => ({
   rows,
   groups: null,
+  facets: {},
   counts: {
     pageable: exact(matched),
     matched: exact(matched),
@@ -143,13 +145,13 @@ describe("createQuerySource over @tanstack/query-core", () => {
     const spelled: Slice = {
       ...emptySlice,
       filter: [
-        { field: "status", operator: "eq", operands: ["ready", "failed"] },
+        { field: "status", operator: "isAny", operands: ["ready", "failed"] },
       ],
     };
     const respelled: Slice = {
       ...emptySlice,
       filter: [
-        { field: "status", operator: "eq", operands: ["failed", "ready"] },
+        { field: "status", operator: "isAny", operands: ["failed", "ready"] },
       ],
     };
 

@@ -11,6 +11,7 @@ import type {
   QueryCommand,
   QueryCommandResult,
   ResultWindow,
+  SetOperator,
   Slice,
 } from "./types.js";
 
@@ -52,17 +53,28 @@ const firstPage = (window: ResultWindow): ResultWindow => ({
   cursor: null,
 });
 
-const setPredicate = (slice: Slice, predicate: Predicate): Slice => ({
-  ...slice,
-  filter: [
-    ...slice.filter.filter(
-      (existing) =>
-        addressPredicate(existing.field, existing.operator) !==
-        addressPredicate(predicate.field, predicate.operator),
-    ),
-    predicate,
-  ],
-});
+const setPredicate = (
+  slice: Slice,
+  predicate: Predicate,
+  replaces: SetOperator | undefined,
+): Slice => {
+  const addresses = new Set([
+    addressPredicate(predicate.field, predicate.operator),
+    ...(replaces === undefined
+      ? []
+      : [addressPredicate(predicate.field, replaces)]),
+  ]);
+  return {
+    ...slice,
+    filter: [
+      ...slice.filter.filter(
+        (existing) =>
+          !addresses.has(addressPredicate(existing.field, existing.operator)),
+      ),
+      predicate,
+    ],
+  };
+};
 
 const collapsedEquals = (
   a: readonly GroupPath[],
@@ -77,6 +89,9 @@ const collapsedEquals = (
  * Commands that violate the bounded grammar (empty fields, wrong arities,
  * non-finite numbers, non-positive or fractional window values, an empty
  * cursor token) are rejected with the input state unchanged.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
  */
 export default function applyQueryCommand(
   slice: Slice,
@@ -175,6 +190,16 @@ export default function applyQueryCommand(
 const commandRejection = (command: SliceCommand): string | null => {
   switch (command.kind) {
     case "setPredicate":
+      // A move replaces the other set operator on the field, nothing else:
+      // never itself, and never a restriction of another kind.
+      if (
+        command.replaces !== undefined &&
+        (OPERATOR_ARITY[command.replaces] !== "many" ||
+          OPERATOR_ARITY[command.predicate.operator] !== "many" ||
+          command.replaces === command.predicate.operator)
+      ) {
+        return "a set moves only onto the other set operator on its field";
+      }
       return predicateRejection(command.predicate);
     case "removePredicate":
       // Removal may address out-of-grammar predicates (for example one
@@ -197,7 +222,7 @@ const commandRejection = (command: SliceCommand): string | null => {
 const applyToSlice = (slice: Slice, command: SliceCommand): Slice => {
   switch (command.kind) {
     case "setPredicate":
-      return setPredicate(slice, command.predicate);
+      return setPredicate(slice, command.predicate, command.replaces);
     case "removePredicate": {
       const address = addressPredicate(command.field, command.operator);
       return {

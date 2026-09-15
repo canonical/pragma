@@ -1,8 +1,8 @@
 /**
  * Test-only shapes: what a manual source records and answers with, what a
- * counting view store reports, what a recording location port records, and
- * a promise a test settles on cue. Named here so a test file imports one
- * place for them.
+ * counting view store reports, what a recording location port records, how
+ * often a set of counted rows was read, and a promise a test settles on cue.
+ * Named here so a test file imports one place for them.
  */
 
 import type { Mock } from "vitest";
@@ -99,4 +99,13 @@ export type Deferred<T> = {
   readonly promise: Promise<T>;
   readonly resolve: (value: T) => void;
   readonly reject: (error: unknown) => void;
+};
+
+/** The field whose every read a set of counted rows counts. */
+export type CountedField = "name" | "status";
+
+/** Rows whose counted field counts every read, and how many there were. */
+export type CountedRows = {
+  readonly rows: readonly RowRecord[];
+  readonly readCount: () => number;
 };

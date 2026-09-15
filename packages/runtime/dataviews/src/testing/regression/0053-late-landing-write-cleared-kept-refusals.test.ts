@@ -55,7 +55,7 @@ const buildLagging = (drops = false) => {
   const provider = createDataViewsProvider({
     collection,
     source: createManualSource({
-      capabilities: declare({ filter: { status: ["eq"] } }),
+      capabilities: declare({ filter: { status: ["isAny"] } }),
       answer: answering([]),
     }).source,
     location,
@@ -108,7 +108,7 @@ describe("regression 0053 — a late-landing write cleared kept refusals", () =>
     observeUntilFinished(provider);
     readProviderHost(provider).setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["running"],
     });
     expect(readRefused()).toEqual([]);
@@ -149,7 +149,7 @@ describe("regression 0053 — a late-landing write cleared kept refusals", () =>
     const provider = createDataViewsProvider({
       collection,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       location,

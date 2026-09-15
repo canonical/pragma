@@ -8,18 +8,26 @@ import {
 import { machines } from "../fixtures.js";
 import { API_SCENARIOS } from "./constants.js";
 import foldStoredText from "./foldStoredText.js";
+import readApiFacets from "./readApiFacets.js";
 import readGraphQLQuery from "./readGraphQLQuery.js";
 import selectRecords from "./selectRecords.js";
-import type { ApiScenario, MachinesData, MockApiConfig } from "./types.js";
+import type {
+  ApiScenario,
+  ApiTextMatch,
+  MachinesData,
+  MockApiConfig,
+} from "./types.js";
 
 /**
  * Whether a value holds text, as a resolver in JavaScript answers it: the
  * operand folded once per query, each value folded, then a plain substring
- * test, with no pattern to escape.
+ * or prefix test, with no pattern to escape.
  */
-const matchText = (text: string) => {
+const matchText = (operator: ApiTextMatch["operator"], text: string) => {
   const needle = foldStoredText(text);
-  return (value: string): boolean => foldStoredText(value).includes(needle);
+  return operator === "contains"
+    ? (value: string): boolean => foldStoredText(value).includes(needle)
+    : (value: string): boolean => foldStoredText(value).startsWith(needle);
 };
 
 /** A cursor the endpoint hands back for the page starting after `offset`. */
@@ -74,6 +82,7 @@ export default function createGraphQLHandlers({
       data: {
         machines: {
           totalCount: null,
+          facets: readApiFacets(records, read.query, matched, matchText),
           pageInfo: {
             endCursor: page.length === 0 ? null : spellCursor(end),
             hasNextPage: end < matched.length,

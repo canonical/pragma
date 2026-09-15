@@ -36,7 +36,7 @@ describe("regression 0018 — a reset dropped the open view from the list", () =
     const provider = createDataViewsProvider({
       collection: machines,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       views: store,
@@ -52,7 +52,7 @@ describe("regression 0018 — a reset dropped the open view from the list", () =
     });
     readProviderHost(provider).setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["failed"],
     });
     expect((await views.saveAs("Failed")).status).toBe("saved");

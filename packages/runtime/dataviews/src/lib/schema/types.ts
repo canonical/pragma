@@ -13,7 +13,10 @@ import type {
 } from "../query/index.js";
 
 /**
- * A closed-set field: equality over a set of option values.
+ * A closed-set field, filtered by `isAny` — the value is one of the operands
+ * — and `isNone` — the value is present, a string or a number, and none of
+ * the operands. An absent or null value, or one of another type, is neither
+ * any nor none of them.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -21,7 +24,15 @@ import type {
 export type ChoicesField = {
   readonly field: string;
   readonly kind: "choices";
-  readonly options: readonly (string | number)[];
+  /**
+   * The closed list of option values, in the order they are offered and
+   * ordered. Left out, the options are the server's, and an option is text:
+   * any string is one, a record's value is matched, counted and ordered by
+   * its text — `42` and `"42"` are the one option `"42"` — and a source's
+   * facet over the field lists the values it holds as text. So an option
+   * spelled on the wire reads back as the option it was.
+   */
+  readonly options?: readonly (string | number)[];
 };
 
 /**
@@ -67,11 +78,12 @@ export type DateField = {
 
 /**
  * A free-text field: ordered through the source's collator, and filtered by
- * `contains` — the value holds the operand once both are folded: normalised
- * to NFC, lowercased without a locale, final sigma read as sigma, and
- * normalised to NFC again. The operand is literal: `%`, `_` and `\` are
- * characters to look for, never wildcards, and nothing is trimmed. Only a
- * string value can hold one; an absent, null or non-string value never does.
+ * `contains` — the value holds the operand — and `startsWith` — the value
+ * begins with it — once both are folded: normalised to NFC, lowercased
+ * without a locale, final sigma read as sigma, and normalised to NFC again.
+ * The operand is literal: `%`, `_` and `\` are characters to look for,
+ * never wildcards, and nothing is trimmed. Only a string value can hold one;
+ * an absent, null or non-string value never does.
  *
  * @experimental Pre-release: the operators a text field accepts may change
  * before the first release.
@@ -128,7 +140,7 @@ export type FieldValidation =
 /**
  * The applied semantic value a field's predicate carries: a `choices` set,
  * a number or date bound, a flag's presence, or the text a text field
- * contains.
+ * contains or starts with.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -140,13 +152,15 @@ export type AppliedOf<TField extends SchemaFieldDefinition> = TField extends {
   ? ReadonlySet<
       TOptions extends readonly (string | number)[] ? TOptions[number] : never
     >
-  : TField extends { readonly kind: "number" }
-    ? number
-    : TField extends { readonly kind: "flag" }
-      ? boolean
-      : TField extends { readonly kind: "date" | "text" }
-        ? string
-        : never;
+  : TField extends { readonly kind: "choices" }
+    ? ReadonlySet<string>
+    : TField extends { readonly kind: "number" }
+      ? number
+      : TField extends { readonly kind: "flag" }
+        ? boolean
+        : TField extends { readonly kind: "date" | "text" }
+          ? string
+          : never;
 
 /**
  * A value that may be absent.
@@ -177,11 +191,11 @@ export type FieldKind = SchemaFieldDefinition["kind"];
  * operator from a definition's kind alone.
  */
 export type FieldKindOperators = {
-  readonly choices: "eq";
+  readonly choices: "isAny" | "isNone";
   readonly number: "gte" | "lte";
   readonly flag: "isSet";
   readonly date: "gte" | "lte";
-  readonly text: "contains";
+  readonly text: "contains" | "startsWith";
 };
 
 /** One text input read as an operand, or the reason it is not one. */
@@ -296,8 +310,8 @@ export type Schema<TFields extends readonly SchemaFieldDefinition[]> = {
    * authority, so a source declaring what it filters and a control offering
    * it agree.
    *
-   * @experimental A later text operator would change what it lists for a
-   * text field.
+   * @experimental A later operator would change what it lists for the kind
+   * it is added to.
    */
   readonly listOperators: (name: string) => readonly PredicateOperator[];
   /**

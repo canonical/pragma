@@ -32,15 +32,23 @@ describe("areSlicesEqual", () => {
     expect(areSlicesEqual(value, slice({ search: "yak" }))).toBe(true);
   });
 
-  it("is true when only equality operand order differs", () => {
+  it("is true when only set operand order differs", () => {
     const left = slice({
       filter: [
-        { field: "status", operator: "eq", operands: ["failed", "cancelled"] },
+        {
+          field: "status",
+          operator: "isAny",
+          operands: ["failed", "cancelled"],
+        },
       ],
     });
     const right = slice({
       filter: [
-        { field: "status", operator: "eq", operands: ["cancelled", "failed"] },
+        {
+          field: "status",
+          operator: "isAny",
+          operands: ["cancelled", "failed"],
+        },
       ],
     });
     expect(areSlicesEqual(left, right)).toBe(true);
@@ -49,14 +57,14 @@ describe("areSlicesEqual", () => {
   it("is true when only predicate list order differs", () => {
     const left = slice({
       filter: [
-        { field: "status", operator: "eq", operands: ["failed"] },
-        { field: "zone", operator: "eq", operands: ["north"] },
+        { field: "status", operator: "isAny", operands: ["failed"] },
+        { field: "zone", operator: "isAny", operands: ["north"] },
       ],
     });
     const right = slice({
       filter: [
-        { field: "zone", operator: "eq", operands: ["north"] },
-        { field: "status", operator: "eq", operands: ["failed"] },
+        { field: "zone", operator: "isAny", operands: ["north"] },
+        { field: "status", operator: "isAny", operands: ["failed"] },
       ],
     });
     expect(areSlicesEqual(left, right)).toBe(true);
@@ -91,29 +99,29 @@ describe("areSlicesEqual", () => {
 
   it("is false when an operand differs", () => {
     const left = slice({
-      filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+      filter: [{ field: "status", operator: "isAny", operands: ["failed"] }],
     });
     const right = slice({
-      filter: [{ field: "status", operator: "eq", operands: ["cancelled"] }],
+      filter: [{ field: "status", operator: "isAny", operands: ["cancelled"] }],
     });
     expect(areSlicesEqual(left, right)).toBe(false);
   });
 
   it("is false when a predicate's field, operator or arity differs", () => {
-    const eq = slice({
-      filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+    const anyOf = slice({
+      filter: [{ field: "status", operator: "isAny", operands: ["failed"] }],
     });
     expect(
       areSlicesEqual(
-        eq,
+        anyOf,
         slice({
-          filter: [{ field: "zone", operator: "eq", operands: ["failed"] }],
+          filter: [{ field: "zone", operator: "isAny", operands: ["failed"] }],
         }),
       ),
     ).toBe(false);
     expect(
       areSlicesEqual(
-        eq,
+        anyOf,
         slice({
           filter: [{ field: "status", operator: "isSet", operands: [] }],
         }),
@@ -121,15 +129,19 @@ describe("areSlicesEqual", () => {
     ).toBe(false);
     expect(
       areSlicesEqual(
-        eq,
+        anyOf,
         slice({
           filter: [
-            { field: "status", operator: "eq", operands: ["failed", "ready"] },
+            {
+              field: "status",
+              operator: "isAny",
+              operands: ["failed", "ready"],
+            },
           ],
         }),
       ),
     ).toBe(false);
-    expect(areSlicesEqual(eq, slice())).toBe(false);
+    expect(areSlicesEqual(anyOf, slice())).toBe(false);
   });
 
   it("is false when the search differs", () => {

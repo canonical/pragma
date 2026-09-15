@@ -50,6 +50,47 @@ export type SourceCounts = {
 };
 
 /**
+ * One value a discrete field holds across the records matching the query,
+ * with how many of them hold it: an option of a `choices` field, or `true`
+ * for a `flag` field's records that are set.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type FacetValue = {
+  readonly value: string | number | true;
+  readonly count: Count;
+};
+
+/**
+ * What a source computes over one field for the records matching the query,
+ * with the field's own predicates lifted, so the options a restriction left
+ * out keep their counts and a bound can widen past itself. Computed by the
+ * source over the whole matching set, never over a loaded page.
+ *
+ * - `values`, for a `choices` or `flag` field: every distinct value held
+ *   by at least one matching record, each with its count, in the field's
+ *   order — a `choices` field's declared options in their order, then any
+ *   other value by code unit, and where the options are the server's each
+ *   value as its text; a `flag` field's one value, `true`, while any
+ *   record is set.
+ * - `range`, for a `number` or `date` field: the least and greatest value a
+ *   matching record holds, null while none holds one — a number among the
+ *   finite numbers, a date among the text values, compared as a date bound
+ *   compares them, so every value offered is one a bound reaches.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type Facet =
+  | { readonly kind: "values"; readonly values: readonly FacetValue[] }
+  | {
+      readonly kind: "range";
+      readonly min: string | number | null;
+      readonly max: string | number | null;
+    };
+
+/**
  * One non-empty group of the slice. Listed pre-order — a parent before its
  * children — in the order the rows come, so headers need no re-sort. No
  * source declares summaries yet, so `groups` is null on every page this
@@ -86,7 +127,9 @@ export type PageCursors = {
  * - `groups` is null exactly when `capabilities.group.summaries` is "none",
  *   and otherwise lists every non-empty group of the slice, collapse
  *   ignored;
- * - `counts` claim no more than `capabilities.counts` declares.
+ * - `counts` claim no more than `capabilities.counts` declares;
+ * - `facets` answers only fields `capabilities.facets` declares and the
+ *   request asked for.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -95,6 +138,11 @@ export type SourcePage<TRow extends object = RowRecord> = {
   readonly rows: readonly TRow[];
   readonly groups: readonly GroupSummary[] | null;
   readonly counts: SourceCounts;
+  /**
+   * The facets the request asked for, keyed by field; left out or empty when
+   * it asked for none. A facet the source could not compute is left out.
+   */
+  readonly facets?: Readonly<Record<string, Facet>> | undefined;
   /** Whether a further page exists when no count says so; null when unknown. */
   readonly more: boolean | null;
   /** Null for offset sources. */

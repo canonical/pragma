@@ -31,6 +31,7 @@ describe("createGraphQLMachineSource", () => {
         data: {
           machines: {
             totalCount: null,
+            facets: {},
             pageInfo: { endCursor: null, hasNextPage: false },
             edges: [
               {
@@ -45,7 +46,12 @@ describe("createGraphQLMachineSource", () => {
     );
     const deliveries: SourceDelivery<Machine>[] = [];
     const stop = createGraphQLMachineSource("live").execute(
-      { requestId: "partial", slice: EMPTY_SLICE, window: DEFAULT_WINDOW },
+      {
+        requestId: "partial",
+        slice: EMPTY_SLICE,
+        window: DEFAULT_WINDOW,
+        facets: [],
+      },
       (delivery) => {
         deliveries.push(delivery);
       },
@@ -70,6 +76,7 @@ describe("createGraphQLMachineSource", () => {
         data: {
           machines: {
             totalCount: null,
+            facets: {},
             pageInfo: { endCursor: null, hasNextPage: false },
             edges: [],
           },
@@ -82,7 +89,7 @@ describe("createGraphQLMachineSource", () => {
         slice: {
           ...EMPTY_SLICE,
           filter: [
-            { field: "status", operator: "eq", operands: ["failed"] },
+            { field: "status", operator: "isAny", operands: ["failed"] },
             { field: "cores", operator: "gte", operands: [4] },
             { field: "cores", operator: "lte", operands: [16] },
             { field: "name", operator: "contains", operands: ["web"] },
@@ -93,6 +100,7 @@ describe("createGraphQLMachineSource", () => {
           sort: [{ field: "cores", direction: "desc" }],
         },
         window: DEFAULT_WINDOW,
+        facets: [],
       },
       () => {},
     );

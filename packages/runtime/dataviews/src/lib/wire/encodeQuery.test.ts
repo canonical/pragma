@@ -53,14 +53,16 @@ describe("encodeQuery", () => {
         window: null,
         slice: {
           ...emptySlice,
-          filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+          filter: [
+            { field: "status", operator: "isAny", operands: ["failed"] },
+          ],
         },
         preserve: new URLSearchParams("as=table&page=4&size=10&cursor=abc"),
       }).toString(),
     ).toBe("as=table&status=failed");
   });
 
-  it("repeats equality operands and canonicalizes them as a set", () => {
+  it("repeats set operands and canonicalizes them as a set", () => {
     const params = encodeQuery({
       schema: machines(),
       slice: {
@@ -68,7 +70,7 @@ describe("encodeQuery", () => {
         filter: [
           {
             field: "status",
-            operator: "eq",
+            operator: "isAny",
             operands: ["failed", "cancelled", "failed"],
           },
         ],
@@ -111,6 +113,27 @@ describe("encodeQuery", () => {
     });
     expect(params.get("name__contains")).toBe(text);
     expect(params.toString()).toContain("name__contains=+50%25_+a%2Bb+%C3%A9");
+  });
+
+  it("writes isNone and startsWith delimited, isNone once per option as a set", () => {
+    const params = encodeQuery({
+      schema: machines(),
+      slice: {
+        ...emptySlice,
+        filter: [
+          {
+            field: "status",
+            operator: "isNone",
+            operands: ["ready", "failed", "ready"],
+          },
+          { field: "name", operator: "startsWith", operands: [" 50%_"] },
+        ],
+      },
+      window: null,
+    });
+    expect(params.getAll("status__isNone")).toEqual(["failed", "ready"]);
+    expect(params.get("name__startsWith")).toBe(" 50%_");
+    expect(params.has("status")).toBe(false);
   });
 
   it("writes one group parameter per nesting level, outermost first", () => {
@@ -215,7 +238,7 @@ describe("encodeQuery", () => {
       schema: machines(),
       slice: {
         ...emptySlice,
-        filter: [{ field: "status", operator: "eq", operands: ["failed"] }],
+        filter: [{ field: "status", operator: "isAny", operands: ["failed"] }],
       },
       window: firstPage,
       preserve,
@@ -266,7 +289,7 @@ describe("encodeQuery", () => {
     const schema = machines();
     const slice: Slice = {
       filter: [
-        { field: "status", operator: "eq", operands: ["ready", "failed"] },
+        { field: "status", operator: "isAny", operands: ["ready", "failed"] },
         { field: "cpu", operator: "gte", operands: [4] },
       ],
       search: "yak",

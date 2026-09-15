@@ -49,7 +49,7 @@ const buildLagging = () => {
   const provider = createDataViewsProvider({
     collection,
     source: createManualSource({
-      capabilities: declare({ filter: { status: ["eq"] } }),
+      capabilities: declare({ filter: { status: ["isAny"] } }),
       answer: answering([]),
     }).source,
     location,
@@ -71,7 +71,7 @@ describe("regression 0056 — a transition before the first write landed was spe
     const { memory, pending, histories, provider, host, readFilter } =
       buildLagging();
     observeUntilFinished(provider);
-    host.removePredicate("status", "eq");
+    host.removePredicate("status", "isAny");
     // A step the reader took: it enters history as a filter change does.
     expect(histories.at(-1)).toBe("push");
     for (const next of pending.splice(0)) {
@@ -86,7 +86,7 @@ describe("regression 0056 — a transition before the first write landed was spe
     observeUntilFinished(provider);
     host.setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["running"],
     });
     for (const next of pending.splice(0).reverse()) {

@@ -27,7 +27,7 @@ export default function orderNodesByName(
   const source = createArraySource({ rows, collection: nodes, collation });
   const delivered: string[] = [];
   source.execute(
-    { requestId: "r1", slice: byName, window: DEFAULT_WINDOW },
+    { requestId: "r1", slice: byName, window: DEFAULT_WINDOW, facets: [] },
     (delivery) => {
       if (delivery.status === "succeeded") {
         delivered.push(...delivery.page.rows.map((row) => row.id));

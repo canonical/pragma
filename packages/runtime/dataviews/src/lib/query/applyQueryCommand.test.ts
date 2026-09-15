@@ -20,21 +20,25 @@ describe("applyQueryCommand", () => {
   it("replaces only the addressed predicate and preserves other clauses", () => {
     const base = slice({
       filter: [
-        { field: "status", operator: "eq", operands: ["failed"] },
-        { field: "zone", operator: "eq", operands: ["north"] },
+        { field: "status", operator: "isAny", operands: ["failed"] },
+        { field: "zone", operator: "isAny", operands: ["north"] },
       ],
       sort: [{ field: "name", direction: "asc" }],
     });
     const result = applyQueryCommand(base, window(), {
       kind: "setPredicate",
-      predicate: { field: "status", operator: "eq", operands: ["cancelled"] },
+      predicate: {
+        field: "status",
+        operator: "isAny",
+        operands: ["cancelled"],
+      },
     });
     if (result.status !== "accepted") {
       throw new Error("expected acceptance");
     }
     expect(result.slice.filter).toEqual([
-      { field: "zone", operator: "eq", operands: ["north"] },
-      { field: "status", operator: "eq", operands: ["cancelled"] },
+      { field: "zone", operator: "isAny", operands: ["north"] },
+      { field: "status", operator: "isAny", operands: ["cancelled"] },
     ]);
     expect(result.slice.sort).toEqual(base.sort);
     expect(result.sliceChanged).toBe(true);
@@ -43,7 +47,7 @@ describe("applyQueryCommand", () => {
   it("appends a predicate for an unaddressed field", () => {
     const result = applyQueryCommand(slice(), window(), {
       kind: "setPredicate",
-      predicate: { field: "status", operator: "eq", operands: ["failed"] },
+      predicate: { field: "status", operator: "isAny", operands: ["failed"] },
     });
     if (result.status !== "accepted") {
       throw new Error("expected acceptance");
@@ -71,7 +75,7 @@ describe("applyQueryCommand", () => {
       window({ page: 4, cursor: "page-four" }),
       {
         kind: "setPredicate",
-        predicate: { field: "status", operator: "eq", operands: ["failed"] },
+        predicate: { field: "status", operator: "isAny", operands: ["failed"] },
       },
     );
     if (result.status !== "accepted") {
@@ -115,14 +119,14 @@ describe("applyQueryCommand", () => {
   it("removes exactly the addressed predicate and resets the window", () => {
     const base = slice({
       filter: [
-        { field: "status", operator: "eq", operands: ["failed"] },
+        { field: "status", operator: "isAny", operands: ["failed"] },
         { field: "status", operator: "isSet", operands: [] },
       ],
     });
     const result = applyQueryCommand(base, window({ page: 3 }), {
       kind: "removePredicate",
       field: "status",
-      operator: "eq",
+      operator: "isAny",
     });
     if (result.status !== "accepted") {
       throw new Error("expected acceptance");
@@ -135,12 +139,12 @@ describe("applyQueryCommand", () => {
 
   it("reports no change when removing an absent predicate", () => {
     const base = slice({
-      filter: [{ field: "zone", operator: "eq", operands: ["north"] }],
+      filter: [{ field: "zone", operator: "isAny", operands: ["north"] }],
     });
     const result = applyQueryCommand(base, window({ page: 2 }), {
       kind: "removePredicate",
       field: "status",
-      operator: "eq",
+      operator: "isAny",
     });
     if (result.status !== "accepted") {
       throw new Error("expected acceptance");
@@ -497,7 +501,11 @@ describe("applyQueryCommand", () => {
   it("treats a semantically unchanged edit as no change at all", () => {
     const base = slice({
       filter: [
-        { field: "status", operator: "eq", operands: ["failed", "cancelled"] },
+        {
+          field: "status",
+          operator: "isAny",
+          operands: ["failed", "cancelled"],
+        },
       ],
       sort: [{ field: "name", direction: "asc" }],
     });
@@ -505,7 +513,7 @@ describe("applyQueryCommand", () => {
       kind: "setPredicate",
       predicate: {
         field: "status",
-        operator: "eq",
+        operator: "isAny",
         operands: ["cancelled", "failed"],
       },
     });
@@ -520,7 +528,7 @@ describe("applyQueryCommand", () => {
   it("rejects a predicate with an empty field", () => {
     const result = applyQueryCommand(slice(), window(), {
       kind: "setPredicate",
-      predicate: { field: "", operator: "eq", operands: ["failed"] },
+      predicate: { field: "", operator: "isAny", operands: ["failed"] },
     });
     expect(result.status).toBe("rejected");
   });
@@ -545,7 +553,7 @@ describe("applyQueryCommand", () => {
     const cases = [
       {
         kind: "setPredicate",
-        predicate: { field: "status", operator: "eq", operands: [] },
+        predicate: { field: "status", operator: "isAny", operands: [] },
       },
       {
         kind: "setPredicate",
@@ -597,14 +605,14 @@ describe("applyQueryCommand", () => {
   it("rejects predicate fields containing NUL characters on creation only", () => {
     const result = applyQueryCommand(slice(), window(), {
       kind: "setPredicate",
-      predicate: { field: "a\u0000b", operator: "eq", operands: ["x"] },
+      predicate: { field: "a\u0000b", operator: "isAny", operands: ["x"] },
     });
     expect(result.status).toBe("rejected");
     // Removal may address out-of-grammar predicates to clean them up.
     const removal = applyQueryCommand(slice(), window(), {
       kind: "removePredicate",
       field: "a\u0000b",
-      operator: "eq",
+      operator: "isAny",
     });
     expect(removal.status).toBe("accepted");
   });
@@ -633,5 +641,36 @@ describe("applyQueryCommand", () => {
     expect(result.slice).toBe(base);
     expect(result.window.page).toBe(2);
     expect(result.reason).toBe("page must be a positive integer");
+  });
+
+  it("replaces the predicate a set moves from, on the same field, in one transition", () => {
+    const standing = slice({
+      filter: [
+        { field: "status", operator: "isAny", operands: ["failed"] },
+        { field: "cpu", operator: "gte", operands: [4] },
+      ],
+    });
+    const result = applyQueryCommand(standing, window(), {
+      kind: "setPredicate",
+      predicate: { field: "status", operator: "isNone", operands: ["failed"] },
+      replaces: "isAny",
+    });
+    expect(result.status).toBe("accepted");
+    expect(result.slice.filter).toEqual([
+      { field: "cpu", operator: "gte", operands: [4] },
+      { field: "status", operator: "isNone", operands: ["failed"] },
+    ]);
+  });
+
+  it("types what a move replaces as a set operator", () => {
+    const command: Parameters<typeof applyQueryCommand>[2] = {
+      kind: "setPredicate",
+      predicate: { field: "status", operator: "isNone", operands: ["failed"] },
+      // @ts-expect-error only a set operator is replaced by a move
+      replaces: "gte",
+    };
+    expect(applyQueryCommand(slice(), window(), command).status).toBe(
+      "rejected",
+    );
   });
 });

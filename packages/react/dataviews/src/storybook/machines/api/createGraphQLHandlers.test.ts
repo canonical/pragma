@@ -131,6 +131,48 @@ describe("createGraphQLHandlers", () => {
     }
   });
 
+  it("reads the statuses a machine is none of", async () => {
+    const { body } = await requestGraphQL("live", {
+      first: 12,
+      where: { statusIsNone: ["running", "pending"] },
+    });
+    expect(readIds(body)).toEqual(["m-02", "m-06", "m-10"]);
+    const single = await requestGraphQL("live", {
+      first: 12,
+      where: { statusIsNone: "running" },
+    });
+    expect(readIds(single.body)).toHaveLength(6);
+    const unknown = await requestGraphQL("live", {
+      first: 12,
+      where: { statusIsNone: ["deployed"] },
+    });
+    expect(unknown.body).toEqual({
+      errors: [{ message: '"deployed" is not a status' }],
+    });
+  });
+
+  it("looks for text a value starts with in each member it declares", async () => {
+    const { body } = await requestGraphQL("live", {
+      first: 12,
+      where: { nameStartsWith: "B" },
+    });
+    expect(readIds(body)).toEqual(["m-02"]);
+    const owner = await requestGraphQL("live", {
+      first: 12,
+      where: { ownerStartsWith: "EX:I" },
+    });
+    expect(readIds(owner.body)).toEqual(["m-09"]);
+    const undeclared = await requestGraphQL("live", {
+      first: 12,
+      where: { regionStartsWith: "eu" },
+    });
+    expect(undeclared.body).toEqual({
+      errors: [
+        { message: 'this endpoint does not accept "where.regionStartsWith"' },
+      ],
+    });
+  });
+
   it("looks for text in each text member it declares", async () => {
     const { body } = await requestGraphQL("live", {
       first: 12,

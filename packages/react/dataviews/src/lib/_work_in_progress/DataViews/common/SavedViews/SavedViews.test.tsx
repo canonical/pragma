@@ -50,7 +50,7 @@ const setStatus = (
   act(() => {
     readProviderHost(provider).setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands,
     });
   });
@@ -216,7 +216,7 @@ describe("DataViews.SavedViews", () => {
     );
     await choose(failed);
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     await waitFor(() => {
       expect(queryStatus()).toHaveTextContent('Opened "Failed".');

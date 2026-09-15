@@ -41,7 +41,7 @@ describe("regression 0035 — an unlisted view id left the old view open", () =>
     const provider = createDataViewsProvider({
       collection: machines,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       location,

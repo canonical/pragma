@@ -55,7 +55,7 @@ describe("regression 0052 — a failing replay left the loop subscribed", () => 
     const provider = createDataViewsProvider({
       collection,
       source: createManualSource({
-        capabilities: declare({ filter: { status: ["eq"] } }),
+        capabilities: declare({ filter: { status: ["isAny"] } }),
         answer: answering([]),
       }).source,
       location,
@@ -69,7 +69,7 @@ describe("regression 0052 — a failing replay left the loop subscribed", () => 
         commanded = true;
         host.setPredicate({
           field: "status",
-          operator: "eq",
+          operator: "isAny",
           operands: ["running"],
         });
       }

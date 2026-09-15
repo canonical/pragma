@@ -14,7 +14,11 @@ describe("canonicalizeSlice", () => {
   it("is idempotent", () => {
     const input = slice({
       filter: [
-        { field: "status", operator: "eq", operands: ["failed", "cancelled"] },
+        {
+          field: "status",
+          operator: "isAny",
+          operands: ["failed", "cancelled"],
+        },
       ],
       sort: [
         { field: "updated", direction: "desc" },
@@ -26,13 +30,13 @@ describe("canonicalizeSlice", () => {
     expect(canonicalizeSlice(once)).toEqual(once);
   });
 
-  it("treats equality operands as a set regardless of order", () => {
+  it("treats set operands as a set regardless of order", () => {
     const left = canonicalizeSlice(
       slice({
         filter: [
           {
             field: "status",
-            operator: "eq",
+            operator: "isAny",
             operands: ["failed", "cancelled"],
           },
         ],
@@ -43,7 +47,7 @@ describe("canonicalizeSlice", () => {
         filter: [
           {
             field: "status",
-            operator: "eq",
+            operator: "isAny",
             operands: ["cancelled", "failed"],
           },
         ],
@@ -52,11 +56,15 @@ describe("canonicalizeSlice", () => {
     expect(left).toEqual(right);
   });
 
-  it("deduplicates repeated equality operands", () => {
+  it("deduplicates repeated set operands", () => {
     const result = canonicalizeSlice(
       slice({
         filter: [
-          { field: "status", operator: "eq", operands: ["failed", "failed"] },
+          {
+            field: "status",
+            operator: "isAny",
+            operands: ["failed", "failed"],
+          },
         ],
       }),
     );
@@ -114,13 +122,13 @@ describe("canonicalizeSlice", () => {
     const result = canonicalizeSlice(
       slice({
         filter: [
-          { field: "status", operator: "eq", operands: ["failed"] },
-          { field: "status", operator: "eq", operands: ["cancelled"] },
+          { field: "status", operator: "isAny", operands: ["failed"] },
+          { field: "status", operator: "isAny", operands: ["cancelled"] },
         ],
       }),
     );
     expect(result.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["cancelled"] },
+      { field: "status", operator: "isAny", operands: ["cancelled"] },
     ]);
   });
 
@@ -128,8 +136,8 @@ describe("canonicalizeSlice", () => {
     const result = canonicalizeSlice(
       slice({
         filter: [
-          { field: "zone", operator: "eq", operands: ["north"] },
-          { field: "status", operator: "eq", operands: ["failed"] },
+          { field: "zone", operator: "isAny", operands: ["north"] },
+          { field: "status", operator: "isAny", operands: ["failed"] },
           { field: "status", operator: "isSet", operands: [] },
         ],
       }),
@@ -140,9 +148,9 @@ describe("canonicalizeSlice", () => {
       "zone",
     ]);
     expect(result.filter.map((predicate) => predicate.operator)).toEqual([
-      "eq",
+      "isAny",
       "isSet",
-      "eq",
+      "isAny",
     ]);
   });
 
@@ -151,20 +159,28 @@ describe("canonicalizeSlice", () => {
     expect(canonicalizeSlice(slice({ search: "yak" })).search).toBe("yak");
   });
 
-  it("orders equality operands identically regardless of input order", () => {
+  it("orders set operands identically regardless of input order", () => {
     // Distinct strings that locale collation may tie (é NFC vs e + combining
     // acute) must still canonicalize to one deterministic order.
     const left = canonicalizeSlice(
       slice({
         filter: [
-          { field: "owner", operator: "eq", operands: ["e\u0301", "é", "ed"] },
+          {
+            field: "owner",
+            operator: "isAny",
+            operands: ["e\u0301", "é", "ed"],
+          },
         ],
       }),
     );
     const right = canonicalizeSlice(
       slice({
         filter: [
-          { field: "owner", operator: "eq", operands: ["ed", "é", "e\u0301"] },
+          {
+            field: "owner",
+            operator: "isAny",
+            operands: ["ed", "é", "e\u0301"],
+          },
         ],
       }),
     );
@@ -177,7 +193,7 @@ describe("canonicalizeSlice", () => {
         filter: [
           {
             field: "value",
-            operator: "eq",
+            operator: "isAny",
             operands: [1, "1", null, "null", true, "true"],
           },
         ],
@@ -191,7 +207,7 @@ describe("canonicalizeSlice", () => {
         filter: [
           {
             field: "value",
-            operator: "eq",
+            operator: "isAny",
             operands: ["true", true, "null", null, "1", 1],
           },
         ],

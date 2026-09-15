@@ -78,6 +78,7 @@ const load = (
       page: {
         rows,
         groups: null,
+        facets: {},
         counts: { pageable: counted, matched: counted, total: counted },
         more,
         cursors: null,
@@ -507,6 +508,7 @@ describe("PaginationBar", () => {
         page: {
           rows: machines(2),
           groups: null,
+          facets: {},
           counts: {
             pageable: { kind: "exact", value: 6 },
             matched: { kind: "unknown" },

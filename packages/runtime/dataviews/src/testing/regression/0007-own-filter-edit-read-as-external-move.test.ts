@@ -34,7 +34,7 @@ describe("regression 0007 — a record's own edit is not an external move", () =
       collection: machines,
       source: createManualSource({
         capabilities: declare({
-          filter: { status: ["eq"], cpu: ["gte", "lte"] },
+          filter: { status: ["isAny"], cpu: ["gte", "lte"] },
         }),
       }).source,
     });
@@ -45,8 +45,10 @@ describe("regression 0007 — a record's own edit is not an external move", () =
       input: "4.0",
       feedback: { status: "applied" },
     });
-    expect(inputs.handles.status.eq.set(["failed", "cancelled"])).toEqual([]);
-    expect(inputs.handles.status.eq.state.get()).toMatchObject({
+    expect(inputs.handles.status.isAny.set(["failed", "cancelled"])).toEqual(
+      [],
+    );
+    expect(inputs.handles.status.isAny.state.get()).toMatchObject({
       input: "",
       feedback: { status: "applied" },
     });

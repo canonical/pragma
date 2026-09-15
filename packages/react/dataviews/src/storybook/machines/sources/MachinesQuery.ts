@@ -38,6 +38,10 @@ const machines = selectLinked(
   "MachineConnection",
   [
     selectScalar("totalCount"),
+    {
+      ...selectScalar("facets"),
+      args: [{ kind: "Variable", name: "fields", variableName: "facets" }],
+    },
     selectLinked("pageInfo", "PageInfo", [
       selectScalar("endCursor"),
       selectScalar("hasNextPage"),

@@ -12,6 +12,7 @@ import type {
 } from "../query/index.js";
 import type {
   Completion,
+  Facet,
   GroupSummary,
   PageCursors,
   ResultProblem,
@@ -58,6 +59,12 @@ export type ResultState<TRow extends object = RowRecord> = {
    */
   readonly groups: readonly GroupSummary[] | null;
   readonly counts: SourceCounts | null;
+  /**
+   * The facets the page answered, keyed by field — computed by the source
+   * over the query the provenance names, never over the rows — or null
+   * until a page has.
+   */
+  readonly facets: Readonly<Record<string, Facet>> | null;
   /** Whether a further page exists when no count says so; null when unknown. */
   readonly more: boolean | null;
   readonly cursors: PageCursors | null;

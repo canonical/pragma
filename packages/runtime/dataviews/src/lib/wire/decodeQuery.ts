@@ -94,7 +94,11 @@ const sortTermOf = (value: string): SortTerm | null => {
   return { field: value.slice(0, at), direction };
 };
 
-/** Keep an enforced predicate, or report why the parameter was refused. */
+/**
+ * Keep an enforced predicate, or report why the parameter was refused. A set
+ * operator read under a second spelling of its address — `status` and
+ * `status__isAny` — is one predicate, holding the operands of both.
+ */
 const record = (
   result: SchemaPredicateResult,
   key: string,
@@ -102,7 +106,20 @@ const record = (
   issues: QueryIssue[],
 ): void => {
   if (result.status === "valid") {
-    filter.push(result.predicate);
+    const { predicate } = result;
+    const kept = filter.find(
+      (candidate) =>
+        candidate.field === predicate.field &&
+        candidate.operator === predicate.operator,
+    );
+    if (kept === undefined) {
+      filter.push(predicate);
+      return;
+    }
+    filter.splice(filter.indexOf(kept), 1, {
+      ...predicate,
+      operands: [...kept.operands, ...predicate.operands],
+    });
     return;
   }
   issues.push({ parameter: key, code: "invalid", reason: result.reason });
@@ -119,7 +136,7 @@ const readPredicate = (
 ): void => {
   const { field } = definition;
   const kind = resolveFieldKind(definition.kind);
-  let operator: PredicateOperator = "eq";
+  let operator: PredicateOperator = "isAny";
   if (key.includes(OPERATOR_DELIMITER)) {
     const suffix = key.slice(field.length + OPERATOR_DELIMITER.length);
     if (!isOperator(suffix)) {
@@ -163,7 +180,8 @@ const readPredicate = (
   if (operands.length === 0) {
     return;
   }
-  if (operator !== "eq" && operands.length > 1) {
+  const isSet = OPERATOR_ARITY[operator] === "many";
+  if (!isSet && operands.length > 1) {
     issues.push({
       parameter: key,
       code: "malformed",
@@ -174,7 +192,7 @@ const readPredicate = (
     schema.predicateFor(
       field,
       operator,
-      operator === "eq" ? operands : operands.slice(0, 1),
+      isSet ? operands : operands.slice(0, 1),
     ),
     key,
     filter,

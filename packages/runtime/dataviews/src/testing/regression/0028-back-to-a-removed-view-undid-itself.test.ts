@@ -46,7 +46,7 @@ describe("regression 0028 — Back to a removed view undid itself", () => {
       collection,
       source: createManualSource({
         capabilities: declare({
-          filter: { status: ["eq"], cores: ["gte"] },
+          filter: { status: ["isAny"], cores: ["gte"] },
         }),
         answer: answering([]),
       }).source,
@@ -74,7 +74,7 @@ describe("regression 0028 — Back to a removed view undid itself", () => {
     move("view=a&status=failed&page=1&size=50");
 
     expect(provider.state.get().slice.filter).toEqual([
-      { field: "status", operator: "eq", operands: ["failed"] },
+      { field: "status", operator: "isAny", operands: ["failed"] },
     ]);
     expect(location.read().toString()).toBe("status=failed&page=1&size=50");
     expect(writes).toEqual([["status=failed&page=1&size=50", "replace"]]);

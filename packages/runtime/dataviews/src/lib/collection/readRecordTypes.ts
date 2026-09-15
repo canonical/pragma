@@ -3,7 +3,8 @@ import type { RecordTypes } from "./types.js";
 
 /**
  * Read a collection's declared record types off its discriminator: the
- * field must exist, be a `choices` field with string options, and every
+ * field must exist, be a `choices` field listing its own string options —
+ * record types are never the server's to name — and every
  * field scoped with `appliesTo` must name only types it declares. A
  * declaration that fails any of these throws at construction, so a
  * collection is never built over a discriminator that cannot name a
@@ -20,6 +21,11 @@ export default function readRecordTypes(
   if (definition.kind !== "choices") {
     throw new Error(
       `discriminator field "${discriminator}" must be a choices field, not a ${definition.kind} one`,
+    );
+  }
+  if (definition.options === undefined) {
+    throw new Error(
+      `discriminator field "${discriminator}" must list its options`,
     );
   }
   const names: string[] = [];

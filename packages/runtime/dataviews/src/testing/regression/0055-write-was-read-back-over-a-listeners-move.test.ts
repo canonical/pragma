@@ -28,7 +28,7 @@ const collection = createCollection({
 
 const createSource = () =>
   createManualSource({
-    capabilities: declare({ filter: { status: ["eq"] } }),
+    capabilities: declare({ filter: { status: ["isAny"] } }),
     answer: answering([]),
   }).source;
 
@@ -49,7 +49,7 @@ describe("regression 0055 — a write was read back over a listener's move", () 
     });
     readProviderHost(provider).setPredicate({
       field: "status",
-      operator: "eq",
+      operator: "isAny",
       operands: ["running"],
     });
     expect(

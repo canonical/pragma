@@ -11,7 +11,8 @@ const readCount = (value: number | undefined): Count =>
  * a count omitted is unknown, and the pageable count is the matched count,
  * because nothing this source can be asked collapses rows out of a page.
  * `more` and `cursors` are absent unless given: an offset source has
- * neither, and a cursor source hands back what its backend did.
+ * neither, and a cursor source hands back what its backend did. Facets are
+ * the ones given, none otherwise.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -28,6 +29,7 @@ export default function createPage<TRow extends object = RowRecord>(
       matched,
       total: readCount(config.total),
     }),
+    facets: Object.freeze({ ...config.facets }),
     more: config.more ?? null,
     cursors: config.cursors ?? null,
   });

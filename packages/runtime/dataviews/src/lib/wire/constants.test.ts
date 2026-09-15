@@ -32,9 +32,9 @@ describe("the wire grammar's names", () => {
     expect(Object.isFrozen(SUFFIXED_OPERATORS)).toBe(true);
   });
 
-  it("spells eq as the bare field name and the rest with the delimiter", () => {
+  it("spells isAny as the bare field name and the rest with the delimiter", () => {
     expect(OPERATOR_DELIMITER).toBe("__");
-    expect(spellWireKey("status", "eq")).toBe("status");
+    expect(spellWireKey("status", "isAny")).toBe("status");
     expect(spellWireKey("cpu", "gte")).toBe("cpu__gte");
     expect(spellWireKey("cpu", "lte")).toBe("cpu__lte");
     expect(spellWireKey("owner", "isSet")).toBe("owner__isSet");

@@ -1,7 +1,7 @@
 /**
  * What the mock machine API shares across its modules: its scenarios, the
- * fields either endpoint orders by, the order it lists statuses in, and the
- * one query the GraphQL endpoint answers.
+ * fields either endpoint orders by and computes facets for, the order it
+ * lists statuses in, and the one query the GraphQL endpoint answers.
  */
 
 /** Every scenario, each served under a path of its own. */
@@ -24,18 +24,23 @@ export const SORTED_FIELDS: readonly string[] = [
 /** The statuses, in the order either endpoint sorts them. */
 export const STATUS_ORDER: readonly string[] = ["running", "failed", "pending"];
 
+/** The fields either endpoint computes facets for. */
+export const FACET_FIELDS = ["status", "cores"] as const;
+
 /** The variables the one query the GraphQL endpoint answers declares. */
 export const MACHINES_QUERY_VARIABLES: readonly string[] = [
   "first",
   "after",
   "where",
   "orderBy",
+  "facets",
 ];
 
 /** The one query the GraphQL endpoint answers, as a client sends it. */
-export const MACHINES_QUERY_TEXT = `query MachinesQuery($first: Int!, $after: String, $where: MachineWhere, $orderBy: [MachineOrder!]) {
+export const MACHINES_QUERY_TEXT = `query MachinesQuery($first: Int!, $after: String, $where: MachineWhere, $orderBy: [MachineOrder!], $facets: [MachineFacetField!]) {
   machines(first: $first, after: $after, where: $where, orderBy: $orderBy) {
     totalCount
+    facets(fields: $facets)
     pageInfo {
       endCursor
       hasNextPage

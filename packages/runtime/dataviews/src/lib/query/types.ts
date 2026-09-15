@@ -10,7 +10,23 @@
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type PredicateOperator = "eq" | "gte" | "lte" | "isSet" | "contains";
+export type PredicateOperator =
+  | "isAny"
+  | "isNone"
+  | "gte"
+  | "lte"
+  | "isSet"
+  | "contains"
+  | "startsWith";
+
+/**
+ * The set operators: the ones whose operands are a set, and between which a
+ * set moves on its field.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type SetOperator = Extract<PredicateOperator, "isAny" | "isNone">;
 
 /**
  * A semantic operand value. Field metadata owns coercion; core never guesses.
@@ -21,9 +37,10 @@ export type PredicateOperator = "eq" | "gte" | "lte" | "isSet" | "contains";
 export type PredicateOperand = string | number | boolean | null;
 
 /**
- * One filter clause, addressed by its field and operator. `eq` operands are
- * a non-empty set; `gte`, `lte` and `contains` carry exactly one operand;
- * `isSet` carries none. Numbers must be finite.
+ * One filter clause, addressed by its field and operator. `isAny` and
+ * `isNone` operands are a non-empty set; `gte`, `lte`, `contains` and
+ * `startsWith` carry exactly one operand; `isSet` carries none. Numbers must
+ * be finite.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -147,6 +164,12 @@ export type QueryCommand =
   | {
       readonly kind: "setPredicate";
       readonly predicate: Predicate;
+      /**
+       * An operator on the same field whose predicate this one replaces in
+       * the same transition — a set moved from `isAny` to `isNone` — so the
+       * query never stands on both, or on neither.
+       */
+      readonly replaces?: SetOperator | undefined;
     }
   | {
       readonly kind: "removePredicate";

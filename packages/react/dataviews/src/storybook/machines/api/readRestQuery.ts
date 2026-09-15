@@ -1,8 +1,26 @@
 import { SORTED_FIELDS, STATUS_ORDER } from "./constants.js";
-import type { ApiProblem, ApiQuery } from "./types.js";
+import isFacetField from "./isFacetField.js";
+import type {
+  ApiFacetField,
+  ApiProblem,
+  ApiQuery,
+  ApiTextMatch,
+} from "./types.js";
 
-/** The text fields this endpoint looks through for text. */
-const CONTAINS_FIELDS: readonly string[] = ["name", "region"];
+/** The text fields this endpoint looks through, with how it matches each. */
+const TEXT_OPERATORS: Readonly<
+  Record<string, readonly ApiTextMatch["operator"][]>
+> = {
+  name: ["contains", "startsWith"],
+  region: ["contains", "startsWith"],
+};
+
+/** The keys a status set is read from, with the operator each spells. */
+const STATUS_KEYS: Readonly<Record<string, "isAny" | "isNone">> = {
+  status: "isAny",
+  status__isAny: "isAny",
+  status__isNone: "isNone",
+};
 
 /** The page size a request that names none is answered with. */
 const DEFAULT_PAGE_SIZE = 50;
@@ -19,34 +37,56 @@ type RestRequest = {
 
 /**
  * Read the REST endpoint's query parameters, as its own backend would:
- * `status` repeated, `cores__gte` and `cores__lte`, `<field>__contains` on
- * the text fields it can look through, `q`, one `sort=<field>__<direction>`,
- * `page` and `size`. A blank value is a control left empty and is dropped on
- * its own, as the grammar drops it. Anything else — an unknown parameter, a
- * key with more than one delimiter, a second ordered term, a malformed value
- * — is a problem, never a broader answer.
+ * `status` repeated, or `status__isAny`, for the statuses a machine is any
+ * of, `status__isNone` for those it is none of, `cores__gte` and
+ * `cores__lte`, `<field>__contains` and `<field>__startsWith` on the text
+ * fields it can look through, `q`, one `sort=<field>__<direction>`, `page`
+ * and `size`, and `facet` repeated for each field whose facet it must
+ * answer. A blank value is a control left empty and is dropped on its own,
+ * as the grammar drops it. Anything else — an unknown parameter, a key with
+ * more than one delimiter, a second ordered term, a malformed value — is a
+ * problem, never a broader answer.
  */
 export default function readRestQuery(
   params: URLSearchParams,
 ): RestRequest | ApiProblem {
-  const contains: Record<string, string> = {};
+  const text: ApiTextMatch[] = [];
+  const facets = new Set<ApiFacetField>();
+  const statuses: { isAny: string[]; isNone: string[] } = {
+    isAny: [],
+    isNone: [],
+  };
   const cores: { gte: number | null; lte: number | null } = {
     gte: null,
     lte: null,
   };
-  let statuses: readonly string[] = [];
   let search: string | null = null;
   let sort: ApiQuery["sort"] = null;
   let page = 1;
   let size = DEFAULT_PAGE_SIZE;
   for (const key of new Set(params.keys())) {
     const values = params.getAll(key).filter((value) => value !== "");
-    if (key === "status") {
+    if (key === "facet") {
+      for (const field of values) {
+        if (!isFacetField(field)) {
+          return {
+            reason: `this endpoint computes no facet for ${JSON.stringify(field)}`,
+          };
+        }
+        facets.add(field);
+      }
+      continue;
+    }
+    // Looked up as own keys only: a key naming a prototype member finds none.
+    const statusOperator = Object.hasOwn(STATUS_KEYS, key)
+      ? STATUS_KEYS[key]
+      : undefined;
+    if (statusOperator !== undefined) {
       const unknown = values.find((status) => !STATUS_ORDER.includes(status));
       if (unknown !== undefined) {
         return { reason: `${JSON.stringify(unknown)} is not a status` };
       }
-      statuses = values;
+      statuses[statusOperator].push(...values);
       continue;
     }
     const [value, ...extra] = values;
@@ -62,8 +102,11 @@ export default function readRestQuery(
       };
     }
     const parts = key.split("__");
-    const [field, operator] = parts;
+    const [field = "", operator] = parts;
     const isAddress = parts.length === 2;
+    const textOperator = Object.hasOwn(TEXT_OPERATORS, field)
+      ? TEXT_OPERATORS[field]?.find((candidate) => candidate === operator)
+      : undefined;
     if (key === "q") {
       search = value;
     } else if (key === "sort") {
@@ -105,19 +148,14 @@ export default function readRestQuery(
         return { reason: `${JSON.stringify(value)} is not a number of cores` };
       }
       cores[operator] = Number(value);
-    } else if (
-      isAddress &&
-      field !== undefined &&
-      operator === "contains" &&
-      CONTAINS_FIELDS.includes(field)
-    ) {
-      contains[field] = value;
+    } else if (isAddress && textOperator !== undefined) {
+      text.push({ field, operator: textOperator, text: value });
     } else {
       return { reason: `this endpoint does not accept "${key}"` };
     }
   }
   return {
-    query: { contains, statuses, cores, search, sort },
+    query: { text, statuses, cores, search, sort, facets: [...facets] },
     page,
     size,
   };

@@ -127,7 +127,12 @@ export default function createRelaySource<
         // the source itself still gets a reason rather than a wrong page.
         throw new Error(unreachable(window.page));
       }
-      const operation = config.operation({ slice, first: window.size, after });
+      const operation = config.operation({
+        slice,
+        first: window.size,
+        after,
+        facets: request.facets,
+      });
       if (mergesPages(operation.request.node.operation.selections)) {
         throw new Error(
           "a query paging through @connection merges its pages; page it by its first and after arguments instead",
@@ -222,6 +227,9 @@ export default function createRelaySource<
             // Nothing collapses, so the rows the window pages over are the
             // rows that matched; the whole collection is never asked for.
             counts: { pageable: matched, matched, total: UNKNOWN_COUNT },
+            // What the operation selected; the provider holds it to what
+            // the request asked for.
+            facets: connection.facets ?? {},
             more,
             cursors: {
               next: more === false ? null : (endCursor ?? null),

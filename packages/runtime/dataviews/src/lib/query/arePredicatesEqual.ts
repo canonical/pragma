@@ -1,4 +1,5 @@
 import areListsEqual from "./areListsEqual.js";
+import { OPERATOR_ARITY } from "./constants.js";
 import rankOperand from "./rankOperand.js";
 import type { Predicate, PredicateOperand } from "./types.js";
 
@@ -10,7 +11,7 @@ import type { Predicate, PredicateOperand } from "./types.js";
 const areOperandsEqual = (a: PredicateOperand, b: PredicateOperand): boolean =>
   rankOperand(a) === rankOperand(b);
 
-/** An equality's operands are a set: the same members, in any order. */
+/** A set operator's operands are a set: the same members, in any order. */
 const areOperandSetsEqual = (
   a: readonly PredicateOperand[],
   b: readonly PredicateOperand[],
@@ -24,8 +25,8 @@ const areOperandSetsEqual = (
 
 /**
  * Semantic predicate equality: the same address, and the same operands —
- * as a set for an equality, whose operand order never matters, and in
- * order for every other operator. Pure.
+ * as a set for `isAny` and `isNone`, whose operand order never matters, and
+ * in order for every other operator. Pure.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -37,7 +38,7 @@ export default function arePredicatesEqual(
   return (
     a.field === b.field &&
     a.operator === b.operator &&
-    (a.operator === "eq"
+    (OPERATOR_ARITY[a.operator] === "many"
       ? areOperandSetsEqual(a.operands, b.operands)
       : areListsEqual(a.operands, b.operands, areOperandsEqual))
   );
