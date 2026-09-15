@@ -38,12 +38,13 @@ import {
   buildNameResolveQuery,
 } from "./sparql/buildLookupQuery.js";
 import { runSelect } from "./sparql/runSelect.js";
-import type {
-  PackChildRow,
-  PackEntity,
-  PackLookup,
-  PackRow,
-  StorySource,
+import {
+  expandIsSparql,
+  type PackChildRow,
+  type PackEntity,
+  type PackLookup,
+  type PackRow,
+  type StorySource,
 } from "./types.js";
 
 /** A structured per-query lookup failure (never rejects the whole batch). */
@@ -257,7 +258,7 @@ async function lookupOne(
   }
 
   if (graphqlSourced) {
-    return Promise.all(
+    const fetched = await Promise.all(
       bases.map((base) =>
         fetchGraphqlLookup(
           rt,
@@ -273,21 +274,65 @@ async function lookupOne(
         ),
       ),
     );
+    // A graphql lookup may still declare SPARQL-lane expands (see
+    // `PackExpand.source`), and they are fetched HERE rather than inside the
+    // GraphQL lane: one entity, two lanes, merged on the way out. The document
+    // generator skips exactly what this loop claims, so no expand is fetched
+    // twice and none is dropped.
+    return Promise.all(
+      fetched.map(async (entity) =>
+        addSparqlExpands(rt, lookup, entity, source, level),
+      ),
+    );
   }
 
   const entities: PackEntity[] = [];
   for (const base of bases) {
-    const entity: PackEntity = { ...base };
-    for (const expand of activeExpands(lookup, level)) {
-      entity[expand.name] = (await runSelect(
-        rt,
-        buildExpandQuery(expand, String(base.uri)),
-        source,
-      )) as readonly PackChildRow[];
-    }
-    entities.push(entity);
+    entities.push(
+      await addSparqlExpands(rt, lookup, { ...base }, source, level),
+    );
   }
   return entities;
+}
+
+/**
+ * Fetch every SPARQL-lane expand active at this level onto one entity.
+ *
+ * The lane test is the expand's, not the lookup's, so this serves both callers:
+ * on a sparql lookup every expand is one of these, and on a graphql lookup only
+ * those that opted out of the document.
+ *
+ * @param rt - The runtime (store + query facade).
+ * @param lookup - The validated lookup declaration.
+ * @param entity - The entity to add child arrays to (mutated and returned).
+ * @param source - Pack source, for error attribution.
+ * @param level - Active canonical disclosure level.
+ * @returns The same entity, with one array per fetched expand.
+ * @note Impure — queries the store, once per expand.
+ */
+async function addSparqlExpands(
+  rt: LookupRuntime,
+  lookup: PackLookup,
+  entity: PackEntity,
+  source: StorySource,
+  level: string | undefined,
+): Promise<PackEntity> {
+  for (const expand of activeExpands(lookup, level)) {
+    if (!expandIsSparql(lookup, expand)) continue;
+    entity[expand.name] = (await runSelect(
+      rt,
+      buildExpandQuery(expand, String(entity.uri), lookup),
+      source,
+      // A section whose vocabulary this store does not bind renders EMPTY
+      // rather than taking the whole entity down with it — see
+      // `RunSelectOptions.degradeOnUnboundPrefix`. The block lookup's tokens
+      // read the anatomy DSL's style key and state, which a store built
+      // without that pack does not bind, and every other section of that
+      // block is still perfectly answerable.
+      { degradeOnUnboundPrefix: true },
+    )) as readonly PackChildRow[];
+  }
+  return entity;
 }
 
 /** Collapse a ranked resolve to one row per entity, keeping the best-ranked. */

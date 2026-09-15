@@ -130,6 +130,158 @@ describe("source rule — zod refinements reject dual/ill-sourced lookups (PROTE
     ).toThrow(/single-hop|graphql/i);
   });
 
+  it("accepts a SPARQL-lane expand inside a graphql lookup", () => {
+    // The two lanes are not interchangeable and the block lookup needs both:
+    // a nested expand only a document can make, beside a table whose columns
+    // the compiled schema has no field for. So the lane is per-expand, and the
+    // rules that follow are about the lane that will actually resolve it.
+    const definition = {
+      noun: "x",
+      lookup: {
+        source: "graphql",
+        by: "ds:name",
+        type: "ds:Component",
+        graphqlType: "Component",
+        expand: [
+          {
+            name: "t",
+            relation: "ds:hasTokenBinding",
+            source: "sparql",
+            orderBy: ["node"],
+            note: "How to read the rows.",
+            select: [
+              { name: "symbol", property: "ds:consumesSymbol/rdfs:label" },
+              {
+                name: "via",
+                property: "ds:viaBlock/ds:name",
+                blankWhenSelf: true,
+              },
+              { name: "node", property: "ds:node" },
+            ],
+          },
+        ],
+      },
+    };
+    expect(
+      parsePackDefinition(JSON.parse(JSON.stringify(definition)), "t"),
+    ).toEqual(definition);
+  });
+
+  it("rejects a nested expand on a SPARQL-lane expand of a graphql lookup", () => {
+    // The single-hop rule follows the EXPAND's lane, not the lookup's — it
+    // used to read the lookup's, so an expand that opted out of the document
+    // could still declare a second hop no sub-SELECT can make.
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "x",
+          lookup: {
+            source: "graphql",
+            by: "ds:name",
+            type: "ds:Component",
+            graphqlType: "Component",
+            expand: [
+              {
+                name: "f",
+                relation: "ds:hasModifierFamily",
+                source: "sparql",
+                select: [
+                  {
+                    name: "v",
+                    relation: "ds:hasModifier",
+                    select: [{ name: "n", property: "ds:name" }],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/single-hop|graphql/i);
+  });
+
+  it("rejects orderBy and blankWhenSelf on a lane that cannot express them", () => {
+    // A GraphQL collection's order is the schema's and a document cannot
+    // filter a cell against the entity's own name, so both are refused where
+    // they are written rather than ignored at runtime — a silent no-op is how
+    // a declaration that never applied survives review.
+    const base = {
+      noun: "x",
+      lookup: {
+        source: "graphql",
+        by: "ds:name",
+        type: "ds:Component",
+        graphqlType: "Component",
+      },
+    };
+    expect(() =>
+      parsePackDefinition(
+        {
+          ...base,
+          lookup: {
+            ...base.lookup,
+            expand: [
+              {
+                name: "t",
+                relation: "ds:hasTokenBinding",
+                orderBy: ["node"],
+                select: [{ name: "node", property: "ds:node" }],
+              },
+            ],
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/orderBy/);
+    expect(() =>
+      parsePackDefinition(
+        {
+          ...base,
+          lookup: {
+            ...base.lookup,
+            expand: [
+              {
+                name: "t",
+                relation: "ds:hasTokenBinding",
+                select: [
+                  { name: "via", property: "ds:viaBlock", blankWhenSelf: true },
+                ],
+              },
+            ],
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/blankWhenSelf/);
+  });
+
+  it("rejects an orderBy naming a field the select does not declare", () => {
+    // It would order by an unbound variable, which SPARQL permits and which
+    // orders by nothing at all — the rows would come back in the store's order
+    // with a declaration claiming otherwise.
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "x",
+          lookup: {
+            by: "ds:name",
+            type: "ds:Component",
+            expand: [
+              {
+                name: "t",
+                relation: "ds:hasTokenBinding",
+                orderBy: ["rank"],
+                select: [{ name: "node", property: "ds:node" }],
+              },
+            ],
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/orders by "rank"/);
+  });
+
   it("rejects a graphql field addressed by a property path", () => {
     expect(() =>
       parsePackDefinition(

@@ -31,6 +31,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compileStoryModule } from "../kernel/packs/compile.js";
+import { MAX_LIST_WINDOW } from "../kernel/packs/paging.js";
 import {
   distributionSource,
   isNestedExpand,
@@ -608,6 +609,45 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
       );
       expect(row.block).toBeTruthy();
       expect(row.symbol).toBeTruthy();
+      // The via is the block whose anatomy the binding was authored in, and it
+      // is BLANK whenever that is the consuming block itself — which the data
+      // asserts on every own-tree record. A via equal to the block would mean
+      // the two columns had collapsed back into one, which is the defect that
+      // printed six identical `Button` rows for one symbol.
+      if (row.via) expect(row.via).not.toBe(row.block);
     }
+  });
+
+  it("token consumers names the CONSUMING block, not the tree it came from", async () => {
+    // The corpus invariant a fixture cannot reach: over the WHOLE population,
+    // every row whose record is inherited must name a block DIFFERENT from the
+    // via, and every own-tree row must leave the via empty. Asserted as a
+    // count of violations being zero rather than as row counts upstream moves.
+    //
+    // Read straight from the graph, because the story's own answer is what is
+    // under test: `ds:viaBlock` is present on every record and the term's
+    // definition says it equals the block on the block's own tree, so a column
+    // that coalesced the two printed a block's inherited rows under the name
+    // of the block they came from.
+    const inherited = await count(
+      `SELECT (COUNT(*) AS ?n) WHERE {
+         ?block ds:hasTokenBinding ?r .
+         ?r ds:viaBlock ?via .
+         FILTER(?via != ?block)
+       }`,
+    );
+    // The WHOLE population in one page, which is what makes this an invariant
+    // over the corpus rather than over whatever the default page held.
+    const page = (await verb("token", "consumers").run(
+      { limit: MAX_LIST_WINDOW },
+      rt,
+    )) as PackPage;
+    if (page.rows.length === 0) return;
+
+    const withVia = page.rows.filter((row) => Boolean(row.via));
+    expect(withVia).toHaveLength(inherited);
+    // And the consuming block is never the via — the whole point of splitting
+    // the column.
+    expect(withVia.filter((row) => row.via === row.block)).toEqual([]);
   });
 });
