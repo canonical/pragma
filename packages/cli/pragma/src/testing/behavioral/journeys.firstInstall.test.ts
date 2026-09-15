@@ -155,10 +155,25 @@ describe("first install — empty results are honest, not papered over", () => {
     })) as { name: string }[];
     expect(matched.map((row) => row.name)).toContain("color.text");
 
-    // And the honest emptiness this describe exists for: the symbols ship with
-    // the pack, the BINDINGS between blocks and symbols do not, so this verb
-    // answers nothing on a first install rather than erroring.
-    expect(await read(verbOf(tokenModule, "token consumers"))).toEqual([]);
+    // The bindings between blocks and symbols now ride the pack too — they
+    // are derived from the component anatomies the embedded snapshot carries —
+    // so this verb ANSWERS on a first install where it used to be the honest
+    // emptiness this describe was written around. The claim moved rather than
+    // being deleted: what a first install owes the reader is a usable answer,
+    // and the columns that make a row usable are asserted here.
+    const consumers = (await read(verbOf(tokenModule, "token consumers"))) as {
+      block: string;
+      via?: string;
+      symbol: string;
+    }[];
+    expect(consumers.length).toBeGreaterThan(0);
+    for (const row of consumers) {
+      // The CONSUMING block, which is the fact the verb exists for, and the
+      // via only where the binding came from another block's tree.
+      expect(row.block).toBeTruthy();
+      expect(row.symbol).toBeTruthy();
+      if (row.via) expect(row.via).not.toBe(row.block);
+    }
     // An explicit budget, because this case boots the embedded pack and that
     // pack grew to 53,467 triples when the token graph joined it. The default
     // five seconds was enough for the old snapshot and is not for this one,

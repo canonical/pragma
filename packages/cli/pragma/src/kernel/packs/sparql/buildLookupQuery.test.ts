@@ -350,7 +350,9 @@ describe("the expand sub-SELECT", () => {
       BUTTON,
       BLOCK,
     );
-    expect(query).toContain("  OPTIONAL {\n    ?child ds:viaBlock/ds:name ?via .");
+    expect(query).toContain(
+      "  OPTIONAL {\n    ?child ds:viaBlock/ds:name ?via .",
+    );
     expect(query).toContain(`    <${BUTTON}> ds:name ?__pragmaSelf .`);
     expect(query).toContain("    FILTER(STR(?via) != STR(?__pragmaSelf))");
   });
