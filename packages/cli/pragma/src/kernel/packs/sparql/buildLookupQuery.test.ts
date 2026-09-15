@@ -27,6 +27,7 @@
 import { describe, expect, it } from "vitest";
 import type { PackLookup } from "../types.js";
 import {
+  buildExpandQuery,
   buildLookupByIriQuery,
   buildLookupNamesQuery,
   buildLookupQuery,
@@ -286,5 +287,92 @@ describe("the ranking a name resolve orders by", () => {
     expect(buildLookupQuery(RANKED, "Button").split("\n")[0]).not.toContain(
       "?score",
     );
+  });
+});
+
+describe("the expand sub-SELECT", () => {
+  const BUTTON = "https://ds.canonical.com/global.component.button";
+  const BLOCK: PackLookup = {
+    source: "graphql",
+    by: "ds:name",
+    type: "ds:Component",
+    graphqlType: "UIBlock",
+  };
+
+  it("reads each selected field through one OPTIONAL, and orders by nothing", () => {
+    // The shape every expand had before an ordering could be declared: rows
+    // arrive in the store's own scan order, which SPARQL does not define.
+    const query = buildExpandQuery(
+      {
+        name: "properties",
+        relation: "ds:hasProperty",
+        select: [{ name: "n", property: "ds:name" }],
+      },
+      BUTTON,
+      BLOCK,
+    );
+    expect(query).toContain(`  <${BUTTON}> ds:hasProperty ?child .`);
+    expect(query).toContain("  OPTIONAL { ?child ds:name ?n . }");
+    expect(query).not.toContain("ORDER BY");
+  });
+
+  it("emits the declared ordering, in the declared order", () => {
+    const query = buildExpandQuery(
+      {
+        name: "tokens",
+        relation: "ds:hasTokenBinding",
+        orderBy: ["node", "key", "rank"],
+        select: [
+          { name: "key", property: "anatomy:styleKey" },
+          { name: "rank", property: "ds:rank" },
+          { name: "node", property: "ds:node" },
+        ],
+      },
+      BUTTON,
+      BLOCK,
+    );
+    expect(query).toContain("ORDER BY ?node ?key ?rank");
+  });
+
+  it("keeps a blankWhenSelf field's row and UNBINDS the cell when it is the entity's own", () => {
+    // Inside the OPTIONAL, which is the whole behaviour: a FILTER outside it
+    // would drop the child row entirely, and what is wanted is the row with an
+    // empty cell. Compared as strings because the entity's identity value is a
+    // literal and so is the cell.
+    const query = buildExpandQuery(
+      {
+        name: "tokens",
+        relation: "ds:hasTokenBinding",
+        select: [
+          { name: "via", property: "ds:viaBlock/ds:name", blankWhenSelf: true },
+        ],
+      },
+      BUTTON,
+      BLOCK,
+    );
+    expect(query).toContain("  OPTIONAL {\n    ?child ds:viaBlock/ds:name ?via .");
+    expect(query).toContain(`    <${BUTTON}> ds:name ?__pragmaSelf .`);
+    expect(query).toContain("    FILTER(STR(?via) != STR(?__pragmaSelf))");
+  });
+
+  it("interpolates ONLY the resolved entity IRI", () => {
+    // Injection safety, unchanged by either addition: the relation, the
+    // properties, the ordering names and the identity property are all
+    // validated pack terms, and the IRI is the one the base lookup already
+    // resolved from the store.
+    const query = buildExpandQuery(
+      {
+        name: "tokens",
+        relation: "ds:hasTokenBinding",
+        orderBy: ["node"],
+        select: [
+          { name: "node", property: "ds:node" },
+          { name: "via", property: "ds:viaBlock/ds:name", blankWhenSelf: true },
+        ],
+      },
+      BUTTON,
+      BLOCK,
+    );
+    expect(query.match(/<[^>]+>/g)).toEqual([`<${BUTTON}>`, `<${BUTTON}>`]);
   });
 });

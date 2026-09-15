@@ -218,6 +218,7 @@ export function lookupOptions(
       heading: expand.heading ?? expand.name,
       kind: expand.kind ?? "list",
       ...(expand.showWhenEmpty ? { showWhenEmpty: true } : {}),
+      ...(expand.note ? { note: expand.note } : {}),
     }),
   );
   return {

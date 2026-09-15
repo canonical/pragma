@@ -221,6 +221,7 @@ const expandFieldSchema = z
     property: term,
     label: z.string().optional(),
     graphqlField: graphqlName.optional(),
+    blankWhenSelf: z.literal(true).optional(),
   })
   .strict();
 
@@ -234,6 +235,12 @@ const expandSchema = z
     select: z.array(z.union([nestedExpandSchema, expandFieldSchema])).min(1),
     showWhenEmpty: z.boolean().optional(),
     level: z.string().optional(),
+    note: z.string().optional(),
+    orderBy: z.array(fieldName).min(1).optional(),
+    // Only "sparql": see PackExpand.source — the SPARQL lane is every lookup's
+    // default, so an expand opting INTO GraphQL would ask for a document the
+    // lookup never builds.
+    source: z.literal("sparql").optional(),
   })
   .strict();
 
@@ -525,13 +532,50 @@ function refineLookup(
         path: ["lookup"],
       });
     }
+    // The EXPAND's lane, not the lookup's: an expand may opt out of a graphql
+    // lookup's document, and the three rules below are rules about the lane
+    // that will actually resolve it.
+    const expandSource = expand.source ?? source;
     for (const entry of expand.select) {
-      if ("relation" in entry && source !== "graphql") {
+      if ("relation" in entry && expandSource !== "graphql") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `expand "${expand.name}" nests a relation, which requires lookup.source "graphql" (the SPARQL expand sub-SELECT is single-hop).`,
           path: ["lookup"],
         });
+      }
+      if (
+        "blankWhenSelf" in entry &&
+        entry.blankWhenSelf &&
+        expandSource !== "sparql"
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `expand "${expand.name}" field "${entry.name}" sets "blankWhenSelf", which only the SPARQL lane can express — set the expand's "source" to "sparql".`,
+          path: ["lookup"],
+        });
+      }
+    }
+    if (expand.orderBy !== undefined) {
+      if (expandSource !== "sparql") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `expand "${expand.name}" declares "orderBy", which only the SPARQL lane can express — a GraphQL collection's order is the schema's. Set the expand's "source" to "sparql".`,
+          path: ["lookup"],
+        });
+      }
+      // A name that no select entry declares would order by an unbound
+      // variable, which SPARQL permits and which silently orders by nothing —
+      // so it is refused where it is written rather than ignored at runtime.
+      const selected = new Set(expand.select.map((entry) => entry.name));
+      for (const name of expand.orderBy) {
+        if (!selected.has(name)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `expand "${expand.name}" orders by "${name}", which its "select" does not declare.`,
+            path: ["lookup"],
+          });
+        }
       }
     }
   }

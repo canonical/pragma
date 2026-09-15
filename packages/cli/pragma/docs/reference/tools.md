@@ -512,7 +512,7 @@ Read-only.
 
 ### token_consumers
 
-List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
+List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
 
 Read-only.
 
@@ -524,7 +524,7 @@ Read-only.
 | `variable` | string | no | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
 | `key` | string | no | Filter to one style key. |
 | `state` | string | no | Filter to one interaction state. |
-| `search` | string | no | Search block, symbol, key, state and node. |
+| `search` | string | no | Search block, via, symbol, key, state and node. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 

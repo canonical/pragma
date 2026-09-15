@@ -131,6 +131,44 @@ const DECLARED_PROPERTIES: readonly DeclaredTerm[] = [
   ]),
 ];
 
+/**
+ * Standard RDF vocabulary, which no domain ontology declares and every graph
+ * carries — the same exemption, for the same reason, that the token stories'
+ * shipped sweep makes: the distribution's own vocabulary declaration leaves
+ * `rdfs:label` out because "the kernel treats standard vocabulary as
+ * universal", and the shipped pack accordingly carries no T-box triple about
+ * it at all. Nothing upstream can retire a W3C term, which is the defect this
+ * file exists to catch.
+ *
+ * A readable list rather than a widened ASK, so the sweep stays a hard
+ * requirement on every DOMAIN term.
+ */
+const STANDARD_VOCABULARY = new Set(["rdfs:label", "rdfs:comment"]);
+
+/**
+ * The property STEPS one declaration names — more than one when it is a path.
+ *
+ * A SPARQL-lane declaration may read a grandchild through a path
+ * (`ds:consumesSymbol/rdfs:label`), and every domain step of it is a term the
+ * ontology has to define: a retired step anywhere along a path renders exactly
+ * as silently as a retired single term. Split rather than skipped — a path
+ * spliced whole into the ASK's subject position would not even parse, so the
+ * check would have raised instead of judging, and skipping paths outright
+ * would leave their steps unguarded.
+ *
+ * An absolute IRI is left whole: a `/` inside `https://…` is not a path
+ * separator, which is the grammar's own test for a property path.
+ */
+function pathSteps(property: string): readonly string[] {
+  if (!property.includes("/") || property.includes("://")) {
+    return STANDARD_VOCABULARY.has(property) ? [] : [property];
+  }
+  return property
+    .split("/")
+    .map((step) => step.replace(/^\^/, "").replace(/[*+?]$/, ""))
+    .filter((step) => step !== "" && !STANDARD_VOCABULARY.has(step));
+}
+
 /** The IRI of the block whose usage narrative is asserted on below. */
 const BUTTON = "https://ds.canonical.com/global.component.button";
 
@@ -170,21 +208,127 @@ describe("the `block` story declares vocabulary the shipped ontology defines (PR
   it.each(DECLARED_PROPERTIES)(
     "$what reads $property, which the shipped ontology defines",
     async ({ what, property }) => {
-      const result = await rt.query.sparql(
-        [
-          "ASK {",
-          `  ${property} a ?kind .`,
-          "  VALUES ?kind { owl:DatatypeProperty owl:ObjectProperty }",
-          "}",
-        ].join("\n"),
-      );
-      expect(result.type).toBe("ask");
-      expect(
-        result.type === "ask" ? result.result : false,
-        `${what} reads ${property}, which the shipped ontology does not define — it can never render, for any block, on any install`,
-      ).toBe(true);
+      for (const hop of pathSteps(property)) {
+        const result = await rt.query.sparql(
+          [
+            "ASK {",
+            `  ${hop} a ?kind .`,
+            "  VALUES ?kind { owl:DatatypeProperty owl:ObjectProperty }",
+            "}",
+          ].join("\n"),
+        );
+        expect(result.type).toBe("ask");
+        expect(
+          result.type === "ask" ? result.result : false,
+          `${what} reads ${property}, whose hop ${hop} the shipped ontology does not define — it can never render, for any block, on any install`,
+        ).toBe(true);
+      }
     },
   );
+});
+
+describe("block lookup lists the tokens a block consumes (PROTECTED)", () => {
+  it("renders one row per binding record, with all six identity columns", async () => {
+    // The binding records are the design system's, derived from the anatomies,
+    // and they ride the embedded snapshot — so the ONE thing a fixture cannot
+    // prove is that the shipped corpus reaches this expand at all. Button is
+    // asserted on rather than any block: it is the block whose anatomy every
+    // other lookup test reads, and it carries bindings on its own tree AND on
+    // the tree of the icon it embeds.
+    const records = await scalar(
+      `SELECT (COUNT(*) AS ?n) WHERE { <${BUTTON}> ds:hasTokenBinding ?r }`,
+    );
+    expect(Number(records)).toBeGreaterThan(0);
+
+    const llm = await renderLookup(BUTTON);
+    expect(llm).toContain("### Tokens");
+    // The note, because a rank column without it is a number with no stated
+    // meaning.
+    expect(llm).toContain("rank is the position in that chain");
+
+    // One rendered row per record, and every row carrying the two columns the
+    // GraphQL lane cannot derive (neither `anatomy:styleKey` nor
+    // `anatomy:styleState` has an rdfs:domain, so no field exists for either
+    // on `TokenBinding`). Their absence is what made two of Button's rows
+    // byte-identical, so their presence is the assertion.
+    const rows = (llm.split("### Tokens")[1] ?? "")
+      .split("\n")
+      .filter((line) => line.startsWith("- symbol: "));
+    expect(rows).toHaveLength(Number(records));
+    for (const row of rows) {
+      expect(row).toContain(" | key: ");
+      expect(row).toContain(" | node: ");
+    }
+    // And no two rows the same — the defect a dropped identity column causes.
+    expect(new Set(rows).size).toBe(rows.length);
+  });
+
+  it("blanks the via on a block's own tree and prints an inherited one", async () => {
+    // `ds:viaBlock` is asserted on every record and its own definition says it
+    // equals the block in the own-tree case, so an unconditional column put
+    // the block's own name in every one of its rows.
+    const ownTree = await scalar(
+      [
+        "SELECT (COUNT(*) AS ?n) WHERE {",
+        `  <${BUTTON}> ds:hasTokenBinding ?r .`,
+        `  ?r ds:viaBlock <${BUTTON}> .`,
+        "}",
+      ].join("\n"),
+    );
+    expect(Number(ownTree)).toBeGreaterThan(0);
+
+    const llm = await renderLookup(BUTTON);
+    const rows = (llm.split("### Tokens")[1] ?? "")
+      .split("\n")
+      .filter((line) => line.startsWith("- symbol: "));
+    expect(rows.filter((row) => !row.includes(" | via: "))).toHaveLength(
+      Number(ownTree),
+    );
+
+    // A block whose bindings are ALL inherited, read from the graph rather
+    // than named here: every row of its section must carry a via.
+    const inheritor = await scalar(
+      [
+        "SELECT ?b WHERE {",
+        `  VALUES ?class { ${TYPE_VALUES} }`,
+        "  ?b a ?class ; ds:hasTokenBinding ?r .",
+        "  FILTER NOT EXISTS { ?b ds:hasTokenBinding/ds:viaBlock ?b }",
+        "}",
+        "ORDER BY ?b",
+        "LIMIT 1",
+      ].join("\n"),
+    );
+    expect(
+      inheritor,
+      "no shipped block carries only inherited bindings",
+    ).toBeDefined();
+    const inheritedRows = (
+      (await renderLookup(inheritor as string)).split("### Tokens")[1] ?? ""
+    )
+      .split("\n")
+      .filter((line) => line.startsWith("- symbol: "));
+    expect(inheritedRows.length).toBeGreaterThan(0);
+    for (const row of inheritedRows) expect(row).toContain(" | via: ");
+  });
+
+  it("prints no Tokens heading for a block that consumes nothing", async () => {
+    // The shape every other section on this lookup has when it is empty. Read
+    // from the graph, because which blocks have no bindings is upstream's to
+    // change.
+    const uri = await scalar(
+      [
+        "SELECT ?b WHERE {",
+        `  VALUES ?class { ${TYPE_VALUES} }`,
+        "  ?b a ?class .",
+        "  FILTER NOT EXISTS { ?b ds:hasTokenBinding ?r }",
+        "}",
+        "ORDER BY ?b",
+        "LIMIT 1",
+      ].join("\n"),
+    );
+    expect(uri, "every shipped block carries bindings").toBeDefined();
+    expect(await renderLookup(uri as string)).not.toContain("### Tokens");
+  });
 });
 
 describe("the shipped graph carries the usage narrative on every block (PROTECTED)", () => {
