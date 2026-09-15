@@ -29,8 +29,9 @@
 
     /* Icon (desktop) vs "Menu"/"Close menu" text (mobile) — plain CSS-toggled
      siblings, not a JS media-query read, so the choice needs no client-only
-     branch and stays SSR-identical. */
-    .mobile-only {
+     branch and stays SSR-identical. The button's only two children are the
+     icon svg and the label span, so the two select directly. */
+    & span {
       display: none;
     }
 
@@ -38,11 +39,11 @@
      small breakpoint of Vanilla" / "at breakpoints below small" —
      $breakpoint-small, 620px). */
     @media (width < 620px) {
-      .desktop-only {
+      & svg {
         display: none;
       }
 
-      .mobile-only {
+      & span {
         display: inline;
       }
 
