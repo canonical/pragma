@@ -593,7 +593,9 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
       const notice = verb("token", "consumers").output.formatters.notice?.(
         page as never,
       );
-      expect(notice).toContain("No token bindings in the store.");
+      expect(notice).toContain(
+        "no component is recorded as using any token yet",
+      );
       expect(notice).toContain("sources update");
       return;
     }

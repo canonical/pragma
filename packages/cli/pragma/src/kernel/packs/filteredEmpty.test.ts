@@ -1,13 +1,17 @@
 /**
- * A zero-row answer names the FILTER, not the store.
+ * A zero-row answer names the FILTER and still explains the POPULATION.
  *
- * A story's `emptyRecovery` describes an empty POPULATION ("build the store").
- * Printing it for a search that matched none of 745 present symbols tells the
- * reader the store is empty and prescribes a write that fixes nothing —
- * `token list --search zzzznotreal` said "No token symbols in the store … run
- * `pragma sources update`". So a list narrowed by a search or a declared
- * filter that comes back empty names the filters in force instead, and the
- * story's own recovery stays for the case it was written for.
+ * Two facts can empty a list and the rows cannot tell them apart: nothing was
+ * there, or a filter missed what was. So the page says both — the kernel's
+ * sentence names the filters in force (`token list --search zzzznotreal` used
+ * to answer "No token symbols in the store … run `pragma sources update`",
+ * telling a reader with 745 present symbols to rebuild for nothing), and the
+ * story's own `emptyRecovery` follows it, exactly as it does when nothing
+ * narrowed the read.
+ *
+ * Which puts one requirement on the stories rather than on the kernel: a
+ * recovery is worded to hold in BOTH cases, or the story declares none. The
+ * fixture below is worded that way on purpose.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -43,9 +47,17 @@ ex:label  a ex:Widget ; ex:name "Label"  ; ex:kind "display" .
 ex:slider a ex:Widget ; ex:name "Slider" ; ex:kind "input" .
 `;
 
-/** The recovery a story authors for an EMPTY POPULATION — never for a filter. */
+/**
+ * The recovery a story authors — where the rows come from, said so it holds
+ * over a populated table a filter missed as well as over an empty one.
+ *
+ * "No widgets in the store." would not: it is a claim about the population, and
+ * the kernel prints this under a filtered miss too, where three widgets are
+ * sitting in the store.
+ */
 const EMPTY_RECOVERY = {
-  message: "No widgets in the store.",
+  message:
+    "Widgets are recorded by the catalogue build, and a store built before it ran records none.",
   cli: "sources update",
 } as const;
 
@@ -66,7 +78,7 @@ const listShape = (uriClass: string) => ({
   emptyRecovery: EMPTY_RECOVERY,
 });
 
-/** Three rows — enough to cut a page in two. */
+/** Three rows — a POPULATED table, so a filter that misses really is the news. */
 const WIDGET_PACK: PackDefinition = {
   noun: "widget",
   description: "List widgets.",
@@ -110,8 +122,8 @@ afterAll(async () => {
   (await rt.store.get()).store.dispose();
 });
 
-describe("a zero-row answer names the filter, not the store", () => {
-  it("a search that matched nothing does not prescribe a write", async () => {
+describe("a zero-row answer names the filter and keeps the recovery", () => {
+  it("a search that matched nothing names the search, and still explains", async () => {
     const outcome = await executeVerb(
       listVerb(WIDGET_PACK),
       { search: "zzzznotreal" },
@@ -121,8 +133,10 @@ describe("a zero-row answer names the filter, not the store", () => {
     expect(outcome.exitCode).toBe(0);
     const said = `${outcome.stdout ?? ""}${outcome.stderr ?? ""}`;
     expect(said).toContain("No widget matches `--search zzzznotreal`.");
-    expect(said).not.toContain("No widgets in the store.");
-    expect(said).not.toContain("sources update");
+    // The filter is the news; the story's account of where widgets come from is
+    // the other half, and a reader who mistyped nothing needs it.
+    expect(said).toContain("recorded by the catalogue build");
+    expect(said).toContain("pragma sources update");
   });
 
   it("every filter in force is named", async () => {
@@ -148,7 +162,7 @@ describe("a zero-row answer names the filter, not the store", () => {
     expect(outcome.stdout).toContain(
       "No widget matches `--search zzzznotreal`.",
     );
-    expect(outcome.stdout).not.toContain("sources update");
+    expect(outcome.stdout).toContain("recorded by the catalogue build");
   });
 
   it("json says the same thing on meta.notice", async () => {
@@ -163,10 +177,28 @@ describe("a zero-row answer names the filter, not the store", () => {
     expect(envelope.meta.notice).toContain(
       "No widget matches `--search zzzznotreal`.",
     );
-    expect(envelope.meta.notice).not.toContain("sources update");
+    expect(envelope.meta.notice).toContain("recorded by the catalogue build");
   });
 
-  it("an EMPTY POPULATION still gets the story's own recovery", async () => {
+  it("an EMPTY POPULATION under a filter keeps the story's own recovery", async () => {
+    // The regression: `token consumers --symbol color.text` narrows a table
+    // that records nothing at all, and answering only "no match for that
+    // symbol" read as a typo while withholding the one account the verb has.
+    // No probe tells the two apart — the sentence does, by saying both.
+    const outcome = await executeVerb(
+      listVerb(GADGET_PACK),
+      { kind: "input" },
+      REAL,
+      as(PLAIN),
+    );
+    expect(outcome.exitCode).toBe(0);
+    const said = `${outcome.stderr ?? ""}`;
+    expect(said).toContain("No gadget matches `--kind input`.");
+    expect(said).toContain("recorded by the catalogue build");
+    expect(said).toContain("pragma sources update");
+  });
+
+  it("an EMPTY POPULATION unfiltered gets the kernel's own sentence", async () => {
     const outcome = await executeVerb(
       listVerb(GADGET_PACK),
       {},
@@ -175,7 +207,7 @@ describe("a zero-row answer names the filter, not the store", () => {
     );
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stderr).toContain("No gadget entries found.");
-    expect(outcome.stderr).toContain("No widgets in the store.");
+    expect(outcome.stderr).toContain("recorded by the catalogue build");
     expect(outcome.stderr).toContain("pragma sources update");
   });
 });

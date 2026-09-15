@@ -128,19 +128,28 @@ export function listFormatters(
 /**
  * The empty-state copy this page deserves.
  *
- * A story's `emptyRecovery` answers ONE question — "why is the population
- * empty?" — and `token list --search zzzznotreal` is not asking it. Answering
- * it there ("No token symbols in the store … run `pragma sources update`")
- * tells a reader with 745 symbols in the store that the store is empty and
- * prescribes a write that changes nothing. So a page narrowed by at least one
- * filter reports the NARROWING instead, naming the arguments the caller typed;
- * an unfiltered empty page keeps the story's recovery, which is the case it was
- * written for.
+ * Two facts can empty a list and zero rows cannot tell them apart: nothing was
+ * there, or a filter missed what was. Both are worth saying and they are not
+ * exclusive, so a filtered empty page says both — the kernel's own sentence
+ * names the arguments the caller typed, and the story's `emptyRecovery` follows
+ * it on the next line, exactly as it does on an unfiltered page.
+ *
+ * It did not, briefly: a filtered empty page reported only the narrowing,
+ * because the recoveries of the day asserted an empty store ("No token symbols
+ * in the store … run `pragma sources update`") and so told a reader with 745
+ * symbols in it to rebuild for nothing. That is a WORDING defect, and it is
+ * fixed where it lives — a story's recovery is now written to hold whether the
+ * population is empty or a filter missed a populated one, or the story declares
+ * none. Suppressing it here cost more than it saved: `token consumers --symbol
+ * color.text` narrows a table that records no bindings at all, and "No token
+ * matches `--symbol color.text`." on its own read as a mistyped symbol while
+ * withholding the one account of the emptiness that verb has.
  *
  * @param page - The rendered page (its rows and the filters that cut them).
  * @param meta - The noun, for the sentence.
  * @param base - The story's own empty copy.
- * @returns `base` unchanged, or filter-shaped copy with no population hint.
+ * @returns `base` unchanged, or `base` with the filter-shaped message — the
+ *   story's own hint is kept either way.
  */
 function emptyCopy(
   page: PackPage,
@@ -149,9 +158,8 @@ function emptyCopy(
 ): RenderListOptions<PackRow> {
   const applied = page.filters ?? [];
   if (page.rows.length > 0 || applied.length === 0) return base;
-  const { emptyHint: _population, ...rest } = base;
   return {
-    ...rest,
+    ...base,
     emptyMessage: `No ${meta.noun} matches ${listFilters(applied)}.`,
   };
 }
