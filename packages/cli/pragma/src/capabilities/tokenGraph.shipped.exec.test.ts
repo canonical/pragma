@@ -593,7 +593,9 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
       const notice = verb("token", "consumers").output.formatters.notice?.(
         page as never,
       );
-      expect(notice).toContain("No token bindings in the store.");
+      expect(notice).toContain(
+        "No component is recorded as using any token yet.",
+      );
       expect(notice).toContain("sources update");
       return;
     }
@@ -637,7 +639,7 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
     // The page says WHICH emptiness this is, because only the run body can ask.
     expect(filtered.populationEmpty).toBe(true);
     const said = notice(filtered);
-    expect(said).toContain("No token bindings in the store.");
+    expect(said).toContain("No component is recorded as using any token yet.");
     expect(said).toContain("sources update");
     // And the filter is named, in a clause — the reader typed it and has to see
     // that it was applied and is not the cause.

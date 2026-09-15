@@ -777,7 +777,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // a store that predates them.
         emptyRecovery: {
           message:
-            "No token bindings in the store. Either the design-system packs have not recorded which block consumes which symbol yet — a store built before they did carries none — or, if you filtered by a CSS variable, that variable stands for no symbol at all (236 of them do not) and has no consumer down this path: ask `variable chain` what it finally reaches instead.",
+            "No component is recorded as using any token yet. Which components use which tokens comes from the component anatomies in the design-system document, and this copy of the graph was built before any anatomy named its tokens — so the answer is empty for every token, not only this one. It fills in once the anatomies are written and the graph is rebuilt. If you asked about a CSS variable rather than a token: some variables are computed from others (the `--hover--…` and `--disabled--…` ones, for example) and stand for no token, so nothing is ever recorded as using them; `pragma variable chain --variable <name>` shows what such a variable ends up as.",
           cli: "sources update",
         },
       },
