@@ -30,7 +30,7 @@ The process reads requests on stdin and writes responses on stdout; diagnostics 
 On `initialize`, the server sends an `instructions` string **once** — not per tool call — so an agent arrives oriented. It carries:
 
 - what pragma is — `pragma — <the distribution's one-line help> (a CLI and MCP server over a knowledge graph).`, projected from the distribution config rather than written out,
-- the conventions (the knowledge-graph model, the tier/channel scoping, the SPARQL escape hatch),
+- the conventions (the knowledge-graph model, the tier scope a read of a tiered entity answers under and the `tier` parameter that widens it, the channel that scopes nothing, the SPARQL escape hatch),
 - and a short discovery sequence naming the first tools to call.
 
 Live numbers (entity totals, the active tier) are deliberately left out of the handshake so it needs no store boot; an agent fetches those with the `info`, `config_show`, and `sources_status` tools.

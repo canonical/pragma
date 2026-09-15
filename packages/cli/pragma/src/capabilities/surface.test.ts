@@ -102,33 +102,47 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "lookup",
       "sample",
     ]);
-    // block list is the story's compiled, unfiltered list (L-OPEN-9): no
-    // filter flags — the `--all-tiers` escape died with the hand-written
-    // filtering. The two it does carry are the KERNEL's page, which every
-    // list-shaped verb gets whether its story declares anything or not.
+    // block list declares no filters of its own, and the three flags it
+    // carries are all the KERNEL's: `--tier` because the block story declares
+    // a tier hierarchy (so every read of it is scoped), and the page's two,
+    // which every list-shaped verb gets whether its story declares anything or
+    // not. `--tier` leads them because params are emitted in `verb.params`
+    // order and the scope is resolved before the page is cut.
     expect(emitted.nouns.block?.verbs).toEqual([
       {
         v: "list",
-        flags: ["--limit", "--after"],
+        flags: ["--tier", "--limit", "--after"],
         needsStore: true,
         mcp: "block_list",
       },
       {
         v: "lookup",
         args: ["<name...>"],
+        flags: ["--tier"],
         needsStore: true,
         mcp: "block_lookup",
       },
+      // `sample` carries NO `--tier`: a sample is a shape probe drawn at the
+      // highest level, and which tier a specimen sits in is not its shape.
       { v: "sample", needsStore: true, mcp: "block_sample" },
     ]);
     // The tier lookup is the story's compiled lookup (L-OPEN-9), so it emits
-    // the variadic `<name...>` positional every pack lookup emits.
+    // the variadic `<name...>` positional every pack lookup emits — and NO
+    // `--tier`, because a tier carries no tier of its own and this is the
+    // surface that publishes the names `--tier` accepts.
     expect(emitted.nouns.tier?.verbs).toContainEqual({
       v: "lookup",
       args: ["<name...>"],
       needsStore: true,
       mcp: "tier_lookup",
     });
+    // The scope reaches every tiered noun, not just the flagship one, and
+    // reaches it on both halves of the two-step grammar.
+    for (const noun of ["modifier", "concept"]) {
+      const verbs = emitted.nouns[noun]?.verbs ?? [];
+      expect(verbs.find((v) => v.v === "list")?.flags).toContain("--tier");
+      expect(verbs.find((v) => v.v === "lookup")?.flags).toEqual(["--tier"]);
+    }
   });
 
   it("emits the authored read nouns (ontology TBox, storeless skill, graph inspect)", () => {

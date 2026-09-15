@@ -265,15 +265,19 @@ export const readNounEvalCases: readonly EvalCase[] = [
     id: "content-canonical-graph-has-4-components",
     kind: "content",
     input:
-      "the canonical fixture graph carries 4 ds:Component individuals (Button, Modal, LXD Panel, Beta Widget); block_list also surfaces the untiered Button Icon subcomponent (A2).",
+      'the canonical fixture graph carries 4 ds:Component individuals (Button, Modal, LXD Panel, Beta Widget); block_list {tier:"all"} also surfaces the untiered Button Icon subcomponent (A2).',
     async expect() {
       await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
-        const result = await mcp.callTool("block_list");
+        // `tier: "all"` because the claim is about the POPULATION, and the
+        // default tier scope answers from the top-level tiers alone — LXD Panel
+        // is two levels down. The scope's own narrowing is asserted where that
+        // is the claim (`behavioral/journeys.cli.test.ts`).
+        const result = await mcp.callTool("block_list", { tier: "all" });
         const names = (result.data as { name: string }[])
           .map((r) => r.name)
           .sort();
-        // The declared list takes no arguments and filters nothing: the 4 tiered
-        // components plus the untiered Button Icon subcomponent (A2).
+        // Every tier, and nothing else filtered: the 4 tiered components plus
+        // the untiered Button Icon subcomponent (A2).
         assert.deepEqual(names, [
           "Beta Widget",
           "Button",
@@ -422,7 +426,10 @@ export const readNounEvalCases: readonly EvalCase[] = [
       const normal = await namesUnder(CANONICAL_CONFIG);
       const prerelease = await namesUnder(ALL_VISIBLE_CONFIG);
       // The signed-off consequence: an experimental block is visible to
-      // everyone, on every channel, until filtering returns in declared form.
+      // everyone, on every channel. The TIER scope narrows these reads (both
+      // configs set no tier, so both answer from the top-level tiers) and the
+      // channel narrows neither — which is exactly the asymmetry this case
+      // holds: the two answers are equal, and the beta block is in both.
       assert.ok(normal.includes("Beta Widget"));
       assert.deepEqual(normal, prerelease);
     },

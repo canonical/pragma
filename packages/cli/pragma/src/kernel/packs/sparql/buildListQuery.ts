@@ -1,6 +1,6 @@
 /**
- * Compile a list story's declared filters, its search term and one page's
- * bounds into the SPARQL the store actually runs.
+ * Compile a list story's declared filters, its search term, its tier scope and
+ * one page's bounds into the SPARQL the store actually runs.
  *
  * WHY IN THE QUERY. Filters used to be predicates over the rows a query had
  * already returned. That was injection-safe and order-preserving — the two
@@ -11,6 +11,12 @@
  * story declared a cap and the kernel had none to declare; the moment one
  * exists, every declared filter starts deciding over a truncated population.
  * Pagination is that cap, so the two move together and they move inward.
+ *
+ * The TIER SCOPE is here for that reason and not by analogy: it narrows the
+ * 252-row `block list` under a 300-row page today, so a page that started
+ * truncating would decide the default scope by where the window fell. It is the
+ * one clause that constrains the ENTITY rather than a projected cell — see
+ * {@link ListTierScope}.
  *
  * ONE SHAPE, ALWAYS. The author query becomes a sub-select inside a wrapping
  * SELECT that carries the predicates and the page bounds — whether or not there
@@ -81,7 +87,7 @@
 import { PragmaError } from "../../error/index.js";
 import { RESERVED_VARIABLE_PREFIX } from "../types.js";
 import { readAuthorQuery } from "./authorQuery.js";
-import { escapeSparqlString } from "./escape.js";
+import { escapeSparqlString, formatTerm } from "./escape.js";
 
 /** One declared filter, with the values a caller actually supplied. */
 export interface ListPredicate {
@@ -104,6 +110,30 @@ export interface ListSearch {
   readonly term: string;
 }
 
+/**
+ * The tier scope a list is narrowed to, compiled in beside the filters.
+ *
+ * IN THE QUERY for the same reason every filter is: a scope applied to the rows
+ * a page already returned would decide over a truncated population, and `block
+ * list` is a 252-row body under a 300-row page today — one product tier more
+ * upstream and the default scope would start depending on where the page fell.
+ *
+ * It constrains the ENTITY rather than a projected tier column. A story's tier
+ * column is derived text (`block list` BINDs the IRI's local name), and two of
+ * the three scoped stories project no tier at all — `modifier list` and
+ * `concept list` publish name and values. The entity variable is the one thing
+ * every list-shaped story has in common (`?uri`, the IRI column), and the edge
+ * from it to its tier is what the noun already declares.
+ */
+export interface ListTierScope {
+  /** The SELECT variable carrying the entity's IRI (without `?`). */
+  readonly entity: string;
+  /** The entity → tier edge, a validated pack term. */
+  readonly via: string;
+  /** The in-scope tier IRIs, read from the store (never caller input). */
+  readonly tiers: readonly string[];
+}
+
 /** One page's bounds, applied inside the query after filtering and ordering. */
 export interface ListWindow {
   /** Maximum rows to return. */
@@ -120,6 +150,8 @@ export interface ListQueryInput {
   readonly predicates: readonly ListPredicate[];
   /** The declared search a caller supplied a term for. */
   readonly search?: ListSearch;
+  /** The tier scope this read answers under, absent when it answers from all. */
+  readonly scope?: ListTierScope;
   /** The page to return. */
   readonly window: ListWindow;
   /** The story's label, for a configuration diagnosis. */
@@ -139,13 +171,16 @@ export interface ListQueryInput {
  *   the wrong part of their own file.
  */
 export function buildListQuery(input: ListQueryInput): string {
-  const { query, predicates, search, window, label } = input;
+  const { query, predicates, search, scope, window, label } = input;
   const clauses = [
     ...predicates.map((predicate, index) =>
       filterClause(predicate, `${RESERVED_VARIABLE_PREFIX}Filter${index}`),
     ),
     ...(search
       ? [searchClause(search, `${RESERVED_VARIABLE_PREFIX}Search`)]
+      : []),
+    ...(scope && scope.tiers.length > 0
+      ? [scopeClause(scope, `${RESERVED_VARIABLE_PREFIX}Tier`)]
       : []),
   ];
   if (clauses.length > 0 && query.includes(RESERVED_VARIABLE_PREFIX)) {
@@ -162,7 +197,14 @@ export function buildListQuery(input: ListQueryInput): string {
     );
   }
   const { prologue, projection, body } = read.query;
-  if (clauses.length > 0 && projection === undefined) {
+  // The SCOPE clause is deliberately not counted here: it constrains the entity
+  // through a graph edge, not a projected cell, and a sub-select's `SELECT *`
+  // still makes the entity variable visible to the wrapper. A FILTER is the
+  // case that cannot be checked — it names a variable, and `*` names none.
+  if (
+    (predicates.length > 0 || search !== undefined) &&
+    projection === undefined
+  ) {
     throw PragmaError.configError(
       `Story query in ${label} declares filters or a search, so its SELECT must ` +
         "project its variables by name — the page projects the same names in the " +
@@ -238,6 +280,46 @@ function filterClause(predicate: ListPredicate, bound: string): string {
 function setMembership(cell: string, bound: string): string {
   const members = `CONCAT(" ", REPLACE(LCASE(STR(${cell})), "\\\\s+", " "), " ")`;
   return `CONTAINS(${members}, CONCAT(" ", LCASE(?${bound}), " "))`;
+}
+
+/**
+ * The tier scope as a row predicate: the entity is in an in-scope tier, or in
+ * no tier at all.
+ *
+ * `EXISTS` with the tiers in a `VALUES` block, for both reasons the filter
+ * clauses use that shape. It cannot MULTIPLY a row (an entity in two in-scope
+ * tiers is still one entity — the design system asserts one `ds:tier` per block
+ * today, and a second one tomorrow must not double the row), and the tier IRIs
+ * ride a bound variable rather than being spliced into a pattern.
+ *
+ * The IRIs are the store's own, read back from the tier hierarchy by
+ * {@link ../tierScope.readTierHierarchy} — a caller supplies a tier NAME, which
+ * is resolved to a tier before it ever reaches here, so the only thing
+ * interpolated is a term the graph itself published.
+ *
+ * THE UNTIERED HALF IS NOT A COURTESY. `ds:button.icon` is a subcomponent with
+ * no `ds:tier`, and a required tier join is exactly what used to hide it: the
+ * hand-written block list inner-joined the tier and surfaced it only under
+ * `--all-tiers`, which is the defect the declared query's OPTIONAL join closed
+ * and `block.parity.test.ts` holds it to. A membership test alone would reopen
+ * it — an entity the scope cannot PLACE would become an entity the default
+ * scope cannot SHOW. So the predicate is "in scope, or in no tier", which is
+ * the same rule the lookup resolver applies to the same rows
+ * ({@link ../resolveEntity.applyScope}).
+ *
+ * `IN` would read closer to the rule as stated, and this is the same predicate:
+ * membership of a set, tested per row. A `VALUES` block is how every other
+ * generated clause in this module spells a set, so the scope spells it that way
+ * too rather than introducing a second idiom for one clause.
+ */
+function scopeClause(scope: ListTierScope, bound: string): string {
+  const values = scope.tiers.map((iri) => `<${iri}>`).join(" ");
+  const entity = `?${scope.entity}`;
+  const via = formatTerm(scope.via);
+  return (
+    `FILTER(EXISTS { VALUES ?${bound} { ${values} } ${entity} ${via} ?${bound} } ` +
+    `|| NOT EXISTS { ${entity} ${via} ?${bound}Any })`
+  );
 }
 
 /**

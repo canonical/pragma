@@ -556,7 +556,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   tier: {
     type: "string (optional)",
     notes:
-      "Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>` and clear it with `config unset tier`; `none`, `default` and `-` are refused as values, so no string doubles as a remove-marker.",
+      "The DEFAULT TIER SCOPE for every read of a tiered entity (blocks, modifier families, concepts): reads answer from this tier and its ancestors — `apps_lxd` reads `global`, `apps` and `apps_lxd`. Unset, they answer from the top-level tiers; set to `all`, from every tier. A per-call `--tier <name>` (the `tier` tool parameter) replaces it for that call, and every scoped answer states the scope it used. Name a tier the way `tier list` or a `Tier` column spells it (`apps_lxd`, `Apps/LXD` and `apps/lxd` all resolve); an unknown name is an `INVALID_INPUT` listing the tiers that exist. Set it with `config set tier <name>` and clear it with `config unset tier`; `none`, `default` and `-` are refused as values, so no string doubles as a remove-marker.",
   },
   channel: {
     type: "`normal` | `experimental` | `prerelease` (optional)",

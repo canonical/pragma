@@ -28,14 +28,15 @@ import {
 import type { Formatters } from "../spec/index.js";
 import { kebabCase } from "../spec/index.js";
 import type { LookupOutput } from "./resolveEntity.js";
-import type {
-  PackAppliedFilter,
-  PackChildRow,
-  PackEntity,
-  PackList,
-  PackLookup,
-  PackPage,
-  PackRow,
+import {
+  EVERY_TIER,
+  type PackAppliedFilter,
+  type PackChildRow,
+  type PackEntity,
+  type PackList,
+  type PackLookup,
+  type PackPage,
+  type PackRow,
 } from "./types.js";
 
 /** Sample output: the drawn exemplars, the population size, and agent follow-ups. */
@@ -111,8 +112,11 @@ export function listFormatters(
     llm: (page) => {
       const body = renderListLlm(page.rows, emptyCopy(page, meta, options), {
         more: page.nextAfter !== undefined,
+        ...(scopeText(page) === undefined
+          ? {}
+          : { scope: scopeText(page) as string }),
       });
-      const notice = pageNotice(page, meta);
+      const notice = listNotice(page, meta);
       return notice ? `${body}\n\n${notice}` : body;
     },
     json: (page) => JSON.stringify(page.rows, null, 2),
@@ -120,9 +124,52 @@ export function listFormatters(
     // stdout stream stays pure data; llm/json keep their own empty shapes.
     notice: (page) =>
       page.rows.length === 0
-        ? renderListEmptyNotice(emptyCopy(page, meta, options))
-        : pageNotice(page, meta),
+        ? joinNotices([
+            renderListEmptyNotice(emptyCopy(page, meta, options)),
+            scopeNotice(page),
+          ])
+        : listNotice(page, meta),
+    // The scope rides the envelope as DATA as well as prose: an agent deciding
+    // whether to widen the read should not have to parse a sentence to learn
+    // which tiers it got.
+    meta: (page) => (page.scope ? { scope: page.scope } : undefined),
   };
+}
+
+/** The tier scope in the words `--tier` accepts, or nothing when unscoped. */
+function scopeText(page: PackPage): string | undefined {
+  return page.scope ? page.scope.tiers.join(", ") : undefined;
+}
+
+/**
+ * What a SCOPED page says for itself: which tiers it answered from, and the
+ * argument that widens it.
+ *
+ * The plain table has no heading to carry it (a plain list is columns a pipe
+ * reads as records), so the sentence is the plain surface's whole account of
+ * the scope — and the notice seam is where this package already puts what the
+ * data cannot say about itself.
+ */
+function scopeNotice(page: PackPage): string | undefined {
+  const scope = scopeText(page);
+  if (scope === undefined) return undefined;
+  return (
+    `Tier scope: ${scope}. ` +
+    `Pass \`--tier <name>\` for one tier and its ancestors, or \`--tier ${EVERY_TIER}\` for every tier.`
+  );
+}
+
+/** The page's notices, in the order a reader needs them: scope, then paging. */
+function listNotice(page: PackPage, meta: RenderMeta): string | undefined {
+  return joinNotices([scopeNotice(page), pageNotice(page, meta)]);
+}
+
+/** Join what a page has to say into one notice, dropping what it has not. */
+function joinNotices(
+  notices: readonly (string | undefined)[],
+): string | undefined {
+  const present = notices.filter((notice): notice is string => Boolean(notice));
+  return present.length === 0 ? undefined : present.join(" ");
 }
 
 /**
@@ -277,6 +324,29 @@ export function sampleFormatters(
   };
 }
 
+/**
+ * What a lookup answered from OUTSIDE the tier scope says for itself.
+ *
+ * One line per name, and it is in the BODY rather than on the notice seam: the
+ * answer it explains is on stdout, and a reader piping `block lookup back-link`
+ * would otherwise see a block from a tier they are not reading with no way to
+ * tell from the output why. The machine surfaces carry the same fact
+ * structurally (`outOfScope` rides the payload), so this is one fact in two
+ * registers, not two facts.
+ */
+function scopeFallbackLines(
+  output: LookupOutput,
+  mode: "plain" | "llm",
+): string[] {
+  const bullet = mode === "llm" ? "- " : "";
+  return (output.outOfScope ?? []).map(
+    (answer) =>
+      `${bullet}No "${answer.query}" in the tier scope (${answer.scope}) — ` +
+      `answering from ${answer.tiers.join(", ")}. ` +
+      `Pass \`--tier ${EVERY_TIER}\` for every tier.`,
+  );
+}
+
 /** Render each result entity, appending a compact note for any error entries. */
 function renderOutput(
   output: LookupOutput,
@@ -284,6 +354,8 @@ function renderOutput(
   mode: "plain" | "llm" = "plain",
 ): string {
   const bodies = output.results.map(render);
+  const fallback = scopeFallbackLines(output, mode);
+  if (fallback.length > 0) bodies.push(fallback.join("\n"));
   if (output.errors.length > 0) {
     const bullet = mode === "llm" ? "- " : "  ";
     const lines = output.errors.map(
