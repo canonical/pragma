@@ -8,6 +8,7 @@ import type {
   DataViewsProvider,
   DataViewsState,
   EmptyOr,
+  Facet,
   FilterFeedback,
   FilterHandles,
   PredicateOperand,
@@ -41,6 +42,17 @@ export type UseAppliedSearchProps = {
 
 /** What the applied-search hook returns: the applied search, empty for none. */
 export type UseAppliedSearchResult = string;
+
+/** What the facets hook takes: the provider whose result's facets it reads. */
+export type UseFacetsProps = {
+  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
+};
+
+/**
+ * What the facets hook returns: the facets of the result answering the
+ * applied query, keyed by field, or null while no result answers it.
+ */
+export type UseFacetsResult = Readonly<Record<string, Facet>> | null;
 
 /** What the applied-sort hook takes: the provider whose ordering it reads. */
 export type UseAppliedSortProps = {

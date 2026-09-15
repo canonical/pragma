@@ -1,4 +1,5 @@
 import type {
+  Facet,
   FilterHandle,
   PredicateOperator,
   SchemaFieldDefinition,
@@ -23,6 +24,12 @@ export type BoundFilterProps = {
     SchemaFieldDefinition,
     { readonly kind: "number" | "date" }
   >;
+  /**
+   * The least and greatest value the records matching the query hold, from
+   * the source's facet over the field with its own bounds lifted, or null
+   * while no facet answers the applied query.
+   */
+  readonly range: Extract<Facet, { readonly kind: "range" }> | null;
   /**
    * Whether the source declares this bound. An undeclared one is offered
    * only while it stands, and only for removal.

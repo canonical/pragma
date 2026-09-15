@@ -669,4 +669,57 @@ test.describe("DataTable, sort panel and server-backed stories, keyboard only", 
     await expect(clear).toHaveCount(0);
     await expect(host).toBeFocused();
   });
+
+  test("REST API CountsAndNoneOf: Space clears a none-of set with focus kept in the filters, and Enter on a switch moves an any-of set", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(REST_API, "Counts And None Of").id);
+    const summary = page
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("status");
+    // The story's own play function has already moved failed to none-of.
+    await expect(summary).toHaveText("Showing 1–5 out of 9 items");
+    const excluded = page.getByRole("group", { name: "Status is none of" });
+    await tabTo(page, excluded.getByRole("checkbox", { name: "failed" }));
+    await page.keyboard.press("Space");
+    await expect(summary).toHaveText("Showing 1–5 out of 12 items");
+    // The none-of group leaves with its last option; focus is the filters'.
+    await expect(excluded).toHaveCount(0);
+    await expect(page.getByRole("group", { name: "Filters" })).toBeFocused();
+    const included = page.getByRole("group", { name: "Status", exact: true });
+    const failed = included.getByRole("checkbox", { name: "failed" });
+    await tabTo(page, failed);
+    await page.keyboard.press("Space");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    const move = page.getByRole("button", {
+      name: "Match none of these instead",
+    });
+    await tabTo(page, move);
+    await page.keyboard.press("Enter");
+    await expect(summary).toHaveText("Showing 1–5 out of 9 items");
+    await expect(page.getByRole("group", { name: "Filters" })).toBeFocused();
+  });
+
+  test("REST API Answered: text typed into a starts-with filter narrows the table, and Enter on its clear restores it", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(REST_API, "Answered").id);
+    const summary = page
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("status");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    const host = page.getByRole("textbox", { name: "Host starts with" });
+    await tabTo(page, host);
+    await page.keyboard.type("b");
+    await expect(summary).toHaveText("Showing item 1 out of 1");
+    await expect(host).toBeFocused();
+    await page.keyboard.press("Tab");
+    const clear = page.getByRole("button", {
+      name: "Clear Host starts with",
+    });
+    await expect(clear).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    await expect(host).toBeFocused();
+  });
 });

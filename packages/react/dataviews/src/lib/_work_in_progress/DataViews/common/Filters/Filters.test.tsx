@@ -5,19 +5,22 @@
  * mutation-tested against that contract.
  */
 import {
+  createArraySource,
   createCollection,
   createDataViewsProvider,
   createMemoryLocation,
+  createPage,
   type DataViewsProvider,
   DEFAULT_WINDOW,
   declareCapabilities,
   decodeQuery,
   type Query,
   type Slice,
+  type Source,
   type SourceCapabilities,
 } from "@canonical/dataviews-core";
 import { readProviderHost } from "@canonical/dataviews-core/bindings";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -175,30 +178,6 @@ describe("DataViews.Filters", () => {
     expect(provider.state.get().slice.filter).toEqual([
       { field: "status", operator: "isAny", operands: ["ready"] },
     ]);
-  });
-
-  it("draws no control for a choice whose options are the server's", () => {
-    const regions = createCollection({
-      identify: (row: Row) => row.id,
-      fields: [{ field: "region", kind: "choices" }],
-    });
-    render(
-      <DataViews
-        provider={createDataViewsProvider({
-          collection: regions,
-          facets: ["region"],
-          source: createManualSource<Row>({
-            capabilities: declareCapabilities(regions, {
-              filter: { region: true },
-              facets: ["region"],
-            }),
-          }).source,
-        })}
-      >
-        <Filters />
-      </DataViews>,
-    );
-    expect(screen.queryByRole("group", { name: "region" })).toBeNull();
   });
 
   it("removes the predicate when the last option is cleared", () => {
@@ -774,6 +753,343 @@ describe("DataViews.Filters", () => {
         "readonly",
       );
       await expectNoAxeViolations(container);
+    });
+  });
+
+  describe("facets and set operators", () => {
+    /** A machine carrying the fields its facets are computed from. */
+    type Machine = Row & {
+      readonly status: string;
+      readonly cpu: number;
+      readonly name: string;
+    };
+
+    /** Three machines, answered by a source computing every facet. */
+    const records: readonly Machine[] = [
+      { id: "a", status: "failed", cpu: 4, name: "web-01" },
+      { id: "b", status: "failed", cpu: 16, name: "web-02" },
+      { id: "c", status: "ready", cpu: 8, name: "api" },
+    ];
+
+    /** A provider over the array source, asking for the status and cpu facets. */
+    const faceted = (): DataViewsProvider<Fields, Row> =>
+      createDataViewsProvider({
+        collection,
+        source: createArraySource<Row>({ rows: records, collection }),
+        facets: ["status", "cpu"],
+      });
+
+    it("shows beside each option how many matching records hold it, without renaming it", () => {
+      const provider = faceted();
+      mount(provider);
+      expect(
+        screen.getByRole("checkbox", { name: "failed" }),
+      ).toHaveAccessibleDescription("2");
+      expect(
+        screen.getByRole("checkbox", { name: "ready" }),
+      ).toHaveAccessibleDescription("1");
+      // Listed by the schema and held by none: counted as none.
+      expect(
+        screen.getByRole("checkbox", { name: "cancelled" }),
+      ).toHaveAccessibleDescription("0");
+      // Another field's restriction narrows the counts...
+      fireEvent.change(screen.getByLabelText("cpu from"), {
+        target: { value: "10" },
+      });
+      expect(
+        screen.getByRole("checkbox", { name: "ready" }),
+      ).toHaveAccessibleDescription("0");
+      // ...the field's own never does: the other options keep theirs.
+      fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
+      expect(
+        screen.getByRole("checkbox", { name: "ready" }),
+      ).toHaveAccessibleDescription("0");
+      expect(
+        screen.getByRole("checkbox", { name: "failed" }),
+      ).toHaveAccessibleDescription("1");
+    });
+
+    it("shows no count while no result answers the applied query", () => {
+      mount(makeProvider());
+      expect(
+        screen.getByRole("checkbox", { name: "failed" }),
+      ).not.toHaveAttribute("aria-describedby");
+    });
+
+    it("spells a lower bound on a count, and nothing for a count unknown", () => {
+      const answering: Source<Row> = {
+        capabilities: declareCapabilities(collection, {
+          filter: { status: true },
+          facets: ["status"],
+        }),
+        execute: (_request, deliver) => {
+          deliver({
+            status: "succeeded",
+            page: createPage({
+              rows: [],
+              facets: {
+                status: {
+                  kind: "values",
+                  values: [
+                    { value: "failed", count: { kind: "at-least", value: 5 } },
+                    { value: "ready", count: { kind: "unknown" } },
+                  ],
+                },
+              },
+            }),
+          });
+          return () => {};
+        },
+      };
+      mount(
+        createDataViewsProvider({
+          collection,
+          source: answering,
+          facets: ["status"],
+        }),
+      );
+      expect(
+        screen.getByRole("checkbox", { name: "failed" }),
+      ).toHaveAccessibleDescription("5+");
+      expect(
+        screen.getByRole("checkbox", { name: "ready" }),
+      ).not.toHaveAttribute("aria-describedby");
+    });
+
+    it("offers the least and greatest value beside the bounds, over the field's own bounds lifted", () => {
+      mount(faceted());
+      const from = screen.getByLabelText("cpu from");
+      expect(from).toHaveAccessibleDescription("Lowest: 4");
+      expect(screen.getByLabelText("cpu to")).toHaveAccessibleDescription(
+        "Highest: 16",
+      );
+      fireEvent.click(screen.getByRole("checkbox", { name: "ready" }));
+      expect(from).toHaveAccessibleDescription("Lowest: 8");
+      // The hint stays beside what an invalid edit says.
+      fireEvent.change(from, { target: { value: "99" } });
+      expect(from).toHaveAccessibleDescription(
+        "Lowest: 8 99 is above the maximum of 64.",
+      );
+    });
+
+    it("lists a choice's options from the facet where they are the server's, keeping one the set holds", () => {
+      type Placed = { readonly id: string; readonly region?: string };
+      const places = createCollection({
+        identify: (row: Placed) => row.id,
+        fields: [{ field: "region", kind: "choices" }],
+      });
+      const provider = createDataViewsProvider({
+        collection: places,
+        source: createArraySource<Placed>({
+          rows: [
+            { id: "a", region: "eu" },
+            { id: "b", region: "us" },
+            { id: "c", region: "eu" },
+          ],
+          collection: places,
+        }),
+        facets: ["region"],
+      });
+      render(
+        <DataViews provider={provider}>
+          <Filters />
+        </DataViews>,
+      );
+      expect(
+        screen.getByRole("checkbox", { name: "eu" }),
+      ).toHaveAccessibleDescription("2");
+      expect(
+        screen.getByRole("checkbox", { name: "us" }),
+      ).toHaveAccessibleDescription("1");
+      act(() => {
+        readProviderHost(provider).adopt(
+          {
+            slice: {
+              filter: [
+                { field: "region", operator: "isAny", operands: ["ap"] },
+              ],
+              search: null,
+              sort: [],
+              group: [],
+            },
+            window: DEFAULT_WINDOW,
+          },
+          "adopt",
+          null,
+        );
+      });
+      // Held by the set though the facet lists no record holding it.
+      expect(screen.getByRole("checkbox", { name: "ap" })).toBeChecked();
+    });
+
+    it("lists each of the server's options once, and no value that is no option", () => {
+      type Placed = { readonly id: string };
+      const places = createCollection({
+        identify: (row: Placed) => row.id,
+        fields: [{ field: "region", kind: "choices" }],
+      });
+      const listing: Source<Placed> = {
+        capabilities: declareCapabilities(places, {
+          filter: { region: true },
+          facets: ["region"],
+        }),
+        execute: (_request, deliver) => {
+          deliver({
+            status: "succeeded",
+            page: createPage({
+              rows: [],
+              facets: {
+                region: {
+                  kind: "values",
+                  values: [
+                    { value: "eu", count: { kind: "exact", value: 2 } },
+                    // A source may answer a value no choice can hold.
+                    { value: true, count: { kind: "exact", value: 1 } },
+                  ],
+                },
+              },
+            }),
+          });
+          return () => {};
+        },
+      };
+      const provider = createDataViewsProvider({
+        collection: places,
+        source: listing,
+        facets: ["region"],
+      });
+      render(
+        <DataViews provider={provider}>
+          <Filters />
+        </DataViews>,
+      );
+      fireEvent.click(screen.getByRole("checkbox", { name: "eu" }));
+      // Held by the set and listed by the facet: one checkbox, not two.
+      expect(screen.getAllByRole("checkbox", { name: "eu" })).toHaveLength(1);
+      expect(screen.getByRole("checkbox", { name: "eu" })).toBeChecked();
+      expect(screen.queryByRole("checkbox", { name: "true" })).toBeNull();
+    });
+
+    it("offers no control for a choice whose options are the server's while nothing lists them", () => {
+      type Placed = { readonly id: string };
+      const places = createCollection({
+        identify: (row: Placed) => row.id,
+        fields: [{ field: "region", kind: "choices" }],
+      });
+      render(
+        <DataViews
+          provider={createDataViewsProvider({
+            collection: places,
+            source: createManualSource<Placed>({
+              capabilities: declareCapabilities(places, {
+                filter: { region: true },
+              }),
+            }).source,
+          })}
+        >
+          <Filters />
+        </DataViews>,
+      );
+      expect(screen.queryByRole("group", { name: "region" })).toBeNull();
+    });
+
+    it("moves a standing set to none-of and back, each as one step", () => {
+      const provider = faceted();
+      mount(provider);
+      // Nothing stands, so nothing moves.
+      expect(
+        screen.queryByRole("button", { name: "Match none of these instead" }),
+      ).toBeNull();
+      fireEvent.click(screen.getByRole("checkbox", { name: "failed" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Match none of these instead" }),
+      );
+      expect(provider.state.get().slice.filter).toEqual([
+        { field: "status", operator: "isNone", operands: ["failed"] },
+      ]);
+      const excluded = screen.getByRole("group", { name: "status is none of" });
+      const failed = within(excluded).getByRole("checkbox", { name: "failed" });
+      expect(failed).toBeChecked();
+      expect(failed).toHaveAttribute("name", "status__isNone");
+      // Any-of stays offered beside it, holding nothing.
+      const included = screen.getByRole("group", { name: "status" });
+      expect(
+        within(included).getByRole("checkbox", { name: "failed" }),
+      ).not.toBeChecked();
+      // The group that had the set leaves with it; focus is the filters'.
+      expect(screen.getByRole("group", { name: "Filters" })).toHaveFocus();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Match any of these instead" }),
+      );
+      expect(provider.state.get().slice.filter).toEqual([
+        { field: "status", operator: "isAny", operands: ["failed"] },
+      ]);
+    });
+
+    it("moves no set onto one already standing, so no restriction is overwritten", () => {
+      const provider = faceted();
+      mount(provider);
+      adopt(provider, [
+        { field: "status", operator: "isAny", operands: ["ready"] },
+        { field: "status", operator: "isNone", operands: ["failed"] },
+      ]);
+      expect(
+        screen.queryByRole("button", { name: "Match none of these instead" }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "Match any of these instead" }),
+      ).toBeNull();
+      // Once the other set is gone, the move is offered again.
+      const included = screen.getByRole("group", { name: "status" });
+      fireEvent.click(
+        within(included).getByRole("checkbox", { name: "ready" }),
+      );
+      expect(
+        screen.getByRole("button", { name: "Match any of these instead" }),
+      ).toBeInTheDocument();
+    });
+
+    it("moves focus to the filters when a set offered only while it stands leaves", () => {
+      const provider = faceted();
+      mount(provider);
+      adopt(provider, [
+        { field: "status", operator: "isNone", operands: ["failed"] },
+      ]);
+      const excluded = screen.getByRole("group", { name: "status is none of" });
+      const failed = within(excluded).getByRole("checkbox", { name: "failed" });
+      failed.focus();
+      fireEvent.click(failed);
+      expect(provider.state.get().slice.filter).toEqual([]);
+      expect(
+        screen.queryByRole("group", { name: "status is none of" }),
+      ).toBeNull();
+      expect(screen.getByRole("group", { name: "Filters" })).toHaveFocus();
+    });
+
+    it("offers none-of on its own where the source declares no any-of", () => {
+      mount(
+        makeProvider(
+          declareCapabilities(collection, { filter: { status: ["isNone"] } }),
+        ),
+      );
+      const excluded = screen.getByRole("group", { name: "status is none of" });
+      expect(screen.getByRole("checkbox", { name: "ready" })).toHaveAttribute(
+        "name",
+        "status__isNone",
+      );
+      expect(excluded).toBeInTheDocument();
+      expect(screen.queryByRole("group", { name: "status" })).toBeNull();
+    });
+
+    it("offers a text input for the text a field starts with", () => {
+      const provider = makeProvider(withText);
+      mount(provider);
+      const input = screen.getByRole("textbox", { name: "name starts with" });
+      expect(input).toHaveAttribute("name", "name__startsWith");
+      fireEvent.change(input, { target: { value: "we" } });
+      expect(provider.state.get().slice.filter).toEqual([
+        { field: "name", operator: "startsWith", operands: ["we"] },
+      ]);
     });
   });
 });

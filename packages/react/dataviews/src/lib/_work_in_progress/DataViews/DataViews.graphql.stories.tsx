@@ -1,7 +1,7 @@
 import { createMemoryLocation } from "@canonical/dataviews-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { expect, userEvent, waitFor } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { withAppScope } from "../../../storybook/decorators.js";
 import {
   createGraphQLHandlers,
@@ -9,6 +9,7 @@ import {
 } from "../../../storybook/machines/api/index.js";
 import {
   SERVER_BACKED_COLUMNS_CODE,
+  SERVER_BACKED_FACETS,
   SERVER_BACKED_RENDER_CODE,
 } from "../../../storybook/machines/constants.js";
 import { consumerCode } from "../../../storybook/machines/consumerCode.js";
@@ -46,11 +47,11 @@ import { environment } from "./relay.js";`,
 // What the endpoint runs: the parts offer this and nothing else.
 const capabilities = declareCapabilities(machineCollection, {
   filter: {
-    status: ["isAny"],
+    status: ["isAny", "isNone"],
     cores: ["gte", "lte"],
-    name: ["contains"],
+    name: ["contains", "startsWith"],
     region: ["contains"],
-    owner: ["contains"],
+    owner: ["contains", "startsWith"],
   },
   search: ["name", "owner"],
   sort: {
@@ -59,35 +60,45 @@ const capabilities = declareCapabilities(machineCollection, {
     tiebreak: "opaque",
   },
   pagination: { kind: "cursor", backward: false, durable: false },
+  facets: ["status", "cores"],
 });
 
 const source = createRelaySource({
   capabilities,
   environment,
-  operation: ({ slice, first, after }) => {
+  operation: ({ slice, first, after, facets }) => {
     const { filters, search, sort } = readSlice(machineCollection, slice);
     return createOperationDescriptor(MachinesQuery, {
       first,
       after,
       where: {
-        status: filters.status === undefined ? null : [...filters.status],
+        status:
+          filters.status?.isAny === undefined ? null : [...filters.status.isAny],
+        statusIsNone:
+          filters.status?.isNone === undefined
+            ? null
+            : [...filters.status.isNone],
         coresGte: filters.cores?.gte ?? null,
         coresLte: filters.cores?.lte ?? null,
-        nameContains: filters.name ?? null,
-        regionContains: filters.region ?? null,
-        ownerContains: filters.owner ?? null,
+        nameContains: filters.name?.contains ?? null,
+        nameStartsWith: filters.name?.startsWith ?? null,
+        regionContains: filters.region?.contains ?? null,
+        ownerContains: filters.owner?.contains ?? null,
+        ownerStartsWith: filters.owner?.startsWith ?? null,
         search,
       },
       orderBy: sort.map(({ field, direction }) => ({
         field,
         direction: direction === "asc" ? "ASC" : "DESC",
       })),
+      facets: [...facets],
     });
   },
   connection: (data) => data.machines,
 });`,
   source: "source",
   query: "page=1&size=5",
+  facets: SERVER_BACKED_FACETS,
   render: SERVER_BACKED_RENDER_CODE,
 });
 
@@ -242,5 +253,78 @@ export const TextApplied: Story = {
     await expect(
       canvas.getByRole("textbox", { name: "Owner contains" }),
     ).toBeVisible();
+  },
+};
+
+/**
+ * Counts beside the statuses, from the connection's facets: this endpoint
+ * counts no rows, yet counts what each status holds over every machine the
+ * query matches. Moving the kept failed machines to none-of keeps every
+ * machine that is not failed.
+ */
+export const CountsAndNoneOf: Story = {
+  parameters: code,
+  render: () => (
+    <ServerBackedMachines source={() => createGraphQLMachineSource("live")} />
+  ),
+  play: async ({ canvas }) => {
+    const status = canvas.getByRole("group", { name: "Status is any of" });
+    await waitFor(() =>
+      expect(
+        within(status).getByRole("checkbox", { name: "failed" }),
+      ).toHaveAccessibleDescription("3"),
+    );
+    await userEvent.click(
+      within(status).getByRole("checkbox", { name: "failed" }),
+    );
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("row", { name: /alder\.example\.com/ }),
+      ).toBeNull(),
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Match none of these instead" }),
+    );
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("row", { name: /alder\.example\.com/ }),
+      ).toBeVisible(),
+    );
+    const excluded = canvas.getByRole("group", { name: "Status is none of" });
+    await expect(
+      within(excluded).getByRole("checkbox", { name: "failed" }),
+    ).toBeChecked();
+  },
+};
+
+/**
+ * Text an owner starts with: this endpoint looks through the owner, so its
+ * input is offered, while the region has text it contains and none it starts
+ * with. `EX:I` keeps the machine owned by `ex:ivy`.
+ */
+export const StartsWithApplied: Story = {
+  parameters: code,
+  render: () => (
+    <ServerBackedMachines source={() => createGraphQLMachineSource("live")} />
+  ),
+  play: async ({ canvas }) => {
+    const owner = await canvas.findByRole("textbox", {
+      name: "Owner starts with",
+    });
+    await expect(owner).toHaveAttribute("name", "owner__startsWith");
+    await expect(
+      canvas.queryByRole("textbox", { name: "Region starts with" }),
+    ).toBeNull();
+    await userEvent.type(owner, "EX:I");
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("row", { name: /ironwood\.example\.com/ }),
+      ).toBeVisible(),
+    );
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("row", { name: /alder\.example\.com/ }),
+      ).toBeNull(),
+    );
   },
 };

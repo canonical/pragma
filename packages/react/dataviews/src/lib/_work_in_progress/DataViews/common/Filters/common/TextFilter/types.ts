@@ -1,4 +1,7 @@
-import type { FilterHandle } from "@canonical/dataviews-core";
+import type {
+  FilterHandle,
+  PredicateOperator,
+} from "@canonical/dataviews-core";
 
 /**
  * Props of one text filter.
@@ -8,15 +11,17 @@ import type { FilterHandle } from "@canonical/dataviews-core";
  * a caller's native props.
  */
 export type TextFilterProps = {
-  /** The root's handle for the text this field must contain. */
+  /** The root's handle for the text this field must contain or start with. */
   readonly handle: FilterHandle<string>;
+  /** Which text operator this control edits. */
+  readonly operator: Extract<PredicateOperator, "contains" | "startsWith">;
   /** The field's visible name; the operator's wording is added to it. */
   readonly label: string;
   /** The field the control addresses, which names its input. */
   readonly field: string;
   /**
-   * Whether the source declares `contains` on this field. An undeclared one
-   * is offered only while it stands, and only for removal.
+   * Whether the source declares the operator on this field. An undeclared
+   * one is offered only while it stands, and only for removal.
    */
   readonly declared: boolean;
   /**

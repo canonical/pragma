@@ -11,7 +11,7 @@ The stories on this page are answered by a mock endpoint, served by Mock Service
 
 ## Declare what the endpoint runs
 
-The declaration is the whole offer. Every part reads it: Filters offers a control only for what is declared, a header sorts only a declared field, and anything else is refused before a request is sent. This endpoint filters status, bounds cores, looks for text in the host name and the region but not the owner, searches, orders by one term, pages by number and counts exactly.
+The declaration is the whole offer. Every part reads it: Filters offers a control only for what is declared, a header sorts only a declared field, and anything else is refused before a request is sent. This endpoint filters the statuses a machine is any or none of, bounds cores, looks for text the host name and the region contain or start with but none in the owner, searches, orders by one term, pages by number and counts exactly.
 
 ```tsx
 import {
@@ -25,10 +25,10 @@ import { machineCollection } from "./machines.js";
 
 const capabilities = declareCapabilities(machineCollection, {
   filter: {
-    status: ["isAny"],
+    status: ["isAny", "isNone"],
     cores: ["gte", "lte"],
-    name: ["contains"],
-    region: ["contains"],
+    name: ["contains", "startsWith"],
+    region: ["contains", "startsWith"],
   },
   search: ["name", "owner"],
   sort: {
@@ -37,12 +37,13 @@ const capabilities = declareCapabilities(machineCollection, {
     tiebreak: "opaque",
   },
   counts: { pageable: "exact", matched: "exact", total: "exact" },
+  facets: ["status", "cores"],
 });
 ```
 
 ## Map a request onto the endpoint
 
-When the endpoint reads the same flat parameters the URL uses, `encodeQuery` writes the request for it — `status=failed&name__contains=web&sort=cores__desc&page=2&size=5`. `createPage` builds the page: a count given is exact, a count left out is unknown.
+When the endpoint reads the same flat parameters the URL uses, `encodeQuery` writes the request for it — `status=failed&status__isNone=pending&name__startsWith=web&sort=cores__desc&page=2&size=5`. `createPage` builds the page: a count given is exact, a count left out is unknown.
 
 ```tsx
 const queryClient = new QueryClient();
@@ -50,15 +51,62 @@ const queryClient = new QueryClient();
 // network reconnects.
 queryClient.mount();
 
+/** Whether a value is a count, of a kind the envelope names. */
+const isCount = (count) =>
+  count?.kind === "unknown" ||
+  ((count?.kind === "exact" || count?.kind === "at-least") &&
+    typeof count.value === "number");
+
+/** Whether a value is one value of a values facet, with its count. */
+const isFacetValue = (entry) =>
+  (typeof entry?.value === "string" ||
+    typeof entry?.value === "number" ||
+    entry?.value === true) &&
+  isCount(entry.count);
+
+/** Whether a value is one end of a range facet. */
+const isRangeEnd = (end) =>
+  end === null || typeof end === "string" || typeof end === "number";
+
+/**
+ * The facets an answer carries, read rather than trusted: a range with two
+ * ends, or values each with a count, and anything else left out.
+ */
+const readAnsweredFacets = (answered) => {
+  if (typeof answered !== "object" || answered === null) {
+    return undefined;
+  }
+  const facets = {};
+  for (const [field, facet] of Object.entries(answered)) {
+    if (
+      facet?.kind === "range" &&
+      isRangeEnd(facet.min) &&
+      isRangeEnd(facet.max)
+    ) {
+      facets[field] = { kind: "range", min: facet.min, max: facet.max };
+    } else if (facet?.kind === "values" && Array.isArray(facet.values)) {
+      facets[field] = {
+        kind: "values",
+        values: facet.values.filter(isFacetValue),
+      };
+    }
+  }
+  return facets;
+};
+
 const source = createQuerySource({
   capabilities,
   queryKey: ["machines"],
-  fetchPage: async ({ slice, window }) => {
+  fetchPage: async ({ slice, window, facets }) => {
     const params = encodeQuery({
       schema: machineCollection.schema,
       slice,
       window,
     });
+    // The endpoint computes a facet for each field named.
+    for (const field of facets) {
+      params.append("facet", field);
+    }
     const response = await fetch(`/api/machines?${params}`);
     // Read the answer, never trust it: a field of another shape is absent.
     const body = await response.json().catch(() => null);
@@ -80,21 +128,30 @@ const source = createQuerySource({
       rows: body.items,
       matched: typeof body.matched === "number" ? body.matched : undefined,
       total: typeof body.total === "number" ? body.total : undefined,
+      facets: readAnsweredFacets(body.facets),
     });
   },
   createObserver: (query) => new QueryObserver(queryClient, query),
 });
 ```
 
-The provider and the parts are built over it as over any other source.
+The provider and the parts are built over it as over any other source. Asked for facets — `createDataViewsProvider({ collection, source, facets: ["status", "cores"] })` — every request names them, and the endpoint answers each over every machine the query matches.
 
 <Canvas of={Stories.Answered} sourceState="none" />
 
-## Text a field contains
+## Counts and ranges from the endpoint
 
-`name__contains=web` asks for the hosts whose name holds `web`, compared case-insensitively. The text is literal: an endpoint matching with SQL `LIKE` escapes `%`, `_` and its escape character before it wraps the text in `%`, so `50%` never matches `5050`. The owner has no text input here, because the endpoint declares no `contains` on it.
+`facet=status&facet=cores` asks the endpoint to count the machines holding each status and to find the least and greatest number of cores, over the whole matching set rather than the page on screen. A field's own restriction is left out of its own facet: with `status=failed` applied, the other statuses still show how many machines they would add, and a bound on cores never narrows the range offered beside it. Filters shows each count beside its option and each end of the range beside its bound.
+
+<Canvas of={Stories.CountsAndNoneOf} sourceState="none" />
+
+## Text a field contains or starts with
+
+`name__contains=web` asks for the hosts whose name holds `web`, and `name__startsWith=web` for those whose name begins with it, compared case-insensitively. The text is literal: an endpoint matching with SQL `LIKE` escapes `%`, `_` and its escape character before it adds its own `%` — around the text for `contains`, after it for `startsWith` — so `50%` never matches `5050`. The owner has no text input here, because the endpoint declares no text operator on it.
 
 <Canvas of={Stories.TextApplied} sourceState="none" />
+
+<Canvas of={Stories.StartsWithApplied} sourceState="none" />
 
 ## While the endpoint answers
 

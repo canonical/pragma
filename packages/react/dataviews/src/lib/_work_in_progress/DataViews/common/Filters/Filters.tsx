@@ -8,10 +8,18 @@ import type {
   SchemaFieldDefinition,
   SourceCapabilities,
 } from "@canonical/dataviews-core";
+import {
+  type ProviderHost,
+  readProviderHost,
+} from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
 import { Fragment, type ReactElement, useRef } from "react";
 import { interceptSubmit } from "../../../../utils/index.js";
-import { useDataViewsRoot } from "../../hooks/index.js";
+import {
+  type UseFacetsResult,
+  useDataViewsRoot,
+  useFacets,
+} from "../../hooks/index.js";
 import { HiddenQueryFields } from "../HiddenQueryFields/index.js";
 import { findFilterHandle } from "../utils/index.js";
 import {
@@ -46,6 +54,9 @@ const destinationOf = ({ slice, window }: DataViewsState<object>): Query => ({
 type FilterContext = {
   readonly filters: FilterHandles<readonly SchemaFieldDefinition[]>;
   readonly capabilities: SourceCapabilities;
+  readonly host: ProviderHost;
+  /** The facets answering the applied query, or null while none does. */
+  readonly facets: UseFacetsResult;
   readonly focusGroup: () => void;
 };
 
@@ -64,25 +75,29 @@ const renderBounds = (
     { readonly kind: "number" | "date" }
   >,
   name: string,
-): ReactElement => (
-  <Fragment key={definition.field}>
-    {(["gte", "lte"] as const).map((bound) => (
-      <BoundFilter
-        key={bound}
-        handle={findFilterHandle<number | string>(
-          context.filters,
-          definition.field,
-          bound,
-        )}
-        label={name}
-        bound={bound}
-        definition={definition}
-        declared={declares(context, definition.field, bound)}
-        onLeave={context.focusGroup}
-      />
-    ))}
-  </Fragment>
-);
+): ReactElement => {
+  const facet = context.facets?.[definition.field];
+  return (
+    <Fragment key={definition.field}>
+      {(["gte", "lte"] as const).map((bound) => (
+        <BoundFilter
+          key={bound}
+          handle={findFilterHandle<number | string>(
+            context.filters,
+            definition.field,
+            bound,
+          )}
+          label={name}
+          bound={bound}
+          definition={definition}
+          range={facet?.kind === "range" ? facet : null}
+          declared={declares(context, definition.field, bound)}
+          onLeave={context.focusGroup}
+        />
+      ))}
+    </Fragment>
+  );
+};
 
 /**
  * The control each field kind edits through, keyed by kind so a kind the
@@ -95,23 +110,46 @@ const controls: {
     name: string,
   ) => ReactElement | null;
 } = {
-  // A choice whose options are the server's has none to draw here yet.
-  choices: (context, definition, name) =>
-    definition.options === undefined ? null : (
-      <ChoicesFilter
-        key={definition.field}
-        options={definition.options}
-        handle={findFilterHandle<ReadonlySet<PredicateOperand>>(
-          context.filters,
-          definition.field,
-          "isAny",
-        )}
-        label={name}
-        field={definition.field}
-        declared={declares(context, definition.field, "isAny")}
-        onLeave={context.focusGroup}
-      />
-    ),
+  choices: (context, definition, name) => {
+    const facet = context.facets?.[definition.field];
+    const values = facet?.kind === "values" ? facet.values : null;
+    const declaresAny = declares(context, definition.field, "isAny");
+    return (
+      <Fragment key={definition.field}>
+        {(["isAny", "isNone"] as const).map((operator) => {
+          const other = operator === "isAny" ? "isNone" : "isAny";
+          const declared = declares(context, definition.field, operator);
+          return (
+            <ChoicesFilter
+              key={operator}
+              options={definition.options}
+              values={values}
+              handle={findFilterHandle<ReadonlySet<PredicateOperand>>(
+                context.filters,
+                definition.field,
+                operator,
+              )}
+              operator={operator}
+              alternative={
+                declares(context, definition.field, other) ? other : null
+              }
+              alternativeHandle={findFilterHandle<
+                ReadonlySet<PredicateOperand>
+              >(context.filters, definition.field, other)}
+              host={context.host}
+              label={name}
+              field={definition.field}
+              declared={declared}
+              // None-of is reached from a standing any-of set wherever
+              // any-of is declared, and offered on its own only where not.
+              offered={declared && (operator === "isAny" || !declaresAny)}
+              onLeave={context.focusGroup}
+            />
+          );
+        })}
+      </Fragment>
+    );
+  },
   flag: (context, definition, name) => (
     <FlagFilter
       key={definition.field}
@@ -129,18 +167,23 @@ const controls: {
   number: renderBounds,
   date: renderBounds,
   text: (context, definition, name) => (
-    <TextFilter
-      key={definition.field}
-      handle={findFilterHandle<string>(
-        context.filters,
-        definition.field,
-        "contains",
-      )}
-      label={name}
-      field={definition.field}
-      declared={declares(context, definition.field, "contains")}
-      onLeave={context.focusGroup}
-    />
+    <Fragment key={definition.field}>
+      {(["contains", "startsWith"] as const).map((operator) => (
+        <TextFilter
+          key={operator}
+          handle={findFilterHandle<string>(
+            context.filters,
+            definition.field,
+            operator,
+          )}
+          operator={operator}
+          label={name}
+          field={definition.field}
+          declared={declares(context, definition.field, operator)}
+          onLeave={context.focusGroup}
+        />
+      ))}
+    </Fragment>
   ),
 };
 
@@ -171,10 +214,17 @@ const renderControl = (
  * restriction that is already in force and says so beside the control, and
  * two roots over one provider never share a half-typed input.
  *
+ * Where the provider asks its source for facets, the controls read them:
+ * counts beside a choice's options, the server's options where the schema
+ * lists none, and the least and greatest value beside a number or date
+ * bound — each computed by the source over the whole matching set, and
+ * shown only while the result answers the applied query.
+ *
  * At baseline the controls are a GET form: each is named as the wire
  * grammar spells its clause, a number bound is a native number input with
- * the schema's bounds, the text a field must contain is a native text
- * input, hidden controls carry the rest of the query, and the submit
+ * the schema's bounds, the text a field must contain or start with is a
+ * native text input, a set standing any-of or none-of moves to the other by
+ * a real link, hidden controls carry the rest of the query, and the submit
  * control leads to the destination the provider would have written. Once
  * scripting is enabled every edit applies as it is made, the clear controls
  * appear, and a submission is intercepted.
@@ -191,10 +241,13 @@ export default function Filters({
   ...rest
 }: DataViewsFiltersProps): ReactElement {
   const { provider, filters } = useDataViewsRoot("Filters");
+  const facets = useFacets({ provider });
   const groupRef = useRef<HTMLFieldSetElement>(null);
   const context: FilterContext = {
     filters,
     capabilities: provider.capabilities,
+    host: readProviderHost(provider),
+    facets,
     focusGroup: () => {
       groupRef.current?.focus();
     },

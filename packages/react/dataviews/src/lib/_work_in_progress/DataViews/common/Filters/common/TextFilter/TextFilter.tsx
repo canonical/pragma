@@ -8,11 +8,18 @@ import "./styles.css";
 
 const componentCssClassName = "ds data-views-filters-text";
 
+/** What each text operator adds to the field's name. */
+const OPERATOR_WORDING = {
+  contains: "contains",
+  startsWith: "starts with",
+} as const;
+
 /**
- * One text filter: the text a text field must contain.
+ * One text filter: the text a text field must contain, or start with.
  *
  * A labelled native text input named as the wire spells the clause,
- * `<field>__contains`, so a GET submission before any script runs is the
+ * `<field>__contains` or `<field>__startsWith`, so a GET submission before
+ * any script runs is the
  * same destination the edit writes; the server's decoder reads it back as
  * the predicate. Once scripting is enabled each edit applies as it is typed.
  * Emptying the input is incomplete, not a removal: the applied text stays
@@ -24,6 +31,7 @@ const componentCssClassName = "ds data-views-filters-text";
  */
 export default function TextFilter({
   handle,
+  operator,
   label,
   field: fieldName,
   declared,
@@ -38,7 +46,7 @@ export default function TextFilter({
   }
   const feedbackId = `${inputId}-feedback`;
   const message = describeFilterFeedback(field.feedback, retained);
-  const name = `${label} contains`;
+  const name = `${label} ${OPERATOR_WORDING[operator]}`;
   return (
     <div className={componentCssClassName}>
       <label htmlFor={inputId} className="label">
@@ -49,7 +57,7 @@ export default function TextFilter({
         id={inputId}
         className="input"
         type="text"
-        name={spellWireKey(fieldName, "contains")}
+        name={spellWireKey(fieldName, operator)}
         value={field.input}
         // Undeclared, the text can only be cleared, never replaced.
         readOnly={!declared}
