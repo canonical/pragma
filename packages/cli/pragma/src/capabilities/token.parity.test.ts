@@ -545,13 +545,14 @@ describe("token consumers — the binding tuple, either spelling (PROTECTED)", (
     // symbol. What it is not is evidence that nothing consumes it, so the
     // answer names the filter that came back empty.
     //
-    // It no longer reads out the story's `emptyRecovery`. That text answers
-    // "why is the POPULATION empty?" and prescribes `sources update`, which
-    // is the wrong answer to a filter that matched none of a populated table —
-    // the defect users hit as "No token symbols in the store" over 745 present
-    // symbols. The story cannot yet say which of its two empty cases a
-    // recovery is about, so the one it declares stays with the case it
-    // describes: the unfiltered one.
+    // The story's `emptyRecovery` follows that sentence rather than replacing
+    // it. Zero rows cannot say which of the two emptinesses this is — nothing
+    // consumes this variable, or nothing consumes anything yet — so the answer
+    // says both: the filter that came back empty, then the story's account of
+    // where consumers are recorded. What the recovery may NOT do is assert the
+    // population is empty, which is the defect users hit as "No token symbols
+    // in the store" over 745 present symbols; `token consumers` opens on the
+    // two readings instead, so it stays true here.
     const answered = await page("consumers", {
       variable: "button-color-background",
     });
@@ -560,7 +561,7 @@ describe("token consumers — the binding tuple, either spelling (PROTECTED)", (
       answered as never,
     );
     expect(notice).toContain("matches `--variable button-color-background`.");
-    expect(notice).not.toContain("sources update");
+    expect(notice).toContain("Either no component uses this token");
   });
 
   it("--key and --state narrow to one tuple each", async () => {

@@ -213,11 +213,11 @@ describe("empty ≠ silence on the machine surfaces", () => {
     // search path is the honest way to reach an empty list without a bad
     // argument.
     //
-    // What the guidance SAYS depends on which question was answered. A search
-    // that matched nothing is a statement about the search: the story's own
-    // `emptyRecovery` ("read the category slugs out of the graph") answers a
-    // question nobody asked, and its `sources update` siblings tell a reader
-    // with a populated store to rebuild it.
+    // The guidance leads with the question that was actually answered — the
+    // SEARCH that matched nothing, in the caller's own spelling — and the
+    // story's `emptyRecovery` follows it, as it does on an unfiltered empty
+    // answer. Leading with the recovery instead was the defect: `sources
+    // update` told a reader with a populated store to rebuild it.
     const result = await mcp.callTool("standard_list", {
       search: "zzz-nothing-matches-this",
     });
@@ -227,7 +227,7 @@ describe("empty ≠ silence on the machine surfaces", () => {
     expect(notice).toContain(
       "No standard matches `--search zzz-nothing-matches-this`.",
     );
-    expect(notice).not.toContain("pragma standard categories");
+    expect(notice).toContain("Category slugs come from the graph");
   });
 });
 

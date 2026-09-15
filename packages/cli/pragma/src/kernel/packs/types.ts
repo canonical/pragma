@@ -507,14 +507,15 @@ export interface PackPage {
    * The filters this read was narrowed by, as the caller spelled them — absent
    * when the read was unfiltered.
    *
-   * Carried because ZERO ROWS means two different things and the rows cannot
-   * tell them apart. An unfiltered empty list is a statement about the
-   * POPULATION, which is what a story's `emptyRecovery` answers ("build the
-   * store"). A filtered empty list is a statement about the FILTER, and
-   * answering it with the population's recovery tells a reader with 745 symbols
-   * in the store that the store is empty, then prescribes a write. The renderer
-   * cannot re-derive this — it sees a page, not the arguments — so the run body
-   * records what it narrowed by.
+   * Carried because a zero-row answer has something to say that its rows
+   * cannot: which arguments narrowed it. A reader who typed `--kind input` and
+   * got nothing has to see that it was applied and came back empty, so the
+   * empty-state sentence names the filters in force. The story's
+   * `emptyRecovery` — which speaks about the population, and is worded to hold
+   * whether or not a filter is in force — prints under that sentence, the same
+   * as it prints on its own when nothing narrowed the read. The renderer cannot
+   * re-derive this: it sees a page, not the arguments, so the run body records
+   * what it narrowed by.
    */
   readonly filters?: readonly PackAppliedFilter[];
   /**
