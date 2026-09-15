@@ -129,11 +129,11 @@ export const CertificateUser: Story = {
 };
 
 /**
- * Below Vanilla's small breakpoint (the 24.04 spec §7): the collapse toggle
+ * Below Vanilla's small breakpoint: the collapse toggle
  * becomes a "Menu"/"Close menu" text button, the header keeps its normal
  * row layout, and the body goes fullscreen when open rather than a 240px
  * rail. A fixed narrow wrapper stands in for a small-viewport preview.
- * Mobile drill-down is out of scope — the 24.04 spec §10.18.
+ * Mobile drill-down is out of scope.
  */
 export const Mobile: Story = {
   args: {

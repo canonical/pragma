@@ -62,7 +62,7 @@ const SideNavigation = ({
 
   const [expanded, setExpanded] = useState(defaultExpandedProp ?? true);
 
-  // Mobile seed (SPEC.md §4 responsive): below the small breakpoint, the
+  // Mobile seed: below the small breakpoint, the
   // expanded state renders as a fullscreen fixed overlay — a takeover, not a
   // rail — so with `defaultExpanded` left unset (desktop default `true`), a
   // small viewport collapses the rail after mount instead. An explicit
@@ -78,7 +78,7 @@ const SideNavigation = ({
     setExpanded((current) => !current);
   }, []);
 
-  // Ctrl+B rail-collapse shortcut (the 24.04 spec §10.1) — on unless
+  // Ctrl+B rail-collapse shortcut — on unless
   // `keyboardShortcut` opts out. See common/hooks/useCollapseShortcut.
   useCollapseShortcut({ enabled: keyboardShortcut, onTrigger: handleToggle });
 

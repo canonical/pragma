@@ -4,12 +4,6 @@
 > pairings from the original draft are retained below; the previously
 > deferred Properties, State & Keyboard, and Accessibility sections are now
 > specified.
->
-> **Citation convention.** References in this folder to `SPEC.md §N` mean
-> this document's own sections (§1–§5). References to "the 24.04 spec
-> §N.M" use the upstream design spec's section numbering, which this
-> document does not mirror — those numbers are stable there and are kept
-> so a claim can be traced to its source.
 
 ---
 
