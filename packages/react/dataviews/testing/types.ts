@@ -78,3 +78,24 @@ export type MemoryViewStore = {
   /** Delete a record as another tab would, and tell this one. */
   readonly drop: (id: string) => void;
 };
+
+/** One record the cases look through, by its identity and its text. */
+export type ContainsRecord = {
+  readonly id: string;
+  /** Deliberately wider than text: the cases include values that are not. */
+  readonly name?: unknown;
+};
+
+/** One operand and the records whose text holds it, in record order. */
+export type ContainsCase = {
+  readonly operand: string;
+  readonly matches: readonly string[];
+  /** What the case pins, for a failure to say. */
+  readonly pins: string;
+};
+
+/** One answer from the mock machine API: its HTTP status and its parsed body. */
+export type MockApiAnswer = {
+  readonly status: number;
+  readonly body: unknown;
+};

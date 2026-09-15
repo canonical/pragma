@@ -242,6 +242,57 @@ describe("executeSlice", () => {
     ).toEqual([]);
   });
 
+  it("finds text a value contains, case-insensitively and literally", () => {
+    const named = [
+      { id: "upper", name: "WEB-01" },
+      { id: "percent", name: "50% full" },
+      { id: "wild", name: "5050 full" },
+      { id: "decomposed", name: "École" },
+      { id: "number", name: 50 },
+      { id: "absent" },
+    ];
+    const findContaining = (operand: unknown) =>
+      ids(
+        executeSlice(
+          named,
+          slice({
+            filter: [
+              {
+                field: "name",
+                operator: "contains",
+                operands: [operand as string],
+              },
+            ],
+          }),
+          buildExecuteConfig(),
+        ),
+      );
+    expect(findContaining("web")).toEqual(["upper"]);
+    // A percent sign is a character, never a wildcard.
+    expect(findContaining("50%")).toEqual(["percent"]);
+    expect(findContaining("école")).toEqual(["decomposed"]);
+    // Only a string holds text, and only text is looked for.
+    expect(findContaining("50")).toEqual(["percent", "wild"]);
+    expect(findContaining(50)).toEqual([]);
+  });
+
+  it("folds search as contains folds", () => {
+    const folded = [
+      { id: "greek", name: "ΟΔΟΣΤΡΩΜΑ" },
+      { id: "t-diaeresis", name: "T̈" },
+    ];
+    const findSearching = (search: string) =>
+      ids(
+        executeSlice(
+          folded,
+          slice({ search }),
+          buildExecuteConfig({ searchFields: ["name"] }),
+        ),
+      );
+    expect(findSearching("ΟΔΟΣ")).toEqual(["greek"]);
+    expect(findSearching("ẗ")).toEqual(["t-diaeresis"]);
+  });
+
   it("searches case-insensitively over the declared fields only", () => {
     expect(
       ids(

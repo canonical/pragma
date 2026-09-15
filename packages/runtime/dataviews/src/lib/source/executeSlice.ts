@@ -6,6 +6,7 @@ import {
 } from "../query/index.js";
 import { readField } from "../rows/index.js";
 import { type FieldKindRules, resolveFieldKind } from "../schema/index.js";
+import foldText from "./foldText.js";
 import orderRows from "./orderRows.js";
 import resolveEffectiveOrdering from "./resolveEffectiveOrdering.js";
 import type { ExecuteSliceConfig } from "./types.js";
@@ -85,13 +86,27 @@ const compilePredicate = (
         },
       };
     }
+    case "contains": {
+      const [operand] = predicate.operands;
+      // Text looks for text: an operand that is not a string is held by no
+      // value, and neither is text in a value that is not a string.
+      if (typeof operand !== "string") {
+        return { field, test: () => false };
+      }
+      const needle = foldText(operand);
+      return {
+        field,
+        test: (value) =>
+          typeof value === "string" && foldText(value).includes(needle),
+      };
+    }
   }
 };
 
 /**
- * Case-insensitive substring search over the declared fields. Text and
- * numeric values are searched; every other value, absent fields included,
- * never matches.
+ * Case-insensitive substring search over the declared fields, folded as
+ * `contains` folds. Text and numeric values are searched; every other
+ * value, absent fields included, never matches.
  */
 const matchesSearch = (
   row: object,
@@ -104,7 +119,7 @@ const matchesSearch = (
       continue;
     }
     const text = typeof value === "string" ? value : String(value);
-    if (text.toLowerCase().includes(needle)) {
+    if (foldText(text).includes(needle)) {
       return true;
     }
   }
@@ -129,7 +144,7 @@ export default function executeSlice<TRow extends object>(
 ): readonly TRow[] {
   const searchFields = config.searchFields ?? [];
   const query = canonicalizeSlice(slice);
-  const needle = query.search === null ? null : query.search.toLowerCase();
+  const needle = query.search === null ? null : foldText(query.search);
   const predicates = query.filter.map((predicate) => {
     const definition = config.schema.findField(predicate.field);
     return compilePredicate(

@@ -1,6 +1,8 @@
 /**
- * The keyboard-only pass over the DataTable's stories and its sort panel's,
- * in the built Storybook: Tab, Shift+Tab, Enter and Space, and no other key.
+ * The keyboard-only pass over the DataTable's stories, its sort panel's and
+ * the server-backed ones, in the built Storybook, where the service worker
+ * answers the server-backed stories: Tab, Shift+Tab, Enter and Space, and no
+ * other key.
  *
  * Every story is walked both ways, asserting that each interactive control
  * is reached and that focus is visible on it when it is. Then the controls
@@ -30,8 +32,17 @@ const TABLE = "_work_in_progress/DataTable";
 /** The sort panel's stories, the path to an ordering without Shift. */
 const SORT_PANEL = "_work_in_progress/DataViews/SortPanel";
 
-/** The stories this pass walks: the table's own, and the sort panel's. */
-const TITLES: readonly string[] = [TABLE, SORT_PANEL];
+/** The stories over a REST endpoint, through TanStack Query. */
+const REST_API = "_work_in_progress/DataViews/REST API";
+
+/** The stories over a GraphQL endpoint, through Relay. */
+const GRAPHQL_API = "_work_in_progress/DataViews/GraphQL API";
+
+/**
+ * The stories this pass walks: the table's own, the sort panel's, and the
+ * whole composition over each mock endpoint.
+ */
+const TITLES: readonly string[] = [TABLE, SORT_PANEL, REST_API, GRAPHQL_API];
 
 /**
  * The built Storybook's index, trusted as the build writes it: only its
@@ -415,7 +426,7 @@ const tabTo = async (page: Page, control: Locator): Promise<void> => {
   }
 };
 
-test.describe("DataTable and sort panel stories, keyboard only", () => {
+test.describe("DataTable, sort panel and server-backed stories, keyboard only", () => {
   for (const story of stories) {
     test(`${story.title} ${story.name}: every control is reached both ways, focus visible`, async ({
       page,
@@ -631,5 +642,31 @@ test.describe("DataTable and sort panel stories, keyboard only", () => {
     await page.keyboard.press("Enter");
     await expect(terms.nth(1)).toHaveText(/^cores, descending/);
     await expect(moveDown).toBeFocused();
+  });
+
+  test("REST API Answered: text typed into a filter narrows the table, and Enter on its clear restores it", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(REST_API, "Answered").id);
+    const summary = page
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("status");
+    // The story's own play function has already kept the failed machines.
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    const host = page.getByRole("textbox", { name: "Host contains" });
+    await tabTo(page, host);
+    // Characters, not a shortcut: the input's own text is the query.
+    await page.keyboard.type("fir");
+    await expect(summary).toHaveText("Showing item 1 out of 1");
+    await expect(host).toBeFocused();
+    await page.keyboard.press("Tab");
+    const clear = page.getByRole("button", { name: "Clear Host contains" });
+    await expect(clear).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    await expect(host).toHaveValue("");
+    // The clear control leaves with the text; focus moves to the input.
+    await expect(clear).toHaveCount(0);
+    await expect(host).toBeFocused();
   });
 });

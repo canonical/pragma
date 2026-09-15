@@ -46,4 +46,5 @@ export const SUFFIXED_OPERATORS = Object.freeze([
   "gte",
   "lte",
   "isSet",
+  "contains",
 ] as const satisfies readonly PredicateOperator[]);

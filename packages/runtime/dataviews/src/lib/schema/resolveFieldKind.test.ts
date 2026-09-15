@@ -23,7 +23,7 @@ describe("resolveFieldKind", () => {
     expect(resolveFieldKind("number").operators).toEqual(["gte", "lte"]);
     expect(resolveFieldKind("flag").operators).toEqual(["isSet"]);
     expect(resolveFieldKind("date").operators).toEqual(["gte", "lte"]);
-    expect(resolveFieldKind("text").operators).toEqual([]);
+    expect(resolveFieldKind("text").operators).toEqual(["contains"]);
   });
 
   it("parses a text input through the kind, or says the kind takes none", () => {
@@ -43,9 +43,14 @@ describe("resolveFieldKind", () => {
       kind: "none",
       reason: "flag fields edit through direct commands",
     });
-    expect(resolveFieldKind("text").input).toEqual({
-      kind: "none",
-      reason: "text fields are ordered, not filtered",
+    const text = rulesOf("text");
+    if (text.rules.input.kind !== "text") {
+      throw new Error("text edits through a text input");
+    }
+    // Literal: nothing is trimmed, and no character is a wildcard.
+    expect(text.rules.input.parse(text.definition, " 50%_ ")).toEqual({
+      status: "valid",
+      operand: " 50%_ ",
     });
   });
 
@@ -61,7 +66,13 @@ describe("resolveFieldKind", () => {
     const flag = rulesOf("flag");
     expect(flag.rules.rejectOperands(flag.definition, [true])).toBeNull();
     const text = rulesOf("text");
-    expect(text.rules.rejectOperands(text.definition, ["anything"])).toBeNull();
+    expect(text.rules.rejectOperands(text.definition, ["web"])).toBeNull();
+    expect(text.rules.rejectOperands(text.definition, [""])).toBe(
+      '"" is not non-empty text',
+    );
+    expect(text.rules.rejectOperands(text.definition, [4])).toBe(
+      "4 is not non-empty text",
+    );
   });
 
   it("reads the applied value a predicate carries and compares two of them", () => {
@@ -78,7 +89,11 @@ describe("resolveFieldKind", () => {
     expect(choices.areAppliedEqual(applied, "failed")).toBe(false);
     const text = resolveFieldKind("text");
     expect(
-      text.readApplied({ field: "name", operator: "gte", operands: ["b"] }),
+      text.readApplied({
+        field: "name",
+        operator: "contains",
+        operands: ["b"],
+      }),
     ).toBe("b");
     expect(text.areAppliedEqual("b", "b")).toBe(true);
     expect(

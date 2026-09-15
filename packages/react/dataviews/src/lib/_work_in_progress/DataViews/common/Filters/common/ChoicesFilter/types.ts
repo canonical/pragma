@@ -21,4 +21,10 @@ export type ChoicesFilterProps = {
    * one is offered only while it stands, and only for removal.
    */
   readonly declared: boolean;
+  /**
+   * Place focus when the control leaves with the restriction it removed,
+   * or disables the checkbox that had focus, as an undeclared one does once
+   * an option is unchecked: the parent owns where it goes.
+   */
+  readonly onLeave: () => void;
 };

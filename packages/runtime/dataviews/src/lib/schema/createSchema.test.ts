@@ -179,21 +179,33 @@ describe("createSchema", () => {
     expect(schema.listOperators("cpu")).toEqual(["gte", "lte"]);
     expect(schema.listOperators("updated")).toEqual(["gte", "lte"]);
     expect(schema.listOperators("owner")).toEqual(["isSet"]);
-    // Text is ordered: the grammar has no substring operator,
-    // so nothing filters it.
-    expect(schema.listOperators("name")).toEqual([]);
+    expect(schema.listOperators("name")).toEqual(["contains"]);
     expect(schema.listOperators("zone")).toEqual([]);
   });
 
-  it("refuses every predicate over a text field", () => {
+  it("filters a text field by the text it contains, and by nothing else", () => {
+    expect(schema.predicateFor("name", "contains", ["alder"])).toEqual({
+      status: "valid",
+      predicate: { field: "name", operator: "contains", operands: ["alder"] },
+    });
     expect(schema.predicateFor("name", "eq", ["alder"])).toEqual({
       status: "invalid",
       reason: 'text field "name" does not accept the eq operator',
     });
-    expect(schema.validateInput("name", "alder")).toEqual({
+    expect(schema.predicateFor("status", "contains", ["fail"])).toEqual({
       status: "invalid",
-      reason: "text fields are ordered, not filtered",
+      reason: 'choices field "status" does not accept the contains operator',
     });
+    expect(schema.predicateFor("name", "contains", [""])).toEqual({
+      status: "invalid",
+      reason: '"" is not non-empty text',
+    });
+    expect(schema.validateInput("name", "alder")).toEqual({
+      status: "valid",
+      operands: ["alder"],
+    });
+    // Emptied, the input is incomplete: the text already applied stays.
+    expect(schema.validateInput("name", "")).toEqual({ status: "incomplete" });
   });
 
   it("validates a choices input against the option set", () => {

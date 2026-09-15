@@ -1,9 +1,8 @@
-import type { FilterFeedback } from "@canonical/dataviews-core";
 import { spellWireKey } from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
-import { type ReactElement, useId } from "react";
-import { composeSentence } from "../../../../../../utils/index.js";
+import { type ReactElement, useId, useRef } from "react";
 import { useFilterHandle } from "../../../../hooks/index.js";
+import { describeFilterFeedback } from "../utils/index.js";
 import type { BoundFilterProps } from "./types.js";
 import "./styles.css";
 
@@ -11,51 +10,16 @@ const componentCssClassName = "ds data-views-filters-bound";
 
 const BOUND_WORDING = { gte: "from", lte: "to" } as const;
 
-const STILL_APPLIES = "The previous restriction still applies.";
-
-/**
- * What to say beside the input, or null when there is nothing to say.
- *
- * An invalid or emptied edit retains the applied predicate, so the message
- * says the prior restriction still applies: the results on screen are
- * still filtered and the text on screen is not what filtered them.
- */
-const feedbackTextOf = (
-  feedback: FilterFeedback,
-  retained: boolean,
-): string | null => {
-  switch (feedback.status) {
-    case "none":
-    case "applied":
-      return null;
-    case "incomplete":
-      return retained
-        ? `Enter a value to change this restriction. ${STILL_APPLIES}`
-        : "Enter a value to apply this restriction.";
-    case "invalid":
-      return feedback.retainsPredicate
-        ? `${composeSentence(feedback.reason)} ${STILL_APPLIES}`
-        : composeSentence(feedback.reason);
-    case "refused": {
-      // Every reason the source gave, each as its own sentence.
-      const reasons = feedback.refusals
-        .map((refusal) => composeSentence(refusal.reason))
-        .join(" ");
-      return feedback.retainsPredicate
-        ? `${reasons} ${STILL_APPLIES}`
-        : reasons;
-    }
-  }
-};
-
 /**
  * One bound of a number or date field.
  *
  * Emptying the input is incomplete, not a removal: the applied bound stays
- * until it is explicitly cleared, which is what the clear control is for. A
+ * until it is explicitly cleared, which is what the clear control is for;
+ * clearing moves focus to the input while the source declares the bound,
+ * and otherwise to the filters' group, as the control leaves with it. A
  * number is a native number input carrying the schema's bounds, so the
- * browser validates it before any script runs and the same bounds the
- * schema enforces are the ones it announces; a date is a native date input.
+ * browser validates it before any script runs and the same bounds the schema
+ * enforces are the ones it announces; a date is a native date input.
  * The control is named as the wire spells the clause, so a GET submission
  * is the same destination the edit writes.
  */
@@ -65,15 +29,17 @@ export default function BoundFilter({
   bound,
   definition,
   declared,
+  onLeave,
 }: BoundFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
   const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const retained = field.applied.kind === "value";
   if (!declared && !retained) {
     return null;
   }
   const feedbackId = `${inputId}-feedback`;
-  const message = feedbackTextOf(field.feedback, retained);
+  const message = describeFilterFeedback(field.feedback, retained);
   const name = `${label} ${BOUND_WORDING[bound]}`;
   // The schema's bounds, natively: an out-of-range value is refused by the
   // browser at baseline and by the schema once scripted.
@@ -92,6 +58,7 @@ export default function BoundFilter({
         {name}
       </label>
       <input
+        ref={inputRef}
         id={inputId}
         className="input"
         {...native}
@@ -121,6 +88,15 @@ export default function BoundFilter({
           className="clear"
           onClick={() => {
             field.clear();
+            // The control with focus leaves with the bound. The input stays
+            // while the source declares the bound, so focus goes there;
+            // otherwise the whole control leaves, and its parent places
+            // focus rather than the document.
+            if (declared) {
+              inputRef.current?.focus();
+            } else {
+              onLeave();
+            }
           }}
         >
           {`Clear ${name}`}

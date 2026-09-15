@@ -53,12 +53,16 @@ describe("createFilterInputs", () => {
     });
     expect(Object.keys(handles).sort()).toEqual([
       "cpu",
+      "name",
       "owner",
       "status",
       "updated",
     ]);
     expect(Object.keys(handles.cpu).sort()).toEqual(["gte", "lte"]);
-    expect(handles).not.toHaveProperty("name");
+    expect(Object.keys(handles.name)).toEqual(["contains"]);
+    expectTypeOf(handles.name.contains.applied).toEqualTypeOf<
+      ReadonlyChannel<EmptyOr<string>>
+    >();
     expectTypeOf(handles.status.eq.applied).toEqualTypeOf<
       ReadonlyChannel<EmptyOr<ReadonlySet<"failed" | "cancelled">>>
     >();

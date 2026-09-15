@@ -19,4 +19,9 @@ export type FlagFilterProps = {
    * one is offered only while it stands, and only for removal.
    */
   readonly declared: boolean;
+  /**
+   * Place focus when the control leaves with the restriction it removed,
+   * as an undeclared one does once unchecked: the parent owns where it goes.
+   */
+  readonly onLeave: () => void;
 };

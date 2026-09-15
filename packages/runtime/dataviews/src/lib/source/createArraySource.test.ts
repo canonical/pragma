@@ -63,9 +63,8 @@ const idsOf = (delivered: SourceDelivery) =>
 describe("createArraySource", () => {
   it("declares complete input, and each field's own operators", () => {
     expect({ ...source().capabilities }).toEqual({
-      // Text fields are ordered, never filtered, so the
-      // declaration offers no operator over them at all.
-      filter: { cpu: ["gte", "lte"] },
+      // Complete local input executes every operator each kind accepts.
+      filter: { id: ["contains"], name: ["contains"], cpu: ["gte", "lte"] },
       search: { fields: ["name"] },
       sort: {
         fields: ["id", "name", "cpu"],

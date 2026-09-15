@@ -50,7 +50,7 @@ const columnsCode = `const columns: readonly DataTableColumn[] = [
 
 const composition = `<DataViews provider={provider}>
   <DataViews.SavedViews />
-  <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+  <DataViews.Filters labels={{ status: "Status", cores: "Cores", name: "Host", region: "Region", owner: "Owner" }} />
   <DataTable provider={provider} columns={columns} label="Machines" />
   <DataViews.Pagination sizes={[5, 10, 25]} />
 </DataViews>`;
@@ -82,7 +82,15 @@ function Collection({
   return (
     <DataViews provider={provider}>
       <Component />
-      <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+      <DataViews.Filters
+        labels={{
+          status: "Status",
+          cores: "Cores",
+          name: "Host",
+          region: "Region",
+          owner: "Owner",
+        }}
+      />
       {children}
       <DataTable provider={provider} columns={columns} label="Machines" />
       <DataViews.Pagination sizes={[5, 10, 25]} />

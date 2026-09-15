@@ -28,4 +28,9 @@ export type BoundFilterProps = {
    * only while it stands, and only for removal.
    */
   readonly declared: boolean;
+  /**
+   * Place focus when the control leaves with the restriction it removed,
+   * as an undeclared one does once cleared: the parent owns where it goes.
+   */
+  readonly onLeave: () => void;
 };

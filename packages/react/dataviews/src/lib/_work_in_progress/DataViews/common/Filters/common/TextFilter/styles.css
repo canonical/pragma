@@ -1,0 +1,23 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * TextFilter styles
+   *
+   * The input is native, themed by the page. What this sheet settles is the
+   * clear control: the enhancement's, so it appears only once scripting is
+   * enabled — at baseline the text is removed by emptying the input and
+   * submitting.
+   */
+  .ds.data-views-filters-text {
+    & > .clear {
+      display: none;
+    }
+
+    @media (scripting: enabled) {
+      & > .clear {
+        display: inline-flex;
+      }
+    }
+  }
+}

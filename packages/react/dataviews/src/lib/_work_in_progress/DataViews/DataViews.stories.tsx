@@ -96,7 +96,15 @@ function Collection({
     <Component provider={provider}>
       {provider.views === null ? null : <Component.SavedViews />}
       <Component.Search label="Search machines" />
-      <Component.Filters labels={{ status: "Status", cores: "Cores" }} />
+      <Component.Filters
+        labels={{
+          status: "Status",
+          cores: "Cores",
+          name: "Host",
+          region: "Region",
+          owner: "Owner",
+        }}
+      />
       <QueryIssues />
       {children}
       <Component.DataTable
@@ -153,7 +161,7 @@ ${queryIssuesCode}`,
     render: `<DataViews provider={provider}>
   <DataViews.SavedViews />
   <DataViews.Search label="Search machines" />
-  <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+  <DataViews.Filters labels={{ status: "Status", cores: "Cores", name: "Host", region: "Region", owner: "Owner" }} />
   <QueryIssues />
   <DataViews.DataTable
     columns={columns}
@@ -239,7 +247,7 @@ ${queryIssuesCode}`,
     location: "createPlatformLocation(platform)",
     render: `<DataViews provider={provider}>
   <DataViews.Search label="Search machines" />
-  <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+  <DataViews.Filters labels={{ status: "Status", cores: "Cores", name: "Host", region: "Region", owner: "Owner" }} />
   <QueryIssues />
   <DataViews.DataTable
     columns={columns}

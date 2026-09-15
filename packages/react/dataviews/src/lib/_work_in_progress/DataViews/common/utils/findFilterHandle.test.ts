@@ -30,7 +30,10 @@ describe("findFilterHandle", () => {
     expect(() => findFilterHandle(handles, "cores", "eq")).toThrow(
       "the root holds no filter for cores eq",
     );
-    // A text field has no operator, so it has no handle to find.
+    // A text field is filtered by the text it contains, never by equality.
+    expect(findFilterHandle(handles, "name", "contains")).toBe(
+      handles.name.contains,
+    );
     expect(() => findFilterHandle(handles, "name", "eq")).toThrow(
       "the root holds no filter for name eq",
     );

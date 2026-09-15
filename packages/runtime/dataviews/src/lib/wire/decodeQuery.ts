@@ -133,14 +133,15 @@ const readPredicate = (
     operator = suffix;
   }
   if (
+    !kind.operators.includes(operator) ||
     OPERATOR_ARITY[operator] === "none" ||
-    (kind.input.kind === "none" && kind.operators.length > 0)
+    kind.input.kind === "none"
   ) {
-    // The zero-value operator carries no operands — its presence is the
-    // predicate, never a truthiness test on its value — and a kind that
-    // filters without a text input has none to parse: the schema answers
-    // for the operator alone. A kind that filters by nothing at all reads
-    // its values below, so the report says why, not which operator.
+    // An operator the kind does not accept is refused for the operator,
+    // before any value is read. The zero-value operator carries no operands
+    // — its presence is the predicate, never a truthiness test on its value
+    // — and a kind that filters without a text input has none to parse: the
+    // schema answers for the operator alone.
     record(schema.predicateFor(field, operator, []), key, filter, issues);
     return;
   }

@@ -53,13 +53,18 @@ describe("useDataViews", () => {
     expect(result.current.views).toBeNull();
     expect(result.current.setSort).toBe(provider.setSort);
     expect(result.current.runAction).toBe(provider.runAction);
-    // One handle per field and legal operator; text is ordered, not filtered.
+    // One handle per field and legal operator.
+    expect(Object.keys(result.current.filters.name)).toEqual(["contains"]);
     expect(Object.keys(result.current.filters.status)).toEqual(["eq"]);
     expect(Object.keys(result.current.filters.cores).sort()).toEqual([
       "gte",
       "lte",
     ]);
-    expect(Object.keys(result.current.filters)).toEqual(["status", "cores"]);
+    expect(Object.keys(result.current.filters)).toEqual([
+      "name",
+      "status",
+      "cores",
+    ]);
   });
 
   it("hands out channels that cannot be published on", () => {

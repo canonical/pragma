@@ -3,7 +3,8 @@ import type { PredicateOperator } from "./types.js";
 
 /**
  * Why a count of operands is not one the operator carries, or null when it
- * is: `eq` needs at least one, `gte` and `lte` exactly one, `isSet` none.
+ * is: `eq` needs at least one, `gte`, `lte` and `contains` exactly one,
+ * `isSet` none.
  */
 export default function rejectOperandArity(
   operator: PredicateOperator,

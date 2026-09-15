@@ -18,7 +18,13 @@ const meta = {
   component: Component,
   decorators: [withAppScope],
   args: {
-    labels: { status: "Status", cores: "Cores" },
+    labels: {
+      status: "Status",
+      cores: "Cores",
+      name: "Host",
+      region: "Region",
+      owner: "Owner",
+    },
   },
 } satisfies Meta<typeof Component>;
 
@@ -40,7 +46,7 @@ const columnsCode = `const columns: readonly DataTableColumn[] = [
 ];`;
 
 const composition = `<DataViews provider={provider}>
-  <DataViews.Filters labels={{ status: "Status", cores: "Cores" }} />
+  <DataViews.Filters labels={{ status: "Status", cores: "Cores", name: "Host", region: "Region", owner: "Owner" }} />
   <DataTable provider={provider} columns={columns} label="Machines" />
 </DataViews>`;
 
