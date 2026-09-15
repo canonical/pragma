@@ -36,6 +36,10 @@
 
   &:hover:not(:disabled) {
     background-color: var(--color-foreground-radio-unselected-hover);
+
+    &:not(:checked) {
+      border-color: var(--color-border-highlighted);
+    }
   }
 
   &:checked {
