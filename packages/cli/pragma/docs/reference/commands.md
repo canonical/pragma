@@ -459,7 +459,7 @@ pragma graph connect <a> <b> [options]
 
 ```bash
 pragma graph connect ds:global.component.button dt:color.text  # a block and a token symbol
-pragma graph connect ds:global.component.button ds:apps.pattern.data_table --format json  # an honest unlinked answer, with the policy it was found under
+pragma graph connect ds:global.component.button ds:apps.pattern.datatable --format json  # an honest unlinked answer, with the policy it was found under
 ```
 
 ### pragma graph inspect

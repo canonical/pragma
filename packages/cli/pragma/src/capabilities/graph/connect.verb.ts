@@ -140,7 +140,7 @@ const connectVerb: VerbSpec<Record<string, unknown>, ConnectResult> = {
       note: "a block and a token symbol",
     },
     {
-      cmd: `${BIN_NAME} graph connect ds:global.component.button ds:apps.pattern.data_table --format json`,
+      cmd: `${BIN_NAME} graph connect ds:global.component.button ds:apps.pattern.datatable --format json`,
       note: "an honest unlinked answer, with the policy it was found under",
     },
   ],
