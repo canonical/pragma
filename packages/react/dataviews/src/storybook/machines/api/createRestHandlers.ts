@@ -1,8 +1,10 @@
+import type { Facet } from "@canonical/dataviews-core";
 import { delay, HttpResponse, http, type RequestHandler } from "msw";
 import { machines } from "../fixtures.js";
 import compileLikePattern from "./compileLikePattern.js";
 import { API_SCENARIOS } from "./constants.js";
 import foldStoredText from "./foldStoredText.js";
+import readApiFacets from "./readApiFacets.js";
 import readRestQuery from "./readRestQuery.js";
 import selectRecords from "./selectRecords.js";
 import spellLikePattern from "./spellLikePattern.js";
@@ -21,6 +23,8 @@ type RestPage = {
   readonly matched: number;
   /** Records the endpoint serves, whatever the query. */
   readonly total: number;
+  /** The facets the query asked for, keyed by field. */
+  readonly facets: Readonly<Record<string, Facet>>;
 };
 
 /**
@@ -79,6 +83,7 @@ export default function createRestHandlers({
       items: matched.slice(start, start + read.size),
       matched: matched.length,
       total: records.length,
+      facets: readApiFacets(records, read.query, matched, matchText),
     });
   };
   return API_SCENARIOS.map((scenario) =>

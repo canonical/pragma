@@ -4,7 +4,8 @@
  * member of it, the page and answer a manual source is answered with, the
  * completions a request ends badly with, the counts a page claims, the
  * pagination kinds a source declares, a slice filtered one way, one display
- * status of each kind, and a stored saved view as a store lists it.
+ * status of each kind, a stored saved view as a store lists it, and a
+ * schema with records a facet reads.
  * Kept in one place so a new capability member does not have to be spelled
  * into ninety test files.
  */
@@ -26,6 +27,7 @@ import {
 } from "../src/lib/result/index.js";
 
 import type { RowRecord } from "../src/lib/rows/index.js";
+import { createSchema } from "../src/lib/schema/index.js";
 import {
   declareCapabilities,
   type PaginationCapabilities,
@@ -76,6 +78,7 @@ export const pageOf = <TRow extends object>(
     matched: { kind: "exact", value: rows.length },
     total: { kind: "exact", value: rows.length },
   },
+  facets: {},
   more: null,
   cursors: null,
 });
@@ -156,6 +159,7 @@ export const buildSettledPage = ({
   rows: Array.from({ length: rows }, (_unused, at) => ({ id: `m${at}` })),
   groups: null,
   counts: countingPageable(pageable),
+  facets: {},
   more,
   cursors,
 });
@@ -198,3 +202,57 @@ export const buildStoredView = (
   updatedAt: "2026-09-11T00:00:00.000Z",
   ...overrides,
 });
+
+/**
+ * A schema with a field of every kind, and records holding each field's
+ * values as a facet meets them: listed, unlisted, absent, null and of
+ * another type, so each reader's rules for what it counts are exercised.
+ */
+export const FACETED_SCHEMA = createSchema([
+  {
+    field: "status",
+    kind: "choices",
+    options: ["running", "failed", "pending"],
+  },
+  { field: "cpu", kind: "number" },
+  { field: "owner", kind: "flag" },
+  { field: "updated", kind: "date" },
+  { field: "name", kind: "text" },
+]);
+
+export const FACETED_ROWS: readonly RowRecord[] = [
+  {
+    id: "a",
+    status: "running",
+    cpu: 4,
+    owner: "ex:ada",
+    updated: "2026-01-02",
+    name: "alpha",
+  },
+  {
+    id: "b",
+    status: "failed",
+    cpu: 16,
+    owner: null,
+    updated: "2025-12-31",
+    name: "beta",
+  },
+  {
+    id: "c",
+    status: "failed",
+    cpu: 8,
+    updated: new Date("2026-03-01T00:00:00Z"),
+    name: "gamma",
+  },
+  {
+    id: "d",
+    status: "unlisted",
+    cpu: 32,
+    owner: false,
+    updated: 1_700_000_000_000,
+    name: "delta",
+  },
+  { id: "e", status: true, cpu: "12", name: "epsilon" },
+  { id: "g", status: "archived" },
+  { id: "f" },
+];

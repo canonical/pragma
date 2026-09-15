@@ -177,6 +177,30 @@ describe("DataViews.Filters", () => {
     ]);
   });
 
+  it("draws no control for a choice whose options are the server's", () => {
+    const regions = createCollection({
+      identify: (row: Row) => row.id,
+      fields: [{ field: "region", kind: "choices" }],
+    });
+    render(
+      <DataViews
+        provider={createDataViewsProvider({
+          collection: regions,
+          facets: ["region"],
+          source: createManualSource<Row>({
+            capabilities: declareCapabilities(regions, {
+              filter: { region: true },
+              facets: ["region"],
+            }),
+          }).source,
+        })}
+      >
+        <Filters />
+      </DataViews>,
+    );
+    expect(screen.queryByRole("group", { name: "region" })).toBeNull();
+  });
+
   it("removes the predicate when the last option is cleared", () => {
     const provider = makeProvider();
     mount(provider);

@@ -16,6 +16,7 @@ import type {
 } from "../query/index.js";
 import type {
   Count,
+  Facet,
   PageCursors,
   SourceDelivery,
   SourcePage,
@@ -37,6 +38,11 @@ import type {
  */
 export type SourceRequest = Query & {
   readonly requestId: string;
+  /**
+   * The fields whose facets the page must answer, each one the source
+   * declares; empty for none. The same for every request a provider issues.
+   */
+  readonly facets: readonly string[];
 };
 
 /**
@@ -220,6 +226,11 @@ export type SourceCapabilities = {
   readonly pagination: PaginationCapabilities;
   /** Whether actions may address every row matching a query, not only ids. */
   readonly selection: { readonly scope: "explicit" | "query" };
+  /**
+   * The fields the source computes facets for over the matching set. A field
+   * absent here has none, and a provider asking for it is refused when built.
+   */
+  readonly facets: readonly string[];
   /** Row operations by name. A name absent here cannot be run. */
   readonly actions: Readonly<Record<string, ActionCapabilities>>;
 };
@@ -312,6 +323,19 @@ export type Source<TRow extends object = RowRecord> = {
 type FieldNameOf<TFields extends readonly SchemaFieldDefinition[]> =
   TFields[number]["field"];
 
+/**
+ * The names of a schema's fields a facet can be computed for: every kind
+ * but text, whose values form no discrete set and no range.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type FacetFieldNameOf<TFields extends readonly SchemaFieldDefinition[]> =
+  Extract<
+    TFields[number],
+    { readonly kind: "choices" | "flag" | "number" | "date" }
+  >["field"];
+
 /** The operators one field of a schema accepts, from its kind. */
 type OperatorsOf<
   TFields extends readonly SchemaFieldDefinition[],
@@ -385,6 +409,11 @@ export type CapabilityDeclaration<
   readonly pagination?: PaginationCapabilities | undefined;
   /** Row operations by name; none when left out. */
   readonly actions?: Readonly<Record<string, ActionCapabilities>> | undefined;
+  /**
+   * The fields the source computes facets for over the matching set; none
+   * when left out. A text field has none.
+   */
+  readonly facets?: readonly FacetFieldNameOf<TFields>[] | undefined;
 };
 
 /**
@@ -435,6 +464,8 @@ export type PageConfig<TRow extends object = RowRecord> = {
   readonly more?: boolean | undefined;
   /** The adjacent pages' tokens, for a cursor source. */
   readonly cursors?: PageCursors | undefined;
+  /** The facets the backend answered, keyed by field; none when left out. */
+  readonly facets?: Readonly<Record<string, Facet>> | undefined;
 };
 
 /**
@@ -619,6 +650,8 @@ export type RelayPageRequest = {
   readonly first: number;
   /** The cursor the page starts after; null for the first page. */
   readonly after: string | null;
+  /** The fields whose facets the operation must select; empty for none. */
+  readonly facets: readonly string[];
 };
 
 /**
@@ -637,6 +670,8 @@ export type RelayConnection<TRow extends object = RowRecord> = {
   };
   /** The rows matching the query, when the schema counts them. */
   readonly totalCount?: number | null | undefined;
+  /** The facets the operation selected, keyed by field, when it asked for any. */
+  readonly facets?: Readonly<Record<string, Facet>> | null | undefined;
 };
 
 /**

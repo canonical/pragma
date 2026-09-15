@@ -1200,6 +1200,43 @@ describe("createDataViewsProvider host", () => {
     expect(provider.state.get().slice.filter).toEqual([]);
   });
 
+  it("moves a set from one operator to another on its field as one transition", () => {
+    const recorded = createRecordingLocation({ href: "/machines" });
+    const provider = createDataViewsProvider({
+      collection: machines,
+      source: createManualSource<Machine>({
+        capabilities: declareCapabilities(machines, {
+          filter: { status: ["isAny", "isNone"] },
+        }),
+      }).source,
+      location: recorded.location,
+    });
+    const release = provider.observe();
+    const host = readProviderHost(provider);
+    host.setPredicate(STATUS_FAILED);
+    const heard: string[] = [];
+    host.transitions.subscribe(() => {
+      const transition = host.transitions.get();
+      heard.push(`${transition?.cause}:${transition?.history}`);
+    });
+    const writesBefore = recorded.writes.length;
+    expect(
+      host.setPredicate(
+        { field: "status", operator: "isNone", operands: ["failed"] },
+        "isAny",
+      ),
+    ).toEqual([]);
+    expect(provider.state.get().slice.filter).toEqual([
+      { field: "status", operator: "isNone", operands: ["failed"] },
+    ]);
+    // One step Back returns from, and one write carrying it.
+    expect(heard).toEqual(["filter:push"]);
+    expect(recorded.writes.slice(writesBefore)).toEqual([
+      ["status__isNone=failed&page=1&size=50", "push"],
+    ]);
+    release();
+  });
+
   it("completes the pending request and publishes the result", () => {
     const { provider, host } = machineProvider();
     const requestId = host.refresh();

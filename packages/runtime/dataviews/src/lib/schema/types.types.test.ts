@@ -35,4 +35,10 @@ describe("schema type inference", () => {
   it("applies the text a text field contains", () => {
     expectTypeOf<AppliedOf<FieldOf<"name">>>().toEqualTypeOf<string>();
   });
+
+  it("applies a set of strings for a choices field whose options are the server's", () => {
+    expectTypeOf<
+      AppliedOf<{ readonly field: "region"; readonly kind: "choices" }>
+    >().toEqualTypeOf<ReadonlySet<string>>();
+  });
 });

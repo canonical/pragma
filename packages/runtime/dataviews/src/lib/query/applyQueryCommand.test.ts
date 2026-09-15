@@ -642,4 +642,35 @@ describe("applyQueryCommand", () => {
     expect(result.window.page).toBe(2);
     expect(result.reason).toBe("page must be a positive integer");
   });
+
+  it("replaces the predicate a set moves from, on the same field, in one transition", () => {
+    const standing = slice({
+      filter: [
+        { field: "status", operator: "isAny", operands: ["failed"] },
+        { field: "cpu", operator: "gte", operands: [4] },
+      ],
+    });
+    const result = applyQueryCommand(standing, window(), {
+      kind: "setPredicate",
+      predicate: { field: "status", operator: "isNone", operands: ["failed"] },
+      replaces: "isAny",
+    });
+    expect(result.status).toBe("accepted");
+    expect(result.slice.filter).toEqual([
+      { field: "cpu", operator: "gte", operands: [4] },
+      { field: "status", operator: "isNone", operands: ["failed"] },
+    ]);
+  });
+
+  it("types what a move replaces as a set operator", () => {
+    const command: Parameters<typeof applyQueryCommand>[2] = {
+      kind: "setPredicate",
+      predicate: { field: "status", operator: "isNone", operands: ["failed"] },
+      // @ts-expect-error only a set operator is replaced by a move
+      replaces: "gte",
+    };
+    expect(applyQueryCommand(slice(), window(), command).status).toBe(
+      "rejected",
+    );
+  });
 });

@@ -8,6 +8,7 @@ import {
 import { machines } from "../fixtures.js";
 import { API_SCENARIOS } from "./constants.js";
 import foldStoredText from "./foldStoredText.js";
+import readApiFacets from "./readApiFacets.js";
 import readGraphQLQuery from "./readGraphQLQuery.js";
 import selectRecords from "./selectRecords.js";
 import type {
@@ -81,6 +82,7 @@ export default function createGraphQLHandlers({
       data: {
         machines: {
           totalCount: null,
+          facets: readApiFacets(records, read.query, matched, matchText),
           pageInfo: {
             endCursor: page.length === 0 ? null : spellCursor(end),
             hasNextPage: end < matched.length,

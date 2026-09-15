@@ -8,8 +8,9 @@ import {
   rejectWindow,
   type Slice,
   spellQueryKey,
+  spellSliceKey,
 } from "../query/index.js";
-import type { Completion } from "../result/index.js";
+import { areFacetsEqual, type Completion } from "../result/index.js";
 import type { RowRecord } from "../rows/index.js";
 import type {
   DataViewsState,
@@ -29,6 +30,7 @@ const idleResult: ResultState<never> = Object.freeze({
   rows: null,
   groups: null,
   counts: null,
+  facets: null,
   more: null,
   cursors: null,
   provenance: null,
@@ -113,6 +115,9 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
       ? startWindow
       : copyWindow(config.initial.window);
   let currentKey = spellQueryKey({ slice, window });
+  /** The key of the slice in force, spelled when an adoption first compares
+   * against it, and dropped whenever the slice moves. */
+  let sliceKey: string | null = null;
   let result: ResultState<TRow> = idleResult;
 
   function buildSnapshot(): DataViewsState<TRow> {
@@ -173,6 +178,7 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
       // them.
       if (applied.slice !== slice) {
         slice = copySlice(applied.slice);
+        sliceKey = null;
       }
       // The window is rebuilt by every accepted command, so it is always the
       // command layer's object and always copied.
@@ -197,7 +203,14 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
       if (nextKey === currentKey) {
         return null;
       }
-      slice = copiedSlice;
+      // A move of the window alone keeps the slice it stood on, so what reads
+      // the slice by identity — the facets it answered — sees no new query.
+      const copiedSliceKey = spellSliceKey(copiedSlice);
+      sliceKey ??= spellSliceKey(slice);
+      if (copiedSliceKey !== sliceKey) {
+        slice = copiedSlice;
+        sliceKey = copiedSliceKey;
+      }
       window = copiedWindow;
       currentKey = nextKey;
       return beginRequest(false);
@@ -223,6 +236,12 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
             matched: page.counts.matched,
             total: page.counts.total,
           }),
+          // The same facets again keep their identity, so what reads them by
+          // identity — a control showing counts — has nothing to redraw.
+          facets:
+            result.facets !== null && areFacetsEqual(result.facets, page.facets)
+              ? result.facets
+              : Object.freeze({ ...page.facets }),
           more: page.more,
           cursors:
             page.cursors === null
@@ -251,6 +270,7 @@ export default function createQueryCoordinator<TRow extends object = RowRecord>(
       generation += 1;
       lastRequestId = null;
       slice = startSlice;
+      sliceKey = null;
       window = startWindow;
       currentKey = spellQueryKey({ slice, window });
       publishedKey = null;

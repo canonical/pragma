@@ -14,10 +14,7 @@ import {
   type SourceDelivery,
 } from "@canonical/dataviews-core";
 import { describe, expect, it } from "vitest";
-import {
-  OPERATOR_CASES,
-  OPERATOR_RECORDS,
-} from "../../../testing/operatorCases.js";
+import { OPERATOR_CASES, OPERATOR_RECORDS } from "../../../testing/fixtures.js";
 import {
   requestGraphQL,
   requestRest,
@@ -51,7 +48,7 @@ const records = createCollection({
 const EVERY_RECORD = OPERATOR_RECORDS.length;
 
 /** The field a case's operator looks at. */
-const fieldOf = ({ operator }: OperatorCase): "name" | "status" =>
+const readCaseField = ({ operator }: OperatorCase): "name" | "status" =>
   operator === "contains" || operator === "startsWith" ? "name" : "status";
 
 /** Run one case through the local array source. */
@@ -68,13 +65,14 @@ const findInArraySource = (tested: OperatorCase): unknown => {
         ...EMPTY_SLICE,
         filter: [
           {
-            field: fieldOf(tested),
+            field: readCaseField(tested),
             operator: tested.operator,
             operands: tested.operands,
           },
         ],
       },
       window: { ...DEFAULT_WINDOW, size: EVERY_RECORD },
+      facets: [],
     },
     (delivery) => {
       deliveries.push(delivery);
@@ -118,7 +116,7 @@ const GRAPHQL_MEMBERS = {
 /** Run one case through the GraphQL endpoint. */
 const findOverGraphQL = async (tested: OperatorCase): Promise<unknown> => {
   const [operand] = tested.operands;
-  const isText = fieldOf(tested) === "name";
+  const isText = readCaseField(tested) === "name";
   const { body } = await requestGraphQL("live", {
     first: EVERY_RECORD,
     where: {

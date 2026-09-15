@@ -56,6 +56,7 @@ const succeeded = (
     rows,
     groups: null,
     counts: counts(rows.length),
+    facets: {},
     more: null,
     cursors: null,
     ...overrides,
@@ -133,6 +134,57 @@ describe("createQueryCoordinator", () => {
     coordinator.reset();
     expect(coordinator.state.slice.search).toBe("seed");
     expect(coordinator.state.window.page).toBe(1);
+  });
+
+  it("keeps the facets it published when a later request fails", () => {
+    const coordinator = createQueryCoordinator({});
+    const first = dispatchRequest(coordinator, {
+      kind: "setPredicate",
+      predicate: statusPredicate("failed"),
+    });
+    coordinator.complete(
+      first,
+      succeeded([{ id: "machine-1" }], {
+        facets: {
+          status: {
+            kind: "values",
+            values: [{ value: "failed", count: { kind: "exact", value: 1 } }],
+          },
+        },
+      }),
+    );
+    const published = coordinator.state.result.facets;
+    const second = dispatchRequest(coordinator, {
+      kind: "setPredicate",
+      predicate: statusPredicate("cancelled"),
+    });
+    coordinator.complete(second, failed("offline"));
+    expect(coordinator.state.result.status).toBe("stale");
+    expect(coordinator.state.result.facets).toBe(published);
+    expect(published).not.toBeNull();
+  });
+
+  it("adopts a slice again once a command or a reset has moved away from it", () => {
+    const failedOnly = {
+      slice: slice({ filter: [statusPredicate("failed")] }),
+      window: window(),
+    };
+    const coordinator = createQueryCoordinator({});
+    coordinator.adopt(failedOnly);
+    dispatchRequest(coordinator, {
+      kind: "setPredicate",
+      predicate: statusPredicate("cancelled"),
+    });
+    // Back to the first query, on another page: its slice is in force again.
+    expect(
+      coordinator.adopt({ ...failedOnly, window: window({ page: 2 }) }),
+    ).not.toBeNull();
+    expect(coordinator.state.slice.filter).toEqual([statusPredicate("failed")]);
+    coordinator.reset();
+    expect(
+      coordinator.adopt({ ...failedOnly, window: window({ page: 3 }) }),
+    ).not.toBeNull();
+    expect(coordinator.state.slice.filter).toEqual([statusPredicate("failed")]);
   });
 
   it("issues a request on a query change, resets the window and retains rows", () => {
@@ -240,6 +292,7 @@ describe("createQueryCoordinator", () => {
       rows: [{ id: "machine-1" }, { id: "machine-2" }],
       groups: null,
       counts: counts(9),
+      facets: {},
       more: true,
       cursors: { next: "c:machine-2", previous: null },
       provenance: {
@@ -270,6 +323,7 @@ describe("createQueryCoordinator", () => {
       rows: [{ id: "machine-1" }],
       groups,
       counts: counts(1),
+      facets: {},
       more: null,
       cursors: { next: "c:machine-1", previous: null },
     };

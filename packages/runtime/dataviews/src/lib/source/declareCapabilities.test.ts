@@ -34,6 +34,7 @@ describe("declareCapabilities", () => {
       pagination: { kind: "offset" },
       selection: { scope: "explicit" },
       actions: {},
+      facets: [],
     });
   });
 
@@ -69,6 +70,7 @@ describe("declareCapabilities", () => {
       pagination: { kind: "cursor", backward: false, durable: true },
       selection: { scope: "explicit" },
       actions: { stop: { targets: "explicit", limit: 10 } },
+      facets: [],
     });
     expect(Object.isFrozen(declared)).toBe(true);
     expect(Object.isFrozen(declared.filter)).toBe(true);
@@ -163,5 +165,26 @@ describe("declareCapabilities", () => {
     // refuses both and an author has nothing to spell.
     expectTypeOf<Declaration>().not.toHaveProperty("group");
     expectTypeOf<Declaration>().not.toHaveProperty("selection");
+  });
+
+  it("declares the facets a source computes, refusing text and unknown fields", () => {
+    expect(
+      declareCapabilities(machines, { facets: ["status", "cpu", "status"] })
+        .facets,
+    ).toEqual(["status", "cpu"]);
+    expect(declareCapabilities(machines, {}).facets).toEqual([]);
+    expect(() =>
+      declareCapabilities(machines, {
+        facets: ["name"],
+      } as unknown as Declaration),
+    ).toThrow('text field "name" has no facet');
+    expect(() =>
+      declareCapabilities(machines, {
+        facets: ["zone"],
+      } as unknown as Declaration),
+    ).toThrow('the schema has no field "zone" to compute a facet for');
+    expectTypeOf<NonNullable<Declaration["facets"]>[number]>().toEqualTypeOf<
+      "status" | "cpu" | "owner"
+    >();
   });
 });

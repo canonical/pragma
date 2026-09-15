@@ -139,4 +139,29 @@ describe("resolveFieldKind", () => {
     expect(order.readKey("ready")).toEqual({ rank: 2, text: "ready" });
     expect(order.readKey(true)).toBeNull();
   });
+
+  it("takes the server's options where a choices field lists none", () => {
+    const choices = resolveFieldKind("choices");
+    const region = { field: "region", kind: "choices" } as const;
+    expect(choices.rejectDefinition(region)).toBeNull();
+    if (choices.input.kind !== "text") {
+      throw new Error("choices edit through a text input");
+    }
+    expect(choices.input.parse(region, "eu-west")).toEqual({
+      status: "valid",
+      operand: "eu-west",
+    });
+    expect(choices.rejectOperands(region, ["eu-west"])).toBeNull();
+    // Text, as the wire spells an option: a number would never read back.
+    expect(choices.rejectOperands(region, [7])).toBe(
+      '7 is not an option of "region"',
+    );
+    expect(choices.rejectOperands(region, [true])).toBe(
+      'true is not an option of "region"',
+    );
+    const order = choices.createOrder(region, (a, b) => a.localeCompare(b));
+    // With no declared order, every value shares a rank and orders by text.
+    expect(order.readKey("eu-west")).toEqual({ rank: 0, text: "eu-west" });
+    expect(order.readKey(7)).toEqual({ rank: 0, text: "7" });
+  });
 });

@@ -13,13 +13,13 @@ import type {
  * Build the complete, frozen capability record a source publishes from
  * what its author declares, typed against the collection's schema.
  *
- * Every member the author leaves out is refused — no filter on that
- * field, no search, no sort, counts unknown, no actions — so the
- * unanswered case is the safe case; a member the schema cannot check, an
- * unknown field or an operator its kind does not accept, is refused with
- * a thrown error at construction rather than at the first request. The
- * grouping and selection blocks are not declarable: no shipped source can
- * execute either, and the record refuses both.
+ * Every member the author leaves out is refused — no filter on that field,
+ * no search, no sort, counts unknown, no actions, no facets — so the
+ * unanswered case is the safe case; a member the schema cannot check — an
+ * unknown field, an operator its kind does not accept or a facet over text —
+ * is refused with a thrown error at construction rather than at the first
+ * request. The grouping and selection blocks are not declarable: no shipped
+ * source can execute either, and the record refuses both.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
@@ -94,6 +94,21 @@ export default function declareCapabilities<
     }
     empties[field] = placement;
   }
+  const facets: string[] = [];
+  for (const field of declaration.facets ?? []) {
+    const definition = schema.findField(field);
+    if (definition === undefined) {
+      throw new Error(
+        `the schema has no field "${field}" to compute a facet for`,
+      );
+    }
+    if (definition.kind === "text") {
+      throw new Error(`text field "${field}" has no facet`);
+    }
+    if (!facets.includes(field)) {
+      facets.push(field);
+    }
+  }
   return copyCapabilities({
     filter,
     search:
@@ -117,5 +132,6 @@ export default function declareCapabilities<
     pagination: declaration.pagination ?? { kind: "offset" },
     selection: { scope: "explicit" },
     actions: declaration.actions ?? {},
+    facets,
   });
 }

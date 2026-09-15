@@ -1,8 +1,11 @@
 import type { DataViewsState, ResultState } from "../coordinator/index.js";
 import { areListsEqual, type Query } from "../query/index.js";
 import {
+  areCountsEqual,
+  areFacetsEqual,
   type Completion,
   type Count,
+  type Facet,
   type SourceCounts,
   type SourceDelivery,
   UNKNOWN_COUNT,
@@ -70,17 +73,43 @@ const holdCounts = (
   total: holdCount(counts.total, declared.total),
 });
 
+/**
+ * The facets a page answered, held to the fields the request asked for, each
+ * value's count to a whole number of rows, and copied, so what a source hands
+ * over cannot move under published state.
+ */
+const holdFacets = (
+  facets: Readonly<Record<string, Facet>> | undefined,
+  requested: readonly string[],
+): Readonly<Record<string, Facet>> => {
+  // A page that left its facets out answered none.
+  const answered = facets ?? {};
+  const held: Record<string, Facet> = {};
+  for (const field of requested) {
+    const facet = Object.hasOwn(answered, field) ? answered[field] : undefined;
+    if (facet === undefined) {
+      continue;
+    }
+    held[field] =
+      facet.kind === "values"
+        ? Object.freeze({
+            kind: "values",
+            values: Object.freeze(
+              facet.values.map(({ value, count }) =>
+                Object.freeze({ value, count: holdCount(count, "exact") }),
+              ),
+            ),
+          })
+        : Object.freeze({ kind: "range", min: facet.min, max: facet.max });
+  }
+  return Object.freeze(held);
+};
+
 /** A request that failed because the source threw, with what it threw. */
 const failWith = (error: unknown): Completion<never> => ({
   status: "failed",
   failure: { reason: describeError(error), cause: error, transient: null },
 });
-
-/** Whether two counts claim the same: the same kind, and the same value where they carry one. */
-const isSameCount = (a: Count, b: Count): boolean =>
-  a.kind === "unknown" || b.kind === "unknown"
-    ? a.kind === b.kind
-    : a.kind === b.kind && a.value === b.value;
 
 /**
  * Whether a completion would publish nothing new over a ready result: the
@@ -94,8 +123,8 @@ const isSameResult = <TRow extends object>(
   if (result.status !== "ready" || completion.status !== "succeeded") {
     return false;
   }
-  const { rows, counts } = result;
-  if (rows === null || counts === null) {
+  const { rows, counts, facets } = result;
+  if (rows === null || counts === null || facets === null) {
     return false;
   }
   const { page } = completion;
@@ -105,9 +134,10 @@ const isSameResult = <TRow extends object>(
       ? page.groups === null
       : page.groups !== null &&
         areListsEqual(result.groups, page.groups, Object.is)) &&
-    isSameCount(counts.pageable, page.counts.pageable) &&
-    isSameCount(counts.matched, page.counts.matched) &&
-    isSameCount(counts.total, page.counts.total) &&
+    areCountsEqual(counts.pageable, page.counts.pageable) &&
+    areCountsEqual(counts.matched, page.counts.matched) &&
+    areCountsEqual(counts.total, page.counts.total) &&
+    areFacetsEqual(facets, page.facets) &&
     result.more === page.more &&
     (result.cursors?.next ?? null) === (page.cursors?.next ?? null) &&
     (result.cursors?.previous ?? null) === (page.cursors?.previous ?? null)
@@ -148,7 +178,7 @@ export default function runSource<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
 >(config: SourceRunConfig<TFields, TRow>): SourceRun {
-  const { host, source } = config;
+  const { host, source, facets } = config;
   const { capabilities } = host;
   const rejection = findPortRejection(capabilities, source);
   if (rejection !== null) {
@@ -189,6 +219,7 @@ export default function runSource<
           page: {
             ...delivery.page,
             counts: holdCounts(delivery.page.counts, capabilities.counts),
+            facets: holdFacets(delivery.page.facets, facets),
           },
         }
       : delivery;
@@ -258,7 +289,7 @@ export default function runSource<
     execution = started;
     let release: () => void;
     try {
-      release = source.execute({ requestId, ...query }, (delivery) => {
+      release = source.execute({ requestId, ...query, facets }, (delivery) => {
         publish(started, delivery);
       });
     } catch (error) {
@@ -341,7 +372,11 @@ export default function runSource<
       }
       let delivery: SourceDelivery<TRow> | null;
       try {
-        delivery = source.readDelivery({ requestId: pending, ...query });
+        delivery = source.readDelivery({
+          requestId: pending,
+          ...query,
+          facets,
+        });
       } catch (error) {
         host.complete(pending, failWith(error));
         return;

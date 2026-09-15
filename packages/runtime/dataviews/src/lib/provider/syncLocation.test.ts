@@ -934,7 +934,7 @@ describe("syncLocation", () => {
     });
     const provider = createDataViewsProvider({ collection: machines, source });
     const host = readProviderHost(provider);
-    const stopSource = runSource({ host, source }).observe();
+    const stopSource = runSource({ host, source, facets: [] }).observe();
     const location = createMemoryLocation({
       href: "/machines?status=failed&sort=cpu__asc",
     });
@@ -971,7 +971,7 @@ describe("syncLocation", () => {
     };
     const provider = createDataViewsProvider({ collection: machines, source });
     const host = readProviderHost(provider);
-    const stopSource = runSource({ host, source }).observe();
+    const stopSource = runSource({ host, source, facets: [] }).observe();
     const location = createMemoryLocation({ href: "/machines?status=failed" });
     const release = syncLocation({
       host,

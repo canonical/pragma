@@ -3,6 +3,7 @@ import {
   SORTED_FIELDS,
   STATUS_ORDER,
 } from "./constants.js";
+import isFacetField from "./isFacetField.js";
 import type { ApiProblem, ApiQuery, ApiTextMatch } from "./types.js";
 
 /**
@@ -123,8 +124,8 @@ const readOrderBy = (value: unknown): ApiQuery["sort"] | ApiProblem => {
  * Read the GraphQL endpoint's variables, as its resolver would: a forward
  * page by `first` and `after`, a `where` input whose `status` lists the
  * statuses a machine is any of and `statusIsNone` those it is none of, whose
- * text members hold the text each field must contain or start with, and an
- * `orderBy` of at most one term.
+ * text members hold the text each field must contain or start with, an
+ * `orderBy` of at most one term, and the `facets` the answer must carry.
  *
  * The variables arrive as JSON, so each is read, never trusted: a variable
  * or member left out or given as null is not given, and a list input given
@@ -147,6 +148,7 @@ export default function readGraphQLQuery(
     after = null,
     where = null,
     orderBy = null,
+    facets = null,
   } = variables;
   if (typeof first !== "number" || !Number.isSafeInteger(first) || first < 1) {
     return { reason: `"first" is not a positive whole number` };
@@ -173,14 +175,17 @@ export default function readGraphQLQuery(
     coresLte = null,
     search = null,
   } = filter;
-  const given = [...coerceListInput(status), ...coerceListInput(statusIsNone)];
-  const unknown = given.find((candidate) => !isStatus(candidate));
+  const anyOf = coerceListInput(status);
+  const noneOf = coerceListInput(statusIsNone);
+  const unknown = [...anyOf, ...noneOf].find(
+    (candidate) => !isStatus(candidate),
+  );
   if (unknown !== undefined) {
     return { reason: `${JSON.stringify(unknown)} is not a status` };
   }
   const statuses = {
-    isAny: coerceListInput(status).filter(isStatus),
-    isNone: coerceListInput(statusIsNone).filter(isStatus),
+    isAny: anyOf.filter(isStatus),
+    isNone: noneOf.filter(isStatus),
   };
   if (coresGte !== null && typeof coresGte !== "number") {
     return { reason: `${JSON.stringify(coresGte)} is not a number of cores` };
@@ -190,16 +195,25 @@ export default function readGraphQLQuery(
   }
   const text: ApiTextMatch[] = [];
   for (const [member, match] of Object.entries(TEXT_MEMBERS)) {
-    const given = filter[member] ?? null;
-    if (given !== null && typeof given !== "string") {
-      return { reason: `${JSON.stringify(given)} is not text` };
+    const matched = filter[member] ?? null;
+    if (matched !== null && typeof matched !== "string") {
+      return { reason: `${JSON.stringify(matched)} is not text` };
     }
-    if (given !== null && given !== "") {
-      text.push({ ...match, text: given });
+    if (matched !== null && matched !== "") {
+      text.push({ ...match, text: matched });
     }
   }
   if (search !== null && typeof search !== "string") {
     return { reason: `${JSON.stringify(search)} is not text` };
+  }
+  const faceted = coerceListInput(facets);
+  const unfaceted = faceted.find(
+    (field) => typeof field !== "string" || !isFacetField(field),
+  );
+  if (unfaceted !== undefined) {
+    return {
+      reason: `this endpoint computes no facet for ${JSON.stringify(unfaceted)}`,
+    };
   }
   const sort = readOrderBy(orderBy);
   if (sort !== null && "reason" in sort) {
@@ -212,6 +226,7 @@ export default function readGraphQLQuery(
       cores: { gte: coresGte, lte: coresLte },
       search: search === null || search === "" ? null : search,
       sort,
+      facets: [...new Set(faceted.filter(isFacetField))],
     },
     offset,
     first,

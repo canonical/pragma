@@ -79,6 +79,7 @@ export { DEFAULT_WINDOW, EMPTY_SLICE } from "./query/index.js";
 export type {
   Completion,
   Count,
+  Facet,
   GroupSummary,
   PageCursors,
   ResultProblem,

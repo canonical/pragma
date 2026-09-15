@@ -265,6 +265,7 @@ describe("resolveDisplayStatus", () => {
                   status,
                   rows,
                   groups,
+                  facets: null,
                   counts: null,
                   more: null,
                   cursors: null,

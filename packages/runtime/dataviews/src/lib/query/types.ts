@@ -20,6 +20,15 @@ export type PredicateOperator =
   | "startsWith";
 
 /**
+ * The set operators: the ones whose operands are a set, and between which a
+ * set moves on its field.
+ *
+ * @experimental Pre-release: the whole surface is still settling, and this
+ * name may change or move before the first release.
+ */
+export type SetOperator = Extract<PredicateOperator, "isAny" | "isNone">;
+
+/**
  * A semantic operand value. Field metadata owns coercion; core never guesses.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
@@ -155,6 +164,12 @@ export type QueryCommand =
   | {
       readonly kind: "setPredicate";
       readonly predicate: Predicate;
+      /**
+       * An operator on the same field whose predicate this one replaces in
+       * the same transition — a set moved from `isAny` to `isNone` — so the
+       * query never stands on both, or on neither.
+       */
+      readonly replaces?: SetOperator | undefined;
     }
   | {
       readonly kind: "removePredicate";

@@ -66,6 +66,18 @@ describe("createCollection", () => {
     ).toThrow('discriminator field "name" must be a choices field, not a flag');
   });
 
+  it("refuses a discriminator whose options are the server's", () => {
+    expect(() =>
+      createCollection({
+        fields: [{ field: "type", kind: "choices" }],
+        identify: (row: { readonly id: string }) => row.id,
+        // Such a field names no type, so the compiler already refuses it;
+        // a JavaScript author is refused when the collection is built.
+        discriminator: "type" as never,
+      }),
+    ).toThrow('discriminator field "type" must list its options');
+  });
+
   it("refuses a discriminator whose options are not names", () => {
     expect(() =>
       createCollection({

@@ -1,5 +1,11 @@
 import { SORTED_FIELDS, STATUS_ORDER } from "./constants.js";
-import type { ApiProblem, ApiQuery, ApiTextMatch } from "./types.js";
+import isFacetField from "./isFacetField.js";
+import type {
+  ApiFacetField,
+  ApiProblem,
+  ApiQuery,
+  ApiTextMatch,
+} from "./types.js";
 
 /** The text fields this endpoint looks through, with how it matches each. */
 const TEXT_OPERATORS: Readonly<
@@ -35,15 +41,17 @@ type RestRequest = {
  * of, `status__isNone` for those it is none of, `cores__gte` and
  * `cores__lte`, `<field>__contains` and `<field>__startsWith` on the text
  * fields it can look through, `q`, one `sort=<field>__<direction>`, `page`
- * and `size`. A blank value is a control left empty and is dropped on its
- * own, as the grammar drops it. Anything else — an unknown parameter, a key
- * with more than one delimiter, a second ordered term, a malformed value — is
- * a problem, never a broader answer.
+ * and `size`, and `facet` repeated for each field whose facet it must
+ * answer. A blank value is a control left empty and is dropped on its own,
+ * as the grammar drops it. Anything else — an unknown parameter, a key with
+ * more than one delimiter, a second ordered term, a malformed value — is a
+ * problem, never a broader answer.
  */
 export default function readRestQuery(
   params: URLSearchParams,
 ): RestRequest | ApiProblem {
   const text: ApiTextMatch[] = [];
+  const facets = new Set<ApiFacetField>();
   const statuses: { isAny: string[]; isNone: string[] } = {
     isAny: [],
     isNone: [],
@@ -58,7 +66,21 @@ export default function readRestQuery(
   let size = DEFAULT_PAGE_SIZE;
   for (const key of new Set(params.keys())) {
     const values = params.getAll(key).filter((value) => value !== "");
-    const statusOperator = STATUS_KEYS[key];
+    if (key === "facet") {
+      for (const field of values) {
+        if (!isFacetField(field)) {
+          return {
+            reason: `this endpoint computes no facet for ${JSON.stringify(field)}`,
+          };
+        }
+        facets.add(field);
+      }
+      continue;
+    }
+    // Looked up as own keys only: a key naming a prototype member finds none.
+    const statusOperator = Object.hasOwn(STATUS_KEYS, key)
+      ? STATUS_KEYS[key]
+      : undefined;
     if (statusOperator !== undefined) {
       const unknown = values.find((status) => !STATUS_ORDER.includes(status));
       if (unknown !== undefined) {
@@ -82,9 +104,9 @@ export default function readRestQuery(
     const parts = key.split("__");
     const [field = "", operator] = parts;
     const isAddress = parts.length === 2;
-    const textOperator = TEXT_OPERATORS[field]?.find(
-      (candidate) => candidate === operator,
-    );
+    const textOperator = Object.hasOwn(TEXT_OPERATORS, field)
+      ? TEXT_OPERATORS[field]?.find((candidate) => candidate === operator)
+      : undefined;
     if (key === "q") {
       search = value;
     } else if (key === "sort") {
@@ -133,7 +155,7 @@ export default function readRestQuery(
     }
   }
   return {
-    query: { text, statuses, cores, search, sort },
+    query: { text, statuses, cores, search, sort, facets: [...facets] },
     page,
     size,
   };

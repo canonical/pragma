@@ -61,6 +61,10 @@ const compareBooleans = (
 const CHOICES: FieldKindRules<ChoicesField> = {
   operators: ["isAny", "isNone"],
   rejectDefinition: (definition) => {
+    // Left out, the options are the server's, and there is no list to check.
+    if (definition.options === undefined) {
+      return null;
+    }
     if (definition.options.length === 0) {
       return `choices field "${definition.field}" requires at least one option`;
     }
@@ -82,6 +86,10 @@ const CHOICES: FieldKindRules<ChoicesField> = {
   input: {
     kind: "text",
     parse: (definition, input) => {
+      if (definition.options === undefined) {
+        // The server's options: the text is the option, as its facet lists it.
+        return { status: "valid", operand: input };
+      }
       const operand = definition.options.find(
         (option) => String(option) === input,
       );
@@ -94,8 +102,15 @@ const CHOICES: FieldKindRules<ChoicesField> = {
     },
   },
   rejectOperands: (definition, operands) => {
+    const { options } = definition;
     for (const operand of operands) {
-      if (!definition.options.some((option) => option === operand)) {
+      // The server's options are text, as the wire spells them; a closed
+      // list takes only its own.
+      const isOption =
+        options === undefined
+          ? typeof operand === "string"
+          : options.some((option) => option === operand);
+      if (!isOption) {
         return `${describeOperand(operand)} is not an option of "${definition.field}"`;
       }
     }
@@ -117,8 +132,13 @@ const CHOICES: FieldKindRules<ChoicesField> = {
   createOrder: (definition) => {
     // Keyed by string form, as the schema matches an option to an input:
     // colliding string forms are rejected at construction, so this is exact.
+    // The server's options have no declared order: every value orders by
+    // its text alone.
     const ranks = new Map(
-      definition.options.map((option, index) => [String(option), index]),
+      (definition.options ?? []).map((option, index) => [
+        String(option),
+        index,
+      ]),
     );
     return {
       readKey: (value) => {

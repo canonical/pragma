@@ -24,7 +24,15 @@ import type {
 export type ChoicesField = {
   readonly field: string;
   readonly kind: "choices";
-  readonly options: readonly (string | number)[];
+  /**
+   * The closed list of option values, in the order they are offered and
+   * ordered. Left out, the options are the server's, and an option is text:
+   * any string is one, a record's value is matched, counted and ordered by
+   * its text — `42` and `"42"` are the one option `"42"` — and a source's
+   * facet over the field lists the values it holds as text. So an option
+   * spelled on the wire reads back as the option it was.
+   */
+  readonly options?: readonly (string | number)[];
 };
 
 /**
@@ -144,13 +152,15 @@ export type AppliedOf<TField extends SchemaFieldDefinition> = TField extends {
   ? ReadonlySet<
       TOptions extends readonly (string | number)[] ? TOptions[number] : never
     >
-  : TField extends { readonly kind: "number" }
-    ? number
-    : TField extends { readonly kind: "flag" }
-      ? boolean
-      : TField extends { readonly kind: "date" | "text" }
-        ? string
-        : never;
+  : TField extends { readonly kind: "choices" }
+    ? ReadonlySet<string>
+    : TField extends { readonly kind: "number" }
+      ? number
+      : TField extends { readonly kind: "flag" }
+        ? boolean
+        : TField extends { readonly kind: "date" | "text" }
+          ? string
+          : never;
 
 /**
  * A value that may be absent.

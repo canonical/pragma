@@ -11,9 +11,25 @@ describe("createPage", () => {
         matched: { kind: "exact", value: 12 },
         total: { kind: "unknown" },
       },
+      facets: {},
       more: null,
       cursors: null,
     });
+  });
+
+  it("carries the facets given, as the backend answered them", () => {
+    const facets = {
+      status: {
+        kind: "values" as const,
+        values: [
+          { value: "failed", count: { kind: "exact" as const, value: 2 } },
+        ],
+      },
+    };
+    const page = createPage({ rows: [], facets });
+    expect(page.facets).toEqual(facets);
+    expect(page.facets).not.toBe(facets);
+    expect(Object.isFrozen(page.facets)).toBe(true);
   });
 
   it("carries the total, whether more exists and the cursors as given", () => {
@@ -32,6 +48,7 @@ describe("createPage", () => {
         matched: { kind: "unknown" },
         total: { kind: "exact", value: 40 },
       },
+      facets: {},
       more: true,
       cursors: { next: "n", previous: null },
     });

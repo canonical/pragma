@@ -4,7 +4,14 @@
  * path, and the answers each endpoint sends.
  */
 
-import type { API_SCENARIOS } from "./constants.js";
+import type { Facet } from "@canonical/dataviews-core";
+import type { API_SCENARIOS, FACET_FIELDS } from "./constants.js";
+
+/** One value a values facet lists, with how many matching records hold it. */
+export type FacetValue = Extract<
+  Facet,
+  { readonly kind: "values" }
+>["values"][number];
 
 /** One record the API serves: an identity, and fields read defensively. */
 export type ApiRecord = { readonly id: string } & Readonly<
@@ -26,6 +33,9 @@ export type MockApiConfig = {
   /** Milliseconds every answer waits before it is sent; none by default. */
   readonly latency?: number | undefined;
 };
+
+/** A field either endpoint computes a facet for. */
+export type ApiFacetField = (typeof FACET_FIELDS)[number];
 
 /** What one text field's value must contain or start with. */
 export type ApiTextMatch = {
@@ -50,6 +60,8 @@ export type ApiQuery = {
   readonly cores: { readonly gte: number | null; readonly lte: number | null };
   /** Free text looked for in the searched fields, or null. */
   readonly search: string | null;
+  /** The fields whose facets the answer must carry. */
+  readonly facets: readonly ApiFacetField[];
   /** The one ordered term, or null for the endpoint's own order. */
   readonly sort: {
     readonly field: string;
@@ -62,6 +74,8 @@ export type MachinesData = {
   readonly machines: {
     /** Null: the endpoint does not count what a query matches. */
     readonly totalCount: number | null;
+    /** The facets the query asked for, keyed by field. */
+    readonly facets: Readonly<Record<string, Facet>>;
     readonly pageInfo: {
       readonly endCursor: string | null;
       readonly hasNextPage: boolean;

@@ -530,4 +530,24 @@ describe("createSchema", () => {
       reason: '" 1" is not an option of "priority"',
     });
   });
+
+  it("keeps a choices field whose options are the server's without a list", () => {
+    const serverOwned = createSchema([{ field: "region", kind: "choices" }]);
+    expect(serverOwned.findField("region")).toEqual({
+      field: "region",
+      kind: "choices",
+    });
+    expect(serverOwned.predicateFor("region", "isAny", ["eu-west"])).toEqual({
+      status: "valid",
+      predicate: { field: "region", operator: "isAny", operands: ["eu-west"] },
+    });
+    expect(serverOwned.validateInput("region", "eu-west")).toEqual({
+      status: "valid",
+      operands: ["eu-west"],
+    });
+    // An empty list is still no list at all.
+    expect(() =>
+      createSchema([{ field: "region", kind: "choices", options: [] }]),
+    ).toThrow('choices field "region" requires at least one option');
+  });
 });

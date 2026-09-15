@@ -98,5 +98,6 @@ export default function copyCapabilities(
           }),
     selection: Object.freeze({ scope: capabilities.selection.scope }),
     actions: copyActions(capabilities.actions),
+    facets: Object.freeze([...capabilities.facets]),
   });
 }

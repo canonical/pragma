@@ -102,7 +102,7 @@ const problemOf = (state: DataViewsState) => state.result.problem;
 const build = (source: Source) => {
   const provider = createDataViewsProvider({ collection, source });
   const host = readProviderHost(provider);
-  const run = runSource({ host, source });
+  const run = runSource({ host, source, facets: [] });
   return { provider, host, run };
 };
 
@@ -424,12 +424,14 @@ describe("runSource", () => {
       requestId,
       slice: host.state.get().slice,
       window: DEFAULT_WINDOW,
+      facets: [],
     });
     source.callAt(0).deliver(succeeded(rows));
     expect(host.state.get().result).toEqual({
       status: "ready",
       rows,
       groups: null,
+      facets: {},
       counts: pageOf(rows).counts,
       more: null,
       cursors: null,
@@ -531,6 +533,7 @@ describe("runSource", () => {
     const release = runSource({
       host: counted.host,
       source: source.source,
+      facets: [],
     }).observe();
     counted.host.refresh();
     expect(counted.subscribers()).toBe(1);
@@ -648,6 +651,7 @@ describe("runSource", () => {
       requestId,
       slice: host.state.get().slice,
       window,
+      facets: [],
     });
     release();
   });
@@ -914,6 +918,7 @@ describe("runSource", () => {
     const release = runSource({
       host: counted.host,
       source: source.source,
+      facets: [],
     }).observe();
     counted.host.refresh();
     source.callAt(0).deliver(succeeded(rows));
@@ -1038,7 +1043,7 @@ describe("runSource take-up", () => {
         subscribe: host.state.subscribe,
       },
     };
-    const run = runSource({ host: liar, source: source.source });
+    const run = runSource({ host: liar, source: source.source, facets: [] });
     const release = run.observe();
     host.refresh();
     source.latest().deliver(succeeded(rows));
@@ -1284,6 +1289,131 @@ describe("runSource counts", () => {
       status: "failed",
       failure: { reason: "no route" },
     });
+    release();
+  });
+
+  it("asks a source for the facets a provider names, each one it declares", () => {
+    const provider = createDataViewsProvider({
+      collection: localCollection,
+      source: local(),
+      facets: ["status", "status"],
+    });
+    provider.refresh();
+    expect(provider.state.get().result.facets).toEqual({
+      status: { kind: "values", values: [] },
+    });
+  });
+
+  it("is refused when the provider asks for a facet the source does not declare", () => {
+    expect(() =>
+      createDataViewsProvider({
+        collection,
+        source: manual().source,
+        facets: ["status"],
+      }),
+    ).toThrow('this source declares no facet for "status"');
+  });
+
+  it("asks for the provider's facets and holds what is answered to them", () => {
+    const source = manual();
+    const { host } = build(source.source);
+    const release = runSource({
+      host,
+      source: source.source,
+      facets: ["status", "cpu", "owner"],
+    }).observe();
+    host.refresh();
+    expect(source.callAt(0).request.facets).toEqual(["status", "cpu", "owner"]);
+    source.callAt(0).deliver({
+      status: "succeeded",
+      page: {
+        ...pageOf(rows),
+        facets: {
+          status: {
+            kind: "values",
+            values: [
+              { value: "failed", count: exact(2) },
+              // A count that is no whole number of rows counts nothing.
+              { value: "ready", count: { kind: "exact", value: -1 } },
+            ],
+          },
+          cpu: { kind: "range", min: 4, max: 12 },
+          // Answered, never asked for: left out.
+          name: { kind: "range", min: "a", max: "z" },
+        },
+      },
+    });
+    const { facets } = host.state.get().result;
+    // Asked for, never answered: left out rather than invented.
+    expect(facets).toEqual({
+      status: {
+        kind: "values",
+        values: [
+          { value: "failed", count: exact(2) },
+          { value: "ready", count: { kind: "unknown" } },
+        ],
+      },
+      cpu: { kind: "range", min: 4, max: 12 },
+    });
+    expect(Object.isFrozen(facets?.["status"])).toBe(true);
+    const status = facets?.["status"];
+    if (status?.kind !== "values") {
+      throw new Error("expected a values facet");
+    }
+    expect(Object.isFrozen(status.values)).toBe(true);
+    expect(Object.isFrozen(status.values.at(0))).toBe(true);
+    release();
+  });
+
+  it("republishes a later delivery whose facets changed, and nothing for the same facets", () => {
+    const source = manual();
+    const { host } = build(source.source);
+    const release = runSource({
+      host,
+      source: source.source,
+      facets: ["status", "cpu"],
+    }).observe();
+    host.refresh();
+    const deliverFacets = (
+      status: NonNullable<SourcePage["facets"]>[string],
+      cpu: NonNullable<SourcePage["facets"]>[string],
+    ): void => {
+      source.callAt(0).deliver({
+        status: "succeeded",
+        page: { ...pageOf(rows), facets: { status, cpu } },
+      });
+    };
+    const failedTwice: NonNullable<SourcePage["facets"]>[string] = {
+      kind: "values",
+      values: [{ value: "failed", count: exact(2) }],
+    };
+    const fourToTwelve: NonNullable<SourcePage["facets"]>[string] = {
+      kind: "range",
+      min: 4,
+      max: 12,
+    };
+    deliverFacets(failedTwice, fourToTwelve);
+    const settled = host.state.get();
+    // The same facets, in fresh objects: nothing new to publish.
+    deliverFacets({ ...failedTwice }, { ...fourToTwelve });
+    expect(host.state.get()).toBe(settled);
+    const readRequestId = () => host.state.get().result.provenance?.requestId;
+    const seen = new Set([readRequestId()]);
+    for (const [status, cpu] of [
+      // A count moved.
+      [
+        { kind: "values", values: [{ value: "failed", count: exact(3) }] },
+        fourToTwelve,
+      ],
+      // A bound moved.
+      [failedTwice, { kind: "range", min: 4, max: 16 }],
+      // A facet of another kind.
+      [{ kind: "range", min: null, max: null }, fourToTwelve],
+    ] as const) {
+      deliverFacets(status, cpu);
+      expect(seen.has(readRequestId())).toBe(false);
+      seen.add(readRequestId());
+    }
     release();
   });
 });

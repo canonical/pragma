@@ -32,6 +32,7 @@ const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
   requestId: "i1:r1",
   slice: emptySlice,
   window: DEFAULT_WINDOW,
+  facets: [],
   ...overrides,
 });
 
@@ -48,6 +49,7 @@ const exact = (value: number) => ({ kind: "exact" as const, value });
 const page = (rows: readonly RowRecord[], matched: number): SourcePage => ({
   rows,
   groups: null,
+  facets: {},
   counts: {
     pageable: exact(matched),
     matched: exact(matched),

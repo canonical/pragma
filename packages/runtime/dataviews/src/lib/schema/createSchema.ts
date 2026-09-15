@@ -33,7 +33,7 @@ export default function createSchema<
         definition.appliesTo === undefined
           ? {}
           : { appliesTo: Object.freeze([...definition.appliesTo]) };
-      return definition.kind === "choices"
+      return definition.kind === "choices" && definition.options !== undefined
         ? Object.freeze({
             field: definition.field,
             kind: definition.kind,

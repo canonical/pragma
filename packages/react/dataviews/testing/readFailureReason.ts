@@ -19,7 +19,12 @@ export default async function readFailureReason(
 ): Promise<string> {
   const deliveries: SourceDelivery<Machine>[] = [];
   const stop = source.execute(
-    { requestId: "failure", slice: EMPTY_SLICE, window: DEFAULT_WINDOW },
+    {
+      requestId: "failure",
+      slice: EMPTY_SLICE,
+      window: DEFAULT_WINDOW,
+      facets: [],
+    },
     (delivery) => {
       deliveries.push(delivery);
     },

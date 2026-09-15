@@ -1,6 +1,7 @@
 import {
   createRelaySource,
   declareCapabilities,
+  type Facet,
   type RelaySourceConfig,
   readSlice,
   type Source,
@@ -22,7 +23,8 @@ import MachinesQuery from "./MachinesQuery.js";
  * statuses a machine is any or none of, bounds on cores, text the name, the
  * region and the owner contain, text the name and the owner — but not the
  * region — start with, search over the name and the owner, one ordered term,
- * and forward pages by cursor with no counts at all.
+ * forward pages by cursor with no counts at all, and the facets of the status
+ * and the cores.
  */
 const GRAPHQL_CAPABILITIES = declareCapabilities(machineCollection, {
   filter: {
@@ -39,6 +41,7 @@ const GRAPHQL_CAPABILITIES = declareCapabilities(machineCollection, {
     tiebreak: "opaque",
   },
   pagination: { kind: "cursor", backward: false, durable: false },
+  facets: ["status", "cores"],
 });
 
 /** The filter input of a GraphQL `machines` query. */
@@ -67,6 +70,7 @@ type MachinesVariables = {
   readonly after: string | null;
   readonly where: MachineWhere | null;
   readonly orderBy: readonly MachineOrder[] | null;
+  readonly facets: readonly string[];
 };
 
 /** The compiled query's type, as the Relay compiler generates it. */
@@ -74,6 +78,7 @@ type MachinesOperation = {
   readonly response: {
     readonly machines: {
       readonly totalCount: number | null;
+      readonly facets: Readonly<Record<string, Facet>> | null;
       readonly pageInfo: {
         readonly endCursor: string | null;
         readonly hasNextPage: boolean;
@@ -94,6 +99,7 @@ const readVariables = ({
   slice,
   first,
   after,
+  facets,
 }: PageRequest): MachinesVariables => {
   const { filters, search, sort } = readSlice(machineCollection, slice);
   return {
@@ -119,6 +125,7 @@ const readVariables = ({
       field,
       direction: direction === "asc" ? "ASC" : "DESC",
     })),
+    facets: [...facets],
   };
 };
 

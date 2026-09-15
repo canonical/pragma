@@ -354,6 +354,7 @@ const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
   requestId: "i1:r1",
   slice: emptySlice,
   window: paged(),
+  facets: [],
   ...overrides,
 });
 
@@ -497,6 +498,7 @@ describe("createRelaySource over relay-runtime", () => {
         rows: [machines[0], machines[1]],
         groups: null,
         counts: countsOf(exactly(5)),
+        facets: {},
         more: true,
         cursors: { next: "c:m2", previous: null },
       },
@@ -520,6 +522,7 @@ describe("createRelaySource over relay-runtime", () => {
       slice: filtered,
       first: 2,
       after: null,
+      facets: [],
     });
   });
 
@@ -721,6 +724,7 @@ describe("createRelaySource over relay-runtime", () => {
         rows: [],
         groups: null,
         counts: countsOf(exactly(0)),
+        facets: {},
         more: false,
         cursors: { next: null, previous: null },
       },

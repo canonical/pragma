@@ -14,6 +14,7 @@ const request = (overrides: Partial<SourceRequest> = {}): SourceRequest => ({
   requestId: "i1:r1",
   slice: emptySlice,
   window: { ...DEFAULT_WINDOW, size: 2 },
+  facets: [],
   ...overrides,
 });
 
@@ -83,6 +84,8 @@ describe("createArraySource", () => {
       pagination: { kind: "offset" },
       selection: { scope: "explicit" },
       actions: {},
+      // A facet for every field that is not text.
+      facets: ["cpu"],
     });
   });
 
@@ -211,10 +214,32 @@ describe("createArraySource", () => {
         rows: [rows[0], rows[1]],
         groups: null,
         counts: { pageable: exact(3), matched: exact(3), total: exact(3) },
+        facets: {},
         more: null,
         cursors: null,
       },
     });
+  });
+
+  it("computes the facets a request asks for over the whole matching set", () => {
+    const deliver = delivery();
+    const executing = source();
+    executing.execute(request(), deliver);
+    // The same query asking for a facet as well is computed again.
+    executing.execute(request({ facets: ["cpu"] }), deliver);
+    const answered = deliveredAt(deliver, 1);
+    if (answered.status !== "succeeded") {
+      throw new Error("expected a page");
+    }
+    const { facets = {} } = answered.page;
+    expect(Object.keys(facets)).toEqual(["cpu"]);
+    expect(facets["cpu"]).toMatchObject({ kind: "range" });
+  });
+
+  it("fails a request for a facet it does not declare", () => {
+    expect(() =>
+      source().execute(request({ facets: ["name"] }), delivery()),
+    ).toThrow('this source declares no facet for "name"');
   });
 
   it("counts the matched set, not the loaded page, and the whole input", () => {
@@ -324,6 +349,24 @@ describe("createArraySource", () => {
     expect(first).toHaveBeenCalledTimes(2);
     expect(idsOf(deliveredAt(first, 1))).toEqual(["a", "b"]);
     expect(idsOf(deliveredAt(second, 1))).toEqual(["b", "c"]);
+  });
+
+  it("computes the facets again over the records that replace its own", () => {
+    const live = source();
+    const deliver = delivery();
+    live.execute(request({ facets: ["cpu"] }), deliver);
+    /** The facets of the nth delivery. */
+    const readFacetsAt = (index: number) => {
+      const delivered = deliveredAt(deliver, index);
+      return delivered.status === "succeeded" ? delivered.page.facets : null;
+    };
+    expect(readFacetsAt(0)).toEqual({
+      cpu: { kind: "range", min: 4, max: 12 },
+    });
+    live.setRows([...rows, { id: "d", name: "delta", cpu: 40 }]);
+    expect(readFacetsAt(1)).toEqual({
+      cpu: { kind: "range", min: 4, max: 40 },
+    });
   });
 
   it("stops delivering to a released request", () => {
