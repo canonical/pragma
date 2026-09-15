@@ -16,7 +16,7 @@ The reasoning behind the design is in pragma's cascade explanation, `docs/explan
 
 ## Prerequisites
 
-You need `@canonical/styles` 0.40.0 or later, the release that ships its stylesheet as three entry points: `tokens.css`, `elements.css` and `layout.css`. Earlier releases will not work, because the imports in `adapter.css` do not resolve and there is nothing for the confined copy to be a copy of.
+You need `@canonical/styles` 0.38.0 or later, the release that ships its stylesheet as three entry points: `tokens.css`, `elements.css` and `layout.css`. Earlier releases will not work, because the imports in `adapter.css` do not resolve and there is nothing for the confined copy to be a copy of.
 
 The dependency is a normal one with a caret range, as in the component packages, and it pins the release the copy was taken from. A test compares the copy against that release's source in this repository, so the two cannot drift apart.
 
