@@ -23,6 +23,9 @@ The Anatomy DSL represents design system components as YAML trees with:
 - **Anonymous nodes**: Structural elements with roles (`content wrapper`)
 - **Edges**: Parent-child relationships with cardinality and slot names
 - **Styles**: Platform-agnostic properties using CTI-inspired keys
+- **Projections**: Graph-data bindings — which entity type a subtree is a view over, and which field each position renders
+- **Props**: Pinned prop values fixing a referenced component's configuration at one position (the icon case)
+- **Interaction states**: Style values scoped to a state via an `@state` key suffix (`appearance.background@hover`)
 
 This skill helps you author these specifications correctly and consistently.
 
@@ -50,7 +53,27 @@ Decision gates — in collaboration, pause at each and resolve it WITH the perso
 The full specification ships beside this file as `ANATOMY_DSL_SPEC.md` in the
 installed skill folder — `pragma skill lookup anatomy-author` renders only this
 SKILL.md, so open the sibling file directly when you need the complete spec (the
-appendix below carries its type system).
+appendix below carries its type system). That file is a verbatim copy of
+`docs/api-reference.md` in canonical/anatomy-dsl, which is the normative source for
+the NOTATION: the grammar, the type system, what parses and what does not. Where this
+SKILL.md and the sibling spec disagree about the notation, the spec wins, and the
+disagreement is a bug to report. Reach for it for the parts too long to restate
+here — the worked projections gallery, the derived-fragment contract, and the
+full example set.
+
+The spec's reach stops at the grammar, and one boundary is worth stating because it
+reads like a contradiction otherwise. The spec's Deferred Items and Out of Scope
+tables list what the GRAMMAR does not provide — a construct, a keyword, a schema. They
+do not rule on how an author models something the grammar has no construct for. Where a
+modelling convention is what is at issue — a pseudo-element drawn by the stylesheet, a
+modifier family a component supports — this SKILL.md is the authority, and it says so
+at each of those places. The authored corpus follows this file.
+
+**And this file, in the design-system repository, is the authority over the copy
+`pragma skill lookup anatomy-author` prints.** That copy is bundled into a pragma
+release and lags the repository until the next one, so a sentence you find there and
+cannot find here is old text, not a second opinion. Read the repository file when the
+two differ.
 
 ## Opening move: ask, or offer the tutorial
 
@@ -163,18 +186,113 @@ pragma block lookup Card                        # full spec: anatomy, modifiers,
 pragma graph inspect ds:global.component.card   # every triple on the entity
 ```
 
-A bare name can match blocks in several tiers, and `block lookup` silently picks one —
-it resolves `ds:name` globally and cannot be steered to a tier.
-Confirm the tier the lookup picked from its own `- Tier:` line; the name query below lists every tier that carries the name.
-The name query in Workflow §1 is the one that lists them, with each block's IRI. If the
-lookup picked the wrong tier's block, read the block you want with
-`pragma graph inspect <IRI from that row>`, so the lookup step and the inspect step
-describe the same block. If the name has no row at all, the block may be a Group —
-`block list` covers no groups; the group pre-step in Workflow §1 lists them.
+A bare name resolves `ds:name` globally, so where several tiers carry the name the
+lookup answers with EVERY one of them: the full writeups concatenated, each under its
+own `## <Name>` heading with its own `- Tier:` line. `pragma block lookup Chip` returns
+the global Chip and the launchpad Chip in one answer, and they are DIFFERENT blocks —
+separately authored, with different properties and different anatomies — not repeats of
+one. So the read is not "confirm the tier it picked": scroll the whole answer, read
+every `- Tier:` line, count the headings, and pick the block you were asked to write.
+Stopping at the first heading is how a second, unrelated component's anatomy gets
+transcribed by mistake.
+
+`block lookup` also takes a `ds:` IRI, which answers with exactly one block and skips
+the disambiguation: `pragma block lookup ds:global.component.chip`. The bare dotted
+name is NOT a key — a `block list` row prints `ds:apps_lxd.component.meter`, and
+dropping the `ds:` prefix comes back `ENTITY_NOT_FOUND`. A glob (`*chip*`) fans out the
+same way a shared display name does, one block per tier.
+
+The name query in Workflow §1 lists every tier carrying the name with each block's IRI,
+which is the read when you want the list rather than the writeups. If the name has no
+row at all, the block may be a Group — `block list` covers no groups; the group
+pre-step in Workflow §1 lists them.
+
+### The token graph answers whether a symbol exists
+
+Every symbol you are about to write is queryable, and guessing is not authoring. Two
+questions come up while transcribing a stylesheet — does this symbol exist, and what
+does this variable stand for — and three commands answer them:
+
+```bash
+pragma token lookup color.text          # one symbol in full: type, description, every
+                                        # definition behind it, the families that may
+                                        # rebind it, and what it resolves to
+pragma token list --search focus        # which symbols exist around a word
+pragma variable lookup modifier-color-text   # what a CSS variable stands for
+```
+
+`token lookup` answers with the symbol's `- Type:`, its `- Description:`, a
+`### Definitions` list, a `### Covered by` list of the families that may rebind it,
+and a `### Values` list. A name nothing declares comes back as `ENTITY_NOT_FOUND`,
+and that is the answer: it is not a value to write. `token list --search motion`
+answers `## Token (0)` today, which is why no anatomy binds a `motion.*` symbol.
+
+`token list` is the read for "does this family exist under some other name", and it
+needs a filter to be trusted. It pages at 300 rows sorted by name, so a bare
+`pragma token list` returns colour tokens and nothing else — every `dimension.`,
+`number.`, `typography.` and `fontWeight` symbol is off the first page. The output says
+so, in a heading ending "and more exist" and a closing line offering an `--after`
+cursor, but a bare list piped through `grep` swallows both and reads as an absence that
+is not there. Narrow instead: `--search <word>` over name and description,
+`--type <type>` for one type's population, `--channel-of <symbol>` for the channels
+provisioning one symbol, and `--limit` raised past 300 when the whole population is
+what you want.
+
+`variable lookup` is the other direction, and it is the one that reads a stylesheet.
+Give it the custom property WITHOUT its leading dashes. It has THREE outcomes, and only
+the first two are usually anticipated:
+
+1. **It resolves and carries a `- Symbol:` line.** That symbol is what the variable
+   stands for, and it is what the anatomy binds. The answer also carries a
+   `### Declarations` list — one row per declaration, each naming its `selector`, its
+   `inAtRule` layer, what it `emits` and the `file:line` it is declared at.
+   `modifier-color-text` answers with one row per modifier, which is the whole family's
+   coverage in one read.
+2. **It resolves and carries NO `- Symbol:` line at all.** The variable is a DERIVED
+   one — a state product or a delta, autogenerated from another variable rather than
+   authored — and it stands for no symbol, so there is nothing to bind.
+   `hover--color-foreground-secondary` is one: it resolves, its tier is
+   `dt:tier.derived`, its `emits` is an `oklch(from …)` expression, and no `- Symbol:`
+   row appears. Do not read the missing line as a failed lookup and do not bind the
+   name. Ask what it reaches, and carry on down the implementation's own fallback chain
+   to the next variable, which is usually where the real symbol is:
+
+   ```bash
+   pragma variable chain --variable hover--color-foreground-secondary
+   ```
+
+3. **`ENTITY_NOT_FOUND`.** The graph has never heard of the name — `--button-gap`,
+   `--icon-size` and `--focus-outline-width` all answer this way, because they are
+   component-local properties and not design tokens. That is the case for a `#` comment
+   on the line rather than a binding.
+
+**A component-local variable is rarely the end of the chain — follow every hop.** The
+`ENTITY_NOT_FOUND` says the token graph does not declare the NAME; it says nothing about
+what the stylesheet declares the name AS. A component's own `:root` block routinely
+aliases a declared variable behind a local one, and the alias can be several hops deep:
+
+```css
+:root {
+  --chip-color-background: var(--color-foreground-secondary);
+}
+```
+
+`chip-color-background` is `ENTITY_NOT_FOUND`, and `color-foreground-secondary`
+resolves to `color.foreground.secondary`. Skipping the hop loses a real binding. So for
+every `ENTITY_NOT_FOUND` on a `--<component>-*` name, go back to the component's own
+stylesheet, read what that property is declared as, and look THAT name up — repeating
+until you reach a declared variable (bind its symbol) or a literal (write the literal
+where the key admits one, and comment it where it does not). Only a chain that ends in
+neither is a `#` comment saying what the implementation reads.
+
+The same verbs are MCP tools under the names `token_lookup`, `token_list`,
+`variable_lookup` and `variable_chain`, with the same arguments; use whichever surface
+you are on, and take the current catalog from `pragma capabilities`.
 
 ### Discovery Queries
 
-Common prefixes (`ds:`, `cs:`) are applied automatically — no PREFIX preamble needed.
+Common prefixes (`ds:`, `cs:`, `dt:`) are applied automatically — no PREFIX preamble
+needed.
 
 **Find components by tier:**
 ```bash
@@ -190,16 +308,19 @@ pragma graph query "SELECT ?component ?name WHERE {
 pragma graph query "SELECT ?sub ?name WHERE {
   ?sub a ds:Subcomponent ;
        ds:name ?name ;
-       ds:parentComponent <https://ds.canonical.com/global.component.card> .
+       ds:parentComponent ds:global.component.card .
 }"
 ```
 
-Inside a SPARQL body, a local name with MORE THAN ONE dot (`ds:global.component.card`)
-does not parse — use the full IRI there: join `https://ds.canonical.com/` with the
-dotted local name (giving `<https://ds.canonical.com/global.component.card>`), or copy
-one from `pragma graph query` output, which prints absolute IRIs. Prefixed names with
-no dot (`ds:global`, `ds:Component`) or a single dot (`ds:tag.needsdefinition`) work
-as-is.
+A prefixed name carrying dots or slashes parses inside a SPARQL body, so write the name
+the graph prints: `ds:global.component.card` and `dt:s4/web/cond/layer-ds-states/universal`
+both resolve, as do the dot-free (`ds:Component`) and single-dot
+(`ds:tag.needsdefinition`) forms. The full IRI
+(`<https://ds.canonical.com/global.component.card>`) is accepted too and answers
+identically — it is what `pragma graph query` prints back, so a copied row is always
+safe. What is NOT accepted is the prefixed name inside angle brackets, `<ds:…>`: that
+returns an EMPTY table rather than an error, which reads as "no such thing" when the
+thing is there.
 
 ### The empty-anatomy worklist
 
@@ -212,8 +333,58 @@ pragma graph query "SELECT ?b ?name WHERE { ?b ds:anatomyDsl ?a ; ds:name ?name 
 
 The worklist rows point at blocks whose data lives under `data/` — never hand-edit
 that tree: it is regenerated destructively from Coda by CI, and hand edits are
-overwritten by the next sync. An authored DSL lands in the block's spec draft under
-`specs/` (see `specs/README.md`) or is pasted into Coda by a human.
+overwritten by the next sync. An authored anatomy lands in a file of its own, and
+"Where the anatomy lands" below is the whole path from that file to the document.
+
+### Where the anatomy lands
+
+An anatomy is written by hand, from the component's implementation stylesheet, into
+one file in the design-system repository:
+
+    anatomies/authored/<tier>/<uri>.yaml
+
+The file name IS the dotted uri (`anatomies/authored/global/global.component.button.yaml`),
+which is how the write finds the row it belongs to, and the text of the file is the
+text of the `anatomy_dsl` cell verbatim. Open the file with a comment saying where it
+was read from — the package, the stylesheet and the selector — because the next reader
+has to be able to check it:
+
+```yaml
+---
+# Authored 2026-09-13 from @canonical/react-ds-global src/lib/component/Button/styles.css on .ds.button
+node:
+  uri: global.component.button
+```
+
+Then, in order:
+
+1. **Check it offline.** `bun src/cli.ts anatomies validate --authored` reads every
+   authored file and runs the law over it, with no network and no document. It answers
+   with the count it read, any warnings, and a verdict — `✓ 19 warning(s), 0 findings
+   — every file is lawful` — and exits 0 when the corpus is lawful. Findings are what
+   you fix; the `AT11` state-differs-from-base lint is a warning and is usually the
+   implementation telling the truth.
+2. **Review it as a file.** The file goes through a pull request like any other
+   change, which is the point of authoring in files: the node boundaries, the
+   comments and the symbol choices are all readable in a diff.
+3. **Write it to the document.** `anatomies write` sends the authored files to the
+   `anatomy_dsl` cells, and it is dry by default — run it with no flags first and read
+   the plan, then one anatomy as a canary with `--only <uri> --apply` and look at the
+   cell, then `--apply` for the rest. It snapshots every cell it is about to touch
+   before its first write, and `anatomies restore <snapshot>` puts them back. The
+   repository README's anatomies section is the authority on the gates that step runs
+   behind; do not improvise around them.
+
+**After the write, the document is the source of record.** `data/` is regenerated from
+it by the pull sync, the pack is built from `data/`, and that is the chain a
+`pragma block lookup` answer comes down. Until an authored anatomy has been written
+and the pack rebuilt, `block lookup`'s `### Anatomy (DSL)` section still answers with
+whatever the cell said before — today, for most blocks, the retired notation. A
+`color/text/muted` in that output is history, not a house style to copy.
+
+There is no derivation step, no `references.yaml` and no register category for a
+stylesheet fact: reading an implementation and choosing the node, the key and the
+symbol is judgement, which is why it happens in a file under review.
 
 ## DSL Reference
 
@@ -234,15 +405,22 @@ node:
 AnatomySpec
   -> node: NamedNode (root must be named)
 
+Style keys may carry an @state suffix ("appearance.background@hover");
+the unmarked key is the default state.
+
 NamedNode
   -> uri: string ("tier.type.name")
-  -> styles?: Record<string, TokenPath | TokenPath[] | PrimitiveValue>
+  -> projection?: Projection
+  -> props?: Record<string, string | number | boolean>
+  -> styles?: Record<StyleKey, Symbol | [...Symbol[], Primitive?] | Primitive>
   -> edges?: Edge[]
 
 AnonymousNode
   -> role: string ("content wrapper")
-  -> styles?: Record<string, TokenPath | TokenPath[] | PrimitiveValue>
+  -> projection?: Projection
+  -> styles?: Record<StyleKey, Symbol | [...Symbol[], Primitive?] | Primitive>
   -> edges?: Edge[]
+  (no props — anonymous nodes have no prop surface)
 
 Edge
   -> node?: NamedNode | AnonymousNode
@@ -256,11 +434,19 @@ Switch
 SwitchCase
   -> uri?: string (shorthand)
   -> node?: Node (full form)
-  -> default?: boolean (marks the default case)
+  (exactly one of the two; there is NO `default` marker)
 
 Relation
   -> cardinality: string ("1", "0..1", "0..*", "1..*")
   -> slotName?: string ("default", "header", "icon")
+  -> projection?: RelationProjection
+
+Projection            (on a node — at least one of the two)
+  -> on?: string      GraphQL type condition ("Component")
+  -> field?: string   dot-delimited field path ("_meta.title")
+
+RelationProjection    (on a relation — the traversal filling the slot)
+  -> field: string    required; never carries `on`
 ```
 
 ### URI Encoding Convention
@@ -317,6 +503,43 @@ Subcomponents must reference their parent in the name:
 
 **Rule of thumb:** Ask "Can/should a user write `<ComponentName>` in their code?" If yes, use `uri`. If no, use `role`.
 
+**A part the stylesheet draws with `::before` or `::after` is a node.** It is visible,
+it takes paint of its own, and it is not something a consumer fills — so it is an
+anonymous `role:` node with a comment saying how it is drawn, and it has no
+`slotName`. The live checkbox glyph is the case:
+
+```yaml
+edges:
+  - node:
+      # drawn as ::before
+      role: selection glyph
+      styles:
+        layout.position: absolute
+        appearance.background@selected: [surface.color.foreground.checkbox.checkmark, color.foreground.checkbox.checkmark]
+    relation:
+      cardinality: "1"
+```
+
+The DSL has no pseudo-element construct, and it does not need one: the node above is an
+ordinary anonymous node, and the `# drawn as ::before` comment is what records which
+pseudo-element the implementation used. The spec's Deferred Items row on pseudo-elements
+is about that missing GRAMMAR — a first-class pseudo-element type — not about whether
+the part is modelled. It is modelled, by the convention above, and the authored corpus
+does it this way. So a `::before` separator, glyph or overlay is never left out of a
+tree because the grammar has no keyword for it.
+
+**A native control's own chrome is turned off, not modelled.** Where the
+implementation writes `appearance: none` over a native `<input>` or `<select>` and
+draws the control itself, the anatomy says so on the node that IS the control:
+
+```yaml
+node:
+  uri: global.subcomponent.checkbox_input
+  styles:
+    appearance.native: none
+    appearance.border.color: color.border
+```
+
 ### DRY Principle
 
 When a node has a URI (is not anonymous), it references its own DSL file. Do not inline the full tree—reference the URI only. A named child MAY carry `styles:` that override its own anatomy in this context — live, `apps_landscape.component.password_constraints` sizes down its `global.component.icon` child — but never a copy of its subtree.
@@ -343,10 +566,27 @@ edges:
   - node:
       uri: global.component.icon
       styles:
-        size.width: size/icon/small
-        size.height: size/icon/small
+        size.width: dimension.300
+        size.height: dimension.300
     relation:
       cardinality: "1"
+```
+
+**Which blocks a `uri:` may reach.** A reference points at a block in the same tier or
+in `global`, and never the other way: a `global` anatomy that reached into an app
+tier would make the global block depend on one product. Where the part is real but the
+block it would name does not exist, write an anonymous `role:` node and say so in a
+comment — the reference is a claim about the graph, and a claim about a block nobody
+has created is one an anatomy must not make:
+
+```yaml
+edges:
+  - node:
+      # The list is the Landscape table's own, and no block names it yet.
+      role: result list
+    relation:
+      cardinality: "1"
+      slotName: default
 ```
 
 ### Cardinality Notation
@@ -371,7 +611,6 @@ edges:
       on: <discriminator>
       cases:
         - uri: <component-uri>
-          default: true  # optional, marks default case
         - uri: <component-uri>
         - uri: $custom   # reserved URI for user-provided components
     relation:
@@ -390,6 +629,11 @@ edges:
 This enum is NORMATIVE. Live anatomies that predate it may carry qualified
 discriminators (`props/<prop>`) or a `with:` map in exploratory drafts — do not
 copy those into new anatomies.
+
+A case carries `uri` or `node`, and nothing else. There is no `default:` marker
+in the DSL: `SwitchCase` is `additionalProperties: false`, so a case carrying one
+FAILS schema validation. Which alternative is the fallback is the component's
+behaviour, not its anatomy — say it in a YAML comment if it matters.
 
 #### Shorthand Expansion
 
@@ -414,7 +658,7 @@ cases:
       uri: global.subcomponent.textarea_input
       styles:
         size.height: hug
-        size.min.height: size/input/multiline
+        size.min.height: 6rem
 ```
 
 #### Reserved URI: `$custom`
@@ -482,6 +726,104 @@ node:
         cardinality: "1..*"
 ```
 
+### Projections
+
+A projection binds a position in the tree to graph data, after the Relay
+fragment-colocation pattern: the tree carries its own data requirements. Two
+places take one, and they mean different things.
+
+```yaml
+---
+node:
+  uri: global.component.entity-card
+  projection:
+    on: Component              # type condition — this tree is a view over one Component
+  edges:
+    - node:
+        uri: global.subcomponent.entity-card-header
+        projection:
+          field: _meta.title   # this node RENDERS the entity's title
+      relation:
+        cardinality: "1"
+        slotName: header
+    - node:
+        uri: global.component.chip
+        projection:
+          field: _meta.title   # relative to the TRAVERSED entity, not the root
+      relation:
+        cardinality: "0..*"
+        slotName: tags
+        projection:
+          field: documentationStages   # traversal populating the slot
+```
+
+| Position | Field | Means |
+|----------|-------|-------|
+| Root node | `on` | Establishes the data context — the anatomy is a view over one entity of that type. Children inherit it. |
+| Child node | `on` | Narrows the traversed entity's type — the analog of an inline fragment. |
+| Any node | `field` | This node renders that field's value. |
+| Relation | `field` | Traversal: the slot is populated from that field of the current context. Required, and never carries `on`. |
+
+A node projection needs at least one of `on` / `field`. Both are schema names:
+`on` matches `^[A-Z][A-Za-z0-9_]*$`, `field` is dot-delimited
+(`^[_A-Za-z][_A-Za-z0-9]*(\.[_A-Za-z][_A-Za-z0-9]*)*$`).
+
+Two rules a checker cannot enforce from the anatomy alone — hold them yourself:
+
+- **Cardinality decomposes against the schema.** The upper bound claims
+  multiplicity (`..1` an object or scalar field, `..*` a connection or list);
+  the lower bound claims nullability (`0..` tolerates `null`, `1..` requires the
+  provider to always have the value). So `field: _meta.title` may sit under
+  `cardinality: "1"`, but a nullable `summary` must sit under `0..1`. `1..*`
+  asserts a non-empty list — stronger than GraphQL can express, checkable only
+  at runtime.
+- **Mechanism-blindness.** Whether a plural field is a Relay connection or a
+  plain list is a provider mechanism, not an anatomy fact. NEVER write an
+  unwrapping path like `edges.node` — consumers discover the shape from the SDL.
+  This is what lets an anatomy survive a provider promoting a list to a
+  connection unchanged.
+
+Projections are optional. A structure-only anatomy stays valid, and unprojected
+positions simply contribute nothing to the derived fragment. Add them when the
+component's whole point is rendering a known entity; leave them off for generic
+containers. The committed provider SDL is the naming authority — check field
+names against it rather than guessing.
+
+### Pinned Props
+
+A named node can PIN props of the component it references, fixing a value at
+one tree position:
+
+```yaml
+node:
+  uri: global.component.icon
+  props:
+    icon: chevron-down
+```
+
+| Aspect | Rule |
+|--------|------|
+| Keys | Prop names as defined on the component in the DS ontology (camelCase). |
+| Values | Scalars only — no token paths, no fallback arrays. Pins are values, not styles. |
+| Nodes | Named nodes ONLY. `props` under a `role` node is rejected by the parser and the schema. |
+
+The DSL never DEFINES a prop surface — names, types and optionality live in the
+DS ontology (`ds:hasProperty`). A pin asserts one value at one position. Whether
+the prop exists, and whether the value is admissible, are checks against the
+graph: `pragma block lookup <Component>` lists the properties.
+
+**Icons are the canonical case**, and need no icon-specific construct. The icon
+is a component whose glyph is a required prop, so icon usage splits in two:
+
+| Case | Authoring |
+|------|-----------|
+| Consumer-filled icon slot (Button's `slotName: icon`) | Icon-component edge with a slot and NO pin — the consumer chooses the glyph, and the anatomy correctly says nothing. |
+| Component-intrinsic icon (accordion chevron, modal close ×, status glyph) | Icon-component node with `props: { icon: … }` — the spec fixes the glyph. |
+
+**Pins are static by design.** A data-driven value is a projection
+(`projection: { field: … }`); a state-driven one is a `switch` whose cases pin
+different values. If a value varies at runtime, it is not a pin.
+
 ### Slot Names
 
 Common slot conventions:
@@ -498,70 +840,296 @@ Common slot conventions:
 
 **Convention:** `slotName: default` implies the main children slot (`children` in React, default slot in Vue).
 
-### Style Key Categories
+### A style value is the symbol consumed
 
-Styles use CTI-inspired dot-notation: `category.type[.item]`
+A style value is **the name of a token symbol**, written in the symbol's own dotted
+spelling — or **an ordered list of symbol names**, which is the fallback order the
+implementation reads, ending in the one literal it falls back to last.
 
-#### Layout (typically invariant)
 ```yaml
-layout.type: stack | flow | grid
-layout.direction: horizontal | vertical
-layout.align: start | center | end | stretch
-layout.justify: start | center | end | space-between | space-around
-layout.wrap: true | false
-layout.display: block | flex | grid | none
-layout.flex: 1 | auto
-layout.overflow: hidden | scroll | visible
+styles:
+  # One symbol.
+  typography.weight: typography.weight.medium
+  # A fallback order: the channel first, then the semantic token behind it. This is
+  # the implementation's own `var()` chain, transcribed.
+  typography.color: [modifier.color.text, color.text]
+  # A chain that ends in a literal keeps the literal: an implementation regenerated
+  # from this anatomy has to be able to write the whole chain.
+  appearance.outline.color@focus: [modifier.color.focusRing, color.focusRing, currentColor]
+  # A primitive is a literal the implementation writes, and resolves against nothing.
+  layout.type: inline-flex
 ```
 
-#### Spacing (invariant if literal, themeable if token)
+Three things that are **retired** and rejected by the parser:
+
+| Retired | Write instead |
+|---|---|
+| a slash path — `color/text/muted` | the symbol's dotted name — `color.text.muted` |
+| a trailing `?` marker — `shadow/card?` | nothing: a name no stratum declares is not written at all, and a `#` comment on the line records it |
+| `root` or `$root` inside a value | the dotted name without it — `color.text` |
+
+**Consume the channel where the implementation reads the channel.** A modifier or
+surface family reaches a component through a channel variable, and the anatomy says so
+by consuming the channel by name: `modifier.color.text` is the channel of `color.text`,
+and it is a symbol of its own. Where the implementation reads the semantic token
+directly, the anatomy consumes the semantic token. Nothing is inferred either way.
+
+**This is also how a component's SUPPORT for a modifier family is expressed — and it is
+the only way.** There is no key that names a family, no `@state` for one, and no
+`switch` discriminator over one: a family is never written into an anatomy by name.
+What an anatomy says is which channels it reads, and a channel is where a family lands.
+So `typography.color: [modifier.color.text, color.text]` is the statement "whatever
+family covers `color.text` reaches this node's text colour", and
+`appearance.background: [surface.color.background, color.background]` is the same
+statement for the surface side. Which families those are is a question for the token
+graph, not the anatomy — `pragma token lookup color.text` lists them under
+`### Covered by`, and `pragma token values --symbol modifier.color.text` shows the
+routing per modifier. Button is the worked chain: it carries the Anticipation family,
+its text colour consumes `modifier.color.text`, and that channel routes
+`anticipation.caution` to `color.text.warning` and `anticipation.destructive` to
+`color.text.destructive` — while Button's own anatomy says the word "Anticipation"
+nowhere. The family is in the channel, not in the tree.
+
+Two consequences worth holding on to. A component whose spec claims a family and whose
+anatomy consumes no channel of the symbols that family covers does not in fact support
+it — that mismatch is a finding, and the anatomy is where it shows. And the reverse:
+where the stylesheet reads the plain semantic token with no channel in front of it, the
+anatomy binds the plain token, and the component is correctly saying it is NOT
+family-sensitive at that key. Do not add a channel to express a family the
+implementation does not read.
+
+**A name no stratum declares is never written. The comment is the record.** An
+implementation reads plenty of variables that stand for no symbol — a component-local
+`--button-gap`, a state variable the stylesheet computes, a family that has not
+landed. The rule is to bind what does resolve and say in a `#` comment what the
+implementation reads first, on the line it belongs to:
+
 ```yaml
-spacing.internal: spacing/medium          # padding (themeable)
-spacing.external: spacing/large           # margin (themeable)
-spacing.gap: spacing/small                # gap between children (themeable)
-spacing.margin.bottom: spacing/small      # specific margin
+styles:
+  # reads --modifier-color-text-disabled first; no symbol declares it.
+  typography.color@disabled: color.text.disabled
+  # The transition reads --motion-duration-fast and --motion-easing-standard; both
+  # bindings are dropped because no symbol declares either name and neither var()
+  # carries a literal fallback.
+  motion.property: "background-color, color"
 ```
 
-#### Appearance (typically themeable)
-```yaml
-appearance.background: color/surface/card
-appearance.border: border/style/default
-appearance.border.top: border/style/divider
-appearance.shadow: shadow/elevated/medium
-appearance.radius: shape/rounded/full
+The comment is where a reader meets the fact, and it travels with the value — there is
+no register row for an authored file, and nothing is substituted merely to make a name
+resolve. `pragma token lookup <symbol>` settles whether a name resolves before you
+write it; `pragma variable lookup <name>` settles what a variable in the stylesheet
+stands for (see Discovery Flow above).
+
+**A list is the implementation's fallback chain, and the first element wins.** The head
+is what the slot reads, each later element is what it falls back to, and a chain may
+end in the one literal the implementation writes last. A list of one element is written
+as the scalar instead, and a primitive anywhere but last is a parse error.
+
+### The style keys are a closed roster
+
+There are 111 style keys and they are the DSL's own vocabulary, published as
+`@canonical/anatomy-dsl`'s `definitions/style-keys.yaml`. That file is the authority
+on every question of the form "what does this key take" — it is installed, so read it
+rather than reasoning from the examples here:
+
+```bash
+less node_modules/@canonical/anatomy-dsl/definitions/style-keys.yaml
 ```
 
-#### Size (invariant if structural, themeable if token)
+Each key carries a `valueKind` (`token`, `primitive` or `either`) and, where it takes a
+token, the one `namespace` whose symbols it admits. Those two fields settle it: if a key
+says `either`, a literal is legal there whatever the examples below happen to show, and
+if it names a namespace, a symbol outside that namespace is not legal there however
+well it reads. The roster's own header says how each value was measured, which is worth
+reading once — a key exists because an implementation binds the property, and
+`valueKind` is what the measurement found, not a preference.
+
+A key outside the roster is rejected, and each key states what it admits:
+
+- **token** — a symbol, always. `appearance.border.color`, `size.inline`.
+- **primitive** — a literal, always. `layout.type`, `appearance.border.style`.
+- **either** — a symbol or a literal, because the corpus binds both.
+  `appearance.background`, `spacing.gap`.
+
+And each token-taking key admits ONE namespace, in three spellings — the family, its
+modifier channel and its surface channel:
+
+| Key family | Namespace it admits |
+|---|---|
+| `appearance.background`, `appearance.border.*.color`, `appearance.outline.color`, `typography.color` | `color.`, `modifier.color.`, `surface.color.` |
+| `appearance.border.width`, `appearance.outline.*`, `appearance.radius`, `layout.flex.basis`, `layout.offset.*`, `size.*`, `typography.letterSpacing`, `typography.size`, `typography.decoration.*` | `dimension.`, `modifier.dimension.`, `surface.dimension.` |
+| `spacing.gap*`, `spacing.internal.*`, `spacing.external.*` | `spacing.`, `modifier.spacing.`, `surface.spacing.` |
+| `typography.font`, `typography.fontFamily`, `typography.lineHeight`, `typography.weight` | `typography.`, `modifier.typography.`, `surface.typography.` |
+| `motion.duration`, `motion.easing` | `motion.`, `modifier.motion.`, `surface.motion.` |
+
+Read the table as a summary of the roster, not as a substitute for it: where the two
+differ the roster is right and this table is stale. Note in particular that several
+keys in the `dimension.` row are `either`, not `token` — `appearance.radius` is one, so
+`appearance.radius: 1rem` is a lawful binding where the implementation writes `1rem`
+literally and declares no variable. The namespace constrains which SYMBOL may go on a
+key; it does not turn an `either` key into a token-only one.
+
+**Spacing keys admit `dimension.*` too, for now.** Not one of the twelve `spacing.*`
+roles resolves to the same dimension in every product context, and the implementations
+read `--dimension-*` directly for padding and gaps. So where the stylesheet reads
+`--dimension-200`, the anatomy writes `dimension.200` on the spacing key, and the
+second namespace is in the roster for exactly as long as that is true — it comes back
+out once a semantic spacing namespace lands. Write the symbol the implementation reads,
+not the role you would have chosen.
+
+**Not every CSS property has a key.** `box-shadow`, `animation`, a vendor prefix, a
+mask: no key in the roster takes them, so an anatomy does not bind what the
+implementation consumes through them, and a `#` comment on the node says what was
+left unbound. Do not invent a key for a property that has none.
+
+### The keys, by family
+
+Every key below is in the roster, and the comment says what it admits. Where a key
+takes `either`, the choice is not taste: bind the symbol where the implementation
+reads a variable, and write the literal where it writes a literal.
+
+#### Layout — primitives throughout
 ```yaml
-size.width: fill | hug | 100%             # invariant
-size.width: size/card/width               # themeable
-size.max.width: size/container/max
-size.max.height: size/media/max
-size.min.height: 48px
+layout.type: inline-flex                  # the display type, as CSS spells it
+layout.direction: column
+layout.align: center                      # align-items, on the node that is the container
+layout.alignSelf: center                  # align-self, on the child that overrides it
+layout.alignContent: center               # align-content, on the container
+layout.justify: space-between
+layout.wrap: wrap
+layout.overflow: hidden
+layout.flex.grow: 1
+layout.flex.basis: 20rem                  # either: a dimension symbol or a literal
+layout.position: relative
+layout.grid.columns: repeat(2, 1fr)
+layout.offset.top: dimension.100          # either: dimension.*
 ```
 
-#### Typography (typically themeable)
+**`layout.align` is `align-items` and nothing else.** The roster carries three keys
+where CSS has three properties, so there is nothing to disambiguate by context: a
+child's `align-self: center` is `layout.alignSelf: center` on that child, and
+`align-content` is `layout.alignContent`. Writing `layout.align` on a leaf that
+overrides its parent's alignment says the wrong thing — it reads as "this node aligns
+ITS children" — and the gate will not catch it, because both keys are in the roster and
+both take a primitive. Take the CSS property from the stylesheet and map it to the key
+of the same name.
+
+#### Spacing — a `spacing.*` role, or the `dimension.*` the stylesheet reads
 ```yaml
-typography.size: font/size/body
-typography.weight: font/weight/bold
-typography.color: color/text/primary
-typography.align: center | left | right    # can be invariant
-typography.line.height: 1.5
+spacing.internal.inline.start: spacing.inset.action.inline   # padding, one side
+spacing.internal.block.start: spacing.inset.surface.block
+spacing.external.block.end: spacing.inset.surface.block      # margin, one side
+spacing.gap: spacing.gap.mark.inline                         # gap between children
+spacing.gap.block: spacing.gap.group.block                   # token only
+spacing.internal.inline.end: dimension.200   # --dimension-200, read directly
 ```
 
-#### Interaction (typically invariant)
+**A symmetric CSS shorthand becomes both keys, written out.** There is no key for
+`padding-block` or `padding-inline` as a pair, so a stylesheet's
+`padding-block: var(--spacing-x)` is TWO bindings — `spacing.internal.block.start` and
+`spacing.internal.block.end`, each carrying the same value — and `padding-inline`
+likewise on `.inline.start` and `.inline.end`. The same holds for `margin-block` and
+`margin-inline` on the `spacing.external.*` keys. Both sides are written; neither is
+left implicit:
+
 ```yaml
-interaction.cursor: pointer | default
-interaction.transition.property: background
-interaction.transition.duration: transition/duration   # token = themeable
-interaction.transition.timing: ease
+# padding-inline: var(--spacing-inset-action-inline)
+spacing.internal.inline.start: spacing.inset.action.inline
+spacing.internal.inline.end: spacing.inset.action.inline
 ```
 
-#### Object (for media)
+#### Appearance — colour and dimension
 ```yaml
-object.fit: cover | contain | fill
-object.position: center | top
+appearance.background: [modifier.color.foreground.primary, color.foreground.primary]
+appearance.border.color: [modifier.color.border, color.border]
+appearance.border.width: dimension.stroke.thickness.medium
+appearance.border.style: solid            # primitive
+appearance.radius: dimension.radius.medium
+appearance.outline.color@focus: [modifier.color.focusRing, color.focusRing, currentColor]
+appearance.outline.width@focus: dimension.stroke.thickness.large
+appearance.opacity: 0.5                   # primitive
 ```
+
+#### Size — a dimension symbol, or a literal where the size is structural
+```yaml
+size.width: 100%                          # either: a literal is right here
+size.max.width: 60rem
+size.min.height: dimension.900            # token only
+size.inline: dimension.400                # token only
+```
+
+#### Typography
+```yaml
+typography.font: typography.text.primary  # the composite
+typography.size: dimension.size.fontSize.200
+typography.weight: typography.weight.medium
+typography.lineHeight: typography.text.primary
+typography.color: [modifier.color.text, color.text]
+typography.letterSpacing: dimension.letterSpacing.wide
+typography.align: center                  # primitive
+```
+
+#### Interaction and motion
+```yaml
+interaction.cursor: pointer               # primitive
+interaction.select: none                  # primitive
+motion.property: background-color         # primitive
+# No stratum declares a motion.* symbol yet, so a duration or an easing the
+# stylesheet reads through a variable is not bound at all — a `#` comment on the
+# node says what it reads. A literal the stylesheet writes literally is written.
+motion.easing: ease-in-out                # either: a literal until the family lands
+```
+
+### Interaction States (`@state`)
+
+A style key MAY take an `@state` suffix scoping its value to one interaction
+state. The unmarked key IS the default state — `@default` is invalid.
+
+```yaml
+styles:
+  interaction.cursor: pointer
+  interaction.cursor@disabled: not-allowed
+  appearance.background: color.foreground.primary
+  appearance.background@hover: color.foreground.primary.hover
+  appearance.outline.color@focus: [modifier.color.focusRing, color.focusRing]   # a channel may exist only in a state
+```
+
+**Vocabulary — closed, registry-governed.** Eight states, and only these:
+
+| State | Meaning | What the implementation keys off |
+|-------|---------|----------------------------------|
+| `hover` | Pointer over the element | `:hover` |
+| `active` | Being pressed or activated (MD3 *pressed*, Spectrum *down*) | `:active` |
+| `disabled` | Interaction unavailable | `:disabled`, `aria-disabled` |
+| `focus` | Keyboard focus indication | `:focus-visible` on the web |
+| `selected` | Chosen within a set | `aria-selected`, and `:checked` where the control is one of a set |
+| `expanded` | A disclosure is open | `[open]`, `aria-expanded` |
+| `indeterminate` | A checkbox or a progress is mixed, on neither setting | `:indeterminate`, `aria-checked="mixed"` |
+| `invalid` | Validation has failed | `:invalid`, `aria-invalid` |
+
+The last three are the newest, and how they arrived is the rule: candidates
+(`checked`, `visited`, `dragged`, `pending`, `error`, `read-only`) enter through
+the registry with a definition and a per-platform mapping — NEVER by loosening the
+schema locally. If an anatomy seems to need a ninth state, that is a registry
+proposal, not a local decision. `open` is not a second spelling of `expanded`.
+
+**States re-value channels; they never add structure.** This is the line to
+hold:
+
+- A state that changes the TREE is a `switch`, not a state. The test is whether
+  the implementation RE-VALUES a channel in the state or changes what exists: a
+  disclosure header that takes a different background while open is `@expanded`;
+  the panel that exists only while open is a `switch`, and the same disclosure
+  carries both.
+- The gate and the appearance are separate questions.
+  `props: { disabled: true }` PUTS a node in the disabled state; `…@disabled`
+  styles say how it LOOKS there.
+- The canonical state token is the base token path plus a state leaf
+  (`color.foreground.primary.hover`), matching the token tree. Where a state-scoped
+  value is a token path whose leaf is a state name, the leaf must agree with
+  the key's `@state`.
+- One `@` per key in this version. Compound states (`@selected@hover`) are
+  reserved, not available.
 
 ## Templates
 
@@ -572,12 +1140,12 @@ node:
   uri: {tier}.component.{name}
   styles:
     # Structural (invariant)
-    layout.type: stack
-    layout.direction: vertical
+    layout.type: flex
+    layout.direction: column
 
     # Themeable
-    appearance.background: color/surface/{name}
-    spacing.internal: spacing/medium
+    appearance.background: color.background
+    spacing.internal.inline.start: spacing.inset.surface.block
 
   edges:
     - node:
@@ -593,11 +1161,12 @@ node:
 node:
   uri: global.component.card
   styles:
-    layout.type: stack
-    layout.direction: vertical
-    appearance.background: color/surface/card
-    appearance.shadow: shadow/card
-    appearance.radius: shape/rounded/full
+    layout.type: flex
+    layout.direction: column
+    appearance.background: color.background
+    # A shadow has no key: `box-shadow` is one of the properties the roster
+    # leaves unmapped, so it is not bound and this comment is the record.
+    appearance.radius: dimension.radius.full
 
   edges:
     # Named children reference their URI only (DRY Principle above) — each
@@ -627,9 +1196,9 @@ node:
 node:
   uri: global.component.accordion
   styles:
-    layout.type: stack
-    layout.direction: vertical
-    appearance.border: border/style/accordion
+    layout.type: flex
+    layout.direction: column
+    appearance.border.style: solid
 
   edges:
     # The repeating child is NAMED — reference its URI only (DRY Principle
@@ -650,22 +1219,22 @@ anonymous roles:
 node:
   uri: global.subcomponent.accordion-item
   styles:
-    layout.type: stack
-    layout.direction: vertical
+    layout.type: flex
+    layout.direction: column
   edges:
     - node:
         role: header tab
         styles:
-          layout.type: flow
-          layout.direction: horizontal
+          layout.type: flex
+          layout.direction: row
           layout.align: center
           interaction.cursor: pointer
         edges:
           - node:
               role: control
               styles:
-                size.width: size/icon/small
-                size.height: size/icon/small
+                size.width: dimension.300
+                size.height: dimension.300
             relation:
               cardinality: "1"
           - node:
@@ -696,9 +1265,9 @@ Transcribed from the live `global.group.keyboard_keys`:
 node:
   uri: global.group.keyboard_keys
   styles:
-    layout.display: inline-flex
+    layout.type: inline-flex
     layout.align: center
-    spacing.gap: spacing/horizontal/xsmall
+    spacing.gap: spacing.gap.mark.inline
   edges:
     - node:
         uri: global.component.keyboard_key
@@ -715,15 +1284,15 @@ Use when you need a structural element without design system identity:
 node:
   uri: global.pattern.modal
   styles:
-    layout.type: stack
-    appearance.background: color/surface/modal
+    layout.type: flex
+    appearance.background: color.background
 
   edges:
     - node:
         role: backdrop overlay    # anonymous - no uri
         styles:
-          layout.display: block
-          appearance.background: color/overlay/dark
+          layout.type: block
+          appearance.background: color.background.contrasted
           interaction.cursor: pointer
       relation:
         cardinality: "1..1"
@@ -731,9 +1300,9 @@ node:
     - node:
         role: content container   # anonymous wrapper
         styles:
-          layout.type: stack
-          size.max.width: size/modal/max
-          spacing.internal: spacing/large
+          layout.type: flex
+          size.max.width: 40rem
+          spacing.internal.inline.start: spacing.inset.surface.inline
         edges:
           - node:
               uri: global.subcomponent.modal-header
@@ -760,29 +1329,30 @@ node:
   uri: global.component.button
   styles:
     # Structural
-    layout.type: flow
-    layout.direction: horizontal
+    layout.type: flex
+    layout.direction: row
     layout.align: center
     layout.justify: center
 
     # Themeable
-    spacing.internal: spacing/button
-    spacing.gap: spacing/small
-    appearance.background: color/action/primary
-    appearance.radius: shape/rounded/button
-    typography.weight: font/weight/medium
+    spacing.internal.inline.start: spacing.inset.action.inline
+    spacing.gap: spacing.gap.mark.inline
+    appearance.background: color.foreground.primary
+    appearance.radius: dimension.radius.medium
+    typography.weight: typography.weight.medium
 
     # Interaction
     interaction.cursor: pointer
-    interaction.transition.property: background, transform
-    interaction.transition.duration: transition/fast
+    motion.property: background, transform
+    # The transition also reads --motion-duration-fast, which no symbol declares,
+    # so the duration is not bound.
 
   edges:
     - node:
         role: icon
         styles:
-          size.width: size/icon/small
-          size.height: size/icon/small
+          size.width: dimension.300
+          size.height: dimension.300
       relation:
         cardinality: "0..1"
         slotName: icon
@@ -790,8 +1360,8 @@ node:
     - node:
         role: label
         styles:
-          typography.size: font/size/button
-          typography.color: color/text/on-action
+          typography.size: dimension.size.fontSize.200
+          typography.color: color.text.onForegroundPrimary
       relation:
         cardinality: "0..1"
         slotName: default
@@ -848,6 +1418,27 @@ Ask:
 - Can any parts repeat?
 - Are there anonymous structural wrappers needed?
 
+Two sources answer these, and they disagree more often than you would expect: the
+block's `ds:hasProperty` rows in the graph, and the implementation you are authoring
+from. The graph records what was DOCUMENTED; the implementation ships what was BUILT,
+and the two run ahead of each other in both directions. Chip is the live case — the
+graph lists `icon` and `badge` as properties that the current `ChipProps` does not
+have, and marks `value` as required where the code renders it conditionally.
+
+**An anatomy transcribes the implementation, so where they disagree the implementation
+wins — and the disagreement is recorded, not smoothed over.** Write the tree the
+stylesheet and the component file support, put a `#` comment on the node (or in the
+file header) saying which graph row it departs from and why, and raise the mismatch:
+a property in the graph that the code cannot reach is a documentation gap, and a part
+in the code that the graph does not list is a specification gap. Neither is fixed by
+inventing a node for a property nothing renders, or by marking a node required because
+a row said `optional: "false"`.
+
+The one exception is a block you were asked to author from its SPEC rather than from an
+implementation — a component not built yet. There the graph is all there is, and the
+anatomy follows it; say so in the file header, because the next reader cannot tell the
+two situations apart from the file alone.
+
 ### 3. Determine Tier and Type
 
 The URI is `{tier}.{type}.{snake_name}` (see URI Encoding Convention above). The tier
@@ -882,21 +1473,88 @@ For each node, consider:
 - **Interaction**: Cursor, transitions (for interactive nodes)
 
 **Rule of thumb**:
-- Structural values (stack, center, fill) = invariant
-- Token references (spacing/medium) = themeable
+- Structural values (`flex`, `center`, `100%`) = invariant
+- A symbol (spacing.inset.surface.block) = themeable
 
-### 6. Validate
+### 6. Bind Data and Pin Props
+
+Both are optional, and both are decision gates — bring them to the person
+rather than deciding alone.
+
+**Projections** — ask whether this component is a view over a known entity. If
+it is, give the root an `on`, then for each position ask: does it RENDER a field
+(`projection.field` on the node), or is it FILLED BY a traversal
+(`projection.field` on the relation)? Check every name against the provider SDL,
+and re-check that each relation's cardinality matches the field's nullability
+and multiplicity. Generic containers project nothing — that is a real answer.
+
+**Pins** — for each named child, ask what the spec FIXES versus what it leaves
+to the consumer. An intrinsic icon is pinned (`props: { icon: … }`); a
+consumer-filled icon slot is not. Confirm each prop name against
+`pragma block lookup <Component>`; a pin naming a prop the component does not
+have is invisible to schema validation and will only fail later.
+
+### 7. Validate
+
+Two checks, and they cover different ground. Know which is which before you read an
+exit code as approval.
+
+**What the gate checks.** `anatomies validate --authored` runs the law over every
+authored file: that the document parses, that the root is named, that every style key
+is in the roster, that every value has a lawful SHAPE, that every symbol-shaped element
+RESOLVES in a stratum, and that each symbol sits inside the namespace its key admits.
+That is a great deal, and it is all mechanical.
+
+**What the gate does not check is whether the anatomy is TRUE of the component.** It
+cannot: it never reads the stylesheet. So every one of these passes the gate silently —
+a lawful key that is the wrong key for the CSS property (`layout.align` where the
+stylesheet wrote `align-self`), a resolving symbol in the right namespace that is the
+wrong symbol for the part, a node boundary drawn in the wrong place, a cardinality that
+contradicts the component's own props, a missing node for a part the stylesheet draws.
+Exit 0 with no findings means the file is LAWFUL. It does not mean the judgment calls
+were right, and it is not a second opinion on them. The check that catches those is the
+pull-request review by someone who can open the same stylesheet — which is why the file
+goes through review at all.
+
+So read the list below as the author's own pass, and keep its items honest about which
+kind they are: the ones the gate will confirm, and the ones only a reader can.
 
 Check your anatomy against:
 - [ ] Root node is named (has `uri`)
 - [ ] All cardinalities are valid notation
-- [ ] Style keys follow CTI convention
-- [ ] Token paths use `/` delimiter
+- [ ] Every style key is in the roster — the gate confirms this one
+- [ ] Each key is the key for the CSS property the stylesheet actually wrote (judgment: `layout.align` for `align-items`, `layout.alignSelf` for `align-self`; the gate accepts either)
+- [ ] Every style value is one dotted symbol, a fallback chain with at most one primitive LAST, or a primitive — no slash path, no `?` marker, no `root`/`$root` segment
+- [ ] Every symbol resolves (`pragma token lookup <symbol>`) and sits in its key's namespace; a name that does not resolve is a `#` comment, never a value — the gate confirms both
+- [ ] Every component-local variable that came back `ENTITY_NOT_FOUND` was followed through the component's own `:root` to a declared variable or a literal before it was written off
+- [ ] `layout.type` and `layout.direction` are spelled as CSS spells them (`flex`, `grid`, `inline-flex`, `block`; `row`, `column`)
 - [ ] Anonymous nodes have `role`, not `uri`
 - [ ] Multi-word names encode word boundaries with `_`; `-` appears only where the name carries a dot (per the URI Encoding Convention table)
 - [ ] Every non-root `uri:` either resolves (`pragma graph inspect ds:<uri>`) or is `$custom`, a template placeholder, or a new block or child this same spec introduces (§3)
 - [ ] Named (`uri:`) children carry no copy of their own subtree — contextual style overrides only
-- [ ] Nested components make semantic sense
+- [ ] Nested components make semantic sense (judgment — nothing checks this but a reader)
+- [ ] Every symbol is the right symbol for the part, not merely one that resolves in the key's namespace (judgment — the gate checks resolution and namespace, never fit)
+- [ ] Switch cases carry `uri` or `node` and nothing else — no `default:`
+- [ ] Every `@state` marker is one of hover, active, focus, disabled, selected, expanded, indeterminate, invalid — one `@` per key, never `@default`
+- [ ] No `@state` stands in for a structural difference — that is a `switch`
+- [ ] Every node `projection` has at least one of `on` / `field`; every relation `projection` has `field` and no `on`
+- [ ] No projection spells an unwrapping path (`edges.node`), and every projected field name exists in the provider SDL
+- [ ] Each projected relation's cardinality matches the field's nullability and multiplicity
+- [ ] `props` appears only on named nodes, holds scalars only, and every pinned prop name exists on that component (`pragma block lookup`)
+- [ ] A part the stylesheet draws as `::before`/`::after` is an anonymous `role:` node with a comment saying so, and no `slotName`
+- [ ] Every `uri:` names a block in this tier or in `global`, and a `global` anatomy reaches into no app tier
+
+Then run the law over the file, which is the check no list can stand in for:
+
+```bash
+bun src/cli.ts anatomies validate --authored
+```
+
+Exit 0 with `0 findings` is the verdict on lawfulness; a finding names the file, the uri
+and the rule it broke, and a warning — `AT11`, a state binding differing from its base —
+is usually the implementation telling the truth. What exit 0 does NOT settle is
+anything in the paragraphs above: the semantic calls travel to review, so say in the
+pull request which ones you made and what you read to make them.
 
 ## Response Format
 
@@ -924,9 +1582,12 @@ When creating an anatomy, respond with:
 - {Design decision 2}
 
 ### Next Steps
-1. Land the DSL in the block's spec draft under `specs/` (see `specs/README.md`) —
-   as step 7 of a specify flow that is the step-6 spec file; never under `data/`
-2. A human enters the content into Coda, the database of record
+1. Land the file at `anatomies/authored/{tier}/{uri}.yaml` in the design-system
+   repository — never under `data/`, which the pull sync regenerates
+2. `bun src/cli.ts anatomies validate --authored` — exit 0, and no findings
+3. Review it as a file, in a pull request
+4. `anatomies write` — dry, then a `--only <uri> --apply` canary, then `--apply`;
+   after that the document is the source of record
 ```
 
 ## Tips
@@ -1004,19 +1665,25 @@ The children one-to-many relation follows inspiration from the [Relay connection
  * - Invariant (structural): layout.type, layout.direction, size.width: "fill"
  * - Themeable (brand/theme): appearance.*, spacing.* (when using tokens)
  */
-type Styles = Record<string, TokenPath | TokenPath[] | PrimitiveValue>;
+/**
+ * Keys may carry an "@state" suffix scoping the value to one interaction
+ * state: "appearance.background@hover". The unmarked key is the default
+ * state; "@default" is invalid. Vocabulary is closed: hover, active, focus,
+ * disabled, selected, expanded, indeterminate, invalid.
+ */
+type Styles = Record<StyleKey, Symbol | [...Symbol[], Primitive?] | Primitive>;
 
 /**
- * TokenPath: Forward-slash delimited path to a design token.
- * Examples: "spacing/medium", "color/surface/primary", "font/size/heading/1"
+ * Symbol: a token symbol's own dotted name, as the token graph declares it.
+ * Examples: "spacing.inset.surface.block", "color.background", "typography.heading.1"
  */
-type TokenPath = string;
+type Symbol = string;
 
 /**
- * PrimitiveValue: Direct values not resolved from tokens.
- * Examples: "stack", "center", "fill", 1.5, true
+ * Primitive: a literal the implementation writes, resolved against nothing.
+ * Examples: "flex", "center", "100%", 1.5, true
  */
-type PrimitiveValue = string | number | boolean;
+type Primitive = string | number | boolean;
 
 /* Main types */
 
@@ -1036,12 +1703,48 @@ interface Relation {
    * Common values: "default", "header", "footer", "icon", "label"
    */
   slotName?: string;
+
+  /** The traversal populating this slot from the current data context. */
+  projection?: RelationProjection;
 }
+
+/**
+ * Fragment-style binding of a node to graph data, after the Relay
+ * fragment-colocation pattern. `on` is a GraphQL type condition, which
+ * establishes the data context on the root and narrows it on a child;
+ * `field` is the field the node renders, relative to the enclosing
+ * context. At least one of the two is required.
+ */
+type Projection =
+  | { on: string; field?: string }
+  | { on?: string; field: string };
+
+/**
+ * A traversal populating a slot, carried by the reified Relation: the
+ * field of the current data context whose value(s) fill this position.
+ * Names the field ONLY — never an unwrapping path like `edges.node`,
+ * since connection-vs-list is a provider mechanism. Type narrowing lives
+ * on the child node's own `on`, never here.
+ */
+interface RelationProjection {
+  field: string;
+}
+
+/**
+ * Pinned prop values: the anatomy FIXES props of the referenced component
+ * at this position. Keys are props defined on the component in the design
+ * system ontology; the DSL never defines the prop surface itself. Values
+ * are scalars — no token paths, no fallback arrays. Named nodes only.
+ */
+type Props = Record<string, string | number | boolean>;
 
 /**
  * Base interface for all nodes in the anatomy tree.
  */
 interface BaseNode {
+  /** Graph-data binding for this position. */
+  projection?: Projection;
+
   /**
    * Style properties using CTI-inspired keys.
    *
@@ -1069,6 +1772,9 @@ interface NamedNode extends BaseNode {
    * Examples: "global.component.button", "apps.layout.application_layout"
    */
   uri: string;
+
+  /** Pinned prop values, e.g. { icon: "chevron-down" }. */
+  props?: Props;
 }
 
 /**
@@ -1105,9 +1811,6 @@ interface Switch {
 interface SwitchCase {
   uri?: string;
   node?: Node;
-
-  /** Marks the default case. */
-  default?: boolean;
 }
 
 interface Edge {
@@ -1148,11 +1851,11 @@ node:
   uri: global.component.accordion
   styles:
     # Structural (invariant)
-    layout.type: stack
-    layout.direction: vertical
+    layout.type: flex
+    layout.direction: column
 
     # Themeable
-    appearance.border: border/style/accordion
+    appearance.border.style: solid
 
   edges:
     # The repeating child is NAMED — reference its URI only (DRY Principle);
@@ -1171,22 +1874,22 @@ The child's own anatomy — a separate spec on `global.subcomponent.accordion-it
 node:
   uri: global.subcomponent.accordion-item
   styles:
-    layout.type: stack
-    layout.direction: vertical
+    layout.type: flex
+    layout.direction: column
   edges:
     - node:
         role: header tab
         styles:
-          layout.type: flow
-          layout.direction: horizontal
+          layout.type: flex
+          layout.direction: row
           layout.align: center
           interaction.cursor: pointer
         edges:
           - node:
               role: control
               styles:
-                size.width: size/icon/small
-                size.height: size/icon/small
+                size.width: dimension.300
+                size.height: dimension.300
             relation:
               cardinality: "1"
           - node:

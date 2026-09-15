@@ -162,11 +162,28 @@ Before anything is invented, find what already exists:
 
 ```bash
 pragma block list                  # every component, pattern, layout and subcomponent, with its type and tier
-pragma block lookup <Name-or-glob> # full spec of candidates: anatomy, modifiers, properties (MCP: block_lookup); a glob repeats a multi-tier name once per IRI and every repeat is the SAME block — the fragment query below lists the tiers
+pragma block lookup <Name-or-glob> # full spec of candidates: anatomy, modifiers, properties (MCP: block_lookup)
 pragma block sample                # real entry shapes — read these BEFORE writing queries
 pragma modifier list               # the modifier families blocks draw from
 pragma tier list                   # the tiers a block can live in
 ```
+
+**`block lookup` fans a shared name out across tiers, and the repeats are not
+repeats.** A display name several tiers carry — or a glob matching them — answers with
+one full writeup per tier, each under its own `## <Name>` heading with its own
+`- Tier:` line, and those are DIFFERENT blocks: `Badge` returns the global, launchpad
+and portal Badges, three independently authored specs with different summaries,
+properties and anatomies. For this step that matters twice over. The answer is the
+prior art, so skipping past the second and third headings as noise is how an
+apps-tier block that already does the job goes unnoticed — read every one. And an
+apps-tier block carrying the name is a different verdict from a global one: the first
+may be a promotion candidate, the second means the gap is not a gap.
+
+Three key forms, and only three: the display name, the `ds:`-prefixed IRI
+(`pragma block lookup ds:global.component.badge`, which answers with exactly one
+block), and a glob. The bare dotted name is not one of them — `block list` prints
+`ds:apps_lxd.component.meter`, and pasting that row without its `ds:` prefix comes
+back `ENTITY_NOT_FOUND`.
 
 Search by name fragment when the naming is uncertain:
 
@@ -177,6 +194,16 @@ pragma graph query "SELECT ?b ?name WHERE { ?b ds:name ?name . FILTER(CONTAINS(L
 > The covered set is whatever the graph answers today. Query it live — never copy its
 > output into documentation, PRs, or this skill.
 
+That query matches `ds:name` on ANY entity, so its rows are not necessarily blocks —
+a modifier value (`ds:global.modifier.in_progress`) and a documentation tag will come
+back alongside them, and neither is prior art. A non-empty table can still mean "no
+block of this name exists". Read each row's IRI, or bind the type when the name is
+noisy:
+
+```bash
+pragma graph query "SELECT ?b ?name ?type WHERE { VALUES ?type { ds:Component ds:Pattern ds:Layout ds:Subcomponent ds:Group } ?b a ?type ; ds:name ?name . FILTER(CONTAINS(LCASE(?name), 'crumb')) }"
+```
+
 Outcome gate: **either "exists — stop or extend it" or a NAMED gap.** No spec is written
 without one of those two sentences, naming the blocks that were checked.
 
@@ -185,10 +212,16 @@ without one of those two sentences, naming the blocks that were checked.
 Read the shape the entry must satisfy:
 
 ```bash
-pragma ontology lookup ds                    # the design-system vocabulary
+pragma ontology lookup ds                    # the design-system vocabulary: its CLASSES
+pragma ontology lookup ds --properties       # the predicates an entry carries — a section of its own, behind the flag
 pragma ontology lookup ds --class UIBlock    # the block-level properties every entry carries
 pragma ontology lookup ds --class Component  # what Component itself declares
 ```
+
+The bare `ontology lookup ds` prints the classes and stops there; the predicates come
+only with `--properties`. So a field name checked against the bare output looks absent
+when it is not — confirm `ds:usage`, `ds:guidelines`, `ds:hasProperty` and the rest
+against the properties section before writing a query or a spec field around them.
 
 `--class` shows only what a class declares itself — usage, guidelines, properties,
 and tier are declared on `ds:UIBlock` and inherited by its subclasses; `summary` and
@@ -281,19 +314,98 @@ Delegate to the `anatomy-author` skill:
 pragma skill lookup anatomy-author
 ```
 
+**Read the repository's copy, not only the printed one, and prefer it where they
+differ.** `skills/anatomy-author/SKILL.md` in canonical/design-system is the authority;
+the copy `pragma skill lookup` prints is bundled into a pragma release and lags the
+repository until the next one. So a section this step names and the printout does not
+show is old text in the printout, not a section that is missing — open the repository
+file before concluding anything is absent.
+
 The skill covers named and anonymous nodes, edges with cardinality, slot names, and
 CTI-inspired style keys; the full ANATOMY_DSL_SPEC ships beside it as
 `ANATOMY_DSL_SPEC.md` in the installed `anatomy-author` skill folder (the lookup
-renders SKILL.md only — open that file directly for the complete spec). The produced
-DSL lands in the step-6 spec file
-under `specs/` — in a `.md` spec as its anatomy section, in a `.ttl` spec as the
-block's `ds:anatomyDsl` string literal — never under `data/`; entry into Coda stays
-the human step.
+renders SKILL.md only — open that file directly for the complete spec).
 
-### 8. Pair with tokens — placeholder
+**A modifier family the spec claims is expressed in the anatomy by CONSUMING its
+channel, never by naming it.** There is no style key, `@state` or `switch`
+discriminator that takes a family name, so an anatomy that supports Criticality on its
+fill colour says so by binding the channel of the symbol the fill reads —
+`appearance.background: [modifier.color.foreground.primary, color.foreground.primary]`
+for a filled surface, `typography.color: [modifier.color.text, color.text]` for text.
+Which channels exist is the token graph's answer, not a guess:
+`pragma token list --channel-of color.background` reports a surface channel and no
+modifier one, so `modifier.color.background` is not a symbol and cannot be bound. The
+family lands in
+the channel: `pragma token values --symbol modifier.color.text` shows
+`anticipation.caution` routing to `color.text.warning`, which is how Button's
+Anticipation support reaches its text without Button's anatomy ever saying
+"Anticipation". So when step 6 recorded a Modifier Families section, this step's job is
+to name, per family, WHICH key carries it and which channel that key reads — and to
+check the family actually covers that symbol (`pragma token lookup <symbol>`, the
+`### Covered by` list). A family covering none of the symbols the anatomy binds is a
+finding for the token owners, not something to express in the tree.
 
-**Left blank for now** — token pairing content lands with the token work. Do not invent
-token guidance.
+**Where the produced DSL lands.** An anatomy is a file of its own, not a section of
+this spec: it goes to `anatomies/authored/<tier>/<uri>.yaml` in canonical/design-system,
+with the file name spelling the dotted uri. There it is checked offline with
+`bun src/cli.ts anatomies validate --authored`, reviewed as a file in a pull request,
+and written to the block's `anatomy_dsl` cell by `anatomies write`; after that write the
+document is the source of record. Never write into design-system `data/`, which the
+pull sync regenerates. `anatomy-author`'s "Where the anatomy lands" section is the
+authority on that path — this step's job is to hand it a specified component and take
+back the file name it wrote.
+
+### 8. Pair with tokens
+
+Tokens here means token symbols — `color.text`, `dimension.200` — never CSS variables.
+A variable such as `--color-text` is the web platform's name for a symbol, one name per
+platform, and it is the implementer's concern: the anatomy names the symbol, and
+`implement-component` reads `pragma variable lookup` to find what to write in CSS. A spec
+that named variables would be tied to one platform and would miss every symbol the web
+has not emitted yet.
+
+The spec does not bind tokens — that is the anatomy's job, one style key at a time. What
+this step owes is the check that the symbols the component will need actually exist, so
+a specification does not promise a colour or a spacing role the token graph has never
+declared:
+
+```bash
+pragma token list --search focus   # which symbols exist around a word
+pragma token lookup color.text     # one symbol in full: type, description, definitions
+```
+
+`token list` pages at 300 rows sorted by name, so a bare `pragma token list` returns
+colour tokens and nothing else — every dimension, number and typography symbol is off
+the first page, behind an "and more exist" heading and an `--after` cursor that a pipe
+into `grep` swallows. Always narrow (`--search`, `--type`) or raise `--limit` before
+concluding a family is absent; an unnarrowed list is not evidence.
+
+A name that comes back `ENTITY_NOT_FOUND` is a finding for the spec — either the
+component reads an existing symbol instead, or a new token is a decision to raise with
+the token owners, and either answer belongs in the spec rather than in the anatomy that
+follows. (MCP: `token_list`, `token_lookup`.)
+
+**`token lookup` resolving is the FIRST check, not the whole one.** It answers whether a
+symbol exists; it says nothing about which style key the symbol may go on. Each key
+admits symbols from one namespace only, and a symbol that reads as exactly on-topic can
+still be outside it: `typography.text.tertiary` is a real composite typography token and
+"12px tertiary text" is exactly what a small label wants, yet `typography.size` admits
+`dimension.` symbols alone, so the binding is unlawful and
+`dimension.size.fontSize.250` is what belongs there. Neither `token lookup` nor
+`token list` knows that rule.
+
+So the pairing has two checks, in order: `token lookup <symbol>` for existence, then the
+anatomy gate for admissibility.
+
+```bash
+bun src/cli.ts anatomies validate --authored   # in canonical/design-system
+```
+
+It names the file, the node, the key, the symbol and the namespaces the key admits. Run
+it before reporting step 8 as done, and treat a namespace rejection the way you treat an
+`ENTITY_NOT_FOUND`: a finding to resolve against the roster
+(`node_modules/@canonical/anatomy-dsl/definitions/style-keys.yaml`, which states the
+`valueKind` and the namespace per key), never a value to force through.
 
 ## Response format
 
@@ -309,8 +421,8 @@ Spec: specs/<tier>.<type>.<snake_name>.md
 - [ ] 4. Benchmarked against: … (adopt/reject decisions stated)
 - [ ] 5. State gate: fired/not fired (States & interaction section: yes/no)
 - [ ] 6. Documentation written to the sync-safe location
-- [ ] 7. Anatomy DSL written via anatomy-author
-- [ ] 8. Token pairing: placeholder (deferred)
+- [ ] 7. Anatomy DSL written via anatomy-author (file: anatomies/authored/…)
+- [ ] 8. Token pairing: symbols checked against the token graph AND the anatomy gate run (findings: …)
 ```
 
 ## Related skills
