@@ -16,9 +16,8 @@
     color: var(--color-icon);
     cursor: pointer;
 
-    /* Spec: "the background colour of the collapse/expand button changes" on
-     hover; no stated transition on that change (the 24.04 spec §10.4), so no
-     `transition` property here — the swap is instant. */
+    /* The hover/press background swap is instant by design — no
+     `transition` property here. */
     &:hover {
       background: var(--sidenav-row-background-hover);
     }
@@ -35,9 +34,7 @@
       display: none;
     }
 
-    /* Vanilla's "small" breakpoint (the 24.04 spec §7: "on all breakpoints above the
-     small breakpoint of Vanilla" / "at breakpoints below small" —
-     $breakpoint-small, 620px). */
+    /* Vanilla's "small" breakpoint — $breakpoint-small, 620px. */
     @media (width < 620px) {
       & svg {
         display: none;

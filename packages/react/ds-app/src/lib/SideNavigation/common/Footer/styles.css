@@ -2,7 +2,7 @@
  * Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
 @layer ds.components.apps {
   .ds.footer {
-    /* Spec: "The footer has a spacing of 0.5rem at the bottom." */
+    /* 0.5rem of bottom spacing. */
     padding-block-end: var(--dimension-100);
 
     /* Flat list reset — the footer's rows are always a flat list (leaves and

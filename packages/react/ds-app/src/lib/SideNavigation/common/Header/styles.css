@@ -8,9 +8,9 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    /* 0.5rem — deliberate deviation from the 24.04 spec's "1rem to the
-     right of the collapse button", keeping the header reading tight like
-     the rest of the rail. */
+    /* 0.5rem — deliberate deviation from the upstream 24.04 design's 1rem
+     to the right of the collapse button, keeping the header reading tight
+     like the rest of the rail. */
     gap: var(--dimension-100);
 
     .brand-container {
@@ -40,12 +40,12 @@
       }
     }
 
-    /* Collapsed (the 24.04 spec §1.2): a centred column — logo on top, the collapse
+    /* Collapsed: a centred column — logo on top, the collapse
      toggle relocates below it rather than beside it. DOM order already
      places the toggle last, so switching the axis alone moves it there; no
      title has room, so it's dropped entirely rather than left to overflow
-     a rail this narrow. No stated transition for this rearrangement
-     (the 24.04 spec §10.4), so no `transition` property here. */
+     a rail this narrow. The rearrangement is instant by design — no
+     `transition` property here. */
     &[data-expanded="false"] {
       flex-direction: column;
       align-items: flex-start;
@@ -56,8 +56,8 @@
       }
     }
 
-    /* Responsive (the 24.04 spec §7): "On mobile the header is always shown" in its
-     normal row layout — collapsed there means "menu closed", not "narrow
+    /* Responsive: the header keeps its normal
+     row layout on mobile — collapsed there means "menu closed", not "narrow
      icon rail", so the centred-column rearrangement above doesn't apply. */
     @media (width < 620px) {
       align-items: flex-start;

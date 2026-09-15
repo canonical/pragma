@@ -70,7 +70,7 @@
       color: var(--color-icon-disabled);
     }
 
-    /* Spec: item labels are single-line and truncate (the 24.04 spec §7). */
+    /* Item labels are single-line and truncate. */
     & .label {
       min-width: 0;
       overflow: hidden;
@@ -78,10 +78,10 @@
       white-space: nowrap;
     }
 
-    /* Disclosure caret — rotates open. Spec: "The transition is animated as
-     shown in the example". Respects reduced motion (the 24.04 spec §6) — and the
-     motion tokens are zeroed under prefers-reduced-motion anyway
-     (@canonical/styles/motion.css), as is the rail's own width transition. */
+    /* Disclosure caret — rotates open. The rotation is animated;
+      it respects reduced motion — and the
+      motion tokens are zeroed under prefers-reduced-motion anyway
+      (@canonical/styles/motion.css), as is the rail's own width transition. */
     & .end.caret {
       display: flex;
       align-items: center;

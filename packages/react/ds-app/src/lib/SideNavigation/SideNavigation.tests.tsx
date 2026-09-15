@@ -200,7 +200,7 @@ describe("SideNavigation", () => {
   it("collapses after mount on a small viewport when defaultExpanded is left unset", async () => {
     // The expanded state renders as a fullscreen overlay below the small
     // breakpoint, so the unset default (true, desktop) must not ship as a
-    // first-paint takeover on a phone. Post-mount, SSR-pure (SPEC.md §4).
+    // first-paint takeover on a phone. Post-mount, SSR-pure.
     const matchMediaSpy = vi
       .spyOn(window, "matchMedia")
       .mockReturnValue({ matches: true } as MediaQueryList);
@@ -244,7 +244,7 @@ describe("SideNavigation", () => {
     expect(el.dataset.expanded).toBe("false");
   });
 
-  it("orders focusable elements logo → collapse toggle → content → footer (SPEC.md §5)", () => {
+  it("orders focusable elements logo → collapse toggle → content → footer", () => {
     const { container } = render(
       <SideNavigation
         root={root}
