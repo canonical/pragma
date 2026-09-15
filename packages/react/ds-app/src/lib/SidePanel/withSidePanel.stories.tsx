@@ -12,22 +12,21 @@ import withSidePanel from "./withSidePanel.js";
  * The story's `play` clicks the trigger so the snapshot captures the panel
  * open; in the canvas you can click it yourself, both directions.
  */
-const TogglePanelButton = withSidePanel(
-  Button,
-  <>
+const TogglePanelButton = withSidePanel(Button, ({ ref }) => (
+  <SidePanel ref={ref}>
     <SidePanel.Header>Panel title</SidePanel.Header>
     <SidePanel.Content>
       <p>The application behind this panel is still usable.</p>
     </SidePanel.Content>
-  </>,
-);
+  </SidePanel>
+));
 
 /**
- * Function children receive a `close` — for content with its own exit
- * routes, a form's footer buttons say.
+ * The factory receives `close` too — for content with its own exit routes, a
+ * form's footer buttons say.
  */
-const FormPanelButton = withSidePanel(Button, (close) => (
-  <>
+const FormPanelButton = withSidePanel(Button, ({ ref, close }) => (
+  <SidePanel ref={ref}>
     <SidePanel.Header>Add machine</SidePanel.Header>
     <SidePanel.Content>
       <p>A form would live here, exiting through `close`.</p>
@@ -38,7 +37,7 @@ const FormPanelButton = withSidePanel(Button, (close) => (
         Save
       </Button>
     </SidePanel.Footer>
-  </>
+  </SidePanel>
 ));
 
 const meta = {
@@ -48,13 +47,21 @@ const meta = {
       description: {
         component: `
 Pairs a trigger with a panel it toggles — for **transient, local panels**:
-forms, filters, anything that the consumer doesn't need to know the state of the side panel. The dialog's native open
-state is the only one; the toggle reads it and flips it.
+forms, filters, anything that the consumer doesn't need to know the state of
+the side panel. The dialog's native open state is the only one; the toggle
+reads it and flips it.
 
 The trigger can be anything that takes an \`onClick\` — a \`Button\`, the
 router's \`Link\`, a bare anchor — and its own \`onClick\` still runs,
 first, when pressed.
-       `,
+
+The second argument is a **factory**: the HOC calls it with \`{ close, ref }\`
+and it returns the complete \`<SidePanel>\` element, so everything the panel
+accepts lives on that element. The factory must attach the \`ref\` it
+receives — \`<SidePanel ref={ref}>\` — because the trigger toggles the panel
+through it; \`SidePanel\` requires its \`ref\`, so forgetting it is a compile
+error, not a silent nothing.
+        `,
       },
       story: {
         // The panel is `position: fixed`: inside its own iframe it fills the
@@ -88,22 +95,24 @@ import { SidePanel, withSidePanel } from "@canonical/react-ds-app";
 
 const TogglePanelButton = withSidePanel(
   Button,
-  <>
-    <SidePanel.Header>Panel title</SidePanel.Header>
-    <SidePanel.Content>
-      <p>The application behind this panel is still usable.</p>
-    </SidePanel.Content>
-  </>,
+  ({ ref }) => (
+    <SidePanel ref={ref}>
+      <SidePanel.Header>Panel title</SidePanel.Header>
+      <SidePanel.Content>
+        <p>The application behind this panel is still usable.</p>
+      </SidePanel.Content>
+    </SidePanel>
+  ),
 );
 
-<TogglePanelButton>Open panel</TogglePanelButton>
+<TogglePanelButton>Toggle panel</TogglePanelButton>
         `,
       },
     },
   },
 };
 
-/** Content that owns its exits: the function form receives `close`. */
+/** Content that owns its exits: the factory receives `close`. */
 export const CloseFromContent: Story = {
   render: () => (
     <div style={{ padding: "1rem" }}>
@@ -122,8 +131,8 @@ import { SidePanel, withSidePanel } from "@canonical/react-ds-app";
 
 const FormPanelButton = withSidePanel(
   Button,
-  (close) => (
-    <>
+  ({ ref, close }) => (
+    <SidePanel ref={ref}>
       <SidePanel.Header>Add machine</SidePanel.Header>
       <SidePanel.Content>
         <MachineForm
@@ -137,7 +146,7 @@ const FormPanelButton = withSidePanel(
           Save
         </Button>
       </SidePanel.Footer>
-    </>
+    </SidePanel>
   ),
 );
 

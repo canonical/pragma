@@ -46,7 +46,7 @@ describe("SidePanel", () => {
   describe("rendering", () => {
     it("applies the base and custom class to the dialog", () => {
       const { container } = render(
-        <SidePanel className="custom-class">
+        <SidePanel ref={createRef<SidePanelHandle>()} className="custom-class">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
@@ -89,7 +89,10 @@ describe("SidePanel", () => {
 
     it("passes through additional props", () => {
       render(
-        <SidePanel data-testid="test-component">
+        <SidePanel
+          ref={createRef<SidePanelHandle>()}
+          data-testid="test-component"
+        >
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
@@ -308,10 +311,10 @@ describe("SidePanel", () => {
   });
 
   describe("outside press", () => {
-    it("stays open by default, because the page behind is interactive", () => {
+    it("stays open: the page behind is interactive, so a press there is ordinary work, not a dismissal", () => {
       const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
-      render(
+      const { container } = render(
         <SidePanel ref={handle} onOpenChange={onOpenChange} aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
@@ -319,62 +322,8 @@ describe("SidePanel", () => {
       openPanel(handle.current);
 
       fireEvent.pointerDown(document.body);
+      expect(getDialog(container)).toHaveAttribute("open");
       expect(onOpenChange).toHaveBeenCalledTimes(1);
-    });
-
-    it("closes when closeOnOutsideClick is set", () => {
-      const handle = createRef<SidePanelHandle>();
-      const onOpenChange = vi.fn();
-      const { container } = render(
-        <SidePanel
-          ref={handle}
-          onOpenChange={onOpenChange}
-          closeOnOutsideClick={true}
-          aria-label="Panel"
-        >
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
-      openPanel(handle.current);
-
-      fireEvent.pointerDown(document.body);
-      expect(getDialog(container)).not.toHaveAttribute("open");
-      expect(onOpenChange).toHaveBeenLastCalledWith(false);
-    });
-
-    it("ignores a press that lands inside the panel", () => {
-      const handle = createRef<SidePanelHandle>();
-      const onOpenChange = vi.fn();
-      render(
-        <SidePanel
-          ref={handle}
-          onOpenChange={onOpenChange}
-          closeOnOutsideClick={true}
-          aria-label="Panel"
-        >
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
-      openPanel(handle.current);
-
-      fireEvent.pointerDown(screen.getByText("Body"));
-      expect(onOpenChange).toHaveBeenCalledTimes(1);
-    });
-
-    it("ignores a press while closed", () => {
-      const handle = createRef<SidePanelHandle>();
-      const onOpenChange = vi.fn();
-      render(
-        <SidePanel
-          ref={handle}
-          onOpenChange={onOpenChange}
-          closeOnOutsideClick={true}
-        >
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
-      fireEvent.pointerDown(document.body);
-      expect(onOpenChange).not.toHaveBeenCalled();
     });
   });
 
@@ -399,7 +348,7 @@ describe("SidePanel", () => {
 
     it("defers to a consumer aria-label, rather than pointing at nothing", () => {
       const { container } = render(
-        <SidePanel aria-label="Filters">
+        <SidePanel ref={createRef<SidePanelHandle>()} aria-label="Filters">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
@@ -410,55 +359,11 @@ describe("SidePanel", () => {
 
     it("carries no aria-modal: the page behind is not inert", () => {
       const { container } = render(
-        <SidePanel aria-label="Panel">
+        <SidePanel ref={createRef<SidePanelHandle>()} aria-label="Panel">
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
       expect(getDialog(container)).not.toHaveAttribute("aria-modal");
-    });
-
-    it("warns when a panel opens with neither a header nor a label", () => {
-      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      const handle = createRef<SidePanelHandle>();
-      render(
-        <SidePanel ref={handle}>
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
-      // `aria-labelledby` would point at an id nothing rendered, leaving the
-      // dialog unnamed — invisible in the markup, so it is said out loud.
-      openPanel(handle.current);
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining("no accessible name"),
-      );
-      warn.mockRestore();
-    });
-
-    it("stays quiet when a header names the panel", () => {
-      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      const handle = createRef<SidePanelHandle>();
-      render(
-        <SidePanel ref={handle}>
-          <SidePanel.Header>Panel title</SidePanel.Header>
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
-      openPanel(handle.current);
-      expect(warn).not.toHaveBeenCalled();
-      warn.mockRestore();
-    });
-
-    it("stays quiet when the consumer supplies a label", () => {
-      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      const handle = createRef<SidePanelHandle>();
-      render(
-        <SidePanel ref={handle} aria-label="Filters">
-          <SidePanel.Content>Body</SidePanel.Content>
-        </SidePanel>,
-      );
-      openPanel(handle.current);
-      expect(warn).not.toHaveBeenCalled();
-      warn.mockRestore();
     });
   });
 

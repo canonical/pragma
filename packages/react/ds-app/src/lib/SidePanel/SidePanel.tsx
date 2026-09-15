@@ -26,17 +26,21 @@ const componentCssClassName = "ds side-panel";
  * page is not inert and saying otherwise would misinform assistive technology.
  *
  * The panel is controlled through its `ref`: `open()` shows it and moves focus
- * in, `close()` hides it and hands focus back. The dialog's native open state
- * is the single source of truth — there is no `open` prop to mirror it, and
- * every change is reported through `onOpenChange`, whether the handle, a
- * dismissal gesture, or the platform caused it.
+ * in, `close()` hides it and hands focus back. The ref is required, since the
+ * handle is the only way in — a panel with no ref is a panel that can never
+ * open. The dialog's native open state is the single source of truth — there
+ * is no `open` prop to mirror it, and every change is reported through
+ * `onOpenChange`, whether the handle, a dismissal gesture, or the platform
+ * caused it.
  *
  * Compose the body from `SidePanel.Header`, `SidePanel.Content` and
  * `SidePanel.Footer`. Header and footer stay put; only the content scrolls.
  *
- * The panel needs an accessible name: the header's heading provides it, so a
- * panel without a `SidePanel.Header` must pass `aria-label` instead.
- * Development warns when an opening panel has neither.
+ * The panel needs an accessible name, and the composition supplies it: render
+ * a `SidePanel.Header` — its heading names the panel — or pass `aria-label`
+ * when the panel has no header. Nothing enforces or warns about this; a panel
+ * composed with neither simply renders unnamed, and assistive technology
+ * cannot tell the user what opened.
  *
  * Because the panel is its own scroll container and is offset with a
  * transform, it both clips and re-anchors its descendants: an overlay that
@@ -51,7 +55,6 @@ const componentCssClassName = "ds side-panel";
  */
 const SidePanel = ({
   closeOnEscape = true,
-  closeOnOutsideClick = false,
   className,
   children,
   ref,
@@ -77,21 +80,6 @@ const SidePanel = ({
     const dialog = dialogRef.current;
     if (!dialog || dialog.open) return;
 
-    // A panel labelled by an absent heading has no accessible name at all, and
-    // nothing about that is visible: warn the way Button does for the icon-only
-    // case. Dev-only, and checked where opening actually happens rather than in
-    // an effect — the panel no longer re-renders to say it is open.
-    if (
-      typeof process !== "undefined" &&
-      process.env.NODE_ENV !== "production"
-    ) {
-      if (ariaLabel === undefined && !document.getElementById(titleId)) {
-        console.warn(
-          "SidePanel has no accessible name: render a <SidePanel.Header>, or pass `aria-label` when the panel has no header.",
-        );
-      }
-    }
-
     previouslyFocusedRef.current =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
@@ -103,7 +91,7 @@ const SidePanel = ({
     openRef.current = true;
     dialog.focus();
     onOpenChange?.(true);
-  }, [ariaLabel, titleId, onOpenChange]);
+  }, [onOpenChange]);
 
   const closePanel = useCallback(() => {
     dialogRef.current?.close();
@@ -120,25 +108,6 @@ const SidePanel = ({
     }),
     [openPanel, closePanel],
   );
-
-  // Close a still-open panel on an outside press, when asked to. Off by
-  // default: with the application live behind the panel, a press there is
-  // ordinary work rather than a dismissal gesture. The listener is gated on
-  // the dialog's own open state — there is no prop to gate it on anymore.
-  useEffect(() => {
-    if (!closeOnOutsideClick) return;
-
-    const onPointerDown = (event: PointerEvent): void => {
-      const dialog = dialogRef.current;
-      if (!dialog?.open) return;
-      if (event.target instanceof Node && !dialog.contains(event.target)) {
-        closePanel();
-      }
-    };
-
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [closeOnOutsideClick, closePanel]);
 
   // Hand focus back if the panel disappears while still open.
   //

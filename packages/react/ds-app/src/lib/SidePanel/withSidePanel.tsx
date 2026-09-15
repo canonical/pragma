@@ -1,75 +1,85 @@
-import type {
-  ComponentType,
-  FC,
-  MouseEvent,
-  ReactElement,
-  ReactNode,
-} from "react";
+import type { ComponentType, ReactElement } from "react";
 import { useRef } from "react";
-import SidePanel from "./SidePanel.js";
-import type { SidePanelHandle, SidePanelProps } from "./types.js";
+import type {
+  SidePanelHandle,
+  WithSidePanelRender,
+  WithSidePanelTriggerProps,
+} from "./types.js";
 
 /**
- * What the panel shows: plain content, or a function receiving a `close` to
- * dismiss the panel — for content with its own exit routes, a form's
- * Cancel/Save buttons say.
- */
-export type SidePanelChildren = ReactNode | ((close: () => void) => ReactNode);
-
-/**
- * The one prop a trigger must accept — and the only requirement on it.
- * `Button`, the router's `Link`, a bare `<a>`, any custom control: if it
- * takes an `onClick`, it can be a trigger, because `onClick` is how the HOC
- * wires the toggle. A component without one cannot be a trigger.
+ * Wraps a trigger with a panel it toggles. Click the trigger → the panel
+ * opens; click it again → the panel closes.
  *
- * Written in method syntax on purpose: TypeScript checks method parameters
- * bivariantly, which lets a trigger with a more specific event
- * (`MouseEventHandler<HTMLButtonElement>`, say) satisfy this — property
- * syntax would demand the reverse and reject every real trigger.
- */
-export type WithSidePanelTriggerProps = {
-  onClick?(event: MouseEvent): void;
-};
-
-/**
- * Pair a trigger with a SidePanel it toggles.
+ * **The wrapped component must accept `onClick`** and forward it to the
+ * clickable element at its root — the HOC composes its toggle handler onto
+ * the trigger itself, with no wrapper element in between. An `onClick` the
+ * consumer passes keeps working: it runs first, then the panel toggles.
  *
- * The panel renders next to the trigger and is `position: fixed`, so where in
- * the tree they sit does not move it — but providers above that spot must
- * still cover the panel's content. The trigger's own `onClick` runs first;
- * the panel toggles regardless of what it does.
- *
- * The panel itself stays stateless from the HOC's point of view: the dialog's
- * native open state is the only one, and the toggle reads it. Escape and the
- * header's close button dismiss the panel on their own — the HOC has no state
- * to be told about.
+ * The second argument is a function: the HOC calls it with a props object
+ * carrying `close` and `ref`, and it returns a complete `<SidePanel>`
+ * element — sections, props and all:
  *
  * ```tsx
- * const AddMachine = withSidePanel(Button, (close) => (
- *   <>
- *     <SidePanel.Header>Add machine</SidePanel.Header>
- *     <SidePanel.Content>
- *       <MachineForm onCancel={close} onSubmit={(data) => { save(data); close(); }} />
- *     </SidePanel.Content>
- *   </>
- * ));
- *
- * <AddMachine importance="primary">Add machine</AddMachine>
+ * const ToggleButton = withSidePanel(
+ *   Button,
+ *   ({ ref }) => (
+ *     <SidePanel ref={ref}>
+ *       <SidePanel.Header>Filters</SidePanel.Header>
+ *       <SidePanel.Content>…</SidePanel.Content>
+ *     </SidePanel>
+ *   ),
+ * );
+ * <ToggleButton>Filters</ToggleButton>;
  * ```
  *
- * @param Trigger The component that toggles the panel — anything that takes
- * an `onClick` (`Button`, the router's `Link`, a bare `<a>`, …). Its own
- * `onClick` still runs, first, when pressed.
- * @param panelChildren The panel's content, or a function receiving `close`.
- * @param panelProps Props for the panel itself — `aria-label` when there is
- * no header, `closeOnOutsideClick`, and so on. `ref` and `children` belong
- * to the HOC.
+ * Everything `SidePanel` accepts lives on the element the function returns —
+ * `aria-label`, `closeOnEscape`, `onOpenChange`, `className` — so the
+ * consumer sees the real panel, not an options bag. **One duty comes with
+ * that freedom: the factory must attach the `ref` it receives to the
+ * `<SidePanel>`** (`<SidePanel ref={ref}>`). The trigger toggles the panel
+ * through that ref — and `SidePanel` requires its `ref`, so a factory that
+ * forgets it fails to compile.
+ *
+ * **How it closes:** the trigger toggles it; the header's X button and
+ * Escape dismiss it too — the HOC has no state to be told about, the
+ * dialog's native open state is the only one. A footer button can close it
+ * as well — wire one to the `close` the function receives:
+ *
+ * ```tsx
+ * const machinePanel: WithSidePanelRender = ({ close, ref }) => (
+ *   <SidePanel ref={ref}>
+ *     <SidePanel.Header>Add machine</SidePanel.Header>
+ *     <SidePanel.Footer>
+ *       <Button onClick={close}>Cancel</Button>
+ *     </SidePanel.Footer>
+ *   </SidePanel>
+ * );
+ *
+ * const AddMachine = withSidePanel(Button, machinePanel);
+ * ```
+ *
+ * `withSidePanel` is meant for static content and belongs at module scope,
+ * called once. The function it is handed is invoked on every render of the
+ * trigger, but at module scope it can only see module-level values, so what
+ * it returns is the same on every render. If the panel must show data from
+ * the parent — for example a different machine depending on which is
+ * selected — don't call this HOC inside the component; compose `SidePanel`
+ * directly and drive it through its `ref`.
+ *
+ * A pure composition wrapper: it renders the wrapped component and the panel
+ * as siblings, so it carries no root element of its own. The panel is
+ * `position: fixed`, so where in the tree they sit does not move it — but
+ * providers above that spot must still cover the panel's content.
+ *
+ * `import { withSidePanel } from "@canonical/react-ds-app";`
+ *
+ * @param Trigger The component that toggles the panel (e.g. `Button`). It must accept `onClick` and forward it to its root element; clicking it toggles the panel.
+ * @param panel A {@link WithSidePanelRender} function: it receives `{ close, ref }`, must attach `ref` to the `<SidePanel>` it returns, and the trigger toggles it.
  */
 const withSidePanel = <TProps extends WithSidePanelTriggerProps>(
   Trigger: ComponentType<TProps>,
-  panelChildren: SidePanelChildren,
-  panelProps: Omit<SidePanelProps, "ref" | "children"> = {},
-): FC<TProps> => {
+  panel: WithSidePanelRender,
+): ComponentType<TProps> => {
   const WrappedComponent = (props: TProps): ReactElement => {
     const panelRef = useRef<SidePanelHandle>(null);
 
@@ -81,24 +91,31 @@ const withSidePanel = <TProps extends WithSidePanelTriggerProps>(
       else handle.open();
     };
 
+    // The contract: the HOC hands the factory its own ref, and the factory
+    // sets it on the `<SidePanel>` it returns. `SidePanel` requires its
+    // `ref`, so a factory that forgets `ref={ref}` fails to compile.
+    const panelElement = panel({
+      close: () => panelRef.current?.close(),
+      ref: panelRef,
+    });
+
     return (
       <>
         <Trigger
           {...props}
           onClick={(event) => {
+            // The consumer's handler runs first, then the panel toggles; a
+            // preventDefault or stopPropagation there does not gate the toggle.
             props.onClick?.(event);
             toggle();
           }}
         />
-        <SidePanel ref={panelRef} {...panelProps}>
-          {typeof panelChildren === "function"
-            ? panelChildren(() => panelRef.current?.close())
-            : panelChildren}
-        </SidePanel>
+        {panelElement}
       </>
     );
   };
 
+  // Set the displayName for easier debugging
   WrappedComponent.displayName = `withSidePanel(${
     Trigger.displayName || Trigger.name || "Component"
   })`;
