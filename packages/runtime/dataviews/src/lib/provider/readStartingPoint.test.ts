@@ -91,6 +91,59 @@ describe("readStartingPoint", () => {
     expect(restore("/machines", false)).toBeUndefined();
   });
 
+  it("reads the arrangement a location carries as the linked one, beside the snapshot's own", () => {
+    const read = (
+      href: string,
+      keepsViews = false,
+      snapshot?: DataViewsSnapshot,
+    ) =>
+      readStartingPoint({
+        collection: machines,
+        capabilities,
+        location: createMemoryLocation({ href }),
+        snapshot,
+        keepsViews,
+      });
+    // A link spelled where no script keeps the arrangement: the order whole,
+    // with its hidden columns, asking the source for nothing.
+    expect(
+      read("/machines?table.order=cores&table.order=status&table.hidden=status")
+        .linked,
+    ).toEqual({
+      view: null,
+      presentation: {
+        "table.order": ["cores", "status"],
+        "table.hidden": ["status"],
+      },
+    });
+    expect(read("/machines?table.hidden=cores").linked).toEqual({
+      view: null,
+      presentation: { "table.hidden": ["cores"] },
+    });
+    // The snapshot's arrangement stays its own; the link names the view the
+    // provider stands on, where it keeps views.
+    const withSnapshot = read(
+      "/machines?view=v1&status=failed&table.hidden=cores",
+      true,
+      {
+        query: "view=v1",
+        presentation: { "table.width.cores": 80 },
+      },
+    );
+    expect(withSnapshot.restored).toEqual({
+      view: "v1",
+      presentation: { "table.width.cores": 80 },
+    });
+    expect(withSnapshot.linked).toEqual({
+      view: "v1",
+      presentation: { "table.hidden": ["cores"] },
+    });
+    expect(
+      read("/machines?view=v1&table.hidden=cores").linked?.view,
+    ).toBeNull();
+    expect(read("/machines?status=failed").linked).toBeUndefined();
+  });
+
   it("reads a snapshot query that is not text as no query", () => {
     const snapshot: DataViewsSnapshot = JSON.parse(
       '{"query":[1],"presentation":{}}',

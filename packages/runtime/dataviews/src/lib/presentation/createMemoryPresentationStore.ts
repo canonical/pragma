@@ -1,9 +1,5 @@
 import spellTargetKey from "./spellTargetKey.js";
-import type {
-  JsonValue,
-  PresentationStore,
-  RestoredArrangement,
-} from "./types.js";
+import type { JsonValue, PresentationStore, ViewArrangement } from "./types.js";
 
 /** Configuration of one memory presentation store. */
 type MemoryPresentationStoreConfig = {
@@ -12,7 +8,7 @@ type MemoryPresentationStoreConfig = {
    * the view it was drawn under, or as the default arrangement; none when
    * left out.
    */
-  readonly restored?: RestoredArrangement | undefined;
+  readonly restored?: ViewArrangement | undefined;
 };
 
 /**

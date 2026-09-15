@@ -1,0 +1,65 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Settings.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# DataViews.Settings recipes
+
+`DataViews.Settings` is the table's column settings: a menu in the table header's settings cell with each column's visibility, its place, and a reset. It takes no props. Given to a table as its `settings`, it is put in the header's settings cell, and the table supplies the columns, their arrangement and the commands that change it; anywhere else it throws. It works the same inside a standalone `DataTable` and a `DataViews.DataTable`.
+
+## Settings in a table
+
+The menu lists every column the table declares, hidden ones included, in the order the table shows them. Each has a toggle named for it — Hide, or Show while it is hidden — and Move left and Move right, which step past the shown column beside it; hidden columns keep their places. A column declared `hideable: false` says it is always shown in place of its toggle, and the last column shown can never be hidden, so a table always has a column. Reset table settings returns every column's width, place and visibility to the arrangement beneath the viewer's own changes: the open saved view's, or the one the columns declare.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+} from "@canonical/dataviews-core";
+import { DataViews, type DataTableColumn } from "@canonical/dataviews-react";
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
+
+const columns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host", hideable: false, sortable: true },
+  { id: "status", header: "Status", sortable: true },
+  { id: "cores", header: "Cores", sortable: true },
+  { id: "owner", header: "Owner" },
+];
+
+export function Machines() {
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      collection: machineCollection,
+      source: createArraySource({ rows: machines, collection: machineCollection }),
+    }),
+  );
+  return (
+    <DataViews provider={provider}>
+      <DataViews.DataTable
+        columns={columns}
+        label="Machines"
+        settings={<DataViews.Settings />}
+      />
+    </DataViews>
+  );
+}
+```
+
+<Canvas of={Stories.Default} sourceState="none" />
+
+## Hiding and moving are presentation
+
+What the menu changes is the provider's presentation, which every table on the provider reads, so two tables never disagree about a column. A column hidden or moved asks the source for nothing: the query, the rows and the URL's query stay as they were. Choosing an item closes the menu and returns focus to the settings button, and the table says what changed politely — "Owner hidden", "Cores moved to position 2 of 4". With a presentation store the arrangement is kept for the viewer; without one it lasts the session. A saved view remembers the arrangement it was saved with, hidden columns included, and resetting while it is open returns to that arrangement.
+
+Hiding a sorted column keeps the ordering: the rows stay ordered by it, and `DataViews.SortPanel` still lists its term, where it can be moved or removed. The heading of the ordering's first term carries `aria-sort` wherever that column now stands; while it is hidden no heading does, and no later term's heading takes the claim over.
+
+<Canvas of={Stories.HideAColumn} sourceState="none" />
+
+<Canvas of={Stories.ArrangedByTheViewer} sourceState="none" />
+
+## Before any script runs
+
+Without scripting the settings button is a disclosure of real links, where the provider has a location to lead to: each link is the same page and query, carrying the column order and the hidden columns its change leaves, and a server rendering the page draws the columns the link names. Without a location nothing is offered, since no link would lead anywhere. A reader on a link as scripts take over keeps focus on the settings button that replaces it.
+
+Header drag and touch long-press reordering are not offered yet; the menu is the path to every arrangement, and it needs no pointer.

@@ -28,6 +28,10 @@
        container anyway, so both are declared — which is also what lets the
        header stick when a caller caps the height. */
     overflow: auto;
+    /* Each table sets its own tracks: a table nested in another's cell
+       inherits neither the selection track nor the settings track. */
+    --data-table-selection-track: initial;
+    --data-table-settings-track: initial;
     color: var(--color-text);
     font-family: var(--typography-text-primary-font-family);
     font-size: var(--typography-text-primary-font-size);
@@ -62,10 +66,14 @@
 
   .ds.data-table-row {
     display: grid;
-    /* The one geometry publication, written on the container and read here.
-       The line after the data columns is named for the actions column a
-       later part places there; nothing follows it yet. */
-    grid-template-columns: var(--data-table-columns,) [actions];
+    /* The one geometry publication, written on the container and read here,
+       between the stylesheet's own tracks: the selection column's before it
+       and the settings cell's after, each empty in a table without it. The
+       line after the data columns is named for the actions column a later
+       part places there. */
+    grid-template-columns:
+      var(--data-table-selection-track,) var(--data-table-columns,)
+      [actions] var(--data-table-settings-track,);
     align-items: center;
     /* A minimum, not a height: a cell taller than the density line — a
        second line of text, once cells offer one — grows its row rather than
@@ -109,13 +117,33 @@
      its width back from the cell it sizes, and the solver shares what is
      left among the data columns. */
   .ds.data-table:has(
-      > .ds.data-table-row-group.header
-        > .ds.data-table-row
-        > .ds.data-table-header-cell.selection
-    )
-    > .ds.data-table-row-group
-    > .ds.data-table-row {
-    grid-template-columns: var(--dimension-400) var(--data-table-columns,) [actions];
+    > .ds.data-table-row-group.header
+      > .ds.data-table-row
+      > .ds.data-table-header-cell.selection
+  ) {
+    --data-table-selection-track: var(--dimension-400);
+  }
+
+  /* The settings cell is the stylesheet's own track too, after the solved
+     ones, in a table whose header holds it. Every row keeps the track, empty
+     in the body, so each column's boundary is the same in every row. */
+  .ds.data-table:has(
+    > .ds.data-table-row-group.header
+      > .ds.data-table-row
+      > .ds.data-table-header-cell.settings
+  ) {
+    --data-table-settings-track: var(--dimension-400);
+  }
+
+  /* What the table last announced of its columns, beside the table: read
+     politely, drawing nothing and taking no room. Unthemable geometry. */
+  .ds.data-table-announcement {
+    position: absolute;
+    inline-size: 0;
+    block-size: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .ds.data-table-body-cell,
@@ -317,7 +345,8 @@
      centred in its track. Overflow is visible so a focus ring on the
      checkbox is not clipped by the cell that holds it. */
   .ds.data-table-body-cell.selection,
-  .ds.data-table-header-cell.selection {
+  .ds.data-table-header-cell.selection,
+  .ds.data-table-header-cell.settings {
     display: flex;
     align-items: center;
     justify-content: center;

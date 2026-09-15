@@ -9,6 +9,16 @@ import type { Schema, SchemaFieldDefinition } from "../schema/index.js";
 import type { SourceCapabilities } from "../source/index.js";
 
 /**
+ * A column arrangement as parameters carry it where no script keeps it: the
+ * column order, or null where the parameters carry none, and the hidden
+ * columns, each a list of column ids.
+ */
+export type ArrangementParams = {
+  readonly order: readonly string[] | null;
+  readonly hidden: readonly string[];
+};
+
+/**
  * Which stage refused a parameter, for a control to switch on: the
  * source's own code where the source refused it, `malformed` where the
  * grammar could not read it, `invalid` where the schema refused its value or

@@ -118,6 +118,7 @@ describe("createDataViewsProvider", () => {
     // The presentation is always there: in memory, with nothing to report.
     expect(provider.presentation.state.get()).toEqual({
       presentation: {},
+      own: {},
       presentationReason: null,
     });
     expect(provider.state.get().result.status).toBe("idle");

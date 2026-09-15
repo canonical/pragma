@@ -18,7 +18,13 @@ import {
   type SortTerm,
   type SourceDelivery,
 } from "@canonical/dataviews-core";
-import { act, cleanup, render } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { pageOf } from "../../../../testing/fixtures.js";
@@ -29,6 +35,7 @@ import {
   machine,
 } from "../../../../testing/machines.js";
 import { virtualizeRows } from "../../virtualization/index.js";
+import { DataViews } from "../DataViews/index.js";
 import DataTable from "./DataTable.js";
 import type { DataTableColumn } from "./types.js";
 
@@ -193,8 +200,31 @@ const renderServerMarkup = (): HTMLElement => {
   });
   const container = document.createElement("div");
   container.innerHTML = renderToString(
-    <DataTable provider={provider} columns={columns} label="Machines" />,
+    <DataTable
+      provider={provider}
+      columns={columns}
+      label="Machines"
+      settings={<DataViews.Settings />}
+    />,
   );
+  return container;
+};
+
+/** A table holding its settings, one column hidden and announced. */
+const renderSettingsTable = (): HTMLElement => {
+  const { provider } = createMachineProvider({
+    rows: [machine("m-1", "alpha")],
+  });
+  const { container } = render(
+    <DataTable
+      provider={provider}
+      columns={columns}
+      label="Machines"
+      settings={<DataViews.Settings />}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Table settings" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Hide Status" }));
   return container;
 };
 
@@ -239,6 +269,10 @@ describe("DataTable stylesheet", () => {
     }
     cleanup();
     for (const name of classesOf(renderSortedByTwo())) {
+      rendered.add(name);
+    }
+    cleanup();
+    for (const name of classesOf(renderSettingsTable())) {
       rendered.add(name);
     }
     cleanup();
@@ -333,14 +367,25 @@ describe("DataTable stylesheet", () => {
     expect(sheet).not.toMatch(/--typography-[\w-]*line-height/);
   });
 
-  it("owns the selection track, ahead of the solved ones", () => {
+  it("owns the selection track ahead of the solved ones, and the settings track after them", () => {
+    // Each set on a table whose header holds its cell, and empty otherwise.
     expect(
       rule(
-        /\.ds\.data-table:has\(\s*>\s*\.ds\.data-table-row-group\.header\s*>\s*\.ds\.data-table-row\s*>\s*\.ds\.data-table-header-cell\.selection\s*\)\s*>\s*\.ds\.data-table-row-group\s*>\s*\.ds\.data-table-row/,
+        /\.ds\.data-table:has\(\s*>\s*\.ds\.data-table-row-group\.header\s*>\s*\.ds\.data-table-row\s*>\s*\.ds\.data-table-header-cell\.selection\s*\)/,
       ),
-    ).toMatch(
-      /grid-template-columns:\s*var\(--dimension-400\)\s+var\(--data-table-columns,\)\s+\[actions\];/,
-    );
+    ).toMatch(/--data-table-selection-track:\s*var\(--dimension-400\);/);
+    expect(
+      rule(
+        /\.ds\.data-table:has\(\s*>\s*\.ds\.data-table-row-group\.header\s*>\s*\.ds\.data-table-row\s*>\s*\.ds\.data-table-header-cell\.settings\s*\)/,
+      ),
+    ).toMatch(/--data-table-settings-track:\s*var\(--dimension-400\);/);
+  });
+
+  it("hides the announcement by clipping, taking no room", () => {
+    const announcement = rule(/\.ds\.data-table-announcement/);
+    expect(announcement).toMatch(/position:\s*absolute;/);
+    expect(announcement).toMatch(/clip-path:\s*inset\(50%\);/);
+    expect(announcement).toMatch(/overflow:\s*hidden;/);
   });
 
   it("spans the status row across the table, however many tracks it has", () => {
@@ -353,7 +398,7 @@ describe("DataTable stylesheet", () => {
     // The empty fallback keeps the selectable template valid for a table
     // with no columns, which publishes no track list at all.
     expect(rule(/\.ds\.data-table-row/)).toMatch(
-      /grid-template-columns:\s*var\(--data-table-columns,\)\s+\[actions\];/,
+      /grid-template-columns:\s*var\(--data-table-selection-track,\)\s+var\(--data-table-columns,\)\s+\[actions\]\s+var\(--data-table-settings-track,\);/,
     );
   });
 
@@ -405,6 +450,10 @@ const anatomies = [
     "common/HeaderCell/HeaderCell.tsx",
   ],
   ["common/BodyCell/BodyCell.anatomy.yaml", "common/BodyCell/BodyCell.tsx"],
+  [
+    "common/SettingsMenu/SettingsMenu.anatomy.yaml",
+    "common/SettingsMenu/SettingsMenu.tsx",
+  ],
 ] as const;
 
 /**
@@ -448,6 +497,7 @@ describe("DataTable anatomy", () => {
       virtualizedTable,
       renderSortedByTwo,
       renderServerMarkup,
+      renderSettingsTable,
     ]) {
       const container = mount();
       for (const selector of [...stated]) {

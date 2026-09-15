@@ -5,7 +5,7 @@ import {
   type MenuItem,
 } from "@canonical/react-ds-global";
 import { memo, type ReactElement, useCallback, useMemo } from "react";
-import { useMenuPhase } from "./hooks/index.js";
+import { useMenuPhase } from "../hooks/index.js";
 import type { HeaderMenuProps } from "./types.js";
 
 /**

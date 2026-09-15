@@ -1,19 +1,13 @@
 /**
- * The presentation domain's constants: the empty arrangement and the state
- * a presentation starts from, how long changes gather before they are
- * written, and the keys the table's arrangement is kept under.
+ * The presentation domain's constants: the empty arrangement, how long
+ * changes gather before they are written, and the keys the table's
+ * arrangement is kept under.
  */
 
-import type { PresentationState, ViewPresentation } from "./types.js";
+import type { ViewPresentation } from "./types.js";
 
 /** An arrangement holding nothing: what a target reads as before any change. */
 export const NO_PRESENTATION: ViewPresentation = Object.freeze({});
-
-/** The state a presentation starts from: the declared arrangement, nothing to report. */
-export const INITIAL_PRESENTATION_STATE: PresentationState = Object.freeze({
-  presentation: NO_PRESENTATION,
-  presentationReason: null,
-});
 
 /**
  * How long presentation changes gather before they are written: a burst —

@@ -235,6 +235,8 @@ export default function createDataViewsProvider<
     store: config.presentation,
     // The snapshot's arrangement, with the view it was drawn under, or none.
     restored: starting.restored,
+    // The arrangement a followed link carries, with the view it named.
+    linked: starting.linked,
   });
   const views =
     config.views === undefined

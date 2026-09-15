@@ -12,8 +12,44 @@ import type {
   Slice,
   SortDirection,
 } from "@canonical/dataviews-core";
-import type { SortPrecedence } from "../common/index.js";
+import type { RefObject } from "react";
+import type {
+  AnnouncementHandle,
+  ColumnChange,
+  ColumnSetting,
+  SettingsDestinations,
+  SortPrecedence,
+} from "../common/index.js";
 import type { DataTableColumn } from "../types.js";
+
+/** What the column management hook reads: the provider and the declared columns. */
+export type UseColumnManagementProps<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  readonly provider: DataViewsProvider<TFields, TRow>;
+  /** The columns as declared, in their declared order. */
+  readonly columns: readonly DataTableColumn[];
+};
+
+/** The table's column management, as its menus and its announcement read it. */
+export type UseColumnManagementResult = {
+  /** Every declared column in the arrangement's order, with the changes it takes. */
+  readonly settings: readonly ColumnSetting[];
+  /** Whether a reset would change the viewer's own layer. */
+  readonly resettable: boolean;
+  /** The announcement the table renders, which says what each change did. */
+  readonly announcer: RefObject<AnnouncementHandle | null>;
+  /** Apply one change to one column; one identity for every column. */
+  readonly changeColumn: (columnId: string, change: ColumnChange) => void;
+  /** Return to the arrangement beneath the viewer's own changes. */
+  readonly resetColumns: () => void;
+  /**
+   * Where every change and the reset lead without scripting, spelled over
+   * one reading of the query, or null without a location.
+   */
+  readonly listDestinations: () => SettingsDestinations | null;
+};
 
 /** One table's resolved geometry. */
 export type UseTableGeometryResult = {
@@ -25,8 +61,9 @@ export type UseTableGeometryResult = {
    */
   readonly attach: (node: HTMLDivElement) => (() => void) | undefined;
   /**
-   * Attaches the cell the stylesheet's selection track sizes, whose width
-   * the columns leave; the cleanup gives it back.
+   * Attaches a cell one of the stylesheet's own tracks sizes — the
+   * selection column's, the settings cell's — whose width the columns
+   * leave; the cleanup gives it back.
    */
   readonly reserve: (cell: HTMLDivElement) => () => void;
   /**

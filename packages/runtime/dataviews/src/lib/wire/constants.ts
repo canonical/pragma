@@ -30,6 +30,22 @@ export const WRITTEN_QUERY_KEYS: readonly string[] = Object.freeze([
 export const VIEW_KEY = "view";
 
 /**
+ * The parameter a column order is carried in where no script keeps the
+ * arrangement: a repeated column id, spelled as the presentation key it
+ * carries. It asks the source for nothing; the grammar reserves it, and
+ * `readArrangementParams` reads it.
+ */
+export const ORDER_QUERY_KEY = "table.order";
+
+/**
+ * The parameter the hidden columns are carried in where no script keeps the
+ * arrangement: a repeated column id, spelled as the presentation key it
+ * carries. It asks the source for nothing; the grammar reserves it, and
+ * `readArrangementParams` reads it.
+ */
+export const HIDDEN_QUERY_KEY = "table.hidden";
+
+/**
  * Parameter names the grammar reserves: those it writes, plus the
  * annotation names it leaves to the host. A field's wire name may not
  * collide with one — the query would be ambiguous.
@@ -39,6 +55,8 @@ export const RESERVED_QUERY_KEYS: readonly string[] = Object.freeze([
   "as",
   VIEW_KEY,
   "item",
+  ORDER_QUERY_KEY,
+  HIDDEN_QUERY_KEY,
 ]);
 
 /**

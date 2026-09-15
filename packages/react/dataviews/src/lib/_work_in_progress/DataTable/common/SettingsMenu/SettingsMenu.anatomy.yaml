@@ -1,0 +1,138 @@
+---
+# DataTable.SettingsMenu — the table's column settings, in the header's
+# settings cell: each column's visibility and place, and a reset.
+#
+# Anatomy DSL 0.3.0. No validator runs on this file yet: it is checked in
+# review against the DSL's JSON schema. The root carries the graph's IRI for
+# the table's settings menu; everything else is a role node or a reference to
+# a block with its own contract. The menu, once scripts run, is the design
+# system's ContextualMenu, referenced rather than re-specified: its surface,
+# items, separators, keyboard model and focus return are its own. The public
+# part that renders this menu is `DataViews.Settings`.
+#
+# Names — one per part, the same in the design, the DOM and here:
+#   settings menu   design "DataTable.SettingsMenu"
+#                   DOM `ds data-table-settings-menu`, beside the menu's own
+#                   `ds contextual-menu` once scripts run
+#   trigger         DOM `.trigger` (the menu's button, or the disclosure's
+#                   summary before scripts run)
+#   trigger label   DOM `.label` inside the trigger
+#   options         DOM `.options` (the disclosure's list, before scripts run)
+#   item label      DOM `.label` inside each ContextualMenu item
+#
+# Tokens are `/`-paths over `@canonical/design-tokens` 0.10.0 ids, bound
+# through the component tier the stylesheet declares:
+#   --data-table-settings-menu-focus-ring-width        dimension/stroke/thickness/large
+#   --data-table-settings-menu-focus-ring-color        color/focus-ring
+#   --data-table-settings-menu-options-gap             dimension/050
+#   --data-table-settings-menu-options-padding         dimension/100
+#   --data-table-settings-menu-options-background      color/background
+#   --data-table-settings-menu-options-border-width    dimension/stroke/thickness/medium
+#   --data-table-settings-menu-options-border-color    color/border/muted
+#   --data-table-settings-menu-options-font-weight     typography/text/primary/font-weight
+#
+# Items, in the arrangement's order, for every column the table declares,
+# hidden ones included, each group closed by a separator:
+#   - "Hide <heading>" while the column shows, "Show <heading>" while it is
+#     hidden; "<heading> is always shown" for a column declared
+#     `hideable: false`, which changes nothing and says so when chosen.
+#     Hide is disabled on the last column shown: at least one stays visible.
+#   - "Move <heading> left", "Move <heading> right": past the shown column
+#     beside it; disabled at either end and on a hidden column.
+# Then "Reset table settings", disabled while the arrangement holds no
+# width, order or hidden column to clear.
+#
+# States:
+#   - before scripts run: a closed or open disclosure of real links; nothing
+#     at all where the provider has no location to lead to.
+#   - once scripts run: closed (the button alone, drawn as the menu's own
+#     trigger), or open (the design system's menu).
+#
+# Accessibility (DataViews component coverage, "DataViews.Settings": 1.3.1,
+# 2.1.1, 2.4.3, 2.5.7, 4.1.2-4.1.3):
+#   settings cell   A column header named by its content, the trigger.
+#   trigger         A native button named "Table settings", with
+#                   `aria-haspopup="menu"`; before scripts run, the
+#                   disclosure's summary with the same name.
+#   items           Menu items named for their column and what they do. The
+#                   non-drag path to every arrangement: moving needs no
+#                   pointer and no drag.
+#   outcome         Choosing an item closes the menu and returns focus to the
+#                   trigger; the table announces the change politely — the
+#                   column hidden, shown or moved with its new position ("3
+#                   of 5"), that it is always shown, or the reset.
+#   baseline        Each link leads to the same query carrying the
+#                   arrangement its change leaves; a reader on one as scripts
+#                   take over keeps focus on the trigger.
+#
+# Deviations the DSL cannot express, recorded here:
+#   - Conditional display is deferred in the DSL. The disclosure is the root
+#     before scripts run and the menu after; they never show together.
+#   - The disclosure's list is positioned below the settings cell and over
+#     the rows (`layout.position: absolute`, ending at the table's trailing
+#     edge); a table shorter than the list scrolls to show it.
+#   - The disclosure's list stacks above the rows at z-index 1; the package
+#     has no stacking token.
+#   - Before scripts run the menu is a `<details>` disclosure rather than a
+#     declarative popover: a recorded deviation from the code standards'
+#     Popover API standard. The baseline must work where nothing else does,
+#     and a disclosure opens and closes in every browser without scripts,
+#     while an unsupported `popover` leaves its list shown or unreachable;
+#     it is replaced by the design system's menu as soon as scripts run.
+#   - Where anchor positioning is supported the list is tethered to its
+#     trigger and flips above it; the DSL has no key for either.
+#   - The trigger's label is read and not drawn: clipped to nothing,
+#     unthemable geometry.
+#   - Header drag and touch long-press reordering, and pinning, are not
+#     part of this menu yet, and nothing is reserved for them.
+node:
+  uri: apps.subcomponent.data_table-settings_menu
+  edges:
+    - node:
+        role: trigger
+        styles:
+          layout.type: stack
+          layout.direction: row
+          layout.align: center
+          appearance.border.width: 0
+        edges:
+          - uri: global.component.icon
+            relation:
+              cardinality: "1"
+          - node:
+              role: trigger label
+            relation:
+              cardinality: "1"
+      relation:
+        cardinality: "1"
+        slotName: trigger
+    - switch:
+        "on": internal
+        cases:
+          - uri: global.component.contextual_menu
+          - node:
+              role: options
+              styles:
+                layout.type: grid
+                spacing.gap: dimension/050
+                spacing.internal: dimension/100
+                typography.weight: typography/text/primary/font-weight
+                appearance.background: color/background
+                appearance.border.width: dimension/stroke/thickness/medium
+                appearance.border.color: color/border/muted
+              edges:
+                - node:
+                    role: column options
+                    styles:
+                      layout.type: stack
+                      layout.direction: row
+                      spacing.gap: dimension/050
+                  relation:
+                    cardinality: "1..*"
+                - node:
+                    role: reset link
+                  relation:
+                    cardinality: "0..1"
+      relation:
+        cardinality: "0..1"
+        slotName: menu

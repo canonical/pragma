@@ -806,6 +806,18 @@ describe("DataTable", () => {
         order: ["name", "again", "status", "cores"],
         claims: { name: "Name", status: "Status", cores: "Cores" },
       },
+      {
+        // Moved and hidden as the settings menu leaves them: a column moved
+        // first claims, and a hidden one claims nothing wherever it stood.
+        columns: [
+          { id: "name", header: "Name", sortable: true },
+          { id: "status", header: "Status", sortable: true },
+          { id: "cores", header: "Cores", sortable: true },
+        ],
+        hidden: ["name"],
+        order: ["status", "cores", "name"],
+        claims: { name: undefined, status: "Status", cores: "Cores" },
+      },
     ];
     for (const layout of layouts) {
       for (const defaultSort of [
@@ -1107,6 +1119,25 @@ describe("DataTable", () => {
     expect(
       screen.queryByRole("button", { name: "Sort options for Status" }),
     ).toBeNull();
+  });
+
+  it("draws a settings cell and nothing else in a table declaring no columns", () => {
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+    });
+    render(
+      <DataTable
+        provider={provider}
+        columns={[]}
+        label="Machines"
+        settings={<DataViews.Settings />}
+      />,
+    );
+    expect(screen.getAllByRole("columnheader")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Table settings" }));
+    expect(
+      screen.getByRole("menuitem", { name: "Reset table settings" }),
+    ).toHaveClass("disabled");
   });
 
   it("has no axe violation with a header menu open", async () => {

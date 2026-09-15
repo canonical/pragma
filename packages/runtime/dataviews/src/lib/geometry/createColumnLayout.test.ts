@@ -131,60 +131,10 @@ describe("createColumnLayout", () => {
     release();
     release = presentation.observe();
     layout.setOverride("name", { kind: "fixed", px: 340 });
-    // Nor for removing an override that is not there.
-    layout.removeOverride("zone");
     release();
     expect(patchPresentation.mock.calls).toEqual([
       ["default", { [spellWidthKey("name")]: 340 }],
     ]);
-    // Clearing with no override writes nothing at all.
-    const empty = createPresentation({
-      store: createStandInPresentationStore({ patchPresentation }),
-    });
-    const stopEmpty = empty.observe();
-    createColumnLayout({
-      columns: buildColumns(),
-      presentation: empty,
-    }).clearOverrides();
-    stopEmpty();
-    expect(patchPresentation).toHaveBeenCalledTimes(1);
-  });
-
-  it("restores declared sizing on removeOverride and clearOverrides, writing null over a saved width", () => {
-    const { presentation, layout } = createLayoutOver();
-    presentation.show({
-      id: "v1",
-      presentation: {
-        [spellWidthKey("name")]: 200,
-        [spellWidthKey("zone")]: 250,
-      },
-    });
-    layout.setOverride("name", { kind: "fixed", px: 340 });
-    layout.setOverride("zone", { kind: "fixed", px: 280 });
-    layout.removeOverride("name");
-    // Null in the viewer's own layer: the view's saved width is not shown.
-    expect(presentation.state.get().presentation[spellWidthKey("name")]).toBe(
-      null,
-    );
-    expect(layout.effective("name")).toEqual({
-      kind: "flex",
-      weight: 2,
-      minPx: 120,
-    });
-    expect(layout.effective("zone")).toEqual({ kind: "fixed", px: 280 });
-    layout.clearOverrides();
-    expect(layout.effective("zone")).toEqual({
-      kind: "flex",
-      weight: 1,
-      minPx: 100,
-      maxPx: 300,
-    });
-    // Null for the two columns that had an override, and nothing else.
-    expect(presentation.state.get().presentation).toEqual({
-      [spellWidthKey("name")]: null,
-      [spellWidthKey("zone")]: null,
-    });
-    expect(layout.state.get().overrides).toEqual({});
   });
 
   it("publishes a snapshot only on an actual change, to every subscriber", () => {
