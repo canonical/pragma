@@ -86,14 +86,46 @@ async function queryOrRemap(
   rt: Pick<PragmaRuntime, "query">,
   query: string,
   source: StorySource,
+  degradeOnUnboundPrefix: boolean,
 ) {
   try {
     return await rt.query.sparql(query);
   } catch (error) {
     if (error instanceof PragmaError) throw error;
-    if (isUnseededStoreError(error)) throw unboundPrefixError(source);
+    if (isUnseededStoreError(error)) {
+      if (degradeOnUnboundPrefix) return undefined;
+      throw unboundPrefixError(source);
+    }
     throw error;
   }
+}
+
+/** How one generated read wants an unbound prefix handled. */
+export interface RunSelectOptions {
+  /**
+   * Answer NO ROWS, rather than raising, when the store binds none of the
+   * vocabulary this query names.
+   *
+   * For the read that IS the answer — a list, a name resolve, a lookup's own
+   * fields — raising is right: the caller asked for something this store
+   * cannot speak about, and a silent empty result is the "empty ≠ silence"
+   * defect. For ONE SECTION of a lookup it is not. A section's vocabulary can
+   * come from a different pack than the entity's: a block is `ds:`, and the
+   * style key and state of the tokens it consumes are the anatomy DSL's. A
+   * store built without that pack answers every OTHER section correctly, and
+   * taking the whole entity down over one absent section would make
+   * `block lookup` fail outright on a graph it can very nearly fully describe.
+   *
+   * Degrading is what the lookup's other lane already does with the same
+   * condition — a GraphQL document omits a name the compiled schema has no
+   * field for, the way an OPTIONAL omits an unbound variable — so this keeps
+   * one contract across both lanes rather than two.
+   *
+   * It cannot hide an unbuilt store: by the time a section is read, the base
+   * resolve has already answered from this store, so an unbound prefix here
+   * can only mean this pack's vocabulary is narrower than the story's.
+   */
+  readonly degradeOnUnboundPrefix?: true;
 }
 
 /**
@@ -101,6 +133,7 @@ async function queryOrRemap(
  * @param query - SPARQL SELECT text (prefixes auto-applied by the store).
  * @param source - The story's provenance: its label for attribution, and the
  *   layer that declared it, which decides how an unbound prefix is diagnosed.
+ * @param options - See {@link RunSelectOptions}; defaults to raising.
  * @returns One record per row, keyed by SELECT variable name.
  * @throws PragmaError CONFIG_ERROR when the query is not a SELECT, or when a
  *   config/package story names a prefix the graph does not bind;
@@ -111,8 +144,15 @@ export async function runSelect(
   rt: Pick<PragmaRuntime, "query">,
   query: string,
   source: StorySource,
+  options: RunSelectOptions = {},
 ): Promise<PackRow[]> {
-  const result = await queryOrRemap(rt, query, source);
+  const result = await queryOrRemap(
+    rt,
+    query,
+    source,
+    options.degradeOnUnboundPrefix === true,
+  );
+  if (result === undefined) return [];
   if (result.type !== "select") {
     throw PragmaError.configError(
       `Story query in ${source.label} must be a SELECT (got ${result.type}).`,

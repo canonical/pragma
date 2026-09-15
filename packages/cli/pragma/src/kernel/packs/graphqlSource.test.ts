@@ -151,7 +151,11 @@ describe("source rule — zod refinements reject dual/ill-sourced lookups (PROTE
             note: "How to read the rows.",
             select: [
               { name: "symbol", property: "ds:consumesSymbol/rdfs:label" },
-              { name: "via", property: "ds:viaBlock/ds:name", blankWhenSelf: true },
+              {
+                name: "via",
+                property: "ds:viaBlock/ds:name",
+                blankWhenSelf: true,
+              },
               { name: "node", property: "ds:node" },
             ],
           },

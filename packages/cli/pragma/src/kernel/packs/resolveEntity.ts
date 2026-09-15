@@ -323,6 +323,13 @@ async function addSparqlExpands(
       rt,
       buildExpandQuery(expand, String(entity.uri), lookup),
       source,
+      // A section whose vocabulary this store does not bind renders EMPTY
+      // rather than taking the whole entity down with it — see
+      // `RunSelectOptions.degradeOnUnboundPrefix`. The block lookup's tokens
+      // read the anatomy DSL's style key and state, which a store built
+      // without that pack does not bind, and every other section of that
+      // block is still perfectly answerable.
+      { degradeOnUnboundPrefix: true },
     )) as readonly PackChildRow[];
   }
   return entity;
