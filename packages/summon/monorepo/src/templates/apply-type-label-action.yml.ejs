@@ -21,7 +21,7 @@ runs:
     # expression: interpolating one into a JavaScript string literal would put
     # a Windows runner's backslashes inside quotes, where they are escapes.
     - name: Reconcile the managed labels against the title
-      uses: actions/github-script@v7
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
       with:
         github-token: ${{ inputs.github-token }}
         script: |
