@@ -83,7 +83,7 @@
     "@canonical/biome-config": "^0.37.0",
     "@canonical/typescript-config-react": "^0.37.0",
     "@storybook/react-vite": "^10.3.1",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/express": "^5.0.6",
     "@types/node": "^24.12.0",
