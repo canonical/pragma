@@ -66,18 +66,18 @@ const CreateContextContent = ({
 
 /**
  * SideNavigation.ContextSwitcher — a dropdown for products that divide into
- * contexts, projects, users, or similar (the 24.04 spec §4.3, §4.5).
+ * contexts, projects, users, or similar.
  * Renders via `ContextualMenu` — a real `<button>` trigger
  * (`aria-haspopup="menu"`/`aria-expanded`) and a `role="menu"` popup with
  * full roving-focus keyboard navigation — a "select"-like widget, not a
- * bare `<details>` disclosure (the 24.04 spec §9.21; this used to render
+ * bare `<details>` disclosure (this used to render
  * via `Popover`, which is exactly that). `title`, when given, renders via
  * `SideNavigation.GroupHeader` as a real sibling above the dropdown field,
  * matching the Figma source.
  *
- * Not part of the `NavRoot`/`NavGroup` content-tree data model — the
- * 24.04 spec §4.5's "content-defined position" is realised by composing
- * this component directly where the consumer wants it. See SPEC.md's
+ * Not part of the `NavRoot`/`NavGroup` content-tree data model — its
+ * position is content-defined: compose this component directly where
+ * the consumer wants it. See SPEC.md's
  * known issues.
  *
  * @implements ds:apps.subcomponent.side-navigation-context-switcher

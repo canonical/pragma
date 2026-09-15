@@ -8,7 +8,7 @@ const componentCssClassName = "ds side-navigation-group";
 /**
  * SideNavigation.Group — a named collection of navigation entries, with an
  * optional SideNavigation.GroupHeader. One of NavTree's direct content
- * entries — the 24.04 spec §4.3.
+ * entries.
  *
  * @implements ds:apps.subcomponent.side-navigation-group
  */
