@@ -1,9 +1,8 @@
 export interface UseCollapseShortcutProps {
   /**
-   * Whether the shortcut listener is attached at all. Defaults to `false` —
-   * the spec's own prose is self-contradictory on the key (states "Ctrl + E",
-   * then argues for a single letter instead, in the same paragraph), so this
-   * ships disabled pending a design ruling (SPEC.md §5, §10.1).
+   * Whether the shortcut listener is attached. Defaults to `false` at the
+   * hook level; `SideNavigation` passes its own `keyboardShortcut` prop
+   * (default `true`).
    */
   enabled?: boolean;
   /** Called when the shortcut is triggered. */

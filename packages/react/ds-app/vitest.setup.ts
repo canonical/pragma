@@ -21,3 +21,25 @@ class ResizeObserverMock {
 }
 
 global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+
+// jsdom ships no matchMedia. Defaults to `matches: false` (the "wide
+// viewport" answer); a test that needs the small-viewport branch mocks the
+// return value on top of this (vi.spyOn(window, "matchMedia")).
+class MediaQueryListMock {
+  matches = false;
+  media: string;
+  onchange:
+    | ((this: MediaQueryList, ev: MediaQueryListEvent) => unknown)
+    | null = null;
+  addEventListener = vitest.fn();
+  removeEventListener = vitest.fn();
+  addListener = vitest.fn();
+  removeListener = vitest.fn();
+  dispatchEvent = vitest.fn();
+  constructor(media: string) {
+    this.media = media;
+  }
+}
+
+global.matchMedia = ((media: string) =>
+  new MediaQueryListMock(media)) as unknown as typeof matchMedia;
