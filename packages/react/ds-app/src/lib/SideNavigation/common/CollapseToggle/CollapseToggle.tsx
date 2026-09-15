@@ -25,11 +25,8 @@ const CollapseToggleButton = ({
           breakpoint (<620px — the 24.04 spec §7), a text label reading
           "Menu"/"Close menu" replaces it — CSS-toggled siblings (see
           styles.css), no media-query read in JS, so it stays SSR-identical. */}
-      <Icon
-        icon={expanded ? "collapse-side-nav" : "expand-side-nav"}
-        className="desktop-only"
-      />
-      <span className="mobile-only p">{expanded ? "Close menu" : "Menu"}</span>
+      <Icon icon={expanded ? "collapse-side-nav" : "expand-side-nav"} />
+      <span className="p">{expanded ? "Close menu" : "Menu"}</span>
     </button>
   );
 };
