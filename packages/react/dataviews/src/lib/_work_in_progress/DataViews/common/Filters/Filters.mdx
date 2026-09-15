@@ -7,7 +7,7 @@ import * as Stories from "./Filters.stories";
 
 `DataViews.Filters` edits the collection's query. It takes no query and no list of fields: which fields it offers comes from the collection's schema, and which operators each accepts comes from what the provider's source declares it can execute. It never offers a restriction the source would refuse, and it has no draft to keep in step with the applied query — each edit is the applied query.
 
-The design has not drawn the filters yet, so the part renders plain form controls: a group of checkboxes for a choices field, a from and a to bound for a number or date field, one checkbox for a flag, and a text input for the text a text field must contain.
+The design has not drawn the filters yet, so the part renders plain form controls: a group of checkboxes for a choices field — any of the options, or none of them — a from and a to bound for a number or date field, one checkbox for a flag, and a text input for the text a text field must contain or start with.
 
 ## Filters over a composed collection
 
@@ -75,9 +75,23 @@ A checked status, a filled bound or text typed into a text field is the restrict
 
 <Canvas of={Stories.BoundApplied} sourceState="none" />
 
-## Text a field contains
+## Text a field contains or starts with
 
-A text field is filtered by the text its value contains, compared case-insensitively: `web` finds `WEB-01`. The text is taken literally — `%` and `_` are characters to look for, never wildcards, and nothing is trimmed. Emptying the input is incomplete rather than a removal, so the text already applied stays until the clear button removes it. A source offers the input only on the text fields it can look through; the REST API stories show one that looks through some fields and not others, and the GraphQL API stories one that looks through all of them.
+A text field is filtered by the text its value contains, or the text it starts with, compared case-insensitively: `web` finds `WEB-01`, and starting with `web` finds `WEB-01` but not `api.web`. The text is taken literally — `%` and `_` are characters to look for, never wildcards, and nothing is trimmed. Emptying the input is incomplete rather than a removal, so the text already applied stays until the clear button removes it. A source offers the input only on the text fields it can look through; the REST API stories show one that looks through some fields and not others, and the GraphQL API stories one that looks through all of them.
+
+## Counts beside the options
+
+A provider asked for facets — `createDataViewsProvider({ collection, source, facets: ["status", "cores"] })` — has its source count, over every record the query matches, how many hold each option or set a flag, and find the least and greatest value a number or date field holds. Filters shows each count beside its option or flag checkbox and each end of the range beside its bound — the hints read Lowest and Highest — as a description of the control rather than part of its name. A field's own restriction is left out of its own facet, so with failed machines kept the other statuses still show how many machines they would add. Nothing is counted from the rows on screen: while no result answers the applied query, no count is shown.
+
+A choices field whose options are the server's — declared with no `options` list — takes its options from the facet, with any option the set already holds kept beside them. They stay listed until a newer result lists others — while a changed query is pending, or after it fails — from the facet the latest result answered; only their counts wait for an answer to the applied query. An empty value is never offered as an option.
+
+<Canvas of={Stories.CountsBesideOptions} sourceState="none" />
+
+## Any of, or none of
+
+A choices field is filtered by the options a record is any of — the checkboxes named by the field, `status=failed` — or none of — named `status__isNone`. While a set stands and the source declares the other operator, the set moves there in one step: a real link before any script runs, a button once it does. A set never moves onto one already standing, so no restriction is overwritten.
+
+<Canvas of={Stories.NoneOfApplied} sourceState="none" />
 
 ## An invalid edit keeps the restriction
 
@@ -88,6 +102,12 @@ A bound outside the schema's bounds is refused, not applied — by the schema, a
 ## Before any script runs
 
 The filters are a GET form. Each control is named as the URL spells its clause — `status` repeated once per chosen option, `owner__isSet`, `cores__gte`, `name__contains` — and the rest of the applied query rides hidden beside them, so a submission lands on the destination the provider would have written, from the first page. Once scripting is enabled every edit applies as it is made, a submission is intercepted, the submit control is hidden and the clear buttons appear.
+
+## Primary filters
+
+A collection with many fields marks the few a reader reaches for first: `<DataViews.Filters primary={["status"]} />`. Their controls show by default, in the order marked, and every other field the source can filter waits under "More filters", a native disclosure that needs no script — its controls still submit with the form. A field carrying a restriction always shows its control, so what filters the rows is never hidden; here cores is restricted to at least sixteen and shows beside the status. While "More filters" is open no control moves, so typing into one never loses focus; closing it brings out whatever is now restricted. With nothing marked, every field shows. Primary is the application's choice of presentation: the source never declares it and the collection's schema never carries it.
+
+<Canvas of={Stories.PrimaryFilters} sourceState="none" />
 
 ## Only what the source can run
 

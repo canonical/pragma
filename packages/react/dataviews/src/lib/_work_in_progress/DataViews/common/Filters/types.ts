@@ -10,6 +10,16 @@ type OwnProps = {
    * source's declared capabilities.
    */
   readonly labels?: Readonly<Record<string, string>> | undefined;
+  /**
+   * The fields whose controls show by default, in the order given. Every
+   * other field the source declares filterable stays reachable under "More
+   * filters", and a field carrying a restriction always shows its control,
+   * so an applied restriction is never hidden. Left out or empty, every
+   * field shows. A presentation choice the application makes: the source
+   * never declares it and the collection's schema never carries it. Naming a
+   * field the collection lacks throws.
+   */
+  readonly primary?: readonly string[] | undefined;
 };
 
 /**

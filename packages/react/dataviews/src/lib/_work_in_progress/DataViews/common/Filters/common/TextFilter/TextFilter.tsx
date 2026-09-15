@@ -8,25 +8,34 @@ import "./styles.css";
 
 const componentCssClassName = "ds data-views-filters-text";
 
+/** What each text operator adds to the field's name. */
+const OPERATOR_WORDING = {
+  contains: "contains",
+  startsWith: "starts with",
+} as const;
+
 /**
- * One text filter: the text a text field must contain.
+ * One text filter: the text a text field must contain, or start with.
  *
  * A labelled native text input named as the wire spells the clause,
- * `<field>__contains`, so a GET submission before any script runs is the
- * same destination the edit writes; the server's decoder reads it back as
- * the predicate. Once scripting is enabled each edit applies as it is typed.
- * Emptying the input is incomplete, not a removal: the applied text stays
- * until it is cleared, which is what the clear control is for; at baseline
- * an emptied input submits no clause. Clearing moves focus to the input while
- * the source declares the text, and otherwise to the filters' group, as the
- * control leaves with it. What the source refused, and why, is said beside
+ * `<field>__contains` or `<field>__startsWith`, so a GET submission before
+ * any script runs is the same destination the edit writes; the server's
+ * decoder reads it back as the predicate. Once scripting is enabled each
+ * edit applies as it is typed. Emptying the input is incomplete, not a
+ * removal: the applied text stays until it is cleared, which is what the
+ * clear control is for; at baseline an emptied input submits no clause.
+ * Clearing moves focus to the input while the control stays, and to the
+ * filters' group when it leaves with the text — undeclared, or shown only
+ * because it is restricted. What the source refused, and why, is said beside
  * the input.
  */
 export default function TextFilter({
   handle,
+  operator,
   label,
   field: fieldName,
   declared,
+  leavesWhenCleared,
   onLeave,
 }: TextFilterProps): ReactElement | null {
   const field = useFilterHandle(handle);
@@ -38,7 +47,7 @@ export default function TextFilter({
   }
   const feedbackId = `${inputId}-feedback`;
   const message = describeFilterFeedback(field.feedback, retained);
-  const name = `${label} contains`;
+  const name = `${label} ${OPERATOR_WORDING[operator]}`;
   return (
     <div className={componentCssClassName}>
       <label htmlFor={inputId} className="label">
@@ -49,7 +58,7 @@ export default function TextFilter({
         id={inputId}
         className="input"
         type="text"
-        name={spellWireKey(fieldName, "contains")}
+        name={spellWireKey(fieldName, operator)}
         value={field.input}
         // Undeclared, the text can only be cleared, never replaced.
         readOnly={!declared}
@@ -70,10 +79,11 @@ export default function TextFilter({
           onClick={() => {
             field.clear();
             // The control with focus leaves with the text. The input stays
-            // while the source declares the field, so focus goes there;
-            // otherwise the whole control leaves, and its parent places
-            // focus rather than the document.
-            if (declared) {
+            // unless the control leaves with its last restriction —
+            // undeclared, or shown only because it is restricted — so focus
+            // goes there; otherwise its parent places focus rather than the
+            // document.
+            if (!leavesWhenCleared) {
               inputRef.current?.focus();
             } else {
               onLeave();

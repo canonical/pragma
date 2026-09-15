@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactElement } from "react";
-import { expect, userEvent, waitFor } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { withAppScope } from "../../../../../storybook/decorators.js";
 import { consumerCode } from "../../../../../storybook/machines/consumerCode.js";
 import { createSourceWithoutCores } from "../../../../../storybook/machines/fixtures.js";
@@ -219,5 +219,98 @@ const withoutCores = (source: Source<Machine>): Source<Machine> => {
       canvas.getByRole("checkbox", { name: "failed" }),
     ).toBeVisible();
     await expect(canvas.queryByLabelText("Cores from")).toBeNull();
+  },
+};
+
+/** The fields whose facets the faceted stories ask the source for. */
+const facets = ["status", "cores"] as const;
+
+/**
+ * Counts beside the options and the range beside the bounds: the provider
+ * asks its source for the status and cores facets, which the source computes
+ * over every machine the query matches. Each count describes its checkbox,
+ * and each end of the range its bound.
+ */
+export const CountsBesideOptions: Story = {
+  parameters: consumerCode({
+    parts,
+    declarations: columnsCode,
+    facets,
+    render: composition,
+  }),
+  render: renderWith({ facets }),
+  play: async ({ canvas }) => {
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("checkbox", { name: "failed" }),
+      ).toHaveAccessibleDescription("3"),
+    );
+    await expect(
+      canvas.getByLabelText("Cores from"),
+    ).toHaveAccessibleDescription(/^Lowest: \d+$/);
+    await expect(canvas.getByLabelText("Cores to")).toHaveAccessibleDescription(
+      /^Highest: \d+$/,
+    );
+  },
+};
+
+/** The query the provider starts on: every machine that is not failed. */
+const noneFailed = "status__isNone=failed";
+
+/**
+ * None of the chosen statuses: the provider started on every machine that is
+ * not failed, shown as the none-of set. It moves back to any-of in one step.
+ */
+export const NoneOfApplied: Story = {
+  parameters: consumerCode({
+    parts,
+    declarations: columnsCode,
+    query: noneFailed,
+    facets,
+    render: composition,
+  }),
+  render: renderWith({ query: noneFailed, facets }),
+  play: async ({ canvas }) => {
+    const excluded = canvas.getByRole("group", { name: "Status is none of" });
+    await expect(
+      within(excluded).getByRole("checkbox", { name: "failed" }),
+    ).toBeChecked();
+    await waitFor(() => expect(recordRows(canvas)).toBe(9));
+    await expect(
+      canvas.getByRole("button", { name: "Match any of these instead" }),
+    ).toBeVisible();
+  },
+};
+
+/** What the primary-filters story renders, as source text. */
+const primaryComposition = `<DataViews provider={provider}>
+  <DataViews.Filters primary={["status"]} labels={{ status: "Status", cores: "Cores", name: "Host", region: "Region", owner: "Owner" }} />
+  <DataTable provider={provider} columns={columns} label="Machines" />
+</DataViews>`;
+
+/**
+ * Primary filters: the status is marked primary, so its control shows by
+ * default and the other fields wait under "More filters". Cores carries a
+ * restriction — at least sixteen — so its control shows beside the status
+ * rather than hiding what filters the rows.
+ */
+export const PrimaryFilters: Story = {
+  args: { primary: ["status"] },
+  parameters: consumerCode({
+    parts,
+    declarations: columnsCode,
+    query: atLeastSixteenCores,
+    render: primaryComposition,
+  }),
+  render: renderWith({ query: atLeastSixteenCores }),
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole("checkbox", { name: "failed" }),
+    ).toBeVisible();
+    await expect(canvas.getByLabelText("Cores from")).toBeVisible();
+    const host = canvas.getByLabelText("Host contains");
+    await expect(host).not.toBeVisible();
+    await userEvent.click(canvas.getByText("More filters"));
+    await waitFor(() => expect(host).toBeVisible());
   },
 };

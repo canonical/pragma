@@ -1,7 +1,11 @@
 import type { QueryLocation, Source } from "@canonical/dataviews-core";
 import type { ReactElement } from "react";
 import { DataViews } from "../../lib/_work_in_progress/DataViews/index.js";
-import { SERVER_BACKED_COLUMNS, SERVER_BACKED_PARTS } from "./constants.js";
+import {
+  SERVER_BACKED_COLUMNS,
+  SERVER_BACKED_FACETS,
+  SERVER_BACKED_PARTS,
+} from "./constants.js";
 import type { Machine } from "./fixtures.js";
 import { useMachineProvider } from "./story-utils.js";
 
@@ -16,8 +20,8 @@ type ServerBackedMachinesProps = {
 /**
  * The screen the server-backed stories render: search, filters, the sortable
  * table and its pagination over one provider whose source reaches a mock
- * endpoint. The page holds five machines, so paging reaches the endpoint
- * too. Story-only.
+ * endpoint, asking it for the status and cores facets. The page holds five
+ * machines, so paging reaches the endpoint too. Story-only.
  */
 export default function ServerBackedMachines({
   source,
@@ -27,6 +31,7 @@ export default function ServerBackedMachines({
     source,
     query: "page=1&size=5",
     location,
+    facets: SERVER_BACKED_FACETS,
   });
   return (
     <DataViews provider={provider}>

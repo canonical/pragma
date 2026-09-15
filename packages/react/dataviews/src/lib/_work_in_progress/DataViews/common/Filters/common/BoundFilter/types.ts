@@ -24,10 +24,24 @@ export type BoundFilterProps = {
     { readonly kind: "number" | "date" }
   >;
   /**
+   * The value the hint offers for this bound — the least the records matching
+   * the query hold for a lower bound, the greatest for an upper — from the
+   * source's facet over the field with its own bounds lifted, or null while
+   * no facet answers the applied query or no record holds one.
+   */
+  readonly offered: string | number | null;
+  /**
    * Whether the source declares this bound. An undeclared one is offered
    * only while it stands, and only for removal.
    */
   readonly declared: boolean;
+  /**
+   * Whether focus goes to the parent once the restriction the control clears
+   * was the field's last: the control is about to leave — an undeclared
+   * restriction, or a field shown only because it is restricted, under
+   * primary filters — rather than stay where focus could return to it.
+   */
+  readonly leavesWhenCleared: boolean;
   /**
    * Place focus when the control leaves with the restriction it removed,
    * as an undeclared one does once cleared: the parent owns where it goes.

@@ -25,6 +25,9 @@ ${SERVER_BACKED_COLUMNS.map(
 ).join("\n")}
 ];`;
 
+/** The fields whose facets the server-backed screen asks its endpoint for. */
+export const SERVER_BACKED_FACETS = ["status", "cores"] as const;
+
 /**
  * What the screen names its parts and fields, and the page sizes it offers:
  * read by the screen and by the source text of its composition alike.

@@ -4,9 +4,9 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   type ReactElement,
-  useLayoutEffect,
   useRef,
 } from "react";
+import { useHydrationFocusHandoff } from "../../../../hooks/index.js";
 import { HeaderMenu } from "../HeaderMenu/index.js";
 import { ResizeHandle } from "../ResizeHandle/index.js";
 import describeSortPrecedence from "./describeSortPrecedence.js";
@@ -84,24 +84,10 @@ export default function HeaderCell({
   // a key produces carries `detail` 0, and not every browser copies the
   // modifier onto it.
   const shiftedKey = useRef(false);
-  // The link a server rendered, and whether it held focus as scripts took
-  // over: the button replacing it takes that focus, or the reader who
-  // tabbed to the header before hydration is left on nothing.
-  const link = useRef<HTMLAnchorElement>(null);
-  const button = useRef<HTMLButtonElement>(null);
-  const linkHadFocus = useRef(false);
-  useLayoutEffect(() => {
-    if (!hydrated) {
-      linkHadFocus.current =
-        link.current !== null &&
-        link.current === link.current.ownerDocument.activeElement;
-      return;
-    }
-    if (linkHadFocus.current) {
-      linkHadFocus.current = false;
-      button.current?.focus();
-    }
-  }, [hydrated]);
+  // The link a server rendered and the button replacing it: the button takes
+  // the link's focus, or the reader who tabbed to the header before
+  // hydration is left on nothing.
+  const { link, button } = useHydrationFocusHandoff({ hydrated });
   const descriptionId = `${labelId}-sort`;
   const describedBy = precedence === null ? undefined : descriptionId;
   const indicator =

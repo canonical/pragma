@@ -28,6 +28,8 @@ type ConsumerCode = {
   readonly store?: boolean | undefined;
   /** Give the provider a location, as source text. */
   readonly location?: string | undefined;
+  /** The fields whose facets the provider asks for. */
+  readonly facets?: readonly string[] | undefined;
   /** React hooks the declarations use beyond `useState`. */
   readonly hooks?: readonly string[] | undefined;
   /** What the component renders, as JSX source text. */
@@ -67,9 +69,10 @@ const providerState = ({
   prepare,
   store,
   location,
+  facets,
 }: Pick<
   ConsumerCode,
-  "source" | "query" | "prepare" | "store" | "location"
+  "source" | "query" | "prepare" | "store" | "location" | "facets"
 >): string => {
   const commands =
     prepare === undefined
@@ -85,6 +88,11 @@ const providerState = ({
     ...(location === undefined ? [] : [`location: ${location},`]),
     ...(store === true ? ["views: store,", "presentation: store,"] : []),
     ...snapshot,
+    ...(facets === undefined
+      ? []
+      : [
+          `facets: [${facets.map((field) => JSON.stringify(field)).join(", ")}],`,
+        ]),
   ];
   const built = `createDataViewsProvider({
 ${config.map((line) => indent(line, 6)).join("\n")}
@@ -112,6 +120,7 @@ export const consumerCode = ({
   prepare,
   store = false,
   location,
+  facets,
   hooks = [],
   render,
 }: ConsumerCode) => {
@@ -135,7 +144,7 @@ ${imports ?? `import { machineCollection, machines } from "./machines.js";`}`,
           store ? viewStore : undefined,
           declarations,
           `export function Machines() {
-${providerState({ source, query, prepare, store, location })}
+${providerState({ source, query, prepare, store, location, facets })}
   return (
 ${indent(render, 4)}
   );

@@ -11,7 +11,7 @@ The stories on this page are answered by a mock endpoint, served by Mock Service
 
 ## Declare what the endpoint runs
 
-The declaration is the whole offer. Every part reads it: Filters offers a control only for what is declared, a header sorts only a declared field, and anything else is refused before a request is sent. This endpoint filters status, bounds cores, looks for text in the host name, the region and the owner, searches, orders by one term, and pages forward by cursor with no counts at all. An endpoint that counts nothing leaves `counts` out: the pagination bar then says which items are on screen and never out of how many.
+The declaration is the whole offer. Every part reads it: Filters offers a control only for what is declared, a header sorts only a declared field, and anything else is refused before a request is sent. This endpoint filters the statuses a machine is any or none of, bounds cores, looks for text the host name, the region and the owner contain and text the host name and the owner start with, searches, orders by one term, and pages forward by cursor with no counts at all. An endpoint that counts nothing leaves `counts` out: the pagination bar then says which items are on screen and never out of how many.
 
 ```tsx
 import {
@@ -26,11 +26,11 @@ import { environment } from "./relay.js";
 
 const capabilities = declareCapabilities(machineCollection, {
   filter: {
-    status: ["isAny"],
+    status: ["isAny", "isNone"],
     cores: ["gte", "lte"],
-    name: ["contains"],
+    name: ["contains", "startsWith"],
     region: ["contains"],
-    owner: ["contains"],
+    owner: ["contains", "startsWith"],
   },
   search: ["name", "owner"],
   sort: {
@@ -39,50 +39,67 @@ const capabilities = declareCapabilities(machineCollection, {
     tiebreak: "opaque",
   },
   pagination: { kind: "cursor", backward: false, durable: false },
+  facets: ["status", "cores"],
 });
 ```
 
 ## Map a request onto the endpoint
 
-The query pages by its own `first` and `after` arguments, not through `@connection`, which would merge its pages. `readSlice` reads the request by field, so the variables are built by name: a text filter reads as the text it contains.
+The query pages by its own `first` and `after` arguments, not through `@connection`, which would merge its pages. `readSlice` reads the request by field, so the variables are built by name: a field whose kind accepts several operators reads as a record of them — a status filter as the sets it is any and none of, a text filter as the text it contains and starts with.
 
 ```tsx
 const source = createRelaySource({
   capabilities,
   environment,
-  operation: ({ slice, first, after }) => {
+  operation: ({ slice, first, after, facets }) => {
     const { filters, search, sort } = readSlice(machineCollection, slice);
     return createOperationDescriptor(MachinesQuery, {
       first,
       after,
       where: {
-        status: filters.status === undefined ? null : [...filters.status],
+        status:
+          filters.status?.isAny === undefined ? null : [...filters.status.isAny],
+        statusIsNone:
+          filters.status?.isNone === undefined
+            ? null
+            : [...filters.status.isNone],
         coresGte: filters.cores?.gte ?? null,
         coresLte: filters.cores?.lte ?? null,
-        nameContains: filters.name ?? null,
-        regionContains: filters.region ?? null,
-        ownerContains: filters.owner ?? null,
+        nameContains: filters.name?.contains ?? null,
+        nameStartsWith: filters.name?.startsWith ?? null,
+        regionContains: filters.region?.contains ?? null,
+        ownerContains: filters.owner?.contains ?? null,
+        ownerStartsWith: filters.owner?.startsWith ?? null,
         search,
       },
       orderBy: sort.map(({ field, direction }) => ({
         field,
         direction: direction === "asc" ? "ASC" : "DESC",
       })),
+      facets: [...facets],
     });
   },
   connection: (data) => data.machines,
 });
 ```
 
-The provider and the parts are built over it as over any other source.
+The provider and the parts are built over it as over any other source. Asked for facets — `createDataViewsProvider({ collection, source, facets: ["status", "cores"] })` — every request names them, and the operation selects them.
 
 <Canvas of={Stories.Answered} sourceState="none" />
 
-## Text a field contains
+## Counts and ranges from the endpoint
 
-`nameContains` asks for the hosts whose name holds the text, compared case-insensitively. The text is literal, so `50%` never matches `5050`. The owner has a text input here, because this endpoint declares `contains` on it.
+The `facets` variable asks the connection for the machines holding each status and for the least and greatest number of cores, computed over every machine the query matches rather than the page Relay holds. A field's own restriction is left out of its own facet, so the other statuses keep their counts while one is applied. Filters shows each count beside its option and each end of the range beside its bound.
+
+<Canvas of={Stories.CountsAndNoneOf} sourceState="none" />
+
+## Text a field contains or starts with
+
+`nameContains` asks for the hosts whose name holds the text, and `nameStartsWith` for those whose name begins with it, compared case-insensitively. The text is literal, so `50%` never matches `5050`. The owner has both text inputs here, because this endpoint declares both operators on it; the region only the one for text it contains.
 
 <Canvas of={Stories.TextApplied} sourceState="none" />
+
+<Canvas of={Stories.StartsWithApplied} sourceState="none" />
 
 ## While the endpoint answers
 

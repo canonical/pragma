@@ -8,6 +8,7 @@
 import {
   createDataViewsProvider,
   type DataViewsProvider,
+  type DataViewsProviderConfig,
   type PresentationStore,
   type QueryLocation,
   type Source,
@@ -46,6 +47,8 @@ export type MachineProviderConfig = {
   readonly views?: ViewStore | undefined;
   /** Where the viewer's arrangement lives; in memory for the session by default. */
   readonly presentation?: PresentationStore | undefined;
+  /** The fields whose facets every request asks for; none by default. */
+  readonly facets?: DataViewsProviderConfig<MachineFields, Machine>["facets"];
 };
 
 /**
@@ -61,6 +64,7 @@ export function useMachineProvider({
   location,
   views,
   presentation,
+  facets,
 }: MachineProviderConfig = {}): MachineProvider {
   const [provider] = useState(() => {
     const built = createDataViewsProvider({
@@ -69,6 +73,7 @@ export function useMachineProvider({
       ...(location === undefined ? {} : { location }),
       ...(views === undefined ? {} : { views }),
       ...(presentation === undefined ? {} : { presentation }),
+      ...(facets === undefined ? {} : { facets }),
       ...(query === undefined ? {} : { snapshot: { query, presentation: {} } }),
     });
     prepare?.(built);

@@ -32,6 +32,9 @@ const TABLE = "_work_in_progress/DataTable";
 /** The sort panel's stories, the path to an ordering without Shift. */
 const SORT_PANEL = "_work_in_progress/DataViews/SortPanel";
 
+/** The filters' stories, the primary fields and the disclosure of the rest. */
+const FILTERS = "_work_in_progress/DataViews/Filters";
+
 /** The stories over a REST endpoint, through TanStack Query. */
 const REST_API = "_work_in_progress/DataViews/REST API";
 
@@ -39,10 +42,16 @@ const REST_API = "_work_in_progress/DataViews/REST API";
 const GRAPHQL_API = "_work_in_progress/DataViews/GraphQL API";
 
 /**
- * The stories this pass walks: the table's own, the sort panel's, and the
- * whole composition over each mock endpoint.
+ * The stories this pass walks: the table's own, the sort panel's, the
+ * filters', and the whole composition over each mock endpoint.
  */
-const TITLES: readonly string[] = [TABLE, SORT_PANEL, REST_API, GRAPHQL_API];
+const TITLES: readonly string[] = [
+  TABLE,
+  SORT_PANEL,
+  FILTERS,
+  REST_API,
+  GRAPHQL_API,
+];
 
 /**
  * The built Storybook's index, trusted as the build writes it: only its
@@ -668,5 +677,93 @@ test.describe("DataTable, sort panel and server-backed stories, keyboard only", 
     // The clear control leaves with the text; focus moves to the input.
     await expect(clear).toHaveCount(0);
     await expect(host).toBeFocused();
+  });
+
+  test("REST API CountsAndNoneOf: Space clears a none-of set with focus kept in the filters, and Enter on the move button moves an any-of set", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(REST_API, "Counts And None Of").id);
+    const summary = page
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("status");
+    // The story's own play function has already moved failed to none-of.
+    await expect(summary).toHaveText("Showing 1–5 out of 9 items");
+    const excluded = page.getByRole("group", { name: "Status is none of" });
+    await tabTo(page, excluded.getByRole("checkbox", { name: "failed" }));
+    await page.keyboard.press("Space");
+    await expect(summary).toHaveText("Showing 1–5 out of 12 items");
+    // The none-of group leaves with its last option; focus is the filters'.
+    await expect(excluded).toHaveCount(0);
+    await expect(page.getByRole("group", { name: "Filters" })).toBeFocused();
+    const included = page.getByRole("group", { name: "Status is any of" });
+    const failed = included.getByRole("checkbox", { name: "failed" });
+    await tabTo(page, failed);
+    await page.keyboard.press("Space");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    const move = page.getByRole("button", {
+      name: "Match none of these instead",
+    });
+    await tabTo(page, move);
+    await page.keyboard.press("Enter");
+    await expect(summary).toHaveText("Showing 1–5 out of 9 items");
+    await expect(page.getByRole("group", { name: "Filters" })).toBeFocused();
+  });
+
+  test("REST API Answered: text typed into a starts-with filter narrows the table, and Enter on its clear restores it", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(REST_API, "Answered").id);
+    const summary = page
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("status");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    const host = page.getByRole("textbox", { name: "Host starts with" });
+    await tabTo(page, host);
+    await page.keyboard.type("b");
+    await expect(summary).toHaveText("Showing item 1 out of 1");
+    await expect(host).toBeFocused();
+    await page.keyboard.press("Tab");
+    const clear = page.getByRole("button", {
+      name: "Clear Host starts with",
+    });
+    await expect(clear).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    await expect(host).toBeFocused();
+  });
+
+  test("Filters PrimaryFilters: Enter opens More filters, a control typed into inside keeps focus, and Enter closes it", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(FILTERS, "Primary Filters").id);
+    const disclosure = page.locator("details").filter({
+      has: page.locator("summary", { hasText: "More filters" }),
+    });
+    const summary = disclosure.locator("summary");
+    // The story's own play function opened it; close it to start from the
+    // default.
+    await tabTo(page, summary);
+    await page.keyboard.press("Enter");
+    await expect(disclosure).toHaveJSProperty("open", false);
+    const host = page.getByRole("textbox", { name: "Host contains" });
+    await expect(host).toBeHidden();
+    await tabTo(page, summary);
+    await page.keyboard.press("Enter");
+    await expect(host).toBeVisible();
+    await tabTo(page, host);
+    await page.keyboard.type("elm");
+    await expect(
+      page.getByRole("row", { name: /elm\.example\.com/ }),
+    ).toBeVisible();
+    // Restricted while open: the control stayed where it was, focus with it.
+    await expect(host).toBeFocused();
+    // Enter on the summary closes it, and the restricted control comes out.
+    await tabTo(page, summary);
+    await page.keyboard.press("Enter");
+    await expect(disclosure).toHaveJSProperty("open", false);
+    await expect(
+      disclosure.getByRole("textbox", { name: "Host contains" }),
+    ).toHaveCount(0);
+    await expect(host).toBeVisible();
   });
 });

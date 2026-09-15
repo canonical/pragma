@@ -129,4 +129,141 @@ describe("DataViews.Filters SSR", () => {
     expect(input).toContain('value="web"');
     expect(input).toMatch(/readonly=""/i);
   });
+
+  it("renders a standing set's move to none-of as a real link before any script runs", () => {
+    const location = createMemoryLocation({
+      href: "/machines?tab=overview&status=failed&cpu__gte=4",
+    });
+    const html = renderToString(
+      <DataViews
+        provider={createDataViewsProvider({
+          collection,
+          source: createManualSource<Row>({ capabilities: everything }).source,
+          location,
+        })}
+      >
+        <Filters />
+      </DataViews>,
+    );
+    const link =
+      /<a class="switch" href="([^"]*)">Match none of these instead<\/a>/.exec(
+        html,
+      );
+    const href = link?.at(1)?.replaceAll("&amp;", "&");
+    expect(href).toBeDefined();
+    const params = new URLSearchParams(href?.slice(1));
+    // The set moved, the host's own parameter kept, from the first page.
+    expect(params.getAll("status__isNone")).toEqual(["failed"]);
+    expect(params.has("status")).toBe(false);
+    expect(params.get("tab")).toBe("overview");
+    // Another field's restriction stays where it stood.
+    expect(params.get("cpu__gte")).toBe("4");
+    expect(params.get("page")).toBe("1");
+    // No button before any script runs.
+    expect(html).not.toMatch(/<button[^>]*>Match none of these instead/);
+  });
+
+  it("renders no move where there is no location to lead to", () => {
+    const provider = createDataViewsProvider({
+      collection,
+      source: createManualSource<Row>({ capabilities: everything }).source,
+    });
+    readProviderHost(provider).adopt(
+      {
+        slice: {
+          ...EMPTY_SLICE,
+          filter: [
+            { field: "status", operator: "isAny", operands: ["failed"] },
+          ],
+        },
+        window: DEFAULT_WINDOW,
+      },
+      "adopt",
+      null,
+    );
+    const html = renderToString(
+      <DataViews provider={provider}>
+        <Filters />
+      </DataViews>,
+    );
+    expect(html).toContain('name="status" checked="" value="failed"');
+    expect(html).not.toContain("Match none of these instead");
+  });
+
+  it("keeps in a move's link a restriction on the field it does not move", () => {
+    const provider = createDataViewsProvider({
+      collection,
+      source: createManualSource<Row>({ capabilities: everything }).source,
+      location: createMemoryLocation({ href: "/machines?status=failed" }),
+    });
+    // Adopted as it stands, never checked against the schema: a link leads
+    // on from what is in force, and moves only the set it names.
+    readProviderHost(provider).adopt(
+      {
+        slice: {
+          ...EMPTY_SLICE,
+          filter: [
+            { field: "status", operator: "isAny", operands: ["failed"] },
+            { field: "status", operator: "contains", operands: ["fail"] },
+          ],
+        },
+        window: DEFAULT_WINDOW,
+      },
+      "adopt",
+      null,
+    );
+    const html = renderToString(
+      <DataViews provider={provider}>
+        <Filters />
+      </DataViews>,
+    );
+    const href = /<a class="switch" href="([^"]*)">/
+      .exec(html)
+      ?.at(1)
+      ?.replaceAll("&amp;", "&");
+    const params = new URLSearchParams(href?.slice(1));
+    expect(params.getAll("status__isNone")).toEqual(["failed"]);
+    expect(params.get("status__contains")).toBe("fail");
+  });
+
+  it("renders the fields not shown by default as a native disclosure whose controls still submit", () => {
+    const html = renderToString(
+      <DataViews
+        provider={createDataViewsProvider({
+          collection,
+          source: createManualSource<Row>({ capabilities: everything }).source,
+          location: createMemoryLocation({ href: "/machines?cpu__gte=4" }),
+        })}
+      >
+        <Filters primary={["status"]} />
+      </DataViews>,
+    );
+    const opens = html.indexOf(
+      '<details class="more"><summary class="summary">More filters</summary>',
+    );
+    expect(opens).toBeGreaterThan(-1);
+    // Restricted, so outside the disclosure; unrestricted, so inside it.
+    expect(html.indexOf('name="cpu__gte"')).toBeLessThan(opens);
+    expect(html.indexOf('name="status"')).toBeLessThan(opens);
+    expect(html.indexOf('name="updated__gte"')).toBeGreaterThan(opens);
+    expect(html.indexOf('name="owner__isSet"')).toBeGreaterThan(opens);
+  });
+
+  it("renders a none-of set and the text a field starts with into controls a submission keeps", () => {
+    const html = renderToString(
+      <DataViews
+        provider={createDataViewsProvider({
+          collection,
+          source: createManualSource<Row>({ capabilities: withText }).source,
+          location: createMemoryLocation({
+            href: "/machines?status__isNone=failed&name__startsWith=we",
+          }),
+        })}
+      >
+        <Filters />
+      </DataViews>,
+    );
+    expect(html).toContain('name="status__isNone" checked="" value="failed"');
+    expect(html).toMatch(/<input[^>]*name="name__startsWith"[^>]*value="we"/);
+  });
 });
