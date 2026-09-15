@@ -12,7 +12,12 @@ import type {
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 import type { ColumnSizing } from "@canonical/dataviews-core/bindings";
-import type { ComponentProps, ComponentType, ReactNode } from "react";
+import type {
+  ComponentProps,
+  ComponentType,
+  ReactElement,
+  ReactNode,
+} from "react";
 import type { DataTableVirtualization } from "../../common/index.js";
 
 export type { DataTableVirtualization } from "../../common/index.js";
@@ -122,6 +127,12 @@ type OwnProps<
    * a row not mounted is still counted. Omitted, every row is rendered.
    */
   readonly virtualization?: DataTableVirtualization;
+  /**
+   * What the header's settings cell holds: `<DataViews.Settings />`, which
+   * the table hands its columns, their arrangement and the commands that
+   * change them. Left out, the header has no settings cell.
+   */
+  readonly settings?: ReactElement | undefined;
 };
 
 /**

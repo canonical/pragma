@@ -1,0 +1,117 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Settings menu component tokens — each a binding to a design token, never
+   * a value of its own, declared on the menu itself. The rules below read
+   * these and nothing else, so a theme or a host retunes the menu by setting
+   * them on it, and the anatomy beside
+   * the code, `SettingsMenu.anatomy.yaml`, names what each binds. The menu
+   * itself, once scripts run, is the design system's ContextualMenu, themed
+   * by its own tokens; these style only the button in the settings cell and
+   * the disclosure a page without scripts shows.
+   */
+  .ds.data-table-settings-menu {
+    --data-table-settings-menu-focus-ring-width: var(
+      --dimension-stroke-thickness-large
+    );
+    --data-table-settings-menu-focus-ring-color: var(
+      --color-focus-ring,
+      currentColor
+    );
+    --data-table-settings-menu-options-gap: var(--dimension-050);
+    --data-table-settings-menu-options-padding: var(--dimension-100);
+    --data-table-settings-menu-options-background: var(--color-background);
+    --data-table-settings-menu-options-border-width: var(
+      --dimension-stroke-thickness-medium
+    );
+    --data-table-settings-menu-options-border-color: var(--color-border-muted);
+    --data-table-settings-menu-options-font-weight: var(
+      --typography-text-primary-font-weight
+    );
+  }
+
+  .ds.data-table-settings-menu {
+    /* The button, or the disclosure's summary before scripts run: an icon
+       in the settings cell, drawn as the header's other controls are. */
+    & > .trigger {
+      display: flex;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+      color: inherit;
+      font: inherit;
+      list-style: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+
+      &::-webkit-details-marker {
+        display: none;
+      }
+
+      &:focus-visible {
+        outline: var(--data-table-settings-menu-focus-ring-width) solid
+          var(--data-table-settings-menu-focus-ring-color);
+        outline-offset: calc(
+          -1 *
+          var(--data-table-settings-menu-focus-ring-width)
+        );
+      }
+    }
+
+    /* The button's name: read, taking no room and drawing nothing.
+       Unthemable geometry. */
+    & > .trigger > .label {
+      position: absolute;
+      inline-size: 0;
+      block-size: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    /* The disclosure's links, below the settings cell and over the rows,
+       ending at the table's trailing edge. */
+    & > .options {
+      position: absolute;
+      inset-block-start: 100%;
+      inset-inline-end: 0;
+      z-index: 1;
+      display: grid;
+      gap: var(--data-table-settings-menu-options-gap);
+      margin: 0;
+      padding: var(--data-table-settings-menu-options-padding);
+      font-weight: var(--data-table-settings-menu-options-font-weight);
+      white-space: nowrap;
+      list-style: none;
+      background-color: var(--data-table-settings-menu-options-background);
+      border: var(--data-table-settings-menu-options-border-width) solid
+        var(--data-table-settings-menu-options-border-color);
+    }
+
+    /* Where anchor positioning is supported, the list is tethered to the
+       button that opens it and flips above it when the viewport has no room
+       below; the absolute position above is the baseline elsewhere. */
+    @supports (anchor-name: --a) {
+      anchor-scope: --data-table-settings-menu-trigger;
+
+      & > .trigger {
+        anchor-name: --data-table-settings-menu-trigger;
+      }
+
+      & > .options {
+        position-anchor: --data-table-settings-menu-trigger;
+        position-area: block-end span-inline-start;
+        position-try-fallbacks: flip-block;
+        inset: auto;
+      }
+    }
+
+    & > .options > li {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--data-table-settings-menu-options-gap);
+    }
+  }
+}

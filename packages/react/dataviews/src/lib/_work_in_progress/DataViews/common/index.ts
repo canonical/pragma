@@ -5,5 +5,6 @@ export * from "./HiddenQueryFields/index.js";
 export * from "./Pagination/index.js";
 export * from "./SavedViews/index.js";
 export * from "./Search/index.js";
+export * from "./Settings/index.js";
 export * from "./SortPanel/index.js";
 export * from "./utils/index.js";

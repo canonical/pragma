@@ -16,6 +16,7 @@
  * line, alphabetically.
  */
 
+@import url("./_work_in_progress/DataTable/common/SettingsMenu/styles.css");
 @import url("./_work_in_progress/DataTable/styles.css");
 @import url("./_work_in_progress/DataViews/common/Actions/styles.css");
 @import url("./_work_in_progress/DataViews/common/Filters/common/BoundFilter/styles.css");

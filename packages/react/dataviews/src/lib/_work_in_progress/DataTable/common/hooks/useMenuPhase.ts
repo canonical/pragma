@@ -8,14 +8,14 @@ import {
 import type { MenuPhase, UseMenuPhaseResult } from "./types.js";
 
 /**
- * A header menu's phase, and the focus that goes with it: the menu mounts
+ * A menu's phase, and the focus that goes with it: the menu mounts
  * only while it is open, its mounted button holds the focus its placeholder
  * had until the menu moves it to the first item, and closing hands focus
  * back to the placeholder that returns.
  */
 export default function useMenuPhase(): UseMenuPhaseResult {
   const [phase, setPhase] = useState<MenuPhase>("closed");
-  // The button the header holds while the menu is not mounted, and whether
+  // The button its cell holds while the menu is not mounted, and whether
   // the menu has just closed: its button then takes back the focus the menu
   // returned to a trigger that is no longer there.
   const placeholder = useRef<HTMLButtonElement>(null);

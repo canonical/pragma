@@ -6,7 +6,7 @@ import {
   type ResolvedColumn,
   resolveColumns,
 } from "@canonical/dataviews-core/bindings";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useDataViewsValue } from "../../../hooks/index.js";
 import { areTracksEqual } from "../common/utils/index.js";
 import type { UseTableGeometryResult } from "./types.js";
@@ -96,21 +96,37 @@ export default function useTableGeometry(
     [],
   );
 
+  // Each reserving cell's last measured width: the selection column's and
+  // the settings cell's are the stylesheet's tracks, and the columns share
+  // what both leave.
+  const reservations = useRef(new Map<HTMLDivElement, number>());
+  const publishReserved = useCallback((): void => {
+    let total = 0;
+    for (const width of reservations.current.values()) {
+      total += width;
+    }
+    setReserved(total);
+  }, []);
   // Observed on its own: the track is sized in rem, so a root font-size
   // change moves it with no change to the container. Read as its layout
   // width every time — never its bounding box, which an ancestor's
   // transform would scale.
-  const reserve = useCallback((cell: HTMLDivElement): (() => void) => {
-    const measure = (): void => {
-      setReserved(cell.offsetWidth);
-    };
-    measure();
-    const disconnect = observeResize(cell, measure);
-    return () => {
-      disconnect?.();
-      setReserved(0);
-    };
-  }, []);
+  const reserve = useCallback(
+    (cell: HTMLDivElement): (() => void) => {
+      const measure = (): void => {
+        reservations.current.set(cell, cell.offsetWidth);
+        publishReserved();
+      };
+      measure();
+      const disconnect = observeResize(cell, measure);
+      return () => {
+        disconnect?.();
+        reservations.current.delete(cell);
+        publishReserved();
+      };
+    },
+    [publishReserved],
+  );
 
   const width = container === null ? null : Math.max(0, container - reserved);
 

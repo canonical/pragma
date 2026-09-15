@@ -12,6 +12,7 @@ import type {
   RowRecord,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
+import type { ReactElement } from "react";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type {
   DataTableCellProps,
@@ -246,6 +247,15 @@ describe("connected part props", () => {
     expectTypeOf<DataTableColumn>()
       .toHaveProperty("hideable")
       .toEqualTypeOf<boolean | undefined>();
+    // The settings cell is filled by one named prop, never by children, and
+    // what fills it takes no props: the table supplies everything it reads.
+    expectTypeOf<DataTableProps<Fields>>()
+      .toHaveProperty("settings")
+      .toEqualTypeOf<ReactElement | undefined>();
+    expectTypeOf<DataTableProps<Fields>>().not.toHaveProperty("children");
+    expectTypeOf(dataviewsReact.DataViews.Settings).parameters.toEqualTypeOf<
+      []
+    >();
     expectTypeOf<
       Omit<DataTableProps<Fields, RowRecord>, "provider">
     >().toEqualTypeOf<DataViewsDataTableProps>();

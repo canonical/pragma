@@ -14,6 +14,7 @@ import {
 } from "@canonical/dataviews-core/bindings";
 import {
   type CSSProperties,
+  isValidElement,
   type ReactElement,
   useCallback,
   useEffect,
@@ -31,9 +32,12 @@ import {
   useMergedRef,
 } from "../../hooks/index.js";
 import {
+  Announcement,
   HeaderCell,
   Row,
   SelectAllCell,
+  SettingsCell,
+  type SettingsMenuProps,
   StatusRow,
   TableBody,
 } from "./common/index.js";
@@ -45,6 +49,7 @@ import {
 import describeStatus from "./describeStatus.js";
 import {
   useColumnArrangement,
+  useColumnManagement,
   useHeaderSort,
   useRowScopes,
   useStableCallback,
@@ -110,6 +115,12 @@ const renderVirtualizedBody = (
  * scripts run, a menu beside each sortable header sorts ascending or
  * descending, or removes the column from the reader's ordering.
  *
+ * Given `DataViews.Settings` as its `settings`, the header ends in a settings
+ * cell holding it: a menu hiding, showing and moving each column, and
+ * resetting the table's settings. Each change is written to the
+ * presentation, announced politely with where the column now stands, and
+ * asks the source for nothing.
+ *
  * Given `virtualization`, it mounts only the rows near its viewport and reports
  * every row's logical position; without it, every row is rendered.
  *
@@ -131,6 +142,7 @@ export default function DataTable<
   rowLabel = defaultRowLabel,
   renderStatus = describeStatus,
   virtualization,
+  settings,
   className,
   style,
   ref,
@@ -231,6 +243,37 @@ export default function DataTable<
     window: state.window,
   });
 
+  // The columns' visibility and places, as the settings menu offers them
+  // and every change to them is announced.
+  const {
+    settings: columnSettings,
+    resettable,
+    announcer,
+    changeColumn,
+    resetColumns,
+    listDestinations,
+  } = useColumnManagement({ provider, columns });
+  // One value while none of it changes, so a frame of a resize re-renders
+  // no settings menu.
+  const menu = useMemo<SettingsMenuProps>(
+    () => ({
+      settings: columnSettings,
+      resettable,
+      hydrated,
+      onChange: changeColumn,
+      onReset: resetColumns,
+      listDestinations,
+    }),
+    [
+      columnSettings,
+      resettable,
+      hydrated,
+      changeColumn,
+      resetColumns,
+      listDestinations,
+    ],
+  );
+
   // The container ref is the table's own — the solver measures it — so a
   // caller's ref is merged onto it rather than dropped, as className and
   // style are. The merge holds the caller's ref behind one identity, which
@@ -279,84 +322,97 @@ export default function DataTable<
   } as CSSProperties;
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: a <table> resolves each row's widths from its own content, which is exactly what this grid replaces with one shared track list
-    <div
-      {...rest}
-      ref={attach}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      style={geometryStyle}
-      role="table"
-      aria-label={label}
-      aria-busy={busy}
-      // Every logical row, the header's included, so a row a virtualized
-      // table has not mounted is still counted.
-      aria-rowcount={
-        virtualization === undefined ? undefined : entries.length + 1
-      }
-    >
-      {/* biome-ignore lint/a11y/useSemanticElements: <thead> is only valid inside a <table>, and this grid is deliberately not one */}
-      <div role="rowgroup" className="ds data-table-row-group header">
-        {/* biome-ignore lint/a11y/useSemanticElements: <tr> is only valid inside a <table>, and this grid is deliberately not one */}
-        {/* biome-ignore lint/a11y/useFocusableInteractive: the row is structure, not a widget — the focusable controls live in its cells */}
-        <div
-          role="row"
-          className="ds data-table-row"
-          aria-rowindex={virtualization === undefined ? undefined : 1}
-        >
-          {selectable ? (
-            <SelectAllCell
-              selection={provider.selection}
-              ids={scopes.ids}
-              reserve={geometry.reserve}
-            />
-          ) : null}
-          {rendered.map((column, position) => {
-            const field = readFieldName(column);
-            const sortable = column.sortable === true && orderable.has(field);
-            return (
-              <HeaderCell
-                key={column.id}
-                column={column}
-                sortable={sortable}
-                precedence={headerSort.precedences.get(field) ?? null}
-                primary={column.id === headerSort.primaryColumnId}
-                // Spelled only while it is rendered: once scripts take over
-                // the header is a button, and nothing reads a destination.
-                destination={
-                  sortable && !hydrated
-                    ? headerSort.spellDestination(column.id)
-                    : null
-                }
-                hydrated={hydrated}
-                reason={headerSort.readReason(column.id)}
-                onClearRefusal={headerSort.clearRefusal}
-                onSort={headerSort.sortColumn}
-                removable={headerSort.stated.has(field)}
-                onPlace={headerSort.placeColumn}
-                onRemoveFromSort={headerSort.removeFromSort}
-                interaction={interaction}
-                resizable={
-                  column.resizable === true && position < rendered.length - 1
-                }
-                bounds={readSizingBounds(layout.readDeclared(column.id))}
-                // Solved for every rendered column, in the same order.
-                width={geometry.widths[position] as number}
-                labelId={`${baseId}-${column.id}`}
+    <>
+      {/* biome-ignore lint/a11y/useSemanticElements: a <table> resolves each row's widths from its own content, which is exactly what this grid replaces with one shared track list */}
+      <div
+        {...rest}
+        ref={attach}
+        className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        style={geometryStyle}
+        role="table"
+        aria-label={label}
+        aria-busy={busy}
+        // Every logical row, the header's included, so a row a virtualized
+        // table has not mounted is still counted.
+        aria-rowcount={
+          virtualization === undefined ? undefined : entries.length + 1
+        }
+      >
+        {/* biome-ignore lint/a11y/useSemanticElements: <thead> is only valid inside a <table>, and this grid is deliberately not one */}
+        <div role="rowgroup" className="ds data-table-row-group header">
+          {/* biome-ignore lint/a11y/useSemanticElements: <tr> is only valid inside a <table>, and this grid is deliberately not one */}
+          {/* biome-ignore lint/a11y/useFocusableInteractive: the row is structure, not a widget — the focusable controls live in its cells */}
+          <div
+            role="row"
+            className="ds data-table-row"
+            aria-rowindex={virtualization === undefined ? undefined : 1}
+          >
+            {selectable ? (
+              <SelectAllCell
+                selection={provider.selection}
+                ids={scopes.ids}
+                reserve={geometry.reserve}
               />
-            );
-          })}
+            ) : null}
+            {rendered.map((column, position) => {
+              const field = readFieldName(column);
+              const sortable = column.sortable === true && orderable.has(field);
+              return (
+                <HeaderCell
+                  key={column.id}
+                  column={column}
+                  sortable={sortable}
+                  precedence={headerSort.precedences.get(field) ?? null}
+                  primary={column.id === headerSort.primaryColumnId}
+                  // Spelled only while it is rendered: once scripts take over
+                  // the header is a button, and nothing reads a destination.
+                  destination={
+                    sortable && !hydrated
+                      ? headerSort.spellDestination(column.id)
+                      : null
+                  }
+                  hydrated={hydrated}
+                  reason={headerSort.readReason(column.id)}
+                  onClearRefusal={headerSort.clearRefusal}
+                  onSort={headerSort.sortColumn}
+                  removable={headerSort.stated.has(field)}
+                  onPlace={headerSort.placeColumn}
+                  onRemoveFromSort={headerSort.removeFromSort}
+                  interaction={interaction}
+                  resizable={
+                    column.resizable === true && position < rendered.length - 1
+                  }
+                  bounds={readSizingBounds(layout.readDeclared(column.id))}
+                  // Solved for every rendered column, in the same order.
+                  width={geometry.widths[position] as number}
+                  labelId={`${baseId}-${column.id}`}
+                />
+              );
+            })}
+            {!isValidElement(settings) ? null : (
+              <SettingsCell
+                settings={settings}
+                menu={menu}
+                reserve={geometry.reserve}
+              />
+            )}
+          </div>
         </div>
+        {virtualization === undefined ? (
+          <TableBody entries={entries} renderEntry={renderEntry} />
+        ) : (
+          renderVirtualizedBody(virtualization, {
+            entries,
+            renderEntry,
+            rows: provider.rows,
+            tracks: geometry.template,
+          })
+        )}
       </div>
-      {virtualization === undefined ? (
-        <TableBody entries={entries} renderEntry={renderEntry} />
-      ) : (
-        renderVirtualizedBody(virtualization, {
-          entries,
-          renderEntry,
-          rows: provider.rows,
-          tracks: geometry.template,
-        })
-      )}
-    </div>
+      {/* Beside the table rather than in it: a table's children are its row
+          groups. It holds what it last said itself, so saying something
+          renders nothing but it. */}
+      <Announcement ref={announcer} />
+    </>
   );
 }

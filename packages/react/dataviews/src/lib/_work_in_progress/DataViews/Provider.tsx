@@ -11,6 +11,7 @@ import {
   Pagination,
   SavedViews,
   Search,
+  Settings,
   SortPanel,
 } from "./common/index.js";
 import { useProviderState } from "./hooks/index.js";
@@ -50,5 +51,7 @@ DataViews.Pagination = Pagination;
 DataViews.SavedViews = SavedViews;
 /** The connected search part, over the applied search. */
 DataViews.Search = Search;
+/** The table's column settings, given to a table as its `settings`. */
+DataViews.Settings = Settings;
 /** The connected sort panel, over the applied ordering. */
 DataViews.SortPanel = SortPanel;

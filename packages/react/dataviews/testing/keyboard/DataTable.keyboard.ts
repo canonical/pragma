@@ -35,6 +35,9 @@ const SORT_PANEL = "_work_in_progress/DataViews/SortPanel";
 /** The filters' stories, the primary fields and the disclosure of the rest. */
 const FILTERS = "_work_in_progress/DataViews/Filters";
 
+/** The table settings' stories, the path to every arrangement without a drag. */
+const SETTINGS = "_work_in_progress/DataViews/Settings";
+
 /** The stories over a REST endpoint, through TanStack Query. */
 const REST_API = "_work_in_progress/DataViews/REST API";
 
@@ -43,12 +46,14 @@ const GRAPHQL_API = "_work_in_progress/DataViews/GraphQL API";
 
 /**
  * The stories this pass walks: the table's own, the sort panel's, the
- * filters', and the whole composition over each mock endpoint.
+ * filters', the table settings', and the whole composition over each mock
+ * endpoint.
  */
 const TITLES: readonly string[] = [
   TABLE,
   SORT_PANEL,
   FILTERS,
+  SETTINGS,
   REST_API,
   GRAPHQL_API,
 ];
@@ -435,7 +440,7 @@ const tabTo = async (page: Page, control: Locator): Promise<void> => {
   }
 };
 
-test.describe("DataTable, sort panel and server-backed stories, keyboard only", () => {
+test.describe("DataTable, sort panel, filters, settings and server-backed stories, keyboard only", () => {
   for (const story of stories) {
     test(`${story.title} ${story.name}: every control is reached both ways, focus visible`, async ({
       page,
@@ -606,6 +611,39 @@ test.describe("DataTable, sort panel and server-backed stories, keyboard only", 
     await page.keyboard.press("Enter");
     await expect(host).toHaveAttribute("aria-sort", "ascending");
     await expect(menu).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
+  test("Settings ArrangedByTheViewer: Enter opens the settings menu, Enter hides a column from it, focus returns to its button", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(SETTINGS, "Arranged By The Viewer").id);
+    const trigger = page.getByRole("button", {
+      name: "Table settings",
+      exact: true,
+    });
+    await expect(
+      page.getByRole("columnheader", { name: "Status", exact: true }),
+    ).toBeVisible();
+    await tabTo(page, trigger);
+    await page.keyboard.press("Enter");
+    const menu = page.getByRole("menu", {
+      name: "Table settings",
+      exact: true,
+    });
+    await expect(menu).toBeVisible();
+    // The status stands first, so the menu's first item hides it.
+    await expect(
+      page.getByRole("menuitem", { name: "Hide Status", exact: true }),
+    ).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(menu).toBeHidden();
+    await expect(
+      page.getByRole("columnheader", { name: "Status", exact: true }),
+    ).toHaveCount(0);
+    await expect(page.locator(".ds.data-table-announcement")).toHaveText(
+      "Status hidden",
+    );
     await expect(trigger).toBeFocused();
   });
 

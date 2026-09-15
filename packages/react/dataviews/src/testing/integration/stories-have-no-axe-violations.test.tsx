@@ -23,6 +23,7 @@ import { FACETED_FILTER_STORIES } from "../../../testing/fixtures.js";
 import serveMockApi from "../../../testing/serveMockApi.js";
 import * as tableStories from "../../lib/_work_in_progress/DataTable/DataTable.stories.js";
 import * as filtersStories from "../../lib/_work_in_progress/DataViews/common/Filters/Filters.stories.js";
+import * as settingsStories from "../../lib/_work_in_progress/DataViews/common/Settings/Settings.stories.js";
 import * as panelStories from "../../lib/_work_in_progress/DataViews/common/SortPanel/SortPanel.stories.js";
 import * as graphqlStories from "../../lib/_work_in_progress/DataViews/DataViews.graphql.stories.js";
 import * as restStories from "../../lib/_work_in_progress/DataViews/DataViews.rest.stories.js";
@@ -43,6 +44,7 @@ serveMockApi([...createRestHandlers(), ...createGraphQLHandlers()]);
 const rendered = {
   DataTable: composeStories(tableStories),
   SortPanel: composeStories(panelStories),
+  Settings: composeStories(settingsStories),
 };
 
 /** The stories checked once their play function has run, by part. */
