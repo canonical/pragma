@@ -16,9 +16,9 @@ import {
 } from "../../../testing/machines.js";
 import {
   DataTable,
-  type DataTableCellProps,
   type DataTableColumn,
 } from "../_work_in_progress/DataTable/index.js";
+import type { DisplayFieldCellProps } from "../common/index.js";
 import virtualizeRows from "./virtualizeRows.js";
 
 const rows: readonly Machine[] = Array.from({ length: 10_000 }, (_, position) =>
@@ -33,7 +33,7 @@ const mountedAtMost = inView + 1 + 2 * 4;
 let cellRenders = 0;
 
 /** A cell that counts its renders: every mounted row renders one. */
-function CountedCell({ value }: DataTableCellProps) {
+function CountedCell({ value }: DisplayFieldCellProps) {
   cellRenders += 1;
   return <>{String(value)}</>;
 }

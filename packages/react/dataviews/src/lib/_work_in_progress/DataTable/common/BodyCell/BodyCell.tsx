@@ -1,26 +1,13 @@
-import { memo, type ReactElement, type ReactNode, useMemo } from "react";
+import { memo, type ReactElement, useMemo } from "react";
 import {
   CellContext,
   type CellContextValue,
 } from "../../../../common/index.js";
 import { useDataViewsValue } from "../../../../hooks/index.js";
+import { spellPrimitiveValue } from "../../../../utils/index.js";
 import type { BodyCellProps } from "./types.js";
 
 const componentCssClassName = "ds data-table-body-cell";
-
-/** Primitive values render as text; anything else needs the column's `cell`. */
-const defaultContent = (value: unknown): ReactNode => {
-  switch (typeof value) {
-    case "string":
-      return value;
-    case "number":
-    case "bigint":
-    case "boolean":
-      return String(value);
-    default:
-      return null;
-  }
-};
 
 function BodyCell<TRow extends object>({
   provider,
@@ -52,7 +39,7 @@ function BodyCell<TRow extends object>({
       {/* biome-ignore lint/a11y/useSemanticElements: <td> is only valid inside a <table>, and this grid is deliberately not one */}
       <div role="cell" className={componentCssClassName}>
         {Content === undefined ? (
-          defaultContent(value)
+          spellPrimitiveValue(value)
         ) : (
           <Content value={value} rowId={channels.id} columnId={column.id} />
         )}

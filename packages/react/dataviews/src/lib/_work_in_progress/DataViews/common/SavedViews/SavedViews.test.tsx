@@ -59,12 +59,12 @@ const setStatus = (
 const failed = buildStoredView({
   id: "v-failed",
   name: "Failed",
-  query: "as=table&status=failed",
+  query: "status=failed",
 });
 const running = buildStoredView({
   id: "v-running",
   name: "Running",
-  query: "as=table&status=running",
+  query: "status=running",
 });
 
 /**
@@ -476,7 +476,7 @@ describe("DataViews.SavedViews", () => {
     const memory = createMemoryViewStore([failed]);
     const { provider } = await mountListed(memory.store);
     await choose(failed);
-    memory.elsewhere(failed.id, { query: "as=table&status=running" });
+    memory.elsewhere(failed.id, { query: "status=running" });
     setStatus(provider, ["failed", "running"]);
     fireEvent.click(getButton("Save"));
     await waitFor(() => {
@@ -495,7 +495,7 @@ describe("DataViews.SavedViews", () => {
     const memory = createMemoryViewStore([failed]);
     const { provider } = await mountListed(memory.store);
     await choose(failed);
-    memory.elsewhere(failed.id, { query: "as=table&status=running" });
+    memory.elsewhere(failed.id, { query: "status=running" });
     setStatus(provider, ["failed", "running"]);
     fireEvent.click(getButton("Save"));
     await waitFor(() => {

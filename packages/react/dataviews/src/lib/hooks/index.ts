@@ -6,5 +6,7 @@ export { default as useHydrationFocusHandoff } from "./useHydrationFocusHandoff.
 export { default as useIsHydrated } from "./useIsHydrated.js";
 export { default as useMergedRef } from "./useMergedRef.js";
 export { default as useMessages } from "./useMessages.js";
+export { default as useRowScopes } from "./useRowScopes.js";
+export { default as useSelectAllOnPage } from "./useSelectAllOnPage.js";
 export { default as useStableCallback } from "./useStableCallback.js";
 export { default as useStableValue } from "./useStableValue.js";

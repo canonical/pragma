@@ -2,5 +2,4 @@ export type * from "./types.js";
 export { default as useColumnArrangement } from "./useColumnArrangement.js";
 export { default as useColumnManagement } from "./useColumnManagement.js";
 export { default as useHeaderSort } from "./useHeaderSort.js";
-export { default as useRowScopes } from "./useRowScopes.js";
 export { default as useTableGeometry } from "./useTableGeometry.js";

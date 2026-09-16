@@ -74,7 +74,7 @@ export const buildStoredView = (
 ): SavedView => ({
   id: "v1",
   name: "Failed",
-  query: "as=table&status=failed",
+  query: "status=failed",
   presentation: {},
   revision: 1,
   pinned: false,
@@ -664,4 +664,5 @@ export const MESSAGE_SAMPLES: {
   selectionActions: null,
   rowsSelected: [[7]],
   deselectRows: [[1], [7]],
+  renderer: null,
 };

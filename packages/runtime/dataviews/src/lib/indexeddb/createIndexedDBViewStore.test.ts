@@ -218,12 +218,12 @@ describe("createIndexedDBViewStore", () => {
       const view = readSaved(
         await store.update(
           { id: "failed", revision: 1 },
-          { query: "as=table&status=failed" },
+          { query: "status=failed" },
         ),
       );
       expect(view).toMatchObject({
         name: "Failed",
-        query: "as=table&status=failed",
+        query: "status=failed",
         revision: 2,
         createdAt: "2026-09-11T08:00:00.000Z",
         updatedAt: "2026-09-11T09:30:00.000Z",
@@ -234,7 +234,7 @@ describe("createIndexedDBViewStore", () => {
         ),
       ).toMatchObject({
         name: "Broken",
-        query: "as=table&status=failed",
+        query: "status=failed",
         revision: 3,
       });
     });

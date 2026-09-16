@@ -9,7 +9,6 @@
  */
 
 export type {
-  DataTableCellProps,
   DataTableColumn,
   DataTableProps,
   DataTableVirtualization,
@@ -34,5 +33,9 @@ export {
 } from "./_work_in_progress/DataViews/index.js";
 export type { PaginationBarProps } from "./_work_in_progress/PaginationBar/index.js";
 export { PaginationBar } from "./_work_in_progress/PaginationBar/index.js";
+export type {
+  DisplayField,
+  DisplayFieldCellProps,
+} from "./common/index.js";
 export type { UseDataViewsCellResult } from "./hooks/index.js";
 export { useDataViewsCell, useDataViewsValue } from "./hooks/index.js";

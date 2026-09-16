@@ -6,7 +6,7 @@ import {
 import type { Slice } from "../query/index.js";
 import { createSnapshot, type DataViewsSnapshot } from "../snapshot/index.js";
 import { encodeQuery } from "../wire/index.js";
-import { NO_VIEW_OPEN, RENDERER } from "./constants.js";
+import { NO_VIEW_OPEN } from "./constants.js";
 import describeNameIssue from "./describeNameIssue.js";
 import mintViewId from "./mintViewId.js";
 import readStoredQuery from "./readStoredQuery.js";
@@ -45,13 +45,12 @@ export default function createViewCommands(
   /** A creation whose outcome never arrived, kept to be retried under its id. */
   let draft: ViewDraft | null = null;
 
-  /** A view's query: no window, no annotation, its renderer. */
+  /** A view's query: no window, no annotation. */
   const spellViewQuery = (slice: Slice): URLSearchParams =>
     encodeQuery({
       schema: host.schema,
       slice,
       window: null,
-      preserve: new URLSearchParams({ as: RENDERER }),
     });
 
   /** A view's snapshot of a query and the arrangement it keeps. */

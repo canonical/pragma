@@ -35,7 +35,7 @@ describe("regression 0038 — a view arrangement was lost without a presentation
     await views.create({
       id: "a",
       name: "Failed",
-      query: "as=table&status=failed",
+      query: "status=failed",
       presentation: { "table.order": ["name"] },
     });
     const query = "view=a&status=failed&page=1&size=50";

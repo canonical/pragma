@@ -19,9 +19,9 @@ const host = {
 const buildStored = (query: string): SavedView => buildStoredView({ query });
 
 describe("readStoredQuery", () => {
-  it("reads a stored query as the collection's slice, whatever renderer it names", () => {
+  it("reads a stored query as the collection's slice", () => {
     const { slice, issues } = readStoredQuery(
-      buildStored("as=list&status=failed"),
+      buildStored("status=failed"),
       host,
     );
     expect(slice.filter).toEqual([
@@ -32,7 +32,7 @@ describe("readStoredQuery", () => {
 
   it("refuses a clause the source cannot run and a parameter naming no field", () => {
     const { issues } = readStoredQuery(
-      buildStored("as=table&status=failed&region=eu&q=alder"),
+      buildStored("status=failed&region=eu&q=alder"),
       host,
     );
     expect(issues).toEqual([

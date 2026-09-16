@@ -21,14 +21,11 @@ import {
   type MachineProviderConfig,
   useMachineProvider,
 } from "../../../storybook/machines/story-utils.js";
+import type { DisplayFieldCellProps } from "../../common/index.js";
 import { useDataViewsCell, useDataViewsValue } from "../../hooks/index.js";
 import { virtualizeRows } from "../../virtualization/index.js";
 import Component from "./DataTable.js";
-import type {
-  DataTableCellProps,
-  DataTableColumn,
-  DataTableProps,
-} from "./types.js";
+import type { DataTableColumn, DataTableProps } from "./types.js";
 
 const meta = {
   title: "_work_in_progress/DataTable",
@@ -756,7 +753,7 @@ const isStatus = (value: unknown): value is keyof typeof statusDisplay =>
   typeof value === "string" && Object.hasOwn(statusDisplay, value);
 
 /** A status value as a coloured marker and a label; anything else, nothing. */
-function StatusCell({ value }: DataTableCellProps): ReactElement | null {
+function StatusCell({ value }: DisplayFieldCellProps): ReactElement | null {
   if (!isStatus(value)) {
     return null;
   }
@@ -780,14 +777,14 @@ function StatusCell({ value }: DataTableCellProps): ReactElement | null {
  */
 export const CustomCellRenderer: Story = {
   parameters: consumerCode({
-    parts: ["DataTable", "type DataTableCellProps", "type DataTableColumn"],
+    parts: ["DataTable", "type DisplayFieldCellProps", "type DataTableColumn"],
     declarations: `const statusDisplay: Record<string, { label: string; tone: string }> = {
   running: { label: "Running", tone: "var(--color-icon-success)" },
   failed: { label: "Failed", tone: "var(--color-icon-destructive)" },
   pending: { label: "Pending", tone: "var(--color-icon-muted)" },
 };
 
-const StatusCell = ({ value }: DataTableCellProps) => {
+const StatusCell = ({ value }: DisplayFieldCellProps) => {
   const shown = statusDisplay[String(value)];
   return shown ? (
     <span>
@@ -820,7 +817,7 @@ const columns: readonly DataTableColumn[] = [
  * so the record arrives typed as a machine and the cell is declared once, at
  * module scope, for every table over the collection.
  */
-function HostCell({ value }: DataTableCellProps): ReactElement {
+function HostCell({ value }: DisplayFieldCellProps): ReactElement {
   const cell = useDataViewsCell(machineCollection);
   const { owner } = useDataViewsValue(cell.record);
   const selected = useDataViewsValue(cell.selected);
@@ -857,12 +854,12 @@ export const CellReadingItsScope: Story = {
   parameters: consumerCode({
     parts: [
       "DataTable",
-      "type DataTableCellProps",
+      "type DisplayFieldCellProps",
       "type DataTableColumn",
       "useDataViewsCell",
       "useDataViewsValue",
     ],
-    declarations: `function HostCell({ value }: DataTableCellProps) {
+    declarations: `function HostCell({ value }: DisplayFieldCellProps) {
   // The collection is the witness: the record is typed as a machine.
   const { record, selected } = useDataViewsCell(machineCollection);
   const { owner } = useDataViewsValue(record);
@@ -1110,7 +1107,7 @@ export const Virtualized: Story = {
 };
 
 /** A note that wraps onto as many lines as it needs. */
-function WrappingNote({ value }: DataTableCellProps): ReactElement {
+function WrappingNote({ value }: DisplayFieldCellProps): ReactElement {
   return <span style={{ whiteSpace: "normal" }}>{String(value)}</span>;
 }
 
@@ -1123,7 +1120,7 @@ function WrappingNote({ value }: DataTableCellProps): ReactElement {
  */
 export const VirtualizedVariableHeights: Story = {
   parameters: virtualizedConsumer(
-    `function WrappingNote({ value }: DataTableCellProps) {
+    `function WrappingNote({ value }: DisplayFieldCellProps) {
   return <span style={{ whiteSpace: "normal" }}>{String(value)}</span>;
 }
 
@@ -1137,7 +1134,7 @@ const columns: readonly DataTableColumn[] = [
     sizing: { kind: "flex", weight: 1, minPx: 160 },
   },
 ];`,
-    ["DataTable", "type DataTableCellProps", "type DataTableColumn"],
+    ["DataTable", "type DisplayFieldCellProps", "type DataTableColumn"],
   ),
   args: { selectable: true, style: { maxBlockSize: "24rem" } },
   decorators: [withFrame("40rem")],

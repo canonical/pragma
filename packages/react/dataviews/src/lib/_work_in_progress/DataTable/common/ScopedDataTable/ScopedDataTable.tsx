@@ -33,14 +33,15 @@ import {
   useDataViewsValue,
   useIsHydrated,
   useMergedRef,
+  useRowScopes,
   useStableCallback,
   useStableValue,
 } from "../../../../hooks/index.js";
+import { readFieldName } from "../../../../utils/index.js";
 import {
   useColumnArrangement,
   useColumnManagement,
   useHeaderSort,
-  useRowScopes,
   useTableGeometry,
 } from "../../hooks/index.js";
 import type {
@@ -56,11 +57,7 @@ import {
   StatusRow,
   TableBody,
 } from "../index.js";
-import {
-  areColumnModelsEqual,
-  readFieldName,
-  readSizing,
-} from "../utils/index.js";
+import { areColumnModelsEqual, readSizing } from "../utils/index.js";
 import describeStatus from "./describeStatus.js";
 import "../../styles.css";
 

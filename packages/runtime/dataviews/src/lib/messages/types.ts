@@ -318,4 +318,11 @@ export type DataViewsMessages = {
   readonly rowsSelected: (count: number) => string;
   /** The button clearing the selection, by how many rows it clears. */
   readonly deselectRows: (count: number) => string;
+
+  // The renderer switch.
+  /**
+   * The switch's name, which also labels the choice it offers. The renderers
+   * themselves are named by the application, as fields and options are.
+   */
+  readonly renderer: string;
 };

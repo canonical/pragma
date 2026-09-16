@@ -36,7 +36,7 @@ describe("regression 0023 — a missing view's write retried forever", () => {
     const created = await store.create({
       id: "v1",
       name: "One",
-      query: "as=table",
+      query: "",
       presentation: {},
     });
     if (created.status !== "saved") {

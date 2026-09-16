@@ -21,7 +21,7 @@ import type { QueryIssue } from "../wire/index.js";
 /**
  * One saved view, resolved for this viewer: a snapshot of the collection —
  * its query stored verbatim as text written with `encodeQuery` and a null
- * window, canonical and with its renderer (`as=table&status=failed`), so
+ * window, canonical (`status=failed`), so
  * comparing texts tells whether the live query differs from the view; and
  * the arrangement in force when it was created, empty for none — with the
  * view's identity and revision.

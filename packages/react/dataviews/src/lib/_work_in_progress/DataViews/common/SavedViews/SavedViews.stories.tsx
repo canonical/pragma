@@ -58,7 +58,7 @@ const composition = `<DataViews provider={provider}>
 const failedMachines: ViewDraft = {
   id: "failed-machines",
   name: "Failed machines",
-  query: "as=table&status=failed",
+  query: "status=failed",
   presentation: {},
 };
 
@@ -203,7 +203,7 @@ function AnotherTab({
       onClick={async () => {
         const found = await other.get(failedMachines.id);
         if (found.status === "found") {
-          await other.update(found.view, { query: "as=table&status=pending" });
+          await other.update(found.view, { query: "status=pending" });
         }
       }}
     >
@@ -283,7 +283,7 @@ export const DeletingAView: Story = {
 const wideHosts: ViewDraft = {
   id: "wide-hosts",
   name: "Wide hosts",
-  query: "as=table",
+  query: "",
   presentation: {
     "table.width.name": 320,
     "table.order": ["owner", "name", "status", "cores"],

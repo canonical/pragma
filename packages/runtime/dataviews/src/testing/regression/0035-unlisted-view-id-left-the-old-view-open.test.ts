@@ -34,7 +34,7 @@ describe("regression 0035 — an unlisted view id left the old view open", () =>
     await tab.create({
       id: "x",
       name: "Failed",
-      query: "as=table&status=failed",
+      query: "status=failed",
       presentation: {},
     });
     const { location, move } = createRecordingLocation({ href: "/machines" });

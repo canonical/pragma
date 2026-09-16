@@ -34,7 +34,7 @@ describe("regression 0029 — a restored view arrangement became the default", (
     await views.create({
       id: "a",
       name: "Failed",
-      query: "as=table&status=failed",
+      query: "status=failed",
       presentation: hidden,
     });
     const { location } = createRecordingLocation({

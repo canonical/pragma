@@ -129,7 +129,7 @@ const selectTwo = (provider: MachineProvider): void => {
 const failedMachines: ViewDraft = {
   id: "failed-machines",
   name: "Failed machines",
-  query: "as=table&status=failed",
+  query: "status=failed",
   presentation: {},
 };
 

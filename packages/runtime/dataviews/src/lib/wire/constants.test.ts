@@ -27,7 +27,6 @@ describe("the wire grammar's names", () => {
       "page",
       "size",
       "cursor",
-      "as",
       "view",
       "item",
       "table.order",

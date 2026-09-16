@@ -22,47 +22,19 @@ import type {
 import type {
   AnnouncerTopic,
   DataTableVirtualization,
+  DisplayField,
 } from "../../common/index.js";
 
 export type { DataTableVirtualization } from "../../common/index.js";
 
 /**
- * The props one column's cell renderer receives.
+ * One rendered column: a display field, with what only a column adds — its
+ * sizing, whether it resizes, sorts from its header and may be hidden.
  *
  * @experimental Pre-release: the whole surface is still settling, and this
  * name may change or move before the first release.
  */
-export type DataTableCellProps = {
-  /** The cell's current field value. */
-  readonly value: unknown;
-  /** The row's stable identity. */
-  readonly rowId: string;
-  /** The column's identity. */
-  readonly columnId: string;
-};
-
-/**
- * One rendered column. Field meaning supplies the default content; `cell`
- * supplies the exceptional content — a badge, a link, an action menu — for
- * the one column that needs it, without making the caller author every
- * header, row and cell.
- *
- * @experimental Pre-release: the whole surface is still settling, and this
- * name may change or move before the first release.
- */
-export type DataTableColumn = {
-  /** The column's identity, unique within the table. */
-  readonly id: string;
-  /** The column's heading. */
-  readonly header: ReactNode;
-  /** The record field this column shows. Defaults to the column's id. */
-  readonly field?: string;
-  /**
-   * Column-specific content. Rendered inside the cell's scope, so it may
-   * call `useDataViewsCell` for the row's channels. Without one, primitive
-   * values render as text and every other value renders nothing.
-   */
-  readonly cell?: ComponentType<DataTableCellProps>;
+export type DataTableColumn = DisplayField & {
   /** Declared sizing. Defaults to a flexible column with a 96px minimum. */
   readonly sizing?: ColumnSizing;
   /**

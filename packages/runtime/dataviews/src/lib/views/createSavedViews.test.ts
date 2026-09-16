@@ -358,7 +358,7 @@ describe("createSavedViews", () => {
   });
 
   describe("opening and saving", () => {
-    it("saves the live query as a new view with its renderer, and opens it", async () => {
+    it("saves the live query as a new view, and opens it", async () => {
       const { host, views, store } = await observeFreshProvider();
       filterFailedOnly(host);
       const outcome = await views.saveAs("  Failed machines ");
@@ -366,7 +366,7 @@ describe("createSavedViews", () => {
       const view = readView(outcome);
       expect(view).toMatchObject({
         name: "Failed machines",
-        query: "as=table&status=failed",
+        query: "status=failed",
         presentation: {},
       });
       expect(views.state.get()).toMatchObject({
@@ -460,7 +460,7 @@ describe("createSavedViews", () => {
 
     it("refuses a view whose query it cannot read whole, keeping the live query", async () => {
       const view = buildStoredView({
-        query: "as=table&status=failed&cores__gte=zero",
+        query: "status=failed&cores__gte=zero",
       });
       const views = readViews(
         createProviderOver(
@@ -502,7 +502,7 @@ describe("createSavedViews", () => {
       const outcome = await views.save();
       const saved = readView(outcome);
       expect(saved.revision).toBe(view.revision + 1);
-      expect(saved.query).toBe("as=table&cores__gte=8&status=failed");
+      expect(saved.query).toBe("cores__gte=8&status=failed");
       expect(views.state.get()).toMatchObject({
         current: saved,
         modified: false,
@@ -615,7 +615,7 @@ describe("createSavedViews", () => {
     const failed: ViewDraft = {
       id: "failed",
       name: "Failed",
-      query: "as=table&status=failed",
+      query: "status=failed",
       presentation: {},
     };
 
@@ -764,7 +764,7 @@ describe("createSavedViews", () => {
           {
             id: "searching",
             name: "Searching",
-            query: "as=table&q=web",
+            query: "q=web",
             presentation: {},
           },
         ],
@@ -783,7 +783,7 @@ describe("createSavedViews", () => {
     it("keeps a named view unopened while the views cannot be listed, and opens it once they are", async () => {
       const view = buildStoredView({
         id: "failed",
-        query: "as=table&status=failed",
+        query: "status=failed",
       });
       const list = vi
         .fn<ViewStore["list"]>()
@@ -818,7 +818,7 @@ describe("createSavedViews", () => {
       const running: ViewDraft = {
         id: "running",
         name: "Running",
-        query: "as=table&status=running",
+        query: "status=running",
         presentation: {},
       };
       const { views, move } = await observeAt("/machines", [failed, running]);
@@ -919,7 +919,7 @@ describe("createSavedViews", () => {
       // The other tab saves a different query into the same view.
       const other = openIndexedDBTab(indexedDB);
       const theirs = await other.update(view, {
-        query: "as=table&status=running",
+        query: "status=running",
       });
       filterCoresAtLeast(host, 8);
       const outcome = await views.save();
@@ -934,7 +934,7 @@ describe("createSavedViews", () => {
       const overwritten = readView(await views.save());
       expect(overwritten).toMatchObject({
         revision: stored.revision + 1,
-        query: "as=table&cores__gte=8&status=failed",
+        query: "cores__gte=8&status=failed",
       });
     });
 
@@ -943,7 +943,7 @@ describe("createSavedViews", () => {
       filterFailedOnly(host);
       const view = readView(await views.saveAs("Failed"));
       await openIndexedDBTab(indexedDB).update(view, {
-        query: "as=table&status=running",
+        query: "status=running",
       });
       filterCoresAtLeast(host, 8);
       await views.save();
@@ -1217,7 +1217,7 @@ describe("createSavedViews", () => {
 
     it("refuses a view naming a field or a clause the collection cannot run, rather than widen it", async () => {
       const view = buildStoredView({
-        query: "as=table&status=failed&region=eu&q=alder",
+        query: "status=failed&region=eu&q=alder",
       });
       const provider = createProviderOver(
         createStandInViewStore({
@@ -1243,7 +1243,7 @@ describe("createSavedViews", () => {
       expect(provider.state.get().slice.filter).toEqual([]);
     });
 
-    it("opens a view saved in another renderer: a query applies in any", async () => {
+    it("refuses a view naming a renderer: the query names no renderer", async () => {
       const view = buildStoredView({ query: "as=list&status=failed" });
       const views = readViews(
         createProviderOver(
@@ -1252,7 +1252,17 @@ describe("createSavedViews", () => {
           }),
         ),
       );
-      expect((await views.open(view.id)).status).toBe("opened");
+      expect(await views.open(view.id)).toEqual({
+        status: "refused",
+        view,
+        issues: [
+          {
+            parameter: "as",
+            code: "unknown-field",
+            reason: '"as" names no field of this collection',
+          },
+        ],
+      });
     });
 
     it("lets a command still in flight when the provider resets change nothing", async () => {
@@ -1481,7 +1491,7 @@ describe("createSavedViews", () => {
       await other.create({
         id: "wide",
         name: "Wide",
-        query: "as=table&status=failed",
+        query: "status=failed",
         presentation: { width: 240 },
       });
       expect((await views.open("wide")).status).toBe("opened");
@@ -1489,7 +1499,7 @@ describe("createSavedViews", () => {
       provider.presentation.arrange({ density: "dense" });
       await other.update(
         { id: "wide", revision: 1 },
-        { query: "as=table&status=running" },
+        { query: "status=running" },
       );
       filterCoresAtLeast(host, 8);
       expect((await views.save()).status).toBe("conflict");

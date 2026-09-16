@@ -1,7 +1,10 @@
 import { CheckboxInput } from "@canonical/react-ds-global-form";
-import { type ReactElement, useContext, useMemo } from "react";
+import { type ReactElement, useContext } from "react";
 import { MessagesContext } from "../../../../common/index.js";
-import { useDataViewsValue } from "../../../../hooks/index.js";
+import {
+  useDataViewsValue,
+  useSelectAllOnPage,
+} from "../../../../hooks/index.js";
 import type { SelectAllCellProps } from "./types.js";
 
 const componentCssClassName = "ds data-table-header-cell selection";
@@ -17,41 +20,21 @@ export default function SelectAllCell({
   reserve,
 }: SelectAllCellProps): ReactElement {
   const messages = useContext(MessagesContext);
-  const state = useDataViewsValue(selection.state);
   const ids = useDataViewsValue(displayed);
-  // Counted, not filtered: this runs on every render of the header, and
-  // an intermediate array per render is one allocation and one scan the
-  // count does not need.
-  const selected = useMemo(() => {
-    let count = 0;
-    for (const id of ids) {
-      if (state.ids.has(id)) {
-        count += 1;
-      }
-    }
-    return count;
-  }, [ids, state]);
-  const all = ids.length > 0 && selected === ids.length;
-  const some = selected > 0 && !all;
+  const { checked, mixed, toggle } = useSelectAllOnPage({ selection, ids });
   return (
     // biome-ignore lint/a11y/useSemanticElements: <th> is only valid inside a <table>, and this grid is deliberately not one
     // biome-ignore lint/a11y/useFocusableInteractive: the header is structure, not a widget — its checkbox carries the focus
     <div role="columnheader" className={componentCssClassName} ref={reserve}>
       <CheckboxInput
-        checked={all}
+        checked={checked}
         aria-label={messages.selectAllRows}
         ref={(node) => {
           if (node !== null) {
-            node.indeterminate = some;
+            node.indeterminate = mixed;
           }
         }}
-        onChange={() => {
-          if (all) {
-            selection.remove(ids);
-          } else {
-            selection.add(ids);
-          }
-        }}
+        onChange={toggle}
       />
     </div>
   );
