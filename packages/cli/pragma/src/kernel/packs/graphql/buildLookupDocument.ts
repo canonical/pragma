@@ -31,7 +31,7 @@ import type {
   PackLookup,
   PackNestedExpand,
 } from "../types.js";
-import { isNestedExpand } from "../types.js";
+import { expandIsSparql, isNestedExpand } from "../types.js";
 import { MAX_PAGE_SIZE, pluralize, stripVerbPrefix } from "./nameMap.js";
 
 type GraphQLSchema = import("graphql").GraphQLSchema;
@@ -367,16 +367,23 @@ export function buildLookupDocument(
         ),
       ),
     ),
-    ...activeExpands(lookup, level).map((expand, index) =>
-      buildScopedSelection(schema, fragmentType, (container) =>
-        buildCollectionSelection(
-          container,
-          expand,
-          `lookup.expand[${index}]`,
-          source,
+    // An expand that declares the SPARQL lane is not this document's — the
+    // entity fetcher runs its sub-SELECT beside this query and merges the rows
+    // in. Skipped rather than attempted: its terms are chosen for a lane where
+    // property paths read and every defined property is reachable, and asking
+    // for them here would either drop them in silence or raise.
+    ...activeExpands(lookup, level)
+      .filter((expand) => !expandIsSparql(lookup, expand))
+      .map((expand, index) =>
+        buildScopedSelection(schema, fragmentType, (container) =>
+          buildCollectionSelection(
+            container,
+            expand,
+            `lookup.expand[${index}]`,
+            source,
+          ),
         ),
       ),
-    ),
   ].filter((selection): selection is Selection => selection !== undefined);
 
   const body = selections.map((selection) => `      ${selection.text}`);

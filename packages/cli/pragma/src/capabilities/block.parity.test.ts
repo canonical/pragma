@@ -268,6 +268,131 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
   });
 });
 
+describe("block lookup — the tokens a block consumes (SPARQL-lane expand)", () => {
+  it("lists one row per binding, with all six identity columns", async () => {
+    const button = await lookup("Button");
+    // Six columns and not five: the anatomy's `styleKey` and `styleState`
+    // carry no rdfs:domain, so the GraphQL document this lookup otherwise
+    // builds derives no field for either and dropped both WITHOUT a word —
+    // leaving `appearance.background` rank 1 and rank 2 looking like one fact
+    // repeated. That is why this expand declares the SPARQL lane.
+    expect(button.tokens).toEqual([
+      {
+        symbol: "color.background",
+        key: "appearance.background",
+        state: "default",
+        rank: "1",
+        node: "$root",
+      },
+      {
+        symbol: "color.background.hover",
+        key: "appearance.background",
+        state: "hover",
+        rank: "2",
+        node: "$root",
+      },
+      {
+        symbol: "color.text",
+        key: "typography.color",
+        state: "default",
+        rank: "1",
+        node: "$root",
+      },
+      {
+        symbol: "color.icon",
+        key: "appearance.background",
+        state: "default",
+        rank: "1",
+        via: "Button Icon",
+        node: "$root/icon",
+      },
+    ]);
+  });
+
+  it("orders the rows by node, then key, then rank", async () => {
+    // The fixture declares them in another order on purpose: the store's own
+    // scan order is undefined, and a table of a node's styles is only readable
+    // one node at a time, one key at a time, each key's fallback chain in the
+    // order the implementation walks it.
+    const button = await lookup("Button");
+    const rows = button.tokens as {
+      node: string;
+      key: string;
+      rank: string;
+    }[];
+    expect(rows.map((row) => [row.node, row.key, row.rank])).toEqual([
+      ["$root", "appearance.background", "1"],
+      ["$root", "appearance.background", "2"],
+      ["$root", "typography.color", "1"],
+      ["$root/icon", "appearance.background", "1"],
+    ]);
+  });
+
+  it("blanks the via on the block's own tree and prints it otherwise", async () => {
+    // `ds:viaBlock` is asserted on EVERY record and equals the block on the
+    // block's own tree, so printing it raw put "Button" in every one of
+    // Button's own rows — a cell that is only ever news when it differs.
+    const button = await lookup("Button");
+    const rows = button.tokens as { via?: string; node: string }[];
+    for (const row of rows.filter((row) => row.node === "$root")) {
+      expect(row.via).toBeUndefined();
+    }
+    expect(rows.find((row) => row.node === "$root/icon")?.via).toBe(
+      "Button Icon",
+    );
+
+    // Modal consumes nothing of its own: its one row is Button's binding,
+    // reached through the Button its anatomy embeds, so the via is the whole
+    // point of the row.
+    const modal = await lookup("Modal");
+    expect(modal.tokens).toEqual([
+      {
+        symbol: "color.background",
+        key: "appearance.background",
+        state: "default",
+        rank: "1",
+        via: "Button",
+        node: "$root/footer",
+      },
+    ]);
+  });
+
+  it("renders the section under its own heading, with the reading note", async () => {
+    const llm = verb("lookup").output.formatters.llm(
+      (await verb("lookup").run({ name: ["Button"] }, rt)) as never,
+    );
+    // The same sentence `Anatomy (DSL)` carries, because the rank column is
+    // that notation's fallback chain seen from the other side.
+    expect(llm).toContain(
+      "### Tokens\nA list value in the anatomy is the fallback chain the implementation reads, first wins; rank is the position in that chain.",
+    );
+    expect(llm).toContain("symbol: color.text | key: typography.color");
+  });
+
+  it("prints no Tokens heading for a block that consumes nothing", async () => {
+    // What every other section on this lookup does when it is empty: no
+    // heading at all, rather than a heading with nothing under it. The key is
+    // still present in the payload as an empty array, so the machine shape
+    // stays uniform.
+    const icon = await lookup("Button Icon");
+    expect(icon.tokens).toEqual([]);
+    const llm = verb("lookup").output.formatters.llm(
+      (await verb("lookup").run({ name: ["Button Icon"] }, rt)) as never,
+    );
+    expect(llm).not.toContain("### Tokens");
+  });
+
+  it("is withheld at the summary level with the other detailed expands", async () => {
+    const out = (await verb("lookup").run(
+      { name: ["Button"] },
+      { ...rt, globalFlags: { ...rt.globalFlags, detail: "summary" } },
+    )) as LookupOutput;
+    expect(
+      (out.results.at(0) as Record<string, unknown>).tokens,
+    ).toBeUndefined();
+  });
+});
+
 describe("block lookup — Modal content parity (GraphQL, detailed)", () => {
   it("resolves the full Modal spec (a different block, same document engine)", async () => {
     const modal = await lookup("Modal");
