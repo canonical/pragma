@@ -330,6 +330,73 @@ describe("checkSignal — process", () => {
     expect(seen).toContain("C:/bin/codex.BAT");
   });
 
+  it("finds an editor CLI inside its macOS app bundle with an EMPTY PATH", () => {
+    // The stock macOS machine: VS Code installed, and nothing on PATH because
+    // the palette's "Install 'code' command in PATH" is opt-in and usually
+    // never run. Before the bundle fallback this reported the editor absent —
+    // a clean skip on a machine that has it.
+    const bundleCli =
+      "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code";
+    const seen: string[] = [];
+    const result = check(
+      { type: "process", name: "code" },
+      ctx({
+        platform: platform({
+          platform: "darwin",
+          home: "/Users/tester",
+          env: {},
+        }),
+      }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path);
+          return path === bundleCli;
+        }),
+      },
+    );
+    expect(result).toBe(true);
+    expect(seen).toContain(bundleCli);
+    // The per-user base is probed too, resolved against the captured home.
+    expect(seen).toContain(
+      "/Users/tester/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
+    );
+  });
+
+  it("does NOT probe app bundles on linux — the same fs detects nothing", () => {
+    // The bundle arm is darwin-only: a `/Applications` path on linux would be
+    // a guess about a directory the platform does not have.
+    const bundleCli =
+      "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code";
+    expect(
+      check({ type: "process", name: "code" }, ctx(), {
+        Exists: existsAt((path) => path === bundleCli),
+      }),
+    ).toBe(false);
+  });
+
+  it("adds no bundle candidates for a binary that is not an editor CLI", () => {
+    // The bundle names come from the editor registry, matched by CLI name; a
+    // `process` signal for `claude` finds no row and contributes nothing.
+    const seen: string[] = [];
+    check(
+      { type: "process", name: "claude" },
+      ctx({
+        platform: platform({
+          platform: "darwin",
+          home: "/Users/tester",
+          env: { PATH: "/usr/bin" },
+        }),
+      }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path);
+          return false;
+        }),
+      },
+    );
+    expect(seen).toEqual(["/usr/bin/claude"]);
+  });
+
   it("runs verify and matches stdout against the pattern", () => {
     const result = check(
       {

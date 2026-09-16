@@ -25,7 +25,10 @@ export {
   type VscodeProduct,
   vscodeUserDir,
 } from "./editors.js";
-export { executableCandidates } from "./executablePaths.js";
+export {
+  appBundleCandidates,
+  executableCandidates,
+} from "./executablePaths.js";
 export { default as findHarnessById } from "./findHarnessById.js";
 export { default as harnesses } from "./harnesses.js";
 export {

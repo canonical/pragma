@@ -382,6 +382,29 @@ describe("detectHarnesses — VS Code installation signals", () => {
   });
 
   /**
+   * The macOS app-bundle arm. Nothing on PATH, no extensions directory, no
+   * config directory — only the CLI inside `Visual Studio Code.app`, which is
+   * the state of a stock macOS install whose owner never ran the palette
+   * command. Before the bundle fallback this machine detected NOTHING.
+   */
+  it("detects a macOS install from the app-bundle CLI alone, with an empty PATH", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", {
+        platform: "darwin",
+        env: {},
+        home: "/Users/tester",
+        isWsl: false,
+      }),
+      only(
+        "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
+      ),
+    );
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+    // A binary probe, so `medium` — "installed", not "this project uses it".
+    expect(result.value[0]?.confidence).toBe("medium");
+  });
+
+  /**
    * Insiders and VSCodium, each found by its OWN signals — and each one alone.
    * A bare `.vscode` directory must detect VS Code and nothing else (the rule
    * the Cline row has always held), or a prompt in every VS Code project would

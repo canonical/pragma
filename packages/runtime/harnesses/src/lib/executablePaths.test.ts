@@ -9,7 +9,10 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { executableCandidates } from "./executablePaths.js";
+import {
+  appBundleCandidates,
+  executableCandidates,
+} from "./executablePaths.js";
 import type { PlatformEnv } from "./platformPaths.js";
 
 const platformOf = (
@@ -70,5 +73,56 @@ describe("executableCandidates", () => {
         platformOf("win32", { PATH: "C:/bin", PATHEXT: ".EXE;;" }),
       ).map((c) => c.replaceAll("\\", "/")),
     ).toEqual(["C:/bin/code.EXE"]);
+  });
+});
+
+/**
+ * `appBundleCandidates` — the macOS app-bundle fallback.
+ *
+ * Kept a SEPARATE list from the PATH candidates so a caller can say HOW an
+ * editor was found; these cases pin the two bases, their order, and the fact
+ * that nothing is produced off darwin (where a `/Applications` path would be
+ * a guess about a directory that does not exist).
+ */
+describe("appBundleCandidates", () => {
+  const BUNDLE = "Visual Studio Code.app";
+  const darwin = platformOf("darwin", {});
+
+  it("returns the system bundle path then the per-user one, in that order", () => {
+    // `/Applications` is the installer default; `~/Applications` is where a
+    // per-user install (and Homebrew Cask's --appdir) lands.
+    expect(appBundleCandidates("code", darwin, [BUNDLE])).toEqual([
+      "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
+      "/home/u/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
+    ]);
+  });
+
+  it("resolves the per-user base against the captured home, not a literal ~", () => {
+    expect(
+      appBundleCandidates("codium", { ...darwin, home: "/Users/other" }, [
+        "VSCodium.app",
+      ]),
+    ).toContain(
+      "/Users/other/Applications/VSCodium.app/Contents/Resources/app/bin/codium",
+    );
+  });
+
+  it("crosses every bundle a row declares, both bases per bundle", () => {
+    expect(appBundleCandidates("code", darwin, ["A.app", "B.app"])).toEqual([
+      "/Applications/A.app/Contents/Resources/app/bin/code",
+      "/home/u/Applications/A.app/Contents/Resources/app/bin/code",
+      "/Applications/B.app/Contents/Resources/app/bin/code",
+      "/home/u/Applications/B.app/Contents/Resources/app/bin/code",
+    ]);
+  });
+
+  it("yields nothing away from darwin, and nothing for a row with no bundle", () => {
+    expect(
+      appBundleCandidates("code", platformOf("linux", {}), [BUNDLE]),
+    ).toEqual([]);
+    expect(
+      appBundleCandidates("code", platformOf("win32", {}), [BUNDLE]),
+    ).toEqual([]);
+    expect(appBundleCandidates("code", darwin, [])).toEqual([]);
   });
 });

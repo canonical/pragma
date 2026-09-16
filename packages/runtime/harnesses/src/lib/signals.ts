@@ -21,7 +21,10 @@ import {
   traverse,
 } from "@canonical/task";
 import editorClis from "./editors.js";
-import { executableCandidates } from "./executablePaths.js";
+import {
+  appBundleCandidates,
+  executableCandidates,
+} from "./executablePaths.js";
 import {
   type PlatformEnv,
   userConfigBase,
@@ -110,7 +113,23 @@ const checkProcess = (
 ): Task<boolean> => {
   // The PATH/PATHEXT rules live in one shared helper (`setup lsp`'s editor
   // probe resolves the same way) — see `executablePaths.ts` for why.
-  const candidates = executableCandidates(signal.name, ctx.platform);
+  //
+  // A VS Code-family editor gets its macOS app bundle probed too. Those
+  // editors install no CLI on PATH until the user runs the palette's
+  // "Shell Command: Install '<cli>' command in PATH", which is opt-in and
+  // usually never taken — so on a stock macOS machine the PATH list alone
+  // reported the editor absent and the harness was skipped. The bundle names
+  // come from the editor registry (`editors.ts`), matched by CLI name: a
+  // `process` signal for a non-editor binary finds no row and adds nothing.
+  const candidates = [
+    ...executableCandidates(signal.name, ctx.platform),
+    ...appBundleCandidates(
+      signal.name,
+      ctx.platform,
+      editorClis.find((editor) => editor.cli === signal.name)?.darwinBundles ??
+        [],
+    ),
+  ];
 
   return flatMap(
     traverse(candidates, (candidate) => exists(candidate)),
