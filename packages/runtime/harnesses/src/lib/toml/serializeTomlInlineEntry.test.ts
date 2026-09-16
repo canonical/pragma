@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import parseTomlSection from "./parseTomlSection.js";
 import serializeTomlInlineEntry from "./serializeTomlInlineEntry.js";
 import serializeTomlSection from "./serializeTomlSection.js";
 
@@ -26,11 +25,18 @@ describe("serializeTomlInlineEntry", () => {
     };
     const inline = serializeTomlInlineEntry("mcp_servers", "pragma", fields);
     const table = serializeTomlSection("mcp_servers", { pragma: fields });
-    for (const [key, value] of Object.entries(
-      parseTomlSection(table, "mcp_servers").pragma ?? {},
-    )) {
-      expect(inline).toContain(`${key} = `);
-      expect(value).toBeDefined();
+    // Every `key = value` the WRITER emits, compared as the writer spelled
+    // it: the table form puts one per line under its header, so each of those
+    // lines must appear verbatim inside the one-line form. Asserting that the
+    // inline string merely mentions each key passes even if the quoting and
+    // array syntax are dropped, which is the whole point of the case.
+    const written = table
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "" && !line.startsWith("["));
+    expect(written).toHaveLength(Object.keys(fields).length);
+    for (const line of written) {
+      expect(inline).toContain(line);
     }
     // The table form is what the file holds, and it cannot be one line: a
     // `[mcp_servers.pragma]` header owns its own line in TOML's grammar.
