@@ -267,13 +267,12 @@ const harnesses: readonly HarnessDefinition[] = [
     // most sibling GUI-editor rows already have (the `cursor` row is the
     // exception: its whole `detect` is the project-relative `.cursor`).
     //
-    // Those five are also what EARNS this row its global band. A committed
-    // `.vscode/` says something about the repository and nothing about the
-    // machine, so on its own it must not create a per-user file for every
-    // contributor who clones: `listHarnessesForBand` admits a `both`-scoped
-    // row into the global band only when one of its own user-level signals
-    // matched. The project band is unaffected — a committed `.vscode/` is
-    // exactly the right reason to write `.vscode/mcp.json`.
+    // Those five are also what EARNS this row its global band, which is why it
+    // declares `requiresUserSignalForGlobal` below. `.vscode/` is committed to
+    // repositories and says nothing about the machine, so on its own it must
+    // not create a per-user file for every contributor who clones. The project
+    // band is unaffected — a committed `.vscode/` is exactly the right reason
+    // to write `.vscode/mcp.json`.
     //
     // The three user-directory signals are ONE directory per platform, spelled
     // in the three prefix forms the signal grammar resolves (see
@@ -324,6 +323,12 @@ const harnesses: readonly HarnessDefinition[] = [
     // probe — resolved through `vscodeUserDir` so the read, the write and the
     // detection can never name different files.
     homeConfigPath: (p) => vscodeUserMcp("Code", p),
+    // Earn the per-user file, because `.vscode/` above travels with the
+    // repository — see `hasEarnedGlobalBand`. Declared on all three products
+    // so the family answers one rule: the two below detect nothing
+    // project-relative today, and a future signal that does must not quietly
+    // change what their global band writes.
+    requiresUserSignalForGlobal: true,
     configFormat: "json",
     mcpKey: "servers",
     skillsPath: (root) => `${root}/.agents/skills`,
@@ -361,6 +366,7 @@ const harnesses: readonly HarnessDefinition[] = [
     ],
     configPath: (root) => `${root}/.vscode/mcp.json`,
     homeConfigPath: (p) => vscodeUserMcp("Code - Insiders", p),
+    requiresUserSignalForGlobal: true,
     configFormat: "json",
     mcpKey: "servers",
     skillsPath: (root) => `${root}/.agents/skills`,
@@ -390,6 +396,7 @@ const harnesses: readonly HarnessDefinition[] = [
     ],
     configPath: (root) => `${root}/.vscode/mcp.json`,
     homeConfigPath: (p) => vscodeUserMcp("VSCodium", p),
+    requiresUserSignalForGlobal: true,
     configFormat: "json",
     mcpKey: "servers",
     skillsPath: (root) => `${root}/.agents/skills`,
