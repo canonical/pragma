@@ -52,7 +52,6 @@ export const HIDDEN_QUERY_KEY = "table.hidden";
  */
 export const RESERVED_QUERY_KEYS: readonly string[] = Object.freeze([
   ...WRITTEN_QUERY_KEYS,
-  "as",
   VIEW_KEY,
   "item",
   ORDER_QUERY_KEY,

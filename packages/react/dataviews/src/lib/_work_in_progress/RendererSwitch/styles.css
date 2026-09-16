@@ -1,0 +1,34 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * RendererSwitch styles
+   *
+   * A work-in-progress spike: no design exists for it, so it binds only the
+   * spacing, type and form-channel tokens the other parts bind, as the
+   * pagination bar themes its selects. The choice is the design system's
+   * select, labelled; each renderer is drawn beneath it.
+   */
+  .ds.renderer-switch {
+    --renderer-switch-gap: var(--dimension-200);
+    --renderer-switch-choice-gap: var(--dimension-100);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--renderer-switch-gap);
+    color: var(--color-text);
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+    --form-input-height: var(--density-line-height-effective);
+    --form-input-padding-block: var(--dimension-050);
+    --form-input-padding-inline: var(--dimension-100);
+
+    & > .choice {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--renderer-switch-choice-gap);
+    }
+  }
+}

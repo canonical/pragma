@@ -1,0 +1,85 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./RendererSwitch.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# RendererSwitch recipes
+
+`RendererSwitch` shows one collection through the renderer a reader chooses. The application places the renderers — a table, a second table with fewer columns, cards — and gives each an id, a name and its content; the switch offers them in the design system's select and draws the one chosen. The switch's own name comes from `messages`, over English, as a standalone part's does; the renderers are named by the application, as fields and options are. It is a work-in-progress spike: it is not exported from the package root, and its shape may change or it may be withdrawn.
+
+## Switching renderers over one root
+
+Every renderer the switch holds reads the same root, so they share one query, one set of rows and one selection. A machine selected in the table is still selected when the reader chooses the summary, and choosing a renderer asks the source for nothing.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+} from "@canonical/dataviews-core";
+import { DataViews, type DataTableColumn } from "@canonical/dataviews-react";
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
+// A work-in-progress spike: not yet exported from the package root.
+import { RendererSwitch } from "./RendererSwitch.js";
+
+const detailColumns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+  { id: "cores", header: "Cores" },
+];
+
+const summaryColumns: readonly DataTableColumn[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+];
+
+export function Machines() {
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      collection: machineCollection,
+      source: createArraySource({ rows: machines, collection: machineCollection }),
+    }),
+  );
+  return (
+    <DataViews provider={provider}>
+      <RendererSwitch
+        label="Show machines as"
+        renderers={[
+          {
+            id: "table",
+            label: "Table",
+            content: <DataViews.DataTable columns={detailColumns} label="Machines" selectable />,
+          },
+          {
+            id: "summary",
+            label: "Summary",
+            content: <DataViews.DataTable columns={summaryColumns} label="Machines, summarised" selectable />,
+          },
+        ]}
+      />
+    </DataViews>
+  );
+}
+```
+
+<Canvas of={Stories.TableOrSummary} sourceState="none" />
+
+## The choice is the switch's own
+
+The switch holds the chosen renderer while it is mounted, and the first renderer until another is chosen. The choice does not reach the provider, the URL or a saved view: reloading the page, opening a link or opening a saved view shows the first renderer again. Whether a renderer choice should be remembered, and where, is still an open question, so nothing here decides it.
+
+## Without scripting
+
+Without scripting there is nothing to choose a renderer with, so the switch offers no select and draws every renderer in turn, each in a region named for it. Every renderer stays reachable, and each keeps its own baseline — the table's sort links and native checkboxes, the pagination bar's forms. Once scripts run, the select appears and only the chosen renderer is drawn.
+
+## What the spike found
+
+Drawing every renderer at the baseline has a cost once scripts arrive: the hydrating render mounts all of them, so each observes the provider and builds its own row scopes and layout, and the commit after it unmounts all but the chosen one. Nothing leaks — each renderer releases what it took, and the provider's observation is counted — but the work is done and thrown away, once, in proportion to the renderers, rows and fields. A reader sees it, too: a scripting browser paints every renderer until hydration commits. The stylesheet could hide all but the first behind `@media (scripting: enabled)`, and deliberately does not — a browser whose scripts never arrive would then be left with one renderer and no way to reach the others, which is the baseline this switch exists to keep. A renderer choice the switch could know before it draws, from the URL or a saved view, would avoid it; that persistence is the open question this spike does not settle.
+
+## Provisional coverage
+
+These notes are provisional, recorded for a spike and re-evaluated when the switch is designed.
+
+| Surface | Principal criteria | Behaviour today |
+|---|---|---|
+| RendererSwitch | 1.3.1, 2.1.1, 2.4.3, 2.4.6, 3.2.2, 4.1.2 | A region named by its label, or by the words' own name for it where the application names none; a labelled native select offering each renderer by name, whose change draws the chosen renderer and leaves focus on the select; every renderer drawn in turn, each in a named region, without scripting; no renderer choice written to the URL or a saved view |

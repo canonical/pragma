@@ -1,13 +1,9 @@
 /**
- * The views domain's constants: the renderer a saved query names, the
- * state a session starts from and the outcome of a command with no view
- * open.
+ * The views domain's constants: the state a session starts from and the
+ * outcome of a command with no view open.
  */
 
 import type { ViewOutcome, ViewsState } from "./types.js";
-
-/** The renderer a saved query names; the table is the only one so far. */
-export const RENDERER = "table";
 
 /** The state a session starts from, before anything observes it. */
 export const INITIAL_VIEWS_STATE: ViewsState = Object.freeze({

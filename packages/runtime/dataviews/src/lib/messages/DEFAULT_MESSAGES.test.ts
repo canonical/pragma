@@ -340,6 +340,10 @@ describe("DEFAULT_MESSAGES", () => {
     expect(m.viewFailed("save", "quota")).toBe("Not saved: quota.");
   });
 
+  it("words the renderer switch", () => {
+    expect(m.renderer).toBe("Show as");
+  });
+
   it("words the action bar, counting rows", () => {
     expect(m.selectionActions).toBe("Selection actions");
     expect(m.rowsSelected(3)).toBe("3 selected");

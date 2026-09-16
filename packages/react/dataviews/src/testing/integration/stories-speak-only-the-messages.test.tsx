@@ -38,6 +38,7 @@ import * as graphqlStories from "../../lib/_work_in_progress/DataViews/DataViews
 import * as restStories from "../../lib/_work_in_progress/DataViews/DataViews.rest.stories.js";
 import * as compositionStories from "../../lib/_work_in_progress/DataViews/DataViews.stories.js";
 import * as barStories from "../../lib/_work_in_progress/PaginationBar/PaginationBar.stories.js";
+import * as switchStories from "../../lib/_work_in_progress/RendererSwitch/RendererSwitch.stories.js";
 import {
   createGraphQLHandlers,
   createRestHandlers,
@@ -80,6 +81,7 @@ const parts = {
   Search: composeStories(searchStories),
   Settings: composeStories(settingsStories),
   SortPanel: composeStories(sortPanelStories),
+  RendererSwitch: composeStories(switchStories),
 };
 
 /**
@@ -92,6 +94,9 @@ const AUTHORED_ANYWHERE: readonly string[] = ["Search machines"];
 /** What one part's stories write themselves, beside the text every story may. */
 const AUTHORED: Readonly<Record<string, readonly string[]>> = {
   Actions: ["Delete", "machines selected"],
+  // The name a switch's story gives its own collection, which says the
+  // record's "Show" without being its word.
+  RendererSwitch: ["Show machines as"],
 };
 
 /** List every phrase a part's stories author, the shared ones included. */

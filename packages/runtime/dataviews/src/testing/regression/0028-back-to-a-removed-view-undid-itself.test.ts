@@ -36,7 +36,7 @@ describe("regression 0028 — Back to a removed view undid itself", () => {
     await store.create({
       id: "a",
       name: "Failed",
-      query: "as=table&status=failed",
+      query: "status=failed",
       presentation: {},
     });
     const { location, writes, move } = createRecordingLocation({

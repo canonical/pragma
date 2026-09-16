@@ -194,7 +194,7 @@ export const buildStoredView = (
 ): SavedView => ({
   id: "v1",
   name: "Failed",
-  query: "as=table&status=failed",
+  query: "status=failed",
   presentation: {},
   revision: 1,
   pinned: false,

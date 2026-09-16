@@ -5,7 +5,7 @@ import describeNameIssue from "./describeNameIssue.js";
 import type { SavedView, ViewsState } from "./types.js";
 
 const buildView = (id: string, name: string): SavedView =>
-  buildStoredView({ id, name, query: "as=table" });
+  buildStoredView({ id, name, query: "" });
 
 const listed: ViewsState = {
   ...INITIAL_VIEWS_STATE,

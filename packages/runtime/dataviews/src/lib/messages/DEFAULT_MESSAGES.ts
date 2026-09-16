@@ -215,4 +215,6 @@ export const DEFAULT_MESSAGES: DataViewsMessages = Object.freeze({
   rowsSelected: (count) => `${formatCount(count)} selected`,
   deselectRows: (count) =>
     `Deselect ${formatCount(count)} ${choosePlural(count, "row", "rows")}`,
+
+  renderer: "Show as",
 });

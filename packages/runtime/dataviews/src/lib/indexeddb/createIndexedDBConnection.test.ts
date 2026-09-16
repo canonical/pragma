@@ -16,7 +16,7 @@ describe("createIndexedDBConnection", () => {
     await store.create({
       id: "v1",
       name: "One",
-      query: "as=table",
+      query: "",
       presentation: {},
     });
     // The default arrangement locks the preferences alone; a view's asks

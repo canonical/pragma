@@ -25,5 +25,6 @@
 @import url("./_work_in_progress/DataViews/common/SavedViews/styles.css");
 @import url("./_work_in_progress/DataViews/common/Search/styles.css");
 @import url("./_work_in_progress/PaginationBar/styles.css");
+@import url("./_work_in_progress/RendererSwitch/styles.css");
 @import url("./common/Announcer/styles.css");
 @import url("./virtualization/common/VirtualBody/styles.css");
