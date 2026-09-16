@@ -166,17 +166,32 @@ candidate pattern composes.
 
 ```bash
 pragma block list                  # patterns are blocks — the list covers them, with tiers
-pragma block lookup <Name-or-glob> # the closest existing patterns, in full (MCP: block_lookup); a glob repeats a multi-tier name once per IRI and every repeat is the SAME block — the fragment query below lists the tiers
+pragma block lookup <Name-or-glob> # the closest existing patterns, in full (MCP: block_lookup)
 pragma block sample                # real entry shapes before writing queries
 pragma modifier list               # the modifier families blocks draw from
 pragma tier list                   # the tiers a block can live in
 ```
+
+**A shared name fans the lookup out across tiers, and the repeats are not repeats.** A
+display name several tiers carry — or a glob matching them — answers with one full
+writeup per tier, each under its own `## <Name>` heading with its own `- Tier:` line,
+and those are DIFFERENT blocks, separately authored. Read every heading: for this step
+the answer IS the prior art, so an apps-tier block that already arranges the same parts
+is exactly what must not be skipped as noise. Pass a `ds:` IRI
+(`pragma block lookup ds:apps.pattern.action_bar`) to address one block alone; the
+bare dotted name from a `block list` row is not a key, so keep its `ds:` prefix.
 
 Search by name fragment when the naming is uncertain:
 
 ```bash
 pragma graph query "SELECT ?b ?name WHERE { ?b ds:name ?name . FILTER(CONTAINS(LCASE(?name), 'nav')) }"
 ```
+
+Those rows are matched on `ds:name` across ANY entity, so a modifier value or a
+documentation tag can come back among them and neither is prior art — read each row's
+IRI, or bind the type (`?b a ?type` over
+`VALUES ?type { ds:Component ds:Pattern ds:Layout ds:Subcomponent ds:Group }`) when the
+name is noisy. A non-empty table can still mean no block carries the name.
 
 Then look up EACH component the candidate arrangement composes
 (`pragma block lookup <Name>` per component) — a pattern spec over parts the system does
@@ -258,15 +273,39 @@ currently-human step: a person pastes the spec content into Coda.
 Where the pattern has a stable structural skeleton, write its anatomy via the
 `anatomy-author` skill (`pragma skill lookup anatomy-author`). A pattern whose whole
 point is a varying arrangement may carry only the invariant frame; say which parts are
-anatomy and which are composition rule. The produced DSL lands in the step-6 spec file
-under `specs/` — in a `.md` spec as its anatomy section, in a `.ttl` spec as the
-block's `ds:anatomyDsl` string literal — never under `data/`; entry into Coda stays
-the human step.
+anatomy and which are composition rule.
 
-### 8. Pair with tokens — placeholder
+**Where the produced DSL lands.** An anatomy is a file of its own, not a section of
+this spec: it goes to `anatomies/authored/<tier>/<uri>.yaml` in canonical/design-system,
+with the file name spelling the dotted uri. There it is checked offline with
+`bun src/cli.ts anatomies validate --authored`, reviewed as a file in a pull request,
+and written to the block's `anatomy_dsl` cell by `anatomies write`; after that write the
+document is the source of record. Never write into design-system `data/`, which the
+pull sync regenerates. `anatomy-author`'s "Where the anatomy lands" section is the
+authority on that path.
 
-**Left blank for now** — token pairing content lands with the token work. Do not invent
-token guidance.
+### 8. Pair with tokens
+
+Tokens here means token symbols — `color.text`, `dimension.200` — never CSS variables.
+A variable such as `--color-text` is the web platform's name for a symbol, one name per
+platform, and it is the implementer's concern: the anatomy names the symbol, and
+`implement-component` reads `pragma variable lookup` to find what to write in CSS. A spec
+that named variables would be tied to one platform and would miss every symbol the web
+has not emitted yet.
+
+The spec does not bind tokens — that is the anatomy's job, one style key at a time.
+What this step owes is the check that the symbols the pattern's frame will need actually
+exist, so a specification does not promise a spacing role or a colour the token graph
+has never declared:
+
+```bash
+pragma token list --search spacing   # which symbols exist around a word
+pragma token lookup spacing.gap.group.block   # one symbol in full: type, description, definitions
+```
+
+A name that comes back `ENTITY_NOT_FOUND` is a finding for the spec, not something to
+work around in the anatomy: either the pattern reads an existing symbol, or a new token
+is a decision to raise with the token owners. (MCP: `token_list`, `token_lookup`.)
 
 ## Response format
 

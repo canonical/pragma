@@ -184,14 +184,30 @@ pragma block list            # what exists, with tiers
 pragma block lookup <Name>   # anatomy, modifiers, properties (MCP: block_lookup)
 ```
 
-A bare name can match blocks in several tiers, and `block lookup` silently picks
-one — it resolves `ds:name` globally and cannot be steered to a tier.
-Confirm the tier the lookup picked from its own `- Tier:` line; the name query below lists every tier that carries the name.
+A bare name resolves `ds:name` globally, so where several tiers carry the name the
+lookup answers with EVERY one of them: the full writeups concatenated, each under its
+own `## <Name>` heading with its own `- Tier:` line. They are DIFFERENT blocks —
+separately authored, with different properties and different anatomies — not repeats of
+one. So read every `- Tier:` line and pick the block whose tier the app actually
+depends on; stopping at the first heading is how a swap gets built against another
+tier's component. To address one block directly, pass its `ds:` IRI, which the lookup
+accepts: `pragma block lookup ds:global.component.badge`. The bare dotted name from a
+`block list` row is not a key — keep the `ds:` prefix or use the display name.
+
 The name query
 `pragma graph query "SELECT ?b WHERE { ?b ds:name ?n . FILTER(LCASE(?n) = LCASE('<Name>')) }"`
-prints every tier's IRI for `pragma graph inspect <IRI>`. If the lookup picked the wrong
-tier's block, read the one you want with `pragma graph inspect <IRI from that row>`
-instead.
+prints every tier's IRI for `pragma graph inspect <IRI>` when the list is what you want
+rather than the writeups.
+
+**Read the lookup's `### Anatomy (DSL)` section for the parts, not for the notation.**
+It tells you which parts a block has and which are optional, which is what a swap
+needs. Its style values are another matter: the anatomies are being rewritten by hand
+and written back to the document, so until a block's rewrite has landed and the pack
+has been rebuilt that section still carries the retired notation — slash paths like
+`color/text/muted`, `stack` and `flow` as display types, and `sth` placeholders. None
+of those is a token name to paste into an app stylesheet. `pragma variable lookup
+<name>` is where an app finds a variable it may write, and `anatomy-author` carries the
+notation in full.
 
 **A block being in the graph does not mean the package exports it.** The graph
 records what the design system has DOCUMENTED; the package ships what has been

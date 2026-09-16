@@ -32,6 +32,12 @@ export const BLOCK_PREFIXES: Readonly<Record<string, string>> = {
   owl: "http://www.w3.org/2002/07/owl#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",
+  // The token-binding record spans three vocabularies exactly as the live
+  // graph does: the design system owns the record and its edges, the token
+  // ontology the symbol it consumes, and the anatomy DSL the style key and
+  // state it applies at.
+  anatomy: "https://anatomy.canonical.com/",
+  dt: "https://dt.canonical.com/",
 };
 
 /**
@@ -52,6 +58,8 @@ export const BLOCK_TTL = `
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix anatomy: <https://anatomy.canonical.com/> .
+@prefix dt: <https://dt.canonical.com/> .
 
 # ---- Ontology (TBox) ----
 ds:UIBlock a owl:Class .
@@ -87,6 +95,29 @@ ds:optional a owl:DatatypeProperty ; rdfs:domain ds:BlockProperty ; rdfs:range x
 # Domain is ds:Component (not ds:UIBlock) — reached via subtype scoping.
 ds:hasSubcomponent a owl:ObjectProperty ; rdfs:domain ds:Component ; rdfs:range ds:Subcomponent .
 
+# The token-binding record, modelled with the live graph's split ownership —
+# which is what makes the block lookup's \`tokens\` expand a SPARQL-lane one.
+#
+# The five ds: edges carry a domain and a range, so ke-graphql derives a field
+# for each and a document could read them. \`anatomy:styleKey\` and
+# \`anatomy:styleState\` carry NO rdfs:domain, because they belong to the anatomy
+# vocabulary and apply to every styled thing rather than to this record — so no
+# field is derived for either, and a generated document drops them in SILENCE.
+# They are two of the six columns that IDENTIFY a binding, so dropping them
+# leaves rows a reader cannot tell apart. Preserved here deliberately: change
+# the fixture to declare a domain and the suite stops testing the condition the
+# lane exists for.
+ds:TokenBinding a owl:Class .
+ds:hasTokenBinding a owl:ObjectProperty ; rdfs:domain ds:UIBlock ; rdfs:range ds:TokenBinding .
+ds:consumesSymbol a owl:ObjectProperty, owl:FunctionalProperty ;
+  rdfs:domain ds:TokenBinding ; rdfs:range dt:TokenSymbol .
+ds:viaBlock a owl:ObjectProperty ; rdfs:domain ds:TokenBinding ; rdfs:range ds:UIBlock .
+ds:rank a owl:DatatypeProperty ; rdfs:domain ds:TokenBinding ; rdfs:range xsd:integer .
+ds:node a owl:DatatypeProperty ; rdfs:domain ds:TokenBinding ; rdfs:range xsd:string .
+dt:TokenSymbol a owl:Class .
+anatomy:styleKey a owl:DatatypeProperty ; rdfs:range xsd:string .
+anatomy:styleState a owl:DatatypeProperty ; rdfs:range xsd:string .
+
 # ---- Individuals (ABox) ----
 ds:global a ds:Tier ; ds:name "global" .
 
@@ -101,7 +132,9 @@ ds:button a ds:Component ;
   ds:figmaLink "https://figma.com/design/example/Button" ;
   ds:hasModifierFamily ds:family.importance, ds:family.density ;
   ds:hasProperty ds:button.prop.disabled ;
-  ds:hasSubcomponent ds:button.icon .
+  ds:hasSubcomponent ds:button.icon ;
+  ds:hasTokenBinding ds:binding.button.bg1, ds:binding.button.bg2,
+    ds:binding.button.text, ds:binding.button.icon .
 
 ds:modal a ds:Component ;
   ds:name "Modal" ;
@@ -111,9 +144,48 @@ ds:modal a ds:Component ;
   ds:guidelines "Always provide an explicit close affordance." ;
   ds:anatomyDsl "root: dialog; children: header, body, footer" ;
   ds:hasModifierFamily ds:family.size ;
-  ds:hasProperty ds:modal.prop.open .
+  ds:hasProperty ds:modal.prop.open ;
+  ds:hasTokenBinding ds:binding.modal.button .
 
 ds:button.icon a ds:Subcomponent ; ds:name "Button Icon" .
+
+# The symbols the bindings consume, addressed by the dotted name the token
+# noun publishes — which is what the expand's \`ds:consumesSymbol/rdfs:label\`
+# path reads, so a row here is an address \`token lookup\` takes.
+dt:color.background a dt:TokenSymbol ; rdfs:label "color.background" .
+dt:color.background.hover a dt:TokenSymbol ; rdfs:label "color.background.hover" .
+dt:color.text a dt:TokenSymbol ; rdfs:label "color.text" .
+dt:color.icon a dt:TokenSymbol ; rdfs:label "color.icon" .
+
+# Button's own tree. Two records share a node and a key and differ ONLY in
+# state and rank — the pair that proves the two columns the GraphQL lane cannot
+# see are the ones that tell the rows apart. The declaration order here is
+# deliberately NOT the reading order (node, then key, then rank), so the
+# expand's own ORDER BY is what puts them right.
+ds:binding.button.bg2 a ds:TokenBinding ;
+  ds:consumesSymbol dt:color.background.hover ;
+  anatomy:styleKey "appearance.background" ; anatomy:styleState "hover" ;
+  ds:rank 2 ; ds:viaBlock ds:button ; ds:node "$root" .
+ds:binding.button.bg1 a ds:TokenBinding ;
+  ds:consumesSymbol dt:color.background ;
+  anatomy:styleKey "appearance.background" ; anatomy:styleState "default" ;
+  ds:rank 1 ; ds:viaBlock ds:button ; ds:node "$root" .
+ds:binding.button.text a ds:TokenBinding ;
+  ds:consumesSymbol dt:color.text ;
+  anatomy:styleKey "typography.color" ; anatomy:styleState "default" ;
+  ds:rank 1 ; ds:viaBlock ds:button ; ds:node "$root" .
+# Reached through the subcomponent Button's anatomy embeds, so its via DIFFERS
+# from the block and must print.
+ds:binding.button.icon a ds:TokenBinding ;
+  ds:consumesSymbol dt:color.icon ;
+  anatomy:styleKey "appearance.background" ; anatomy:styleState "default" ;
+  ds:rank 1 ; ds:viaBlock ds:button.icon ; ds:node "$root/icon" .
+# Modal consumes nothing of its own: its one record is Button's, reached
+# through the Button its anatomy embeds.
+ds:binding.modal.button a ds:TokenBinding ;
+  ds:consumesSymbol dt:color.background ;
+  anatomy:styleKey "appearance.background" ; anatomy:styleState "default" ;
+  ds:rank 1 ; ds:viaBlock ds:button ; ds:node "$root/footer" .
 
 ds:button.prop.disabled a ds:BlockProperty ;
   ds:name "disabled" ; ds:propertyType "boolean" ; ds:optional true .

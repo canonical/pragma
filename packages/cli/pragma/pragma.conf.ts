@@ -357,37 +357,69 @@ const designSystemStories: readonly PackDefinition[] = [
             { name: "uri", property: "ds:name", graphqlField: "uri" },
           ],
         },
-        // A `tokens` expand belongs here — which symbols this block consumes,
-        // at which style key and rank, the mirror of `token consumers` — and it
-        // is DELIBERATELY ABSENT rather than forgotten. There is no path from a
-        // block to a consumed symbol that the shipped ontology defines, by
-        // either candidate route, and `block.shipped.exec.test.ts` holds every
-        // term this story names to being DEFINED for exactly the reason a
-        // silently unrenderable expand is a bug rather than a gap.
+        // Which symbols this block consumes, at which style key and rank — the
+        // mirror of `token consumers`, read from the block's end. It was
+        // DELIBERATELY ABSENT while none of the terms existed: the record the
+        // whole tuple hangs off is the design system's to mint, and until it
+        // did, `ds:hasTokenBinding`, `ds:consumesSymbol`, `ds:rank`,
+        // `ds:viaBlock` and `ds:node` were not declared properties at all. All
+        // five are now, with domains and ranges, and `ds:TokenBinding` is a
+        // class — so the declaration lands as the note then predicted, all six
+        // identity columns of it.
         //
-        // Measured against the shipped pack:
-        //
-        //   ds:hasTokenBinding, ds:consumesSymbol, ds:rank, ds:viaBlock,
-        //   ds:node — none is declared a property. The record they hang off is
-        //   the design system's to mint (the anatomy vocabulary's own note
-        //   calls it "design-system's ds:TokenBinding record"), and it has not
-        //   landed.
-        //
-        //   The anatomy route is complete in itself and unreachable from here:
-        //   `anatomy:Specification → rootNode → Node → hasStyle → Style →
-        //   consumes` is all defined, but NO property anywhere ranges over
-        //   `anatomy:Specification`, so nothing joins a block to its anatomy
-        //   graph — a block carries its anatomy as the `ds:anatomyDsl` STRING
-        //   read above, not as nodes. Of the anatomy classes only
-        //   `anatomy:StyleKey` has instances (111, the registry).
-        //
-        // When either edge is defined, the declaration is one entry: relation
-        // `ds:hasTokenBinding`, selecting `ds:consumesSymbol`,
-        // `anatomy:styleKey`, `anatomy:styleState`, `ds:rank`, `ds:viaBlock`
-        // and `ds:node` — all seven, because a binding is identified by the
-        // whole tuple. `token consumers` already answers the same question from
-        // the symbol's end and needs no code change when the records arrive;
-        // this expand needs the terms to exist first.
+        // SPARQL lane, and NOT this lookup's own GraphQL one, which is the only
+        // part of that prediction that had to change. Two of the six columns
+        // are unreachable through a generated document: `anatomy:styleKey` and
+        // `anatomy:styleState` carry no `rdfs:domain` — they are the anatomy
+        // vocabulary's, shared by every styled thing — so ke-graphql generates
+        // no field for them on `TokenBinding`, and a derived name the schema
+        // does not carry drops out of the document in silence. Measured on the
+        // shipped pack: Button rendered 24 rows with no key and no state, two
+        // of which (`spacing.internal.inline.start` and `…end`) were then
+        // byte-identical. A table whose rows a reader cannot tell apart is the
+        // defect this story refuses elsewhere, so the expand takes the lane
+        // that can read every term instead. The modifier families above cannot
+        // follow it — their nested `values` is a second hop only a document can
+        // make — which is why the lane is per-expand.
+        {
+          name: "tokens",
+          heading: "Tokens",
+          kind: "table",
+          relation: "ds:hasTokenBinding",
+          source: "sparql",
+          level: "detailed",
+          // Ordered by the READING order of the thing described: a node's
+          // styles, one key at a time, each key's fallback chain in the order
+          // the implementation walks it. The store's own scan order is
+          // undefined and put a node's two spacing keys either side of an
+          // unrelated one.
+          orderBy: ["node", "key", "rank"],
+          // The same sentence `Anatomy (DSL)` carries, because it is the same
+          // notation read from the other side: the anatomy's bracketed list is
+          // the chain, and `rank` is the position in it. A reader who has the
+          // rank column but not that sentence has no way to know that rank 2 is
+          // reached only when rank 1 does not resolve.
+          note: "A list value in the anatomy is the fallback chain the implementation reads, first wins; rank is the position in that chain.",
+          select: [
+            // The dotted name, not the symbol's IRI: it is the address
+            // `token lookup` and `token consumers --symbol` both take, so a row
+            // here is a query a reader can run.
+            { name: "symbol", property: "ds:consumesSymbol/rdfs:label" },
+            { name: "key", property: "anatomy:styleKey" },
+            { name: "state", property: "anatomy:styleState" },
+            { name: "rank", property: "ds:rank" },
+            // Blank on the block's OWN tree. `ds:viaBlock` is present on every
+            // record and its own definition says it equals the block in the
+            // own-tree case, so printing it raw put "Button" in all 24 of
+            // Button's rows — a cell that is only ever news when it differs.
+            {
+              name: "via",
+              property: "ds:viaBlock/ds:name",
+              blankWhenSelf: true,
+            },
+            { name: "node", property: "ds:node" },
+          ],
+        },
       ],
       disclosure: {
         levels: ["summary", "standard", "detailed"],
@@ -648,7 +680,7 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List which blocks consume which token symbol, at which style key, state and rank.",
         toolDescription:
-          'List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.',
+          'List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.',
         // Seven identity columns, and not one of them is decoration: a binding
         // is identified by the whole tuple, so dropping `rank` or `node` would
         // publish rows a caller cannot tell apart — which is worse than a wide
@@ -659,8 +691,23 @@ const designSystemStories: readonly PackDefinition[] = [
         // onward; today the shipped ontology defines none of them, and the `ds:`
         // prefix IS bound, so this answers a calm empty list with the recovery
         // below rather than failing. It starts answering with no code change.
+        //
+        // `?block` is the CONSUMING block and `?via` the block whose anatomy
+        // the binding was authored in, and the two are separate columns because
+        // they are separate facts. They were one: `?block` used to COALESCE the
+        // via name over the consuming block's, so a record Accordion carries
+        // because its anatomy embeds `Accordion.Item` printed as
+        // `Accordion.Item` — byte-identical to Accordion.Item's OWN record.
+        // `--symbol color.text` answered six rows reading `Button`, one per
+        // block that embeds a Button, and no reader could tell which component
+        // would change if the symbol did. Which component consumes the symbol
+        // is the fact this verb exists for, so it is the column the row leads
+        // with; the via is BLANK on a record sitting on the block's own tree —
+        // where the data asserts `ds:viaBlock` equal to the block itself —
+        // because "Button via Button" is not news and 24 of Button's rows
+        // would say it.
         query: [
-          "SELECT ?block ?symbol ?key ?state ?rank ?node ?uri",
+          "SELECT ?block ?via ?symbol ?key ?state ?rank ?node ?uri",
           '       (GROUP_CONCAT(DISTINCT ?variableName; SEPARATOR=" ") AS ?variable)',
           "WHERE {",
           "  ?blockUri ds:hasTokenBinding ?uri .",
@@ -683,20 +730,42 @@ const designSystemStories: readonly PackDefinition[] = [
           "    ?variableUri dt:ofSymbol ?symbolUri ;",
           "                 rdfs:label ?variableName .",
           "  }",
-          '  BIND(COALESCE(?viaName, ?blockName, REPLACE(STR(?blockUri), "^.*[/#]", "")) AS ?block)',
+          '  BIND(COALESCE(?blockName, REPLACE(STR(?blockUri), "^.*[/#]", "")) AS ?block)',
+          // `IF` and not `COALESCE`: the blank says something a MISSING value
+          // cannot, because the via is present on every record and equals the
+          // block on its own tree. SPARQL evaluates only the taken arm of an
+          // `IF`, so the local-name fallback is never asked to name an unbound
+          // via.
+          "  BIND(IF(BOUND(?viaUri) && ?viaUri != ?blockUri,",
+          '        COALESCE(?viaName, REPLACE(STR(?viaUri), "^.*[/#]", "")),',
+          '        "") AS ?via)',
           "}",
-          "GROUP BY ?block ?symbol ?key ?state ?rank ?node ?uri",
-          "ORDER BY ?block ?symbol ?key ?state ?rank ?node",
+          "GROUP BY ?block ?via ?symbol ?key ?state ?rank ?node ?uri",
+          // `?via` second, so a block's OWN bindings (blank via, which sorts
+          // first) come before the ones it inherits, and the inherited ones
+          // stay grouped by the block they come from.
+          "ORDER BY ?block ?via ?symbol ?key ?state ?rank ?node",
         ].join("\n"),
+        // No `uri` COLUMN, though the record's IRI is still SELECTed: it is the
+        // row's subject and what keeps two bindings differing only in state
+        // apart, so `--format json` carries it exactly as before. What it is
+        // not is a cell worth a reader's eye. A binding record is a BLANK NODE,
+        // so it is not addressable — `graph inspect _:dda768d3…` answers
+        // INVALID_INPUT — and a blank node's label is re-minted on every store
+        // load, so the same row printed a different id on every run. And the
+        // `llm` renderer hoists a `uri` column to the HEAD of the line, ahead
+        // of every other cell, which is the slot the consuming block belongs
+        // in; a story cannot reorder that, so the column goes rather than the
+        // block staying second to an unusable id.
         columns: [
           { field: "block", label: "Block" },
+          { field: "via", label: "Via" },
           { field: "symbol", label: "Symbol" },
           { field: "variable", label: "Variables" },
           { field: "key", label: "Style key" },
           { field: "state", label: "State" },
           { field: "rank", label: "Rank" },
           { field: "node", label: "Node" },
-          { field: "uri", label: "IRI" },
         ],
         filters: [
           {
@@ -799,8 +868,8 @@ const designSystemStories: readonly PackDefinition[] = [
           },
         ],
         search: {
-          variables: ["block", "symbol", "key", "state", "node"],
-          description: "Search block, symbol, key, state and node.",
+          variables: ["block", "via", "symbol", "key", "state", "node"],
+          description: "Search block, via, symbol, key, state and node.",
         },
         // Deliberately `sources update`: unlike `standard list`, this story's
         // data does NOT ride the embedded snapshot — the binding records are

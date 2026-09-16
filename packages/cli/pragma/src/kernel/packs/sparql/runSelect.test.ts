@@ -172,3 +172,66 @@ describe("runSelect — an unbound prefix is diagnosed by PROVENANCE", () => {
     }
   });
 });
+
+describe("runSelect — one SECTION degrades where the answer itself raises", () => {
+  const unbound = (): Error => new Error("Prefix not found: anatomy");
+
+  it("answers no rows for a section whose vocabulary the store does not bind", async () => {
+    // A lookup's section can name a vocabulary from a different pack than the
+    // entity's: a block is `ds:`, and the style key and state of the tokens it
+    // consumes are the anatomy DSL's. Taking the whole entity down over one
+    // absent section would fail `block lookup` outright on a graph that can
+    // answer every other section — so the section renders empty, which is what
+    // the lookup's GraphQL lane already does with the same condition.
+    //
+    // It cannot hide an unbuilt store: a section is only read after the base
+    // resolve has already answered from it.
+    const rows = await runSelect(
+      throwingRuntime(unbound()),
+      "SELECT ?key WHERE { ?child anatomy:styleKey ?key }",
+      distributionSource("pragma.conf.ts"),
+      { degradeOnUnboundPrefix: true },
+    );
+    expect(rows).toEqual([]);
+  });
+
+  it("degrades for a package and config story too, by the same rule", async () => {
+    // The provenance split above is about WHICH error an unbound prefix is. A
+    // section that degrades raises none, so there is nothing left to diagnose
+    // — and a third party's section is no more entitled to take an entity down
+    // than the distribution's.
+    for (const source of [PACKAGE, CONFIG]) {
+      expect(
+        await runSelect(
+          throwingRuntime(unbound()),
+          "SELECT ?x WHERE { ?x a acme:Thing }",
+          source,
+          { degradeOnUnboundPrefix: true },
+        ),
+      ).toEqual([]);
+    }
+  });
+
+  it("still passes a non-prefix failure through, and still refuses a non-SELECT", async () => {
+    // Narrow by construction: the ONE condition it swallows is the one that
+    // says "this pack's vocabulary is narrower than the story's". Everything
+    // else is a bug and still raises.
+    const boom = new Error("some other engine failure");
+    await expect(
+      runSelect(throwingRuntime(boom), "SELECT ?x WHERE {}", PACKAGE, {
+        degradeOnUnboundPrefix: true,
+      }),
+    ).rejects.toBe(boom);
+
+    const askRuntime = {
+      query: {
+        sparql: async () => ({ type: "ask", boolean: true }),
+      } as unknown as PragmaRuntime["query"],
+    };
+    await expect(
+      runSelect(askRuntime, "ASK { ?x ?y ?z }", PACKAGE, {
+        degradeOnUnboundPrefix: true,
+      }),
+    ).rejects.toMatchObject({ code: "CONFIG_ERROR" });
+  });
+});

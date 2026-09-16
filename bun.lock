@@ -366,7 +366,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.5.13",
-        "@canonical/anatomy-dsl": "^0.5.0",
+        "@canonical/anatomy-dsl": "^0.6.0",
         "@canonical/biome-config": "^0.37.0",
         "@canonical/summon": "^0.37.0",
         "@canonical/token-ontology": "^0.10.1",
@@ -1925,7 +1925,7 @@
 
     "@bundled-es-modules/memfs": ["@bundled-es-modules/memfs@4.17.0", "", { "dependencies": { "assert": "^2.1.0", "buffer": "^6.0.3", "events": "^3.3.0", "memfs": "^4.17.0", "path": "^0.12.7", "stream": "^0.0.3", "util": "^0.12.5" } }, "sha512-ykdrkEmQr9BV804yd37ikXfNnvxrwYfY9Z2/EtMHFEFadEjsQXJ1zL9bVZrKNLDtm91UdUOEHso6Aweg93K6xQ=="],
 
-    "@canonical/anatomy-dsl": ["@canonical/anatomy-dsl@0.5.0", "", { "dependencies": { "yaml": "^2.7.1" } }, "sha512-KTQ56sbj+l90DTWQtPO+KWkMYbPXFpwIVT/KAqHbxSAZnYiS8YUQGKj8rj7XE9vn6g/YC+Y0QQD6QorqpC2nCg=="],
+    "@canonical/anatomy-dsl": ["@canonical/anatomy-dsl@0.6.0", "", { "dependencies": { "yaml": "^2.7.1" } }, "sha512-y2LmtdbGEAlDrqDVrn0E0L1IwovC+pKD+1xEQtT9YqUkKhF8WSArR6LkGULNzfuy37IjubBU7khKdTGVAEUK+w=="],
 
     "@canonical/biome-config": ["@canonical/biome-config@workspace:configs/biome"],
 

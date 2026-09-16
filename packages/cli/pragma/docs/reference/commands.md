@@ -459,7 +459,7 @@ pragma graph connect <a> <b> [options]
 
 ```bash
 pragma graph connect ds:global.component.button dt:color.text  # a block and a token symbol
-pragma graph connect ds:global.component.button ds:apps.pattern.data_table --format json  # an honest unlinked answer, with the policy it was found under
+pragma graph connect ds:global.component.button ds:apps.pattern.datatable --format json  # an honest unlinked answer, with the policy it was found under
 ```
 
 ### pragma graph inspect
@@ -1174,7 +1174,7 @@ pragma tier lookup <name>
 
 List which blocks consume which token symbol, at which style key, state and rank.
 
-List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
+List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
 
 ```
 pragma token consumers [options]
@@ -1188,7 +1188,7 @@ pragma token consumers [options]
 | `--variable` | `<string>` | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
 | `--key` | `<string>` | Filter to one style key. |
 | `--state` | `<string>` | Filter to one interaction state. |
-| `--search` | `<string>` | Search block, symbol, key, state and node. |
+| `--search` | `<string>` | Search block, via, symbol, key, state and node. |
 | `--limit` | `<number>` | Maximum rows to return, 1 to 40000 (default 300). |
 | `--after` | `<string>` | Continue from a previous page: the cursor that page reported. |
 

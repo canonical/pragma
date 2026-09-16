@@ -193,18 +193,37 @@ ds:global.modifier_family.criticality a ds:ModifierFamily ;
 <${DT}s4/web/--button-color-background> a dt:Variable ;
     rdfs:label "button-color-background" .
 
+# Every record carries ds:viaBlock, and on a block's OWN tree it names the
+# block itself — the shipped shape, which the term's own definition states
+# ("Equal to the subject in the own-tree case"). Button's two records are
+# own-tree, so their via must print BLANK; Modal's is the SAME binding reached
+# through the Button its anatomy embeds, so its via must print "Button" and its
+# block must print "Modal". Those two rows are what tell a consuming-block
+# column from a via-block one: COALESCE'ing the via over the block printed both
+# as "Button", byte-identical and indistinguishable.
 ds:button a ds:Component ; ds:name "Button" ;
     ds:hasTokenBinding <${DT}binding/button-bg> , <${DT}binding/button-bg-hover> .
 <${DT}binding/button-bg>
     ds:consumesSymbol dt:color.text ;
     anatomy:styleKey "appearance.background" ;
     ds:rank "1" ;
+    ds:viaBlock ds:button ;
     ds:node ".root" .
 <${DT}binding/button-bg-hover>
     ds:consumesSymbol dt:color.text ;
     anatomy:styleKey "appearance.background" ;
     anatomy:styleState "hover" ;
     ds:rank "2" ;
+    ds:viaBlock ds:button ;
+    ds:node ".root" .
+
+ds:modal a ds:Component ; ds:name "Modal" ;
+    ds:hasTokenBinding <${DT}binding/modal-button-bg> .
+<${DT}binding/modal-button-bg>
+    ds:consumesSymbol dt:color.text ;
+    anatomy:styleKey "appearance.background" ;
+    ds:rank "1" ;
+    ds:viaBlock ds:button ;
     ds:node ".root" .
 
 # — The coordinates ————————————————————————————————————————————————————————
@@ -472,24 +491,68 @@ describe("token values — chain AND derivation on the same surface (PROTECTED)"
 
 describe("token consumers — the binding tuple, either spelling (PROTECTED)", () => {
   it("publishes one row per binding, with every identity column", async () => {
-    // The fixture records two bindings that differ ONLY in state and rank, and
-    // both are published: they are two different facts, so a narrower row
-    // would publish rows a caller cannot tell apart and a deduplicating
-    // consumer would silently lose one.
+    // The fixture records two bindings on Button that differ ONLY in state and
+    // rank, and both are published: they are two different facts, so a
+    // narrower row would publish rows a caller cannot tell apart and a
+    // deduplicating consumer would silently lose one.
     const answered = await rows("consumers");
-    expect(answered).toHaveLength(2);
-    expect(answered.map((row) => [row.key, row.state ?? "", row.rank])).toEqual(
-      [
-        ["appearance.background", "", "1"],
-        ["appearance.background", "hover", "2"],
-      ],
-    );
+    expect(answered).toHaveLength(3);
+    expect(
+      answered.map((row) => [
+        row.block,
+        row.via ?? "",
+        row.key,
+        row.state ?? "",
+        row.rank,
+      ]),
+    ).toEqual([
+      ["Button", "", "appearance.background", "", "1"],
+      ["Button", "", "appearance.background", "hover", "2"],
+      ["Modal", "Button", "appearance.background", "", "1"],
+    ]);
     for (const row of answered) {
-      expect(row.block).toBe("Button");
       expect(row.symbol).toBe("color.text");
       expect(row.node).toBe(".root");
+      // Still SELECTed — the row's subject, and what keeps two bindings
+      // differing only in state apart — though no longer a rendered column.
       expect(row.uri).toBeTruthy();
     }
+  });
+
+  it("names the CONSUMING block, and the via only when it differs", async () => {
+    // The fact the verb exists for. Modal's row is Button's binding reached
+    // through the Button its anatomy embeds: the block that CHANGES if the
+    // symbol does is Modal, and the tree the binding was authored in is
+    // Button's. Coalescing the two printed Modal's row as "Button" —
+    // byte-identical to Button's own, so `--symbol color.text` answered the
+    // same row twice and no reader could tell which component was meant.
+    const answered = await rows("consumers", { symbol: "color.text" });
+    expect(answered.map((row) => row.block)).toEqual([
+      "Button",
+      "Button",
+      "Modal",
+    ]);
+
+    // Blank on a record sitting on the block's OWN tree, where the fixture
+    // asserts `ds:viaBlock` equal to the block — the shipped shape. A blank
+    // and not the block's own name repeated, which is never news.
+    const own = answered.filter((row) => row.block === "Button");
+    expect(own).toHaveLength(2);
+    for (const row of own) expect(row.via ?? "").toBe("");
+
+    const inherited = answered.find((row) => row.block === "Modal");
+    expect(inherited?.via).toBe("Button");
+  });
+
+  it("searches the via as well as the consuming block", async () => {
+    // A reader who knows a symbol reaches everything embedding a Button holds
+    // the word "Button", not the name of each embedder — so the via is
+    // searchable beside the block. Modal's row carries "Button" ONLY in its
+    // via, so a search that reached it can only have read that column.
+    const found = await rows("consumers", { search: "Modal" });
+    expect(found.map((row) => [row.block, row.via])).toEqual([
+      ["Modal", "Button"],
+    ]);
   });
 
   it("carries EVERY spelling of the consumed symbol in one cell", async () => {
@@ -510,7 +573,7 @@ describe("token consumers — the binding tuple, either spelling (PROTECTED)", (
     const bySymbol = await rows("consumers", { symbol: "color.text" });
     const byVariable = await rows("consumers", { variable: "color-text" });
     expect(byVariable).toEqual(bySymbol);
-    expect(byVariable).toHaveLength(2);
+    expect(byVariable).toHaveLength(3);
   });
 
   it("both spellings of one symbol collapse to the same answer", async () => {
@@ -531,7 +594,7 @@ describe("token consumers — the binding tuple, either spelling (PROTECTED)", (
     // story follows.
     expect(
       await rows("consumers", { symbol: "color.text", variable: "color-text" }),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(
       await rows("consumers", {
         symbol: "color.border",
@@ -567,7 +630,7 @@ describe("token consumers — the binding tuple, either spelling (PROTECTED)", (
   it("--key and --state narrow to one tuple each", async () => {
     expect(
       await rows("consumers", { key: "appearance.background" }),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     const hover = await rows("consumers", { state: "hover" });
     expect(hover).toHaveLength(1);
     expect(hover[0]?.rank).toBe("2");
