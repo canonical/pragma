@@ -4,6 +4,7 @@ import type { PlatformEnv } from "./platformPaths.js";
 import {
   checkSignal,
   type DetectContext,
+  isProjectRelativeSignal,
   scoreConfidence,
   toSignalTier,
 } from "./signals.js";
@@ -486,6 +487,44 @@ describe("checkSignal — env", () => {
         {},
       ),
     ).toBe(false);
+  });
+});
+
+/**
+ * The other half of the prefix grammar. `resolveFsPath` turns a spelling into
+ * a path; this turns the same spelling into "is this about the checkout or
+ * about the machine", which is what earns a dual-scope row the global band.
+ */
+describe("isProjectRelativeSignal", () => {
+  it("calls an unprefixed directory/file path project-relative", () => {
+    expect(
+      isProjectRelativeSignal({ type: "directory", path: ".vscode" }),
+    ).toBe(true);
+    expect(
+      isProjectRelativeSignal({ type: "file", path: ".vscode/mcp.json" }),
+    ).toBe(true);
+  });
+
+  it("calls every prefixed path user-level — the three `resolveFsPath` knows", () => {
+    for (const path of [
+      "$XDG_CONFIG_HOME/Code/User",
+      "%APPDATA%/Code/User",
+      "~/.vscode/extensions",
+    ]) {
+      expect(isProjectRelativeSignal({ type: "directory", path })).toBe(false);
+    }
+  });
+
+  it("calls process, extension and env signals user-level", () => {
+    // A binary on PATH, an installed extension and an environment variable are
+    // all facts about the machine — none of them travels with a checkout.
+    expect(isProjectRelativeSignal({ type: "process", name: "code" })).toBe(
+      false,
+    );
+    expect(isProjectRelativeSignal({ type: "extension", id: "a.b" })).toBe(
+      false,
+    );
+    expect(isProjectRelativeSignal({ type: "env", key: "A" })).toBe(false);
   });
 });
 

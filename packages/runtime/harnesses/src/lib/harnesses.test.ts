@@ -535,6 +535,19 @@ describe("harnesses registry", () => {
       },
     );
 
+    it.each(FAMILY)("%s declares NO home config under WSL", (id) => {
+      // The editor a WSL user drives is the WINDOWS one: it reads
+      // `%APPDATA%\Code\User\mcp.json` on the Windows side, and a remote
+      // window reads the workspace `.vscode/mcp.json`. Nothing reads the
+      // Linux-side file, and writing it would report `registered` for a file
+      // no editor opens. (AV-287 is reaching the Windows-side file.)
+      expect(rowOf(id).homeConfigPath?.({ ...PLATFORM, isWsl: true })).toBe(
+        undefined,
+      );
+      // Off WSL the same row resolves, so the row is not simply dead.
+      expect(rowOf(id).homeConfigPath?.(PLATFORM)).toContain("/User/mcp.json");
+    });
+
     /**
      * The agreement that keeps detection and the write honest. Each row
      * declares three user-directory signals — one per platform prefix form —

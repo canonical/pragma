@@ -6,7 +6,7 @@
  * ranges to handle config format changes across versions.
  */
 
-import { vscodeUserDir } from "./editors.js";
+import { type VscodeProduct, vscodeUserDir } from "./editors.js";
 import {
   copilotMcpEntry,
   crushMcpEntry,
@@ -14,8 +14,29 @@ import {
   opencodeMcpEntry,
   opendesignMcpEntry,
 } from "./mcpEntries.js";
-import { userHome, xdgConfigHome } from "./platformPaths.js";
+import { type PlatformEnv, userHome, xdgConfigHome } from "./platformPaths.js";
 import type { HarnessDefinition } from "./types.js";
+
+/**
+ * One VS Code product's per-user `mcp.json` — and `undefined` under WSL, where
+ * this row has NO per-user location.
+ *
+ * Under WSL the editor the user drives is the WINDOWS one. It reads
+ * `%APPDATA%\Code\User\mcp.json` on the Windows side, and a WSL remote window
+ * reads the workspace `.vscode/mcp.json`; nothing reads
+ * `$XDG_CONFIG_HOME/Code/User/mcp.json` inside the Linux filesystem. WSL
+ * interop appends the Windows PATH, so `code` DOES resolve and the row IS
+ * detected — writing the Linux-side file would then report `registered` for a
+ * file no editor opens, and a wrong success reads as a correct one. Declaring
+ * no global location leaves the project file as this row's only band, which is
+ * where the entry has always landed on those machines. Reaching the
+ * Windows-side file from inside WSL is AV-287.
+ */
+const vscodeUserMcp = (
+  product: VscodeProduct,
+  p: PlatformEnv,
+): string | undefined =>
+  p.isWsl ? undefined : `${vscodeUserDir(product, p)}/mcp.json`;
 
 const harnesses: readonly HarnessDefinition[] = [
   {
@@ -243,7 +264,16 @@ const harnesses: readonly HarnessDefinition[] = [
     // only see "this repo carries a committed `.vscode/`" — a developer with
     // VS Code installed and `.vscode/` gitignored, the common case, was
     // invisible. The five that follow are the user-level and binary probes
-    // every sibling GUI-editor row already has.
+    // most sibling GUI-editor rows already have (the `cursor` row is the
+    // exception: its whole `detect` is the project-relative `.cursor`).
+    //
+    // Those five are also what EARNS this row its global band. A committed
+    // `.vscode/` says something about the repository and nothing about the
+    // machine, so on its own it must not create a per-user file for every
+    // contributor who clones: `listHarnessesForBand` admits a `both`-scoped
+    // row into the global band only when one of its own user-level signals
+    // matched. The project band is unaffected — a committed `.vscode/` is
+    // exactly the right reason to write `.vscode/mcp.json`.
     //
     // The three user-directory signals are ONE directory per platform, spelled
     // in the three prefix forms the signal grammar resolves (see
@@ -293,7 +323,7 @@ const harnesses: readonly HarnessDefinition[] = [
     // The per-user `mcp.json`, in the same directory the three signals above
     // probe — resolved through `vscodeUserDir` so the read, the write and the
     // detection can never name different files.
-    homeConfigPath: (p) => `${vscodeUserDir("Code", p)}/mcp.json`,
+    homeConfigPath: (p) => vscodeUserMcp("Code", p),
     configFormat: "json",
     mcpKey: "servers",
     skillsPath: (root) => `${root}/.agents/skills`,
@@ -330,7 +360,7 @@ const harnesses: readonly HarnessDefinition[] = [
       { type: "process", name: "code-insiders" },
     ],
     configPath: (root) => `${root}/.vscode/mcp.json`,
-    homeConfigPath: (p) => `${vscodeUserDir("Code - Insiders", p)}/mcp.json`,
+    homeConfigPath: (p) => vscodeUserMcp("Code - Insiders", p),
     configFormat: "json",
     mcpKey: "servers",
     skillsPath: (root) => `${root}/.agents/skills`,
@@ -359,7 +389,7 @@ const harnesses: readonly HarnessDefinition[] = [
       { type: "process", name: "codium" },
     ],
     configPath: (root) => `${root}/.vscode/mcp.json`,
-    homeConfigPath: (p) => `${vscodeUserDir("VSCodium", p)}/mcp.json`,
+    homeConfigPath: (p) => vscodeUserMcp("VSCodium", p),
     configFormat: "json",
     mcpKey: "servers",
     skillsPath: (root) => `${root}/.agents/skills`,
@@ -416,8 +446,9 @@ const harnesses: readonly HarnessDefinition[] = [
       // The global config dir, in `$XDG_CONFIG_HOME/` form for the usual
       // reason (see `resolveFsPath`): a user who relocates the config base
       // keeps nothing under `~/.config`. (`$CRUSH_GLOBAL_CONFIG` is honoured
-      // on the write path below; the signal grammar has no env-prefix form,
-      // and a user who sets it has `crush` on PATH for the process probe.)
+      // on the write path below; the grammar's only env-prefix form is
+      // `%APPDATA%/`, and there is none for `$CRUSH_GLOBAL_CONFIG` — a user
+      // who sets it has `crush` on PATH for the process probe.)
       { type: "directory", path: "$XDG_CONFIG_HOME/crush" },
       { type: "process", name: "crush" },
     ],

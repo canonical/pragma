@@ -65,8 +65,14 @@ export interface HarnessDefinition {
    * The per-user (home) config path. Required for `global`/`both` scopes —
    * `resolveConfigTarget` asserts its presence when a global-band target is
    * requested — and omitted for `project`-only harnesses.
+   *
+   * It may return `undefined` for a HOST where this harness keeps no per-user
+   * location, which is not the same as a row that declares none: the VS Code
+   * rows have one everywhere except under WSL, where the file the Linux side
+   * would write is read by nothing. `resolveConfigTarget` reports that as no
+   * target in the global band, so a `both` row falls back to its project file.
    */
-  readonly homeConfigPath?: (platform: PlatformEnv) => string;
+  readonly homeConfigPath?: (platform: PlatformEnv) => string | undefined;
   readonly configFormat: "json" | "jsonc" | "toml";
   readonly mcpKey: string;
   readonly skillsPath: (projectRoot: string) => string;
@@ -108,6 +114,18 @@ export interface DetectedHarness {
   readonly confidence: "high" | "medium" | "low";
   readonly configExists: boolean;
   readonly configPath: string;
+  /**
+   * WHICH of the harness's signals matched — the subset of `harness.detect`
+   * that came back true.
+   *
+   * The confidence tier is the strongest of these, and it is not enough on its
+   * own: "a directory in this repository matched" and "a directory in this
+   * user's home matched" both score `high`, and only the second is evidence
+   * about the MACHINE. The global band needs that distinction (see
+   * `listHarnessesForBand`), so detection records the matches rather than
+   * collapsing them to a tier.
+   */
+  readonly matched: readonly DetectionSignal[];
 }
 
 /**

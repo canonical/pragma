@@ -10,6 +10,7 @@ import findHarnessById from "./findHarnessById.js";
 import type { PlatformEnv } from "./platformPaths.js";
 import type {
   DetectedHarness,
+  DetectionSignal,
   HarnessDefinition,
   HarnessScope,
 } from "./types.js";
@@ -35,12 +36,20 @@ const harness = (overrides: Partial<HarnessDefinition>): HarnessDefinition => ({
   ...overrides,
 });
 
-/** Wrap a harness definition as a (high-confidence) detection. */
-const detected = (h: HarnessDefinition): DetectedHarness => ({
+/**
+ * Wrap a harness definition as a (high-confidence) detection. `matched`
+ * defaults to EVERY signal, which is the "this machine really has it" case;
+ * a case about the global band passes the subset it means.
+ */
+const detected = (
+  h: HarnessDefinition,
+  matched: readonly DetectionSignal[] = h.detect,
+): DetectedHarness => ({
   harness: h,
   confidence: "high",
   configExists: false,
   configPath: h.configPath("/project"),
+  matched,
 });
 
 /** Look up a registered harness, asserting it exists. */
@@ -101,6 +110,54 @@ describe("listHarnessesForBand", () => {
   it("keeps only global harnesses in the global band under scope=both", () => {
     const list = listHarnessesForBand([vscode, windsurf], "both", "global");
     expect(list.map((d) => d.harness.id)).toEqual(["windsurf"]);
+  });
+
+  /**
+   * The global band has to be EARNED. A committed `.vscode/` travels with the
+   * repository and says nothing about the machine, so on its own it must not
+   * create a per-user VS Code config for every contributor who clones.
+   */
+  it("drops a both harness the global band was not earned for", () => {
+    // Only the project-relative signal matched: `.vscode/` is in the checkout.
+    const projectOnly = detected(requireHarness("vscode"), [
+      { type: "directory", path: ".vscode" },
+    ]);
+    expect(
+      listHarnessesForBand([projectOnly], "global", "global"),
+    ).toHaveLength(0);
+    // The PROJECT band is unaffected — that is the right file for that fact.
+    expect(
+      listHarnessesForBand([projectOnly], "global", "project").map(
+        (d) => d.harness.id,
+      ),
+    ).toEqual(["vscode"]);
+  });
+
+  it("keeps a both harness one of whose USER-LEVEL signals matched", () => {
+    const installed = detected(requireHarness("vscode"), [
+      { type: "directory", path: ".vscode" },
+      { type: "process", name: "code" },
+    ]);
+    expect(
+      listHarnessesForBand([installed], "global", "global").map(
+        (d) => d.harness.id,
+      ),
+    ).toEqual(["vscode"]);
+  });
+
+  it("exempts a both harness that declares no user-level signal at all", () => {
+    // Cursor's whole `detect` is the project-relative `.cursor`, so it has
+    // nothing to earn the band WITH — the rule would silence its documented
+    // `~/.cursor/mcp.json` forever rather than gate it.
+    const cursor = detected(requireHarness("cursor"));
+    expect(cursor.harness.detect).toEqual([
+      { type: "directory", path: ".cursor" },
+    ]);
+    expect(
+      listHarnessesForBand([cursor], "global", "global").map(
+        (d) => d.harness.id,
+      ),
+    ).toEqual(["cursor"]);
   });
 });
 
@@ -237,6 +294,29 @@ describe("groupTargetsForScope", () => {
       "VSCodium",
     ]);
     expect(groups[0]?.writes).toHaveLength(1);
+  });
+
+  it("gives the VS Code family NO per-user file under WSL", () => {
+    // The Linux-side `mcp.json` is read by nothing there (see the row's own
+    // note, and AV-287), so the row contributes no global group at all — the
+    // project file is where the entry lands, as it always has.
+    const insiders = detected(requireHarness("vscode-insiders"));
+    const vscodium = detected(requireHarness("vscodium"));
+    const wsl: PlatformEnv = { ...PLATFORM, isWsl: true };
+    expect(
+      groupConfigTargets(
+        [vscode, insiders, vscodium],
+        "/project",
+        "global",
+        wsl,
+      ),
+    ).toEqual([]);
+    // A sibling row with a real per-user location still groups.
+    expect(
+      groupConfigTargets([windsurf], "/project", "global", wsl).map(
+        (g) => g.path,
+      ),
+    ).toEqual(["/home/tester/.codeium/windsurf/mcp_config.json"]);
   });
 
   it("gives each VS Code product its OWN per-user file under scope=global", () => {

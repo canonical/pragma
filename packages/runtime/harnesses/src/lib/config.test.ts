@@ -10,6 +10,7 @@ import {
   defaultBandOf,
   readMcpConfig,
   removeMcpConfig,
+  requireConfigTarget,
   resolveConfigTarget,
   writeMcpConfig,
   writeMcpConfigTargets,
@@ -734,14 +735,14 @@ describe("defaultBandOf", () => {
 
 describe("resolveConfigTarget", () => {
   it("resolves the project band to the harness project path", () => {
-    const target = resolveConfigTarget(claude, "/project", "project", PLATFORM);
+    const target = requireConfigTarget(claude, "/project", "project", PLATFORM);
     expect(target.path).toBe("/project/.mcp.json");
     expect(target.mcpKey).toBe("mcpServers");
     expect(target.scope).toBe("both");
   });
 
   it("resolves the global band to the harness home path", () => {
-    const target = resolveConfigTarget(claude, "/project", "global", PLATFORM);
+    const target = requireConfigTarget(claude, "/project", "global", PLATFORM);
     expect(target.path).toBe("/home/tester/.claude.json");
   });
 
@@ -754,6 +755,39 @@ describe("resolveConfigTarget", () => {
     expect(() =>
       resolveConfigTarget(cline, "/project", "global", PLATFORM),
     ).toThrow(/homeConfigPath/);
+  });
+
+  it("reports NO global target when the harness has none on this host", () => {
+    // Under WSL the VS Code rows declare no per-user location: the editor the
+    // user drives is the Windows one, and the Linux-side file is read by
+    // nothing. That is not the registry bug above — the row DOES declare a
+    // builder — so it is an absent target, not a throw.
+    const vscode = findHarnessById("vscode") as (typeof harnesses)[number];
+    expect(
+      resolveConfigTarget(vscode, "/project", "global", {
+        ...PLATFORM,
+        isWsl: true,
+      }),
+    ).toBeUndefined();
+    // And off WSL the same row resolves as usual.
+    expect(
+      resolveConfigTarget(vscode, "/project", "global", PLATFORM)?.path,
+    ).toBe("/home/tester/.config/Code/User/mcp.json");
+  });
+});
+
+describe("requireConfigTarget", () => {
+  it("throws for a band this host has no location in", () => {
+    // The read/write/remove wrappers name ONE harness and band, so an absent
+    // location is a caller error there rather than a row to drop — which is
+    // what `groupConfigTargets` does with the same answer.
+    const vscode = findHarnessById("vscode") as (typeof harnesses)[number];
+    expect(() =>
+      requireConfigTarget(vscode, "/project", "global", {
+        ...PLATFORM,
+        isWsl: true,
+      }),
+    ).toThrow(/no global-band config location/);
   });
 });
 
@@ -888,7 +922,7 @@ describe("writeMcpConfigTargets — shared-file multi-key write", () => {
   it("writes OpenCode's own entry shape end-to-end through the registry (S1-3)", () => {
     const opencode = findHarnessById("opencode") as (typeof harnesses)[number];
     expect(opencode.mcpEntry).toBe(opencodeMcpEntry);
-    const target = resolveConfigTarget(opencode, "/project", "project", {
+    const target = requireConfigTarget(opencode, "/project", "project", {
       platform: "linux",
       env: {},
       home: "/home/tester",

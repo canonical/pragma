@@ -79,11 +79,19 @@ const unparseableConfig = (configPath: string): Task<void> =>
 export const defaultBandOf = (harness: HarnessDefinition): ScopeBand =>
   harness.scope === "global" ? "global" : "project";
 
-/** Resolve a global-band harness's home config path, asserting it declares one. */
+/**
+ * Resolve a global-band harness's home config path, asserting it DECLARES one.
+ *
+ * A row that declares no `homeConfigPath` at all is a registry bug — the band
+ * was resolved for a harness that has no per-user location by design — so that
+ * throws. A declared builder returning `undefined` is a different answer: the
+ * row has a per-user location on other hosts and none on this one (the VS Code
+ * rows under WSL), which the caller reports as no target.
+ */
 const homeConfigPathOf = (
   harness: HarnessDefinition,
   platform: PlatformEnv,
-): string => {
+): string | undefined => {
   const build = harness.homeConfigPath;
   if (build === undefined) {
     throw new Error(
@@ -102,23 +110,54 @@ const homeConfigPathOf = (
  * @param projectRoot - The project root for the project band.
  * @param band - Which band to resolve.
  * @param platform - The captured host, for the home path.
- * @returns The resolved config target.
+ * @returns The resolved config target, or `undefined` when this harness has no
+ *   location in this band ON THIS HOST — see {@link homeConfigPathOf}.
  */
 export const resolveConfigTarget = (
   harness: HarnessDefinition,
   projectRoot: string,
   band: ScopeBand,
   platform: PlatformEnv,
-): ConfigTarget => ({
-  path:
+): ConfigTarget | undefined => {
+  const path =
     band === "global"
       ? homeConfigPathOf(harness, platform)
-      : harness.configPath(projectRoot),
-  configFormat: harness.configFormat,
-  mcpKey: harness.mcpKey,
-  scope: harness.scope,
-  serializeEntry: harness.mcpEntry ?? defaultMcpEntry,
-});
+      : harness.configPath(projectRoot);
+  if (path === undefined) return undefined;
+  return {
+    path,
+    configFormat: harness.configFormat,
+    mcpKey: harness.mcpKey,
+    scope: harness.scope,
+    serializeEntry: harness.mcpEntry ?? defaultMcpEntry,
+  };
+};
+
+/**
+ * {@link resolveConfigTarget} for the callers that act on ONE named harness
+ * and band: a read/write/remove was asked for a specific file, so "this host
+ * has no such file" is a caller error rather than a row to drop.
+ *
+ * @param harness - The harness definition.
+ * @param projectRoot - The project root for the project band.
+ * @param band - Which band to resolve.
+ * @param platform - The captured host, for the home path.
+ * @returns The resolved config target.
+ */
+export const requireConfigTarget = (
+  harness: HarnessDefinition,
+  projectRoot: string,
+  band: ScopeBand,
+  platform: PlatformEnv,
+): ConfigTarget => {
+  const target = resolveConfigTarget(harness, projectRoot, band, platform);
+  if (target === undefined) {
+    throw new Error(
+      `harness "${harness.id}" has no ${band}-band config location on this host`,
+    );
+  }
+  return target;
+};
 
 /**
  * Read existing MCP server entries from a resolved config target. Entries come
@@ -371,7 +410,7 @@ export const readMcpConfig = (
   band: ScopeBand = defaultBandOf(harness),
   platform: PlatformEnv = readPlatformEnv(),
 ): Task<Record<string, unknown>> =>
-  readMcpConfigFrom(resolveConfigTarget(harness, projectRoot, band, platform));
+  readMcpConfigFrom(requireConfigTarget(harness, projectRoot, band, platform));
 
 /**
  * Write or merge an MCP server entry into a harness config file.
@@ -394,7 +433,7 @@ export const writeMcpConfig = (
   platform: PlatformEnv = readPlatformEnv(),
 ): Task<void> =>
   writeMcpConfigTo(
-    resolveConfigTarget(harness, projectRoot, band, platform),
+    requireConfigTarget(harness, projectRoot, band, platform),
     serverName,
     config,
   );
@@ -418,6 +457,6 @@ export const removeMcpConfig = (
   platform: PlatformEnv = readPlatformEnv(),
 ): Task<void> =>
   removeMcpConfigFrom(
-    resolveConfigTarget(harness, projectRoot, band, platform),
+    requireConfigTarget(harness, projectRoot, band, platform),
     serverName,
   );

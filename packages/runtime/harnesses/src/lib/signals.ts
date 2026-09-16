@@ -98,6 +98,27 @@ const resolveFsPath = (path: string, ctx: DetectContext): string => {
 };
 
 /**
+ * Whether a signal can only ever be matched by something INSIDE the project —
+ * a `directory`/`file` path with none of the prefixes {@link resolveFsPath}
+ * resolves against the user's own directories.
+ *
+ * It is the same prefix list, read the other way round, and it lives beside it
+ * for that reason: a fourth prefix must teach both or the two disagree about
+ * what a path means. Every other signal type is user-level by nature — a
+ * binary on PATH, an installed extension, an environment variable are all
+ * facts about the machine, not about the checkout.
+ *
+ * @param signal - The signal to classify.
+ * @returns Whether it resolves against the project root.
+ * @note Pure — it reads the signal's own spelling and nothing else.
+ */
+export const isProjectRelativeSignal = (signal: DetectionSignal): boolean =>
+  (signal.type === "directory" || signal.type === "file") &&
+  !signal.path.startsWith(XDG_CONFIG_PREFIX) &&
+  !signal.path.startsWith(APPDATA_PREFIX) &&
+  !signal.path.startsWith("~/");
+
+/**
  * Check a `process` signal: whether `name` resolves on the platform `PATH` (on
  * win32, under any `PATHEXT` suffix — not just `.exe`) and, when a `verify` is
  * given, whether running it produces stdout matching `verify.match`.
