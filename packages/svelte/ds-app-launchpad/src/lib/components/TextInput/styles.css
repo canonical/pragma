@@ -1,26 +1,23 @@
 .ds.text-input {
   --color-background-input-active: var(
-    --lp-color-background-secondary-active-context,
-    var(--lp-color-background-active)
+    --active--color-foreground-input,
+    var(--color-foreground-input-active)
   );
   --color-background-input-hover: var(
-    --lp-color-background-secondary-hover-context,
-    var(--lp-color-background-hover)
+    --hover--color-foreground-input,
+    var(--color-foreground-input-hover)
   );
   --color-background-input: var(
-    --lp-color-background-secondary-context,
-    var(--lp-color-background-input)
+    --modifier-color-foreground-input,
+    var(--color-foreground-input)
   );
   --dimension-padding-block-input: var(
-    --lp-dimension-padding-block-context,
-    var(--lp-dimension-spacing-block-xxs)
+    --density-padding-block,
+    var(--dimension-050)
   );
-  --color-border-input: var(
-    --lp-color-border-secondary-context,
-    var(--lp-color-border-high-contrast)
-  );
+  --color-border-input: var(--modifier-color-border, var(--color-border));
   --color-outline-input: var(
-    --lp-color-border-secondary-context,
-    var(--lp-color-border-focus)
+    --modifier-color-focusRing,
+    var(--color-focusRing)
   );
 }
