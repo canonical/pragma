@@ -1,7 +1,7 @@
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { userEvent } from "storybook/test";
-import SidePanel from "./Provider.js";
+import Component from "./Provider.js";
 import type { WithSidePanelRender } from "./types.js";
 import withSidePanel from "./withSidePanel.js";
 
@@ -21,12 +21,12 @@ import withSidePanel from "./withSidePanel.js";
  * open; in the canvas you can click it yourself, both directions.
  */
 const TogglePanel: WithSidePanelRender = ({ ref }) => (
-  <SidePanel ref={ref}>
-    <SidePanel.Header>Panel title</SidePanel.Header>
-    <SidePanel.Content>
+  <Component ref={ref}>
+    <Component.Header>Panel title</Component.Header>
+    <Component.Content>
       <p>The application behind this panel is still usable.</p>
-    </SidePanel.Content>
-  </SidePanel>
+    </Component.Content>
+  </Component>
 );
 
 const TogglePanelButton = withSidePanel(Button, TogglePanel);
@@ -36,18 +36,18 @@ const TogglePanelButton = withSidePanel(Button, TogglePanel);
  * form's footer buttons say.
  */
 const FormPanel: WithSidePanelRender = ({ close, ref }) => (
-  <SidePanel ref={ref}>
-    <SidePanel.Header>Add machine</SidePanel.Header>
-    <SidePanel.Content>
+  <Component ref={ref}>
+    <Component.Header>Add machine</Component.Header>
+    <Component.Content>
       <p>A form would live here, exiting through `close`.</p>
-    </SidePanel.Content>
-    <SidePanel.Footer>
+    </Component.Content>
+    <Component.Footer>
       <Button onClick={close}>Cancel</Button>
       <Button importance="primary" anticipation="constructive" onClick={close}>
         Save
       </Button>
-    </SidePanel.Footer>
-  </SidePanel>
+    </Component.Footer>
+  </Component>
 );
 
 const FormPanelButton = withSidePanel(Button, FormPanel);
@@ -58,18 +58,18 @@ const FormPanelButton = withSidePanel(Button, FormPanel);
  * button either.
  */
 const HeaderlessPanel: WithSidePanelRender = ({ close, ref }) => (
-  <SidePanel ref={ref} aria-label="Ubuntu mission">
-    <SidePanel.Content>
+  <Component ref={ref} aria-label="Ubuntu mission">
+    <Component.Content>
       We deliver the world's free software, freely, to everybody on the same
       terms. Whether you are a student or a global bank, you can download and
       use Ubuntu free of charge.
-    </SidePanel.Content>
-    <SidePanel.Footer>
+    </Component.Content>
+    <Component.Footer>
       <Button importance="primary" onClick={close}>
         Got it
       </Button>
-    </SidePanel.Footer>
-  </SidePanel>
+    </Component.Footer>
+  </Component>
 );
 
 const OpenPanelButton = withSidePanel(Button, HeaderlessPanel);

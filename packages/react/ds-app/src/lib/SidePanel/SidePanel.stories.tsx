@@ -1,11 +1,11 @@
 import { Button, withTooltip } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import SidePanel from "./Provider.js";
+import Component from "./Provider.js";
 import type { SidePanelHandle } from "./types.js";
 
-const meta: Meta<typeof SidePanel> = {
+const meta: Meta<typeof Component> = {
   title: "Components/SidePanel",
-  component: SidePanel,
+  component: Component,
   parameters: {
     docs: {
       story: {
@@ -22,7 +22,7 @@ const meta: Meta<typeof SidePanel> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof SidePanel>;
+type Story = StoryObj<typeof Component>;
 
 /*
   Every story shows the panel exactly as a consumer writes it, with one
@@ -36,16 +36,16 @@ type Story = StoryObj<typeof SidePanel>;
 /** The open panel — the visual baseline. */
 export const Open: Story = {
   render: () => (
-    <SidePanel
+    <Component
       ref={(handle: SidePanelHandle | null) => {
         handle?.open();
       }}
     >
-      <SidePanel.Header>Panel title</SidePanel.Header>
-      <SidePanel.Content>
+      <Component.Header>Panel title</Component.Header>
+      <Component.Content>
         <p>The application behind this panel is still usable.</p>
-      </SidePanel.Content>
-      <SidePanel.Footer>
+      </Component.Content>
+      <Component.Footer>
         {/*
           Footer content is passed in by the consumer — the panel only
           lays it out. Only the confirming action is `constructive`: the
@@ -56,8 +56,8 @@ export const Open: Story = {
         <Button importance="primary" anticipation="constructive">
           Save
         </Button>
-      </SidePanel.Footer>
-    </SidePanel>
+      </Component.Footer>
+    </Component>
   ),
   parameters: {
     docs: {
@@ -91,13 +91,13 @@ export const Open: Story = {
  */
 export const OverflowingContent: Story = {
   render: () => (
-    <SidePanel
+    <Component
       ref={(handle: SidePanelHandle | null) => {
         handle?.open();
       }}
     >
-      <SidePanel.Header>Panel title</SidePanel.Header>
-      <SidePanel.Content>
+      <Component.Header>Panel title</Component.Header>
+      <Component.Content>
         <p>Scroll this pane. The header and footer must not move.</p>
         {Array.from({ length: 40 }, (_, index) => `paragraph-${index + 1}`).map(
           (key, index) => (
@@ -108,14 +108,14 @@ export const OverflowingContent: Story = {
           ),
         )}
         <p>End of the content.</p>
-      </SidePanel.Content>
-      <SidePanel.Footer>
+      </Component.Content>
+      <Component.Footer>
         <Button>Cancel</Button>
         <Button importance="primary" anticipation="constructive">
           Save
         </Button>
-      </SidePanel.Footer>
-    </SidePanel>
+      </Component.Footer>
+    </Component>
   ),
   parameters: {
     docs: {
@@ -199,13 +199,13 @@ export const OverflowingTooltip: Story = {
             ".story-side-panel-tooltip { z-index: calc(var(--side-panel-z-index, 1000) + 1); }"
           }
         </style>
-        <SidePanel
+        <Component
           ref={(handle: SidePanelHandle | null) => {
             handle?.open();
           }}
         >
-          <SidePanel.Header>Panel title</SidePanel.Header>
-          <SidePanel.Content>
+          <Component.Header>Panel title</Component.Header>
+          <Component.Content>
             <p>
               The tooltip below is wider than the panel, and the panel still
               scrolls: the tooltip is portalled out of the panel's tree, so the
@@ -222,14 +222,14 @@ export const OverflowingTooltip: Story = {
               </p>
             ))}
             <p>End of the content.</p>
-          </SidePanel.Content>
-          <SidePanel.Footer>
+          </Component.Content>
+          <Component.Footer>
             <Button>Cancel</Button>
             <Button importance="primary" anticipation="constructive">
               Save
             </Button>
-          </SidePanel.Footer>
-        </SidePanel>
+          </Component.Footer>
+        </Component>
       </>
     );
   },
@@ -268,16 +268,16 @@ const TooltippedButton = withTooltip(
  */
 export const WithoutHeaderOrFooter: Story = {
   render: () => (
-    <SidePanel
+    <Component
       aria-label="Panel without a header"
       ref={(handle: SidePanelHandle | null) => {
         handle?.open();
       }}
     >
-      <SidePanel.Content>
+      <Component.Content>
         <p>The application behind this panel is still usable.</p>
-      </SidePanel.Content>
-    </SidePanel>
+      </Component.Content>
+    </Component>
   ),
   parameters: {
     docs: {

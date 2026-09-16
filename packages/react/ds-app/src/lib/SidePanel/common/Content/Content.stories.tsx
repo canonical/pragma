@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import SidePanel from "../../Provider.js";
 import type { SidePanelHandle } from "../../types.js";
-import Content from "./Content.js";
+import Component from "./Content.js";
 
 /*
   The story source shown in docs: the body renders in a real panel, and the
@@ -14,9 +14,9 @@ const openOnMount = `
   }}
 `;
 
-const meta: Meta<typeof Content> = {
+const meta: Meta<typeof Component> = {
   title: "Components/SidePanel/Content",
-  component: Content,
+  component: Component,
   parameters: {
     docs: {
       story: {
@@ -36,13 +36,13 @@ const meta: Meta<typeof Content> = {
         handle?.open();
       }}
     >
-      <Content {...args} />
+      <Component {...args} />
     </SidePanel>
   ),
 };
 
 export default meta;
-type Story = StoryObj<typeof Content>;
+type Story = StoryObj<typeof Component>;
 
 /** The panel body: prose, forms, whatever the task needs. */
 export const Default: Story = {

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 import SidePanel from "../../Provider.js";
 import type { SidePanelHandle } from "../../types.js";
-import Footer from "./Footer.js";
+import Component from "./Footer.js";
 
 /*
   The story source shown in docs: the footer renders in a real panel, and the
@@ -16,9 +16,9 @@ const openOnMount = `
   }}
 `;
 
-const meta: Meta<typeof Footer> = {
+const meta: Meta<typeof Component> = {
   title: "Components/SidePanel/Footer",
-  component: Footer,
+  component: Component,
   parameters: {
     docs: {
       story: {
@@ -38,13 +38,13 @@ const meta: Meta<typeof Footer> = {
         handle?.open();
       }}
     >
-      <Footer {...args} />
+      <Component {...args} />
     </SidePanel>
   ),
 };
 
 export default meta;
-type Story = StoryObj<typeof Footer>;
+type Story = StoryObj<typeof Component>;
 
 /**
  * Actions align to the end edge. Only the confirming action is
