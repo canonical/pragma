@@ -222,7 +222,7 @@ export const NothingSelected: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     await expect(canvas.queryByRole("group")).toBeNull();
@@ -241,7 +241,7 @@ export const TwoSelected: Story = {
     const bar = await canvas.findByRole("group", { name: "Selection actions" });
     await expect(bar).toHaveTextContent("2 selected");
     await expect(
-      canvas.getByRole("button", { name: "Deselect 2 items" }),
+      canvas.getByRole("button", { name: "Deselect 2 rows" }),
     ).toBeEnabled();
     await expect(canvas.getByRole("button", { name: "Archive" })).toBeEnabled();
   },
@@ -331,7 +331,7 @@ export const Archived: Story = {
     await waitFor(() => expect(canvas.queryByRole("group")).toBeNull());
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 1–5 out of 10 items",
+        "Showing 1–5 out of 10 rows",
       ),
     );
   },

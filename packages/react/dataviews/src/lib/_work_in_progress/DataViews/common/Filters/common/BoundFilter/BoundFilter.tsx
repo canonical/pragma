@@ -1,17 +1,29 @@
+import type { DataViewsMessages } from "@canonical/dataviews-core";
 import { spellWireKey } from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
 import { type ReactElement, useId, useRef } from "react";
-import { useFilterHandle } from "../../../../hooks/index.js";
+import { useDataViewsRoot, useFilterHandle } from "../../../../hooks/index.js";
 import { describeFilterFeedback } from "../utils/index.js";
 import type { BoundFilterProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds data-views-filters-bound";
 
-const BOUND_WORDING = { gte: "from", lte: "to" } as const;
+/** The message naming each bound, by the field's label. */
+const BOUND_MESSAGES = {
+  gte: "filterFrom",
+  lte: "filterTo",
+} as const satisfies Readonly<
+  Record<BoundFilterProps["bound"], keyof DataViewsMessages>
+>;
 
-/** What the hint beside each bound calls the value the facet offers for it. */
-const RANGE_WORDING = { gte: "Lowest", lte: "Highest" } as const;
+/** The message offering the value a facet holds for each bound, beside it. */
+const RANGE_MESSAGES = {
+  gte: "filterLowest",
+  lte: "filterHighest",
+} as const satisfies Readonly<
+  Record<BoundFilterProps["bound"], keyof DataViewsMessages>
+>;
 
 /**
  * One bound of a number or date field.
@@ -40,6 +52,7 @@ export default function BoundFilter({
   leavesWhenCleared,
   onLeave,
 }: BoundFilterProps): ReactElement | null {
+  const { messages } = useDataViewsRoot("Filters");
   const field = useFilterHandle(handle);
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -49,13 +62,14 @@ export default function BoundFilter({
   }
   const feedbackId = `${inputId}-feedback`;
   const hintId = `${inputId}-hint`;
-  const message = describeFilterFeedback(field.feedback, retained);
-  const hint = offered === null ? null : `${RANGE_WORDING[bound]}: ${offered}`;
+  const message = describeFilterFeedback(field.feedback, retained, messages);
+  const hint =
+    offered === null ? null : messages[RANGE_MESSAGES[bound]](String(offered));
   const describedBy =
     [hint === null ? null : hintId, message === null ? null : feedbackId]
       .filter((id) => id !== null)
       .join(" ") || undefined;
-  const name = `${label} ${BOUND_WORDING[bound]}`;
+  const name = messages[BOUND_MESSAGES[bound]](label);
   // The schema's bounds, natively: an out-of-range value is refused by the
   // browser at baseline and by the schema once scripted.
   const native =
@@ -115,7 +129,7 @@ export default function BoundFilter({
             }
           }}
         >
-          {`Clear ${name}`}
+          {messages.clearFilter(name)}
         </Button>
       ) : null}
       {hint === null ? null : (

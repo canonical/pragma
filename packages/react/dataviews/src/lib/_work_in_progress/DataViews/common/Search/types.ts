@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react";
 
 type OwnProps = {
-  /** The input's visible label, which names the search. Defaults to "Search". */
+  /** The input's visible label, which names the search. Defaults to the messages' `search`. */
   readonly label?: string;
 };
 

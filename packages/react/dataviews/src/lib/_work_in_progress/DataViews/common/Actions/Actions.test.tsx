@@ -59,14 +59,14 @@ describe("DataViews.Actions", () => {
     select(provider, ["m1", "m9"]);
     expect(bar()).toHaveTextContent("2 selected");
     expect(
-      screen.getByRole("button", { name: "Deselect 2 items" }),
+      screen.getByRole("button", { name: "Deselect 2 rows" }),
     ).toBeInTheDocument();
     act(() => {
       provider.selection.remove(["m9"]);
     });
     expect(bar()).toHaveTextContent("1 selected");
     expect(
-      screen.getByRole("button", { name: "Deselect 1 item" }),
+      screen.getByRole("button", { name: "Deselect 1 row" }),
     ).toBeInTheDocument();
   });
 
@@ -74,7 +74,7 @@ describe("DataViews.Actions", () => {
     const provider = makeProvider();
     mount(provider);
     select(provider, ["m1", "m2"]);
-    fireEvent.click(screen.getByRole("button", { name: "Deselect 2 items" }));
+    fireEvent.click(screen.getByRole("button", { name: "Deselect 2 rows" }));
     expect(provider.selection.state.get().ids.size).toBe(0);
     expect(screen.queryByRole("group")).toBeNull();
   });
@@ -92,7 +92,7 @@ describe("DataViews.Actions", () => {
     expect([...bar().children]).toEqual([
       within(bar()).getByRole("status"),
       screen.getByRole("button", { name: "Export" }),
-      screen.getByRole("button", { name: "Deselect 1 item" }),
+      screen.getByRole("button", { name: "Deselect 1 row" }),
     ]);
   });
 
@@ -154,7 +154,7 @@ describe("DataViews.Actions", () => {
     before.focus();
     screen.getByRole("button", { name: "Archive" }).focus();
     // Moving within the bar keeps where the focus came from.
-    const deselect = screen.getByRole("button", { name: "Deselect 1 item" });
+    const deselect = screen.getByRole("button", { name: "Deselect 1 row" });
     deselect.focus();
     fireEvent.click(deselect);
     expect(before).toHaveFocus();
@@ -164,7 +164,7 @@ describe("DataViews.Actions", () => {
     const provider = makeProvider();
     mount(provider);
     select(provider, ["m1"]);
-    const deselect = screen.getByRole("button", { name: "Deselect 1 item" });
+    const deselect = screen.getByRole("button", { name: "Deselect 1 row" });
     deselect.focus();
     deselect.blur();
     deselect.focus();
@@ -183,7 +183,7 @@ describe("DataViews.Actions", () => {
     );
     select(provider, ["m1"]);
     screen.getByRole("button", { name: "Before" }).focus();
-    screen.getByRole("button", { name: "Deselect 1 item" }).focus();
+    screen.getByRole("button", { name: "Deselect 1 row" }).focus();
     const elsewhere = screen.getByRole("button", { name: "Elsewhere" });
     elsewhere.focus();
     act(() => {
@@ -208,7 +208,7 @@ describe("DataViews.Actions", () => {
     const before = screen.getByRole("button", { name: "Before" });
     before.focus();
     screen.getByRole("button", { name: "Export" }).focus();
-    const deselect = screen.getByRole("button", { name: "Deselect 1 item" });
+    const deselect = screen.getByRole("button", { name: "Deselect 1 row" });
     deselect.focus();
     expect(onFocus).toHaveBeenCalledWith(
       expect.objectContaining({ type: "focus" }),
@@ -230,7 +230,7 @@ describe("DataViews.Actions", () => {
     select(provider, ["m1"]);
     const before = screen.getByRole("button", { name: "Before" });
     before.focus();
-    const deselect = screen.getByRole("button", { name: "Deselect 1 item" });
+    const deselect = screen.getByRole("button", { name: "Deselect 1 row" });
     deselect.focus();
     deselect.blur();
     act(() => {
@@ -250,13 +250,13 @@ describe("DataViews.Actions", () => {
     select(provider, ["m1"]);
     const before = screen.getByRole("button", { name: "Before" });
     before.focus();
-    screen.getByRole("button", { name: "Deselect 1 item" }).focus();
-    fireEvent.click(screen.getByRole("button", { name: "Deselect 1 item" }));
+    screen.getByRole("button", { name: "Deselect 1 row" }).focus();
+    fireEvent.click(screen.getByRole("button", { name: "Deselect 1 row" }));
     expect(before).toHaveFocus();
     select(provider, ["m2"]);
     // Focus enters again from the document: the earlier origin is not reused.
     before.blur();
-    screen.getByRole("button", { name: "Deselect 1 item" }).focus();
+    screen.getByRole("button", { name: "Deselect 1 row" }).focus();
     act(() => {
       provider.selection.clear();
     });

@@ -8,6 +8,10 @@ export type NameFormProps = {
   readonly label: string;
   /** The submit button's text. */
   readonly submit: string;
+  /** The name input's label. */
+  readonly nameLabel: string;
+  /** The cancel button's text. */
+  readonly cancel: string;
   /** The name the input starts with. */
   readonly initial: string;
   /** Whether a command is in flight; the form cannot submit meanwhile. */

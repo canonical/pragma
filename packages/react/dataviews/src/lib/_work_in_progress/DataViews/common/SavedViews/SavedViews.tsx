@@ -2,7 +2,6 @@ import { Button } from "@canonical/react-ds-global";
 import { SelectInput } from "@canonical/react-ds-global-form";
 import { type ReactElement, useEffect, useId } from "react";
 import { useDataViewsValue } from "../../../../hooks/index.js";
-import { composeSentence, pluralizeNoun } from "../../../../utils/index.js";
 import { useDataViewsRoot } from "../../hooks/index.js";
 import { DeleteConfirm, NameForm } from "./common/index.js";
 import describeViewStatus from "./describeViewStatus.js";
@@ -35,13 +34,13 @@ const componentCssClassName = "ds data-views-saved-views";
  * name may change or move before the first release.
  */
 export default function SavedViews({
-  label = "Saved views",
+  label,
   className,
   onFocus,
   onBlur,
   ...rest
 }: DataViewsSavedViewsProps): ReactElement {
-  const { provider } = useDataViewsRoot("SavedViews");
+  const { provider, messages } = useDataViewsRoot("SavedViews");
   const { views, presentation } = provider;
   if (views === null) {
     throw new Error(
@@ -84,7 +83,7 @@ export default function SavedViews({
       ? views.rename(name)
       : views.saveAs(name));
     if (outcome.status === "invalid") {
-      return composeSentence(outcome.reason);
+      return messages.viewNameRefused(outcome.reason);
     }
     if (outcome.status === "saved") {
       closePanel();
@@ -97,7 +96,7 @@ export default function SavedViews({
     <div
       {...rest}
       role="group"
-      aria-label={label}
+      aria-label={label ?? messages.savedViews}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       onFocus={(event) => {
         recordFocus(event);
@@ -110,22 +109,20 @@ export default function SavedViews({
     >
       {listing.status === "idle" ? (
         <noscript>
-          <p className="unavailable">
-            Saved views need JavaScript. A link to a query still works.
-          </p>
+          <p className="unavailable">{messages.viewsUnscripted}</p>
         </noscript>
       ) : (
         <>
           <div className="picker">
             <label htmlFor={selectId} className="label">
-              View
+              {messages.view}
             </label>
             <SelectInput
               ref={select}
               id={selectId}
               options={[
                 ...(current === null
-                  ? [{ value: "", label: "No saved view", disabled: true }]
+                  ? [{ value: "", label: messages.viewNone, disabled: true }]
                   : []),
                 ...state.views.map((view) => ({
                   value: view.id,
@@ -141,7 +138,7 @@ export default function SavedViews({
             />
             {modified ? (
               <span id={modifiedId} className="modified">
-                Modified
+                {messages.viewModified}
               </span>
             ) : null}
           </div>
@@ -153,14 +150,14 @@ export default function SavedViews({
                 void views.save();
               }}
             >
-              {conflicted ? "Overwrite" : "Save"}
+              {conflicted ? messages.overwriteView : messages.saveView}
             </Button>
             <Button
               type="button"
               disabled={pending || current === null || !modified}
               onClick={views.revert}
             >
-              {conflicted ? "Discard changes" : "Revert"}
+              {conflicted ? messages.discardViewChanges : messages.revertView}
             </Button>
             <Button
               type="button"
@@ -169,7 +166,7 @@ export default function SavedViews({
                 openPanel("save-as", event.currentTarget);
               }}
             >
-              Save as…
+              {messages.saveViewAs}
             </Button>
             <Button
               type="button"
@@ -178,7 +175,7 @@ export default function SavedViews({
                 openPanel("rename", event.currentTarget);
               }}
             >
-              Rename…
+              {messages.renameView}
             </Button>
             <Button
               type="button"
@@ -187,7 +184,7 @@ export default function SavedViews({
                 openPanel("remove", event.currentTarget);
               }}
             >
-              Delete…
+              {messages.deleteView}
             </Button>
             {listing.status === "failed" || presentationReason !== null ? (
               <Button
@@ -198,15 +195,17 @@ export default function SavedViews({
                   presentation.refresh();
                 }}
               >
-                Try again
+                {messages.retryViews}
               </Button>
             ) : null}
           </div>
           {panel === "save-as" ? (
             <NameForm
               key="save-as"
-              label="Save as a new view"
-              submit="Save view"
+              label={messages.saveAsForm}
+              submit={messages.submitSaveAs}
+              nameLabel={messages.viewName}
+              cancel={messages.cancel}
               initial=""
               pending={pending}
               onSubmit={submitName}
@@ -216,8 +215,10 @@ export default function SavedViews({
           {panel === "rename" && current !== null ? (
             <NameForm
               key={`rename:${current.id}`}
-              label={`Rename "${current.name}"`}
-              submit="Rename"
+              label={messages.renameForm(current.name)}
+              submit={messages.submitRename}
+              nameLabel={messages.viewName}
+              cancel={messages.cancel}
               initial={current.name}
               pending={pending}
               onSubmit={submitName}
@@ -226,9 +227,11 @@ export default function SavedViews({
           ) : null}
           {panel === "remove" && current !== null ? (
             <DeleteConfirm
-              name={current.name}
+              question={messages.deleteForm(current.name)}
+              submit={messages.submitDelete}
+              cancel={messages.cancel}
               pending={pending}
-              onConfirm={() => {
+              onSubmit={() => {
                 void views.remove().then((outcome) => {
                   closePanel(
                     outcome.status === "removed"
@@ -241,18 +244,20 @@ export default function SavedViews({
             />
           ) : null}
           <p role="status" className="status">
-            {describeViewStatus(command, modified)}
+            {describeViewStatus(command, modified, messages)}
           </p>
           <div role="status" className="notices">
-            {listing.status === "pending" ? <p>Loading saved views…</p> : null}
+            {listing.status === "pending" ? (
+              <p>{messages.viewsPending}</p>
+            ) : null}
             {listing.status === "failed" ? (
-              <p>{`Saved views are unavailable: ${listing.reason}.`}</p>
+              <p>{messages.viewsUnavailable(listing.reason)}</p>
             ) : null}
             {unreadable > 0 ? (
-              <p>{`${unreadable} saved ${pluralizeNoun(unreadable, "view")} cannot be read.`}</p>
+              <p>{messages.viewsUnreadable(unreadable)}</p>
             ) : null}
             {presentationReason === null ? null : (
-              <p>{`The arrangement is not being saved: ${presentationReason}.`}</p>
+              <p>{messages.arrangementUnsaved(presentationReason)}</p>
             )}
           </div>
         </>

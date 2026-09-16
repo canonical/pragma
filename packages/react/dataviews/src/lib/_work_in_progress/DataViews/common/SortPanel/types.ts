@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react";
 
 type OwnProps = {
-  /** The panel's accessible name. Defaults to "Sort". */
+  /** The panel's accessible name. Defaults to the messages' `sortPanel`. */
   readonly label?: string;
 };
 

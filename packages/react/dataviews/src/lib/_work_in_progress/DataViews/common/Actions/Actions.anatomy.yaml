@@ -77,7 +77,7 @@
 #                        not announced; the checkbox that made it announces its
 #                        own state.
 #   deselect             "Row/select-all checkboxes" (4.1.2): named with the
-#                        count it clears ("Deselect 5 items").
+#                        count it clears ("Deselect 5 rows").
 node:
   uri: apps.subcomponent.data_table-action_bar
   styles:

@@ -1,6 +1,6 @@
 import { spellWireKey } from "@canonical/dataviews-core/bindings";
 import { type ReactElement, useId } from "react";
-import { useFilterHandle } from "../../../../hooks/index.js";
+import { useDataViewsRoot, useFilterHandle } from "../../../../hooks/index.js";
 import { spellCount } from "../utils/index.js";
 import type { FlagFilterProps } from "./types.js";
 
@@ -26,13 +26,14 @@ export default function FlagFilter({
   leavesWhenCleared,
   onLeave,
 }: FlagFilterProps): ReactElement | null {
+  const { messages } = useDataViewsRoot("Filters");
   const field = useFilterHandle(handle);
   const countId = useId();
   const applied = field.applied.kind === "value";
   if (!declared && !applied) {
     return null;
   }
-  const spelled = count === null ? null : spellCount(count);
+  const spelled = count === null ? null : spellCount(count, messages);
   return (
     <div className={componentCssClassName}>
       <label className="option">

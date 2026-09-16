@@ -1,6 +1,9 @@
 import type { SourceRefusal } from "@canonical/dataviews-core";
+import { resolveMessages } from "@canonical/dataviews-core/bindings";
 import { describe, expect, it } from "vitest";
 import describeFilterFeedback from "./describeFilterFeedback.js";
+
+const english = resolveMessages();
 
 const createRefusal = (reason: string): SourceRefusal => ({
   part: "filter",
@@ -12,15 +15,21 @@ const createRefusal = (reason: string): SourceRefusal => ({
 
 describe("describeFilterFeedback", () => {
   it("says nothing while nothing is wrong", () => {
-    expect(describeFilterFeedback({ status: "none" }, false)).toBeNull();
-    expect(describeFilterFeedback({ status: "applied" }, true)).toBeNull();
+    expect(
+      describeFilterFeedback({ status: "none" }, false, english),
+    ).toBeNull();
+    expect(
+      describeFilterFeedback({ status: "applied" }, true, english),
+    ).toBeNull();
   });
 
   it("asks for a value, saying whether a restriction still applies", () => {
-    expect(describeFilterFeedback({ status: "incomplete" }, false)).toBe(
-      "Enter a value to apply this restriction.",
-    );
-    expect(describeFilterFeedback({ status: "incomplete" }, true)).toBe(
+    expect(
+      describeFilterFeedback({ status: "incomplete" }, false, english),
+    ).toBe("Enter a value to apply this restriction.");
+    expect(
+      describeFilterFeedback({ status: "incomplete" }, true, english),
+    ).toBe(
       "Enter a value to change this restriction. The previous restriction still applies.",
     );
   });
@@ -30,12 +39,14 @@ describe("describeFilterFeedback", () => {
       describeFilterFeedback(
         { status: "invalid", reason: "not a number", retainsPredicate: false },
         false,
+        english,
       ),
     ).toBe("Not a number.");
     expect(
       describeFilterFeedback(
         { status: "invalid", reason: "not a number", retainsPredicate: true },
         true,
+        english,
       ),
     ).toBe("Not a number. The previous restriction still applies.");
   });
@@ -49,6 +60,7 @@ describe("describeFilterFeedback", () => {
       describeFilterFeedback(
         { status: "refused", refusals, retainsPredicate: false },
         false,
+        english,
       ),
     ).toBe(
       "This endpoint looks for text in one field. This endpoint cannot search as well.",
@@ -61,6 +73,7 @@ describe("describeFilterFeedback", () => {
           retainsPredicate: true,
         },
         true,
+        english,
       ),
     ).toBe("No. The previous restriction still applies.");
   });
@@ -70,6 +83,7 @@ describe("describeFilterFeedback", () => {
       describeFilterFeedback(
         { status: "invalid", reason: "not a number", retainsPredicate: true },
         false,
+        english,
       ),
     ).toBe("Not a number. The previous restriction still applies.");
     expect(
@@ -80,7 +94,30 @@ describe("describeFilterFeedback", () => {
           retainsPredicate: false,
         },
         true,
+        english,
       ),
     ).toBe("No.");
+  });
+
+  it("words the feedback in the messages it is given, with every reason", () => {
+    const messages = resolveMessages({
+      filterIncomplete: (retained) => `vide ${String(retained)}`,
+      filterRefused: (reasons, retained) =>
+        `refusé ${reasons.join("|")} ${String(retained)}`,
+    });
+    expect(
+      describeFilterFeedback({ status: "incomplete" }, true, messages),
+    ).toBe("vide true");
+    expect(
+      describeFilterFeedback(
+        {
+          status: "refused",
+          refusals: [createRefusal("a"), createRefusal("b")],
+          retainsPredicate: false,
+        },
+        true,
+        messages,
+      ),
+    ).toBe("refusé a|b false");
   });
 });

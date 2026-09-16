@@ -9,22 +9,16 @@ import {
   useLayoutEffect,
   useRef,
 } from "react";
+import {
+  ORDERING_TOPIC,
+  SORT_REFUSAL_TOPIC,
+} from "../../../../common/index.js";
 import { useIsHydrated, useMergedRef } from "../../../../hooks/index.js";
-import { describeSortDirection } from "../../../../utils/index.js";
+import { describeOrdering } from "../../../../utils/index.js";
 import { useAppliedSort, useDataViewsRoot } from "../../hooks/index.js";
 import type { DataViewsSortPanelProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-sort-panel";
-
-/** The words the panel shows, collected so they can be localised in one place. */
-const MESSAGES = {
-  label: "Sort",
-  moveUp: "Move up",
-  moveDown: "Move down",
-  remove: "Remove",
-  notSorted: "Not sorted: the source documents no order.",
-  sortedByDefault: "Sorted by the source's own order",
-} as const;
 
 /** The ordering with one of its terms moved by `offset` places, the rest in order. */
 const moveTerm = (
@@ -42,7 +36,9 @@ const moveTerm = (
  *
  * Each of the reader's own terms is listed in precedence order with its
  * direction, and can be moved up, moved down or removed; every change goes
- * through `setSort`, as a header's does. While the reader states no term,
+ * through `setSort`, as a header's does, and the root's announcer says the
+ * ordering it leaves, or why the source refused it. Every word is the root's
+ * messages'. While the reader states no term,
  * the panel says what orders the rows instead: the source's own order, or
  * that nothing does. A term whose column a table hides is listed all the
  * same: hiding a column changes no ordering, so the panel is where a hidden
@@ -60,20 +56,52 @@ const moveTerm = (
  * name may change or move before the first release.
  */
 export default function SortPanel({
-  label = MESSAGES.label,
+  label,
   className,
   ref,
   ...rest
 }: DataViewsSortPanelProps): ReactElement {
-  const { provider } = useDataViewsRoot("SortPanel");
+  const { provider, messages, announce } = useDataViewsRoot("SortPanel");
   // The terms alone: a result arriving re-renders no panel.
   const sort = useAppliedSort({ provider });
   // Its buttons work only once scripts run: the server and the hydrating
   // render offer links instead.
   const hydrated = useIsHydrated();
   const baseId = useId();
-  const describe = (term: SortTerm): string =>
-    `${term.field}, ${describeSortDirection(term.direction)}`;
+  /** A term as the panel names it: by its field, with its direction. */
+  const describe = ({ field, direction }: SortTerm): string =>
+    messages.sortTerm(field, direction);
+  /**
+   * Apply an ordering one of the panel's controls leads to, and say what it
+   * did through the root's announcer, under the ordering's topic: the
+   * ordering now in force — the source's own once the reader states none — or
+   * why the source refused it, under the refusal's topic, since a refusal is
+   * not an ordering. Each term is named by its field, as the panel lists it;
+   * a heading names it where a table's own heading changed it.
+   *
+   * @note Impure: sets the collection's ordering and speaks through the
+   * root's announcer.
+   */
+  const applyOrdering = (next: readonly SortTerm[]): void => {
+    const refusals = provider.setSort(next);
+    if (refusals.length > 0) {
+      // Every reason the source gave, as a refused filter reports them.
+      announce(
+        messages.sortRefused(refusals.map(({ reason }) => reason)),
+        SORT_REFUSAL_TOPIC,
+      );
+      return;
+    }
+    announce(
+      describeOrdering(
+        provider.state.get().slice.sort,
+        provider.capabilities.sort.default,
+        (field) => field,
+        messages,
+      ),
+      ORDERING_TOPIC,
+    );
+  };
   const { spellQuery } = readProviderHost(provider);
   /**
    * Where a changed ordering leads without scripts: the same query from its
@@ -169,14 +197,19 @@ export default function SortPanel({
       ref={attach}
       // The panel itself takes focus only when the last term leaves.
       tabIndex={-1}
-      aria-label={label}
+      aria-label={label ?? messages.sortPanel}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       {sort.length === 0 ? (
         <p>
           {ordering.length === 0
-            ? MESSAGES.notSorted
-            : `${MESSAGES.sortedByDefault}: ${ordering.map(describe).join("; ")}.`}
+            ? messages.sortAbsent
+            : messages.sortDefaulted(
+                ordering.map(({ field, direction }) => ({
+                  name: field,
+                  direction,
+                })),
+              )}
         </p>
       ) : (
         <ol {...trackFocus}>
@@ -191,17 +224,17 @@ export default function SortPanel({
             const controls = [
               {
                 action: "up",
-                text: MESSAGES.moveUp,
+                text: messages.moveSortTermUp,
                 next: at === 0 ? null : moveTerm(sort, term, -1),
               },
               {
                 action: "down",
-                text: MESSAGES.moveDown,
+                text: messages.moveSortTermDown,
                 next: at === sort.length - 1 ? null : moveTerm(sort, term, 1),
               },
               {
                 action: "remove",
-                text: MESSAGES.remove,
+                text: messages.removeSortTerm,
                 next: sort.filter((other) => other.field !== term.field),
               },
             ] as const;
@@ -229,7 +262,7 @@ export default function SortPanel({
                           next === null
                             ? undefined
                             : () => {
-                                provider.setSort(next);
+                                applyOrdering(next);
                               }
                         }
                       >

@@ -18,6 +18,7 @@ import {
   type MachineProvider,
   machine,
 } from "../../../../../../testing/machines.js";
+import readAnnouncements from "../../../../../../testing/readAnnouncements.js";
 import DataViews from "../../Provider.js";
 import SortPanel from "./SortPanel.js";
 
@@ -347,5 +348,81 @@ describe("DataViews.SortPanel", () => {
       provider.setSort([{ field: "cores", direction: "desc" }]);
     });
     expect(commits).toBeGreaterThan(0);
+  });
+
+  it("says through the root's announcer the ordering a move leaves", async () => {
+    mount(statusFirst);
+    fireEvent.click(findControl("name", "Move up"));
+    expect(await readAnnouncements()).toEqual([
+      "Sorted by status, ascending; then name, ascending; then cores, descending.",
+    ]);
+  });
+
+  it("says the source's own order once the last term is removed, or that nothing orders the rows", async () => {
+    const ordered = mount(
+      [{ field: "status", direction: "asc" }],
+      [{ field: "cores", direction: "desc" }],
+    );
+    fireEvent.click(findControl("status", "Remove"));
+    expect(await readAnnouncements()).toEqual([
+      "Sorted by the source's own order: cores, descending.",
+    ]);
+    ordered.view.unmount();
+    mount([{ field: "status", direction: "asc" }]);
+    fireEvent.click(findControl("status", "Remove"));
+    expect(await readAnnouncements()).toEqual([
+      "Not sorted: the source documents no order.",
+    ]);
+  });
+
+  it("says why the source refused a change, which changes nothing", async () => {
+    const { provider } = mount(statusFirst);
+    const limited = createMachineProvider({
+      capabilities: declareMachineOrdering(1),
+    }).provider;
+    const [refusal] = limited.setSort(statusFirst);
+    if (refusal === undefined) {
+      throw new Error("a source ordering by one term accepted three");
+    }
+    const setSort = vi
+      .spyOn(provider, "setSort")
+      .mockReturnValue([{ ...refusal, reason: "this source is busy" }]);
+    onTestFinished(() => {
+      setSort.mockRestore();
+    });
+    fireEvent.click(findControl("cores", "Move up"));
+    expect(await readAnnouncements()).toEqual([
+      "Sort unchanged: this source is busy.",
+    ]);
+    expect(listTerms()).toEqual([
+      "status, ascending",
+      "cores, descending",
+      "name, ascending",
+    ]);
+  });
+
+  it("speaks its root's words", () => {
+    const { provider } = createMachineProvider({
+      rows: [machine("m-1", "alpha")],
+      capabilities: declareMachineOrdering(null),
+    });
+    provider.setSort([{ field: "cores", direction: "asc" }]);
+    render(
+      <DataViews
+        provider={provider}
+        messages={{
+          sortPanel: "Tri",
+          sortTerm: (name) => `terme ${name}`,
+          removeSortTerm: "Retirer",
+        }}
+      >
+        <SortPanel />
+      </DataViews>,
+    );
+    const panel = screen.getByRole("region", { name: "Tri" });
+    expect(within(panel).getByText("terme cores")).toBeInTheDocument();
+    expect(
+      within(panel).getByRole("button", { name: "Retirer" }),
+    ).toHaveAccessibleDescription("terme cores");
   });
 });

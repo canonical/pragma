@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react";
 
 type OwnProps = {
-  /** The group's accessible name. Defaults to "Saved views". */
+  /** The group's accessible name. Defaults to the messages' `savedViews`. */
   readonly label?: string;
 };
 

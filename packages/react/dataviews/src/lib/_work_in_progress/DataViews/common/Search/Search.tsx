@@ -49,12 +49,12 @@ const destinationOf = ({ slice, window }: DataViewsState<object>): Query => ({
  * name may change or move before the first release.
  */
 export default function Search({
-  label = "Search",
+  label,
   className,
   id,
   ...rest
 }: DataViewsSearchProps): ReactElement {
-  const { provider } = useDataViewsRoot("Search");
+  const { provider, messages } = useDataViewsRoot("Search");
   if (provider.capabilities.search === null) {
     throw new Error(
       "DataViews.Search requires a source that declares search; this provider's declares none",
@@ -75,7 +75,7 @@ export default function Search({
       onSubmit={interceptSubmit}
     >
       <label htmlFor={inputId} className="label">
-        {label}
+        {label ?? messages.search}
       </label>
       <input
         {...rest}
@@ -96,7 +96,7 @@ export default function Search({
         omit={OWN_KEYS}
       />
       <Button type="submit" importance="secondary" className="submit">
-        Search
+        {messages.submitSearch}
       </Button>
     </form>
   );
