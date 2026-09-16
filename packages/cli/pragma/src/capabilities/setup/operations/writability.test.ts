@@ -7,44 +7,19 @@
  * and no CI host has a `/nix/store`. So the filesystem is three injected
  * functions and each rule is asserted against a fixture that spells out the
  * machine it stands for.
+ *
+ * The fixture factory is stateful (it records the walk), so it lives in
+ * `testing/helpers/fsProbe.ts` and is shared with the setup and doctor suites
+ * rather than copied into each.
  */
 
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { type FsProbe, probeWritable, type WriteBlock } from "./writability.js";
-
-/**
- * A fixture filesystem: `present` is the set of paths that exist, `realpath`
- * rewrites a path to what it resolves to, and `denied` is the set of resolved
- * paths that refuse `W_OK`. Every call is recorded so a case can assert the
- * walk itself, not only its answer.
- */
-const probe = (spec: {
-  present?: readonly string[];
-  realpath?: Readonly<Record<string, string>>;
-  denied?: readonly string[];
-  realpathThrows?: boolean;
-}): FsProbe & { seen: string[]; accessed: string[] } => {
-  const seen: string[] = [];
-  const accessed: string[] = [];
-  return {
-    seen,
-    accessed,
-    existsSync: (path) => {
-      seen.push(path);
-      return (spec.present ?? []).includes(path);
-    },
-    realpathSync: (path) => {
-      if (spec.realpathThrows === true) throw new Error("ELOOP");
-      return spec.realpath?.[path] ?? path;
-    },
-    accessSync: (path) => {
-      accessed.push(path);
-      if ((spec.denied ?? []).includes(path)) {
-        throw new Error("EACCES: permission denied");
-      }
-    },
-  };
-};
+import { fakeFsProbe as probe } from "../../../testing/helpers/fsProbe.js";
+import type { WriteBlock } from "../types.js";
+import { probeWritable } from "./writability.js";
 
 describe("probeWritable", () => {
   it("probes the TARGET ITSELF when it is present, not only its directory", () => {
@@ -167,7 +142,10 @@ describe("probeWritable", () => {
 
   it("defaults to the real filesystem — a writable temp dir passes", () => {
     // The one case that touches the disk, so the default argument is covered
-    // by something other than a fixture claiming to be it.
-    expect(probeWritable(process.cwd())).toBeUndefined();
+    // by something other than a fixture claiming to be it. A temp dir, not
+    // `process.cwd()`: the case says "a writable directory", and the repo
+    // working tree is neither guaranteed to be one nor this suite's business.
+    const dir = mkdtempSync(join(tmpdir(), "pragma-writability-"));
+    expect(probeWritable(dir)).toBeUndefined();
   });
 });

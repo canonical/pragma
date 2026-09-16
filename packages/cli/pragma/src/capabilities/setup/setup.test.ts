@@ -13,8 +13,8 @@
  * routing, and MCP plan-first with the sub-verbs absent from the catalog.
  */
 
+import { spawnSync } from "node:child_process";
 import {
-  accessSync,
   chmodSync,
   existsSync,
   lstatSync,
@@ -22,7 +22,6 @@ import {
   mkdtempSync,
   readFileSync,
   readlinkSync,
-  realpathSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -41,6 +40,7 @@ import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
+import { storeProbe } from "../../testing/helpers/fsProbe.js";
 import { projectCli } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { capabilities } from "../index.js";
@@ -49,14 +49,16 @@ import { detectCompletions } from "./operations/setupCompletions.js";
 import { buildSetupRun, type RowEvent } from "./operations/setupGenerator.js";
 import {
   composeLsp,
+  describeEditorSource,
   detectLsp,
-  editorFoundVia,
-  lspBlockRemedy,
+  firstLspBlock,
+  lspBlockReason,
+  lspUninstallRemedy,
   lspVsixPath,
   ownedLspEditors,
   selectedEditors,
 } from "./operations/setupLsp.js";
-import { composeMcp, detectMcp } from "./operations/setupMcp.js";
+import { composeMcp, detectMcp, firstMcpBlock } from "./operations/setupMcp.js";
 import {
   composeSkills,
   composeSkillsRemoval,
@@ -65,11 +67,11 @@ import {
   skillsSkipReason,
   skillsSkipRemedy,
 } from "./operations/setupSkills.js";
-import type { FsProbe } from "./operations/writability.js";
+import type { Roots } from "./plan.js";
 import { DRY_RUN_HINT, PREVIEW_HINT } from "./setup.render.js";
 import { setupModule } from "./setup.verb.js";
 import { completionScriptPath, detectShell, type ShellId } from "./shell.js";
-import { findTarget, type Roots, type TargetDefinition } from "./targets.js";
+import { findTarget, type TargetDefinition } from "./targets.js";
 import type { Scope } from "./types.js";
 
 const FLAGS: GlobalFlags = {
@@ -108,6 +110,17 @@ const SHELL = DETECTED.kind === "detected" ? DETECTED.shell : null;
 const withShell = it.skipIf(SHELL === null);
 
 /**
+ * The cases that arrange a real read-only directory with `chmod 0o500`.
+ *
+ * Root ignores the mode bits — `access(W_OK)` succeeds on a `0o500` directory
+ * it owns — so `probeWritable` finds nothing to block and the case asserts the
+ * opposite of what it means. GitHub-hosted runners are non-root and run these;
+ * a devcontainer or a bare `docker run` of the suite is root and stands down,
+ * which is honest rather than red.
+ */
+const notRoot = it.skipIf(process.getuid?.() === 0);
+
+/**
  * A PATH directory carrying a `pragma` stub. The completions target refuses to
  * install a script whose `pragma __complete` cannot be found — an inert script
  * is worse than none — so every PATH these tests build has to satisfy that.
@@ -125,6 +138,25 @@ const stubPath = (): string => {
  * elsewhere, and the isolated PATH the tests run under has no `rm`.
  */
 const HOST_PATH = process.env.PATH ?? "";
+
+/** Run a host binary under the real PATH, whatever a case has set. */
+const onHost = (
+  command: string,
+  args: readonly string[],
+): ReturnType<typeof spawnSync<string>> =>
+  spawnSync(command, [...args], {
+    encoding: "utf-8",
+    env: { ...process.env, PATH: HOST_PATH },
+  });
+
+/**
+ * The case that checks the Nix remedy against the real Nix parser. Nix is not
+ * a dependency of this repository, so where the binary is absent the case
+ * stands down and the structural assertions beside it carry the claim.
+ */
+const withNix = it.skipIf(
+  onHost("nix-instantiate", ["--version"]).error !== undefined,
+);
 
 let prevHome: string | undefined;
 let prevPath: string | undefined;
@@ -2604,9 +2636,21 @@ describe("setup mcp — the VS Code family's per-user mcp.json", () => {
   const userMcp = (product: string): string =>
     join(process.env.XDG_CONFIG_HOME as string, product, "User", "mcp.json");
 
+  /**
+   * The user-level signal that earns VS Code its global band: the per-user
+   * directory a real install creates on first launch. A committed `.vscode/`
+   * cannot stand in for it — see the pair of cases at the end of this block.
+   */
+  const installVscode = (product = "Code"): void => {
+    mkdirSync(join(process.env.XDG_CONFIG_HOME as string, product, "User"), {
+      recursive: true,
+    });
+  };
+
   it("--global reaches VS Code at $XDG_CONFIG_HOME/Code/User/mcp.json, under `servers`", async () => {
     const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".vscode"), { recursive: true });
+    installVscode();
     const outcome = await executeVerb(
       verbOf("mcp"),
       { global: true },
@@ -2649,6 +2693,7 @@ describe("setup mcp — the VS Code family's per-user mcp.json", () => {
     // two-scope run, which is what the flag means here.)
     const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".vscode"), { recursive: true });
+    installVscode();
     await executeVerb(
       verbOf("mcp"),
       { scope: "both" },
@@ -2667,9 +2712,7 @@ describe("setup mcp — the VS Code family's per-user mcp.json", () => {
     // Per the owner, 2026-09-16: VSCodium is an MCP client row. Its user
     // directory is the signal, and `VSCodium/User/mcp.json` is the file — a
     // bare `.vscode` project dir must never stand in for it.
-    mkdirSync(join(process.env.XDG_CONFIG_HOME as string, "VSCodium", "User"), {
-      recursive: true,
-    });
+    installVscode("VSCodium");
     const outcome = await executeVerb(
       verbOf("mcp"),
       { global: true },
@@ -2681,6 +2724,40 @@ describe("setup mcp — the VS Code family's per-user mcp.json", () => {
     expect(config.servers?.pragma?.command).toBe("pragma");
     // VS Code itself was not detected, so no `Code/User` file was invented.
     expect(existsSync(userMcp("Code"))).toBe(false);
+  });
+
+  /**
+   * The global write has to be EARNED by a signal about the MACHINE. A
+   * committed `.vscode/` travels with the repository, so on its own it would
+   * have created a per-user VS Code config for every contributor who clones —
+   * VS Code installed or not.
+   */
+  it("a committed .vscode/ and an empty home writes NO per-user file", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".vscode"), { recursive: true });
+    const outcome = await executeVerb(
+      verbOf("mcp"),
+      { global: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(existsSync(userMcp("Code"))).toBe(false);
+    // The row says there is nothing here, rather than inventing a location.
+    expect(outcome.stdout).toContain("no AI harness on this machine");
+  });
+
+  it("a home with Code/User earns it, `.vscode/` or not", async () => {
+    installVscode();
+    const outcome = await executeVerb(
+      verbOf("mcp"),
+      { global: true },
+      YES,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    expect(outcome.exitCode).toBe(0);
+    const config = JSON.parse(readFileSync(userMcp("Code"), "utf-8"));
+    expect(config.servers?.pragma?.command).toBe("pragma");
   });
 });
 
@@ -2706,16 +2783,6 @@ describe("setup — a Nix-managed or read-only location is a named skip", () => 
     process.env.PATH = prevPath;
   });
 
-  /** A probe whose `realpathSync` maps the paths under `root` into the store. */
-  const storeProbe = (root: string): FsProbe => ({
-    existsSync,
-    accessSync,
-    realpathSync: (path) =>
-      path.startsWith(root)
-        ? `/nix/store/1a2b3c-vscode${path.slice(root.length)}`
-        : realpathSync(path),
-  });
-
   /** One row's forward draft, straight off the target table. */
   const draftOf = <D>(
     id: "mcp" | "lsp",
@@ -2732,8 +2799,11 @@ describe("setup — a Nix-managed or read-only location is a named skip", () => 
   it("mcp: a store-managed config file is a row SKIP whose remedy is the entry itself", async () => {
     const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".vscode"), { recursive: true });
-    const rt = bootRuntime(FLAGS, cwd);
     const xdg = process.env.XDG_CONFIG_HOME as string;
+    // The user-level signal that earns the global band (a committed `.vscode/`
+    // does not), so there IS a per-user file for the probe to block.
+    mkdirSync(join(xdg, "Code", "User"), { recursive: true });
+    const rt = bootRuntime(FLAGS, cwd);
     const detection = await detectMcp(rt, "global", storeProbe(xdg));
     const draft = draftOf("mcp", detection, "global", await resolveRoots(rt));
 
@@ -2756,31 +2826,63 @@ describe("setup — a Nix-managed or read-only location is a named skip", () => 
     expect(effects).toEqual([]);
   });
 
-  it("mcp: the blocked row exits 0 through the real verb, with nothing written", async () => {
-    // A read-only directory, for real — the block is a property of the
-    // filesystem, so at least one case has to meet one. Skipped as root,
-    // where mode bits do not apply.
+  it("mcp: a blocked TOML config gets its entry as TOML, not as JSON", async () => {
+    // Codex keeps `config.toml`. A JSON body pasted into it is not an entry,
+    // it is a syntax error — and this row's whole job is to say what to write.
     const cwd = tmp("pragma-setup-proj-");
-    mkdirSync(join(cwd, ".cursor"), { recursive: true });
-    const home = process.env.HOME as string;
-    const cursorDir = join(home, ".cursor");
-    mkdirSync(cursorDir, { recursive: true });
-    chmodSync(cursorDir, 0o500);
-    try {
-      const outcome = await executeVerb(
-        verbOf("mcp"),
-        { global: true },
-        YES,
-        bootRuntime(FLAGS, cwd),
-      );
-      expect(outcome.exitCode).toBe(0);
-      expect(outcome.stdout).toContain("skipped");
-      expect(outcome.stdout).toContain("is not writable");
-      expect(existsSync(join(cursorDir, "mcp.json"))).toBe(false);
-    } finally {
-      chmodSync(cursorDir, 0o700);
-    }
+    mkdirSync(join(cwd, ".codex"), { recursive: true });
+    const rt = bootRuntime(FLAGS, cwd);
+    const detection = await detectMcp(rt, "project", storeProbe(cwd));
+    const draft = draftOf("mcp", detection, "project", await resolveRoots(rt));
+
+    expect(draft.action).toBe("skip");
+    // TOML's dotted-key inline table: the same entry the writer's
+    // `[mcp_servers.pragma]` table holds, in the one-line form a remedy can
+    // print — and through the same value formatter, so the quoting matches.
+    expect(draft.remedy).toContain("mcp_servers.pragma = {");
+    expect(draft.remedy).toContain('command = "pragma"');
+    expect(draft.remedy).toContain('args = ["mcp", "serve"]');
+    expect(draft.remedy).not.toContain('{"mcp_servers"');
+    expect(draft.remedy).not.toContain("\n");
   });
+
+  it("mcp: reports no block for a scope whose files are all writable", async () => {
+    // The negative: with nothing blocked there is no reason and no remedy to
+    // print, so the row falls through to its ordinary answer.
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".codex"), { recursive: true });
+    const rt = bootRuntime(FLAGS, cwd);
+    const detection = await detectMcp(rt, "project");
+    expect(firstMcpBlock(detection, await resolveRoots(rt))).toBeUndefined();
+  });
+
+  notRoot(
+    "mcp: the blocked row exits 0 through the real verb, with nothing written",
+    async () => {
+      // A read-only directory, for real — the block is a property of the
+      // filesystem, so at least one case has to meet one.
+      const cwd = tmp("pragma-setup-proj-");
+      mkdirSync(join(cwd, ".cursor"), { recursive: true });
+      const home = process.env.HOME as string;
+      const cursorDir = join(home, ".cursor");
+      mkdirSync(cursorDir, { recursive: true });
+      chmodSync(cursorDir, 0o500);
+      try {
+        const outcome = await executeVerb(
+          verbOf("mcp"),
+          { global: true },
+          YES,
+          bootRuntime(FLAGS, cwd),
+        );
+        expect(outcome.exitCode).toBe(0);
+        expect(outcome.stdout).toContain("skipped");
+        expect(outcome.stdout).toContain("is not writable");
+        expect(existsSync(join(cursorDir, "mcp.json"))).toBe(false);
+      } finally {
+        chmodSync(cursorDir, 0o700);
+      }
+    },
+  );
 
   it("lsp: a store-managed extensions folder is a row SKIP naming the VSIX and the snippet", async () => {
     const stubDir = stubPath();
@@ -2805,43 +2907,100 @@ describe("setup — a Nix-managed or read-only location is a named skip", () => 
     expect(draft.remedy).toContain("buildVscodeExtension");
     expect(draft.remedy).toContain(lspVsixPath(detection));
     expect(draft.remedy).not.toContain("\n");
+    // The five attributes `buildVscodeExtension` has no defaults for, and the
+    // quoted path: an unquoted Nix path literal cannot carry the `@` in
+    // `@canonical/…` (it is a parse error), so `src` goes through
+    // `builtins.path`. The `--parse` case below is the proof.
+    for (const attr of [
+      'name = "terrazzo-lsp-extension"',
+      "version = ",
+      'vscodeExtPublisher = "canonical"',
+      'vscodeExtName = "terrazzo-lsp-extension"',
+      'vscodeExtUniqueId = "canonical.terrazzo-lsp-extension"',
+      "src = builtins.path { path = ",
+    ]) {
+      expect(draft.remedy).toContain(attr);
+    }
+    // And it says which one the user must fill in.
+    expect(draft.remedy).toContain("version from the fetched package.json");
     // Nothing is composed, and the reversal owns nothing either.
     expect(dryRun(composeLsp(detection)).effects).toEqual([]);
     expect(ownedLspEditors(detection)).toEqual([]);
   });
 
-  it("lsp: a read-only extensions folder is a skip the WIZARD omits the editor from", async () => {
-    // End to end over the real filesystem, and the reason the child prompt
-    // filters skips: summon's choice shape has no disabled state, so an offered
-    // editor is an editor the user can select into doing nothing.
+  withNix("lsp: the Nix remedy's expression really parses as Nix", async () => {
+    // The remedy is a line a user pastes into their own config, so "it looks
+    // like Nix" is not the bar. The sketch this replaced was a parse error
+    // twice over (an unquoted path with an `@` in it, and no `name`), and a
+    // remedy that cannot be used is worse than none. `nix-instantiate
+    // --parse` is the parser itself; where it is not installed the case
+    // stands down and the structural assertions above stand.
     const stubDir = stubPath();
-    writeFileSync(join(stubDir, "code"), "");
     writeFileSync(join(stubDir, "codium"), "");
     process.env.PATH = stubDir;
-    const home = process.env.HOME as string;
-    const blocked = join(home, ".vscode-oss", "extensions");
-    mkdirSync(blocked, { recursive: true });
-    chmodSync(blocked, 0o500);
-    try {
-      const { plan, generator } = await buildSetupRun(
-        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
-        "lsp",
-        "global",
-      );
-      const row = plan.rows.find((r) => r.target === "lsp");
-      // VS Code is installable, so the ROW is still an install — only the one
-      // blocked editor is a skip, carrying its own reason.
-      expect(row?.action).toBe("install");
-      const codium = row?.children?.find((c) => c.key === "codium");
-      expect(codium?.action).toBe("skip");
-      expect(codium?.reason).toContain("not writable");
-      const editors = generator.prompts.find((pr) => pr.name === "lspEditors");
-      expect(editors?.choices?.map((c) => c.value)).toEqual(["code"]);
-      expect(editors?.default).toEqual(["code"]);
-    } finally {
-      chmodSync(blocked, 0o700);
-    }
+    const extensions = join(
+      process.env.HOME as string,
+      ".vscode-oss",
+      "extensions",
+    );
+    mkdirSync(extensions, { recursive: true });
+    const rt = bootRuntime(FLAGS, tmp("pragma-setup-proj-"));
+    const detection = await detectLsp(
+      rt.cwd,
+      undefined,
+      storeProbe(extensions),
+    );
+    const remedy = draftOf("lsp", detection, "global", await resolveRoots(rt))
+      .remedy as string;
+    // The remedy is prose plus the expression; the expression starts at the
+    // attribute path the user assigns.
+    const expr = remedy.slice(remedy.indexOf("programs.vscode"));
+    // Bound as a function argument so `--parse` is all that is exercised:
+    // `pkgs` is the caller's, and nothing here should be evaluated.
+    const file = join(tmp("pragma-setup-nix-"), "snippet.nix");
+    writeFileSync(file, `{ pkgs }: { ${expr} }\n`);
+    const result = onHost("nix-instantiate", ["--parse", file]);
+    expect(result.stderr).toBe("");
+    expect(result.status).toBe(0);
   });
+
+  notRoot(
+    "lsp: a read-only extensions folder is a skip the WIZARD omits the editor from",
+    async () => {
+      // End to end over the real filesystem, and the reason the child prompt
+      // filters skips: summon's choice shape has no disabled state, so an
+      // offered editor is one the user can select into doing nothing.
+      const stubDir = stubPath();
+      writeFileSync(join(stubDir, "code"), "");
+      writeFileSync(join(stubDir, "codium"), "");
+      process.env.PATH = stubDir;
+      const home = process.env.HOME as string;
+      const blocked = join(home, ".vscode-oss", "extensions");
+      mkdirSync(blocked, { recursive: true });
+      chmodSync(blocked, 0o500);
+      try {
+        const { plan, generator } = await buildSetupRun(
+          bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+          "lsp",
+          "global",
+        );
+        const row = plan.rows.find((r) => r.target === "lsp");
+        // VS Code is installable, so the ROW is still an install — only the
+        // one blocked editor is a skip, carrying its own reason.
+        expect(row?.action).toBe("install");
+        const codium = row?.children?.find((c) => c.key === "codium");
+        expect(codium?.action).toBe("skip");
+        expect(codium?.reason).toContain("not writable");
+        const editors = generator.prompts.find(
+          (pr) => pr.name === "lspEditors",
+        );
+        expect(editors?.choices?.map((c) => c.value)).toEqual(["code"]);
+        expect(editors?.default).toEqual(["code"]);
+      } finally {
+        chmodSync(blocked, 0o700);
+      }
+    },
+  );
 });
 
 /**
@@ -2902,7 +3061,10 @@ describe("setup lsp — how each editor was found", () => {
     expect(detection.editors[0]?.block).toBeUndefined();
     expect(detection.state).toBe("absent");
     expect(
-      editorFoundVia(detection.editors[0], { global: home, project: "/p" }),
+      describeEditorSource(detection.editors[0], {
+        global: home,
+        project: "/p",
+      }),
     ).toBe(
       "via app bundle (~/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code)",
     );
@@ -2930,10 +3092,12 @@ describe("setup lsp — how each editor was found", () => {
     expect(detection.editors.map((e) => [e.editor.id, e.foundBy])).toEqual([
       ["vscode", "user-dir"],
     ]);
-    expect(detection.editors[0]?.block).toEqual({ kind: "no-cli" });
-    expect(editorFoundVia(detection.editors[0], await resolveRoots(rt))).toBe(
-      "via user directory",
-    );
+    // No BLOCK: nothing is wrong with the folder. The provenance itself is why
+    // nothing can be installed — there is no CLI to run.
+    expect(detection.editors[0]?.block).toBeUndefined();
+    expect(
+      describeEditorSource(detection.editors[0], await resolveRoots(rt)),
+    ).toBe("via user directory");
 
     const { plan } = await buildSetupRun(rt, "lsp", "global");
     const row = plan.rows.find((r) => r.target === "lsp");
@@ -2949,8 +3113,8 @@ describe("setup lsp — how each editor was found", () => {
       "no command-line launcher — found only its user directory",
     );
     expect(row?.children?.[0]?.label).toContain("VS Code");
-    const { plan: applied } = await buildSetupRun(rt, "lsp", "global");
-    expect(applied.rows[0]?.selected).toBe(false);
+    // And the row is not offered: there is nothing to select into doing.
+    expect(row?.selected).toBe(false);
   });
 
   it("the palette remedy names the editor's own CLI, and nothing composes", async () => {
@@ -2959,12 +3123,30 @@ describe("setup lsp — how each editor was found", () => {
       recursive: true,
     });
     const detection = await detectLsp(rt.cwd);
-    const remedy = lspBlockRemedy(detection, detection.editors[0]) as string;
+    const remedy = firstLspBlock(detection)?.remedy;
     expect(remedy).toContain("Install 'codium' command in PATH");
     expect(remedy).toContain("setup lsp");
     expect(remedy).not.toContain("\n");
     expect(dryRun(composeLsp(detection)).effects).toEqual([]);
     expect(selectedEditors(detection)).toEqual([]);
+  });
+
+  it("reports no block for a machine whose editors are all actionable", async () => {
+    // The negative of every case above: a plain PATH hit is not blocked, so
+    // there is no headline and no remedy to print — and no uninstall command
+    // either, since nothing here carries a copy.
+    const prevPath = process.env.PATH;
+    const stubDir = stubPath();
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+    try {
+      const detection = await detectLsp(tmp("pragma-setup-proj-"));
+      expect(firstLspBlock(detection)).toBeUndefined();
+      expect(lspBlockReason(detection.editors[0])).toBeUndefined();
+      expect(lspUninstallRemedy(detection)).toBeUndefined();
+    } finally {
+      process.env.PATH = prevPath;
+    }
   });
 });
 
@@ -3013,66 +3195,78 @@ describe("setup lsp — the row's quiet answers", () => {
     expect(row?.children?.every((c) => c.action === "unchanged")).toBe(true);
   });
 
-  it("a read-only folder with nothing else installable is a row skip with the chmod remedy", async () => {
-    // One editor, and its extensions folder refuses W_OK — so there is nothing
-    // installable at all and the row's whole answer is the block. The remedy
-    // names the folder AND the by-hand command, against the CLI file this run
-    // actually found.
-    writeFileSync(join(stubDir, "codium"), "");
-    const extensions = join(
-      process.env.HOME as string,
-      ".vscode-oss",
-      "extensions",
-    );
-    mkdirSync(extensions, { recursive: true });
-    chmodSync(extensions, 0o500);
-    try {
-      const run = await buildSetupRun(
-        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
-        "lsp",
-        "global",
+  notRoot(
+    "a read-only folder with nothing else installable is a row skip with the chmod remedy",
+    async () => {
+      // One editor, and its extensions folder refuses W_OK — so there is nothing
+      // installable at all and the row's whole answer is the block. The remedy
+      // is the one action that settles it, and it does NOT name the VSIX: the
+      // fetch never ran, so the file it would name is not there.
+      writeFileSync(join(stubDir, "codium"), "");
+      const extensions = join(
+        process.env.HOME as string,
+        ".vscode-oss",
+        "extensions",
       );
-      // The remedy rides on the row's OUTCOME — the one dim line the recap
-      // prints beneath a skip — so the assertion reads it where a user sees it.
-      const row = run.applied({}).rows.find((r) => r.target === "lsp");
-      expect(row?.action).toBe("skip");
-      expect(row?.reason).toContain("not writable");
-      expect(row?.outcome?.status).toBe("skipped");
-      const remedy = row?.outcome?.remedy as string;
-      expect(remedy).toContain("make that folder writable");
-      expect(remedy).toContain(join(stubDir, "codium"));
-      expect(remedy).toContain("--install-extension");
-      expect(remedy).not.toContain("\n");
-    } finally {
-      chmodSync(extensions, 0o700);
-    }
-  });
+      mkdirSync(extensions, { recursive: true });
+      chmodSync(extensions, 0o500);
+      try {
+        const run = await buildSetupRun(
+          bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+          "lsp",
+          "global",
+        );
+        // The remedy rides on the row's OUTCOME — the one dim line the recap
+        // prints beneath a skip — so the assertion reads it where a user sees it.
+        const row = run.applied({}).rows.find((r) => r.target === "lsp");
+        expect(row?.action).toBe("skip");
+        expect(row?.reason).toContain("not writable");
+        expect(row?.outcome?.status).toBe("skipped");
+        const remedy = row?.outcome?.remedy as string;
+        expect(remedy).toBe(
+          `make the extensions folder writable, then run \`${BIN_NAME} setup lsp\` again`,
+        );
+        // Never the VSIX. `composeLsp` fetches nothing when no editor is
+        // installable, so a `--install-extension <vsix>` line would name a file
+        // that is not on this machine.
+        expect(remedy).not.toContain("--install-extension");
+        expect(remedy).not.toContain("terrazzo-lsp.vsix");
+      } finally {
+        chmodSync(extensions, 0o700);
+      }
+    },
+  );
 
-  it("a removal over a blocked editor is the same skip, not a reversal that cannot run", async () => {
-    // The copy IS there, and the uninstall would have to write into a folder
-    // pragma must not touch — so the row says so rather than composing a
-    // reversal that would fail.
-    writeFileSync(join(stubDir, "codium"), "");
-    seed(".vscode-oss");
-    const extensions = join(
-      process.env.HOME as string,
-      ".vscode-oss",
-      "extensions",
-    );
-    chmodSync(extensions, 0o500);
-    try {
-      const run = await buildSetupRun(
-        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
-        "lsp",
-        "global",
-        true,
+  notRoot(
+    "a removal over a blocked editor is the same skip, not a reversal that cannot run",
+    async () => {
+      // The copy IS there, and the uninstall would have to write into a folder
+      // pragma must not touch — so the row says so rather than composing a
+      // reversal that would fail.
+      writeFileSync(join(stubDir, "codium"), "");
+      seed(".vscode-oss");
+      const extensions = join(
+        process.env.HOME as string,
+        ".vscode-oss",
+        "extensions",
       );
-      const row = run.applied({}).rows.find((r) => r.target === "lsp");
-      expect(row?.action).toBe("skip");
-      expect(row?.reason).toContain("not writable");
-      expect(row?.outcome?.remedy).toContain("--install-extension");
-    } finally {
-      chmodSync(extensions, 0o700);
-    }
-  });
+      chmodSync(extensions, 0o500);
+      try {
+        const run = await buildSetupRun(
+          bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+          "lsp",
+          "global",
+          true,
+        );
+        const row = run.applied({}).rows.find((r) => r.target === "lsp");
+        expect(row?.action).toBe("skip");
+        expect(row?.reason).toContain("not writable");
+        expect(row?.outcome?.remedy).toContain(
+          "make the extensions folder writable",
+        );
+      } finally {
+        chmodSync(extensions, 0o700);
+      }
+    },
+  );
 });

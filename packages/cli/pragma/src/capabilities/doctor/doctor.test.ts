@@ -9,12 +9,9 @@
  */
 
 import {
-  accessSync,
   chmodSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
-  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -36,11 +33,10 @@ import {
   CANONICAL_TTL,
 } from "../../testing/fixtures/graph/canonical.js";
 import { bootFixtureRuntime } from "../../testing/helpers/fixtureGraph.js";
+import { storeProbe } from "../../testing/helpers/fsProbe.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
-import { detectLsp } from "../setup/operations/setupLsp.js";
-import { detectMcp } from "../setup/operations/setupMcp.js";
 import type { FsProbe } from "../setup/operations/writability.js";
-import { lspHealth, mcpHealth, scopedChecks } from "./checks/targetHealth.js";
+import { scopedChecks } from "./checks/targetHealth.js";
 import { doctorModule } from "./index.js";
 import { runChecks } from "./runChecks.js";
 import type { DoctorData } from "./types.js";
@@ -340,10 +336,33 @@ describe("doctor — the harness inventory", () => {
     expect(project?.items?.[0]?.detail).toContain("detected, not registered");
     expect(project?.items?.[0]?.detail).toContain(".vscode/mcp.json");
 
-    // VS Code is dual-scope now, so the SAME detection has a global location:
-    // its per-user `mcp.json`. The global scope therefore holds the hit too —
-    // detected, not registered — where it used to report an empty machine, and
-    // the `mcp` row beside it names the command that settles it.
+    // The GLOBAL scope holds nothing. VS Code is dual-scope now, so the row
+    // CAN write a per-user file — but a committed `.vscode/` is evidence about
+    // this repository, not about this machine, and the global band has to be
+    // earned by a user-level signal. Without one there is no global location
+    // to report and nothing for `setup mcp` to do there.
+    expect(global?.status).toBe("skip");
+    expect(global?.items ?? []).toEqual([]);
+    const globalMcp = rows.find(
+      (r) => r.name === "mcp" && r.scope === "global",
+    );
+    expect(globalMcp?.status).toBe("skip");
+  });
+
+  it("holds the global hit once a USER-LEVEL signal has earned it", async () => {
+    // The same repository, on a machine that really has VS Code: its per-user
+    // directory exists, so the global band is earned and the row reports the
+    // per-user `mcp.json` it would write — detected, not registered — with the
+    // `mcp` row beside it naming the command that settles it.
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".vscode"), { recursive: true });
+    mkdirSync(join(process.env.XDG_CONFIG_HOME as string, "Code", "User"), {
+      recursive: true,
+    });
+
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const { global } = inventory(rows);
+
     expect(global?.status).toBe("pass");
     expect(global?.detail).toBe("1 detected · 0 registered");
     expect(global?.items?.map((i) => i.label)).toEqual(["VS Code"]);
@@ -561,7 +580,7 @@ describe("doctor — an unconfigured opt-in integration is available, not a faul
 });
 
 /**
- * The `lsp` row's per-editor provenance, and the two rows that say a step was
+ * The `lsp` row's per-editor provenance, and the rows that say a step was
  * skipped rather than failing at it.
  *
  * Per the owner, 2026-09-16: doctor says per editor HOW it was found and WHY a
@@ -570,30 +589,27 @@ describe("doctor — an unconfigured opt-in integration is available, not a faul
  * pragma had missed the editor or found it and could not act.
  *
  * The blocked arms read a filesystem no CI host has, so they are driven over
- * `detectLsp`'s probe seam into the row body — `scopedChecks` walks the target
- * table, which takes no probe.
+ * `scopedChecks`'s own probe seam — the same entry point `doctor` runs, with
+ * the filesystem answer injected, rather than the row bodies opened up as
+ * exports nothing in production would call.
  */
 describe("doctor — the lsp row's per-editor provenance", () => {
-  const ROOTS = { global: "/home/tester", project: "/project" };
-
-  /** A probe whose `realpathSync` maps everything under `root` into the store. */
-  const storeProbe = (root: string): FsProbe => ({
-    existsSync,
-    accessSync,
-    realpathSync: (path) =>
-      path.startsWith(root)
-        ? `/nix/store/9z8y7x-vscodium${path.slice(root.length)}`
-        : realpathSync(path),
-  });
+  /** The `lsp` row of a report, optionally over an injected filesystem. */
+  const lspRow = async (probe?: FsProbe) => {
+    const rows = await scopedChecks(
+      bootRuntime(FLAGS, tmp("pragma-doctor-proj-")),
+      "pragma",
+      probe,
+    );
+    return rows.find((r) => r.name === "lsp");
+  };
 
   it("names one item per editor, with `via PATH` and its standing", async () => {
     const stubDir = tmp("pragma-doctor-editors-");
     writeFileSync(join(stubDir, "codium"), "");
     process.env.PATH = stubDir;
-    const cwd = tmp("pragma-doctor-proj-");
 
-    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
-    const lsp = rows.find((r) => r.name === "lsp");
+    const lsp = await lspRow();
     // Nothing installed yet, so the row is the optional integration it is —
     // and its derived fix keeps the "every available row has a remedy" rule.
     expect(lsp?.status).toBe("available");
@@ -610,18 +626,17 @@ describe("doctor — the lsp row's per-editor provenance", () => {
     mkdirSync(join(process.env.XDG_CONFIG_HOME as string, "Code", "User"), {
       recursive: true,
     });
-    const detection = await detectLsp(tmp("pragma-doctor-proj-"));
-    const health = lspHealth(detection, ROOTS);
 
-    expect(health.status).toBe("skip");
-    expect(health.detail).toContain("no command-line launcher");
-    expect(health.items?.[0]?.label).toBe("VS Code");
-    expect(health.items?.[0]?.status).toBe("skip");
-    expect(health.items?.[0]?.detail).toContain("via user directory");
+    const lsp = await lspRow();
+    expect(lsp?.status).toBe("skip");
+    expect(lsp?.detail).toContain("no command-line launcher");
+    expect(lsp?.items?.[0]?.label).toBe("VS Code");
+    expect(lsp?.items?.[0]?.status).toBe("skip");
+    expect(lsp?.items?.[0]?.detail).toContain("via user directory");
     // The remedy is the editor's own palette command — NOT the derived
     // `pragma setup lsp`, which would only reproduce the skip.
-    expect(health.remedy).toContain("Install 'code' command in PATH");
-    expect(health.remedy).not.toContain("\n");
+    expect(lsp?.remedy).toContain("Install 'code' command in PATH");
+    expect(lsp?.remedy).not.toContain("\n");
   });
 
   it("a store-managed extensions folder is a skip carrying the Nix declaration", async () => {
@@ -634,23 +649,18 @@ describe("doctor — the lsp row's per-editor provenance", () => {
       "extensions",
     );
     mkdirSync(extensions, { recursive: true });
-    const detection = await detectLsp(
-      tmp("pragma-doctor-proj-"),
-      undefined,
-      storeProbe(extensions),
-    );
-    const health = lspHealth(detection, ROOTS);
 
-    expect(health.status).toBe("skip");
-    expect(health.detail).toContain("managed by Nix");
-    expect(health.items?.[0]?.status).toBe("skip");
-    expect(health.items?.[0]?.detail).toContain("via PATH");
-    expect(health.items?.[0]?.detail).toContain("managed by Nix");
+    const lsp = await lspRow(storeProbe(extensions, "9z8y7x-vscodium"));
+    expect(lsp?.status).toBe("skip");
+    expect(lsp?.detail).toContain("managed by Nix");
+    expect(lsp?.items?.[0]?.status).toBe("skip");
+    expect(lsp?.items?.[0]?.detail).toContain("via PATH");
+    expect(lsp?.items?.[0]?.detail).toContain("managed by Nix");
     // There is no marketplace listing, so the line gives both halves a
     // home-manager user needs: where the VSIX comes from, and how to declare it.
-    expect(health.remedy).toContain("buildVscodeExtension");
-    expect(health.remedy).toContain("terrazzo-lsp.vsix");
-    expect(health.remedy).not.toContain("\n");
+    expect(lsp?.remedy).toContain("buildVscodeExtension");
+    expect(lsp?.remedy).toContain("terrazzo-lsp.vsix");
+    expect(lsp?.remedy).not.toContain("\n");
   });
 
   it("a blocked editor beside an installable one keeps the row available", async () => {
@@ -668,21 +678,16 @@ describe("doctor — the lsp row's per-editor provenance", () => {
       "extensions",
     );
     mkdirSync(extensions, { recursive: true });
-    const detection = await detectLsp(
-      tmp("pragma-doctor-proj-"),
-      undefined,
-      storeProbe(extensions),
-    );
-    const health = lspHealth(detection, ROOTS);
 
-    expect(health.status).toBe("available");
-    expect(health.detail).toBe("not installed in VS Code");
-    expect(health.items?.map((i) => [i.label, i.status])).toEqual([
+    const lsp = await lspRow(storeProbe(extensions, "9z8y7x-vscodium"));
+    expect(lsp?.status).toBe("available");
+    expect(lsp?.detail).toBe("not installed in VS Code");
+    expect(lsp?.items?.map((i) => [i.label, i.status])).toEqual([
       ["VS Code", "available"],
       ["VSCodium", "skip"],
     ]);
     // The derived fix stands, because there is still something to install.
-    expect(health.remedy).toBeUndefined();
+    expect(lsp?.remedy).toBe("pragma setup lsp");
   });
 
   it("reports an installed editor as a pass, provenance included", async () => {
@@ -698,24 +703,48 @@ describe("doctor — the lsp row's per-editor provenance", () => {
       ),
       { recursive: true },
     );
-    const detection = await detectLsp(tmp("pragma-doctor-proj-"));
-    const health = lspHealth(detection, ROOTS);
 
-    expect(health.status).toBe("pass");
-    expect(health.detail).toBe("installed in VSCodium");
-    expect(health.items?.[0]?.status).toBe("pass");
-    expect(health.items?.[0]?.detail).toContain("via PATH");
-    expect(health.items?.[0]?.detail).toContain("· installed");
+    const lsp = await lspRow();
+    expect(lsp?.status).toBe("pass");
+    expect(lsp?.detail).toBe("installed in VSCodium");
+    expect(lsp?.items?.[0]?.status).toBe("pass");
+    expect(lsp?.items?.[0]?.detail).toContain("via PATH");
+    expect(lsp?.items?.[0]?.detail).toContain("· installed");
+  });
+
+  it("an INSTALLED editor in a blocked folder is a pass, not a skip", async () => {
+    // A site-managed (or Nix-managed) extensions folder that ALREADY holds the
+    // extension is a working machine. Reporting a skip there told its owner to
+    // chmod the folder and install an extension they already have, and made
+    // the row a permanent `○ lsp` nothing could clear.
+    const stubDir = tmp("pragma-doctor-blocked-installed-");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+    const extensions = join(
+      process.env.HOME as string,
+      ".vscode-oss",
+      "extensions",
+    );
+    mkdirSync(join(extensions, "canonical.terrazzo-lsp-extension-1.2.3"), {
+      recursive: true,
+    });
+
+    const lsp = await lspRow(storeProbe(extensions, "9z8y7x-vscodium"));
+    expect(lsp?.status).toBe("pass");
+    expect(lsp?.detail).toBe("installed in VSCodium");
+    expect(lsp?.items?.[0]?.status).toBe("pass");
+    expect(lsp?.items?.[0]?.detail).toContain("· installed");
+    expect(lsp?.remedy).toBeUndefined();
   });
 
   it("no editor anywhere is a skip naming every place that was looked", async () => {
     process.env.PATH = tmp("pragma-doctor-empty-path-");
-    const detection = await detectLsp(tmp("pragma-doctor-proj-"));
-    const health = lspHealth(detection, ROOTS);
-    expect(health.status).toBe("skip");
-    expect(health.detail).toContain("no VS Code-family editor found");
-    expect(health.detail).toContain("under /Applications");
-    expect(health.remedy).toContain("no action is possible on this machine");
+    const lsp = await lspRow();
+    expect(lsp?.status).toBe("skip");
+    expect(lsp?.detail).toContain("no VS Code-family editor found");
+    expect(lsp?.detail).toContain("under /Applications or ~/Applications");
+    expect(lsp?.detail).toContain("by its user directory");
+    expect(lsp?.remedy).toContain("no action is possible on this machine");
   });
 });
 
@@ -724,30 +753,25 @@ describe("doctor — the lsp row's per-editor provenance", () => {
  * `available` row whose `fix:` would have failed the moment it ran.
  */
 describe("doctor — an unwritable MCP location", () => {
-  const ROOTS = { global: "/home/tester", project: "/project" };
-
   it("reports a store-managed file as a skip whose remedy IS the entry", async () => {
     const cwd = tmp("pragma-doctor-proj-");
     mkdirSync(join(cwd, ".vscode"), { recursive: true });
-    const rt = bootRuntime(FLAGS, cwd);
-    const detection = await detectMcp(rt, "project", {
-      existsSync,
-      accessSync,
-      realpathSync: (path) =>
-        path.startsWith(cwd)
-          ? `/nix/store/4b5c6d-project${path.slice(cwd.length)}`
-          : realpathSync(path),
-    });
-    const health = await mcpHealth(detection, "project", cwd, ROOTS);
 
-    expect(health.status).toBe("skip");
-    expect(health.detail).toContain("managed by Nix");
-    expect(health.items?.every((i) => i.status === "skip")).toBe(true);
+    const rows = await scopedChecks(
+      bootRuntime(FLAGS, cwd),
+      "pragma",
+      storeProbe(cwd, "4b5c6d-project"),
+    );
+    const mcp = rows.find((r) => r.name === "mcp" && r.scope === "project");
+
+    expect(mcp?.status).toBe("skip");
+    expect(mcp?.detail).toContain("managed by Nix");
+    expect(mcp?.items?.every((i) => i.status === "skip")).toBe(true);
     // The exact entry a write would have emitted, so what the user declares
     // classifies as registered next time rather than as drift.
-    expect(health.remedy).toContain('"servers"');
-    expect(health.remedy).toContain('"pragma"');
-    expect(health.remedy).not.toContain("\n");
+    expect(mcp?.remedy).toContain('"servers"');
+    expect(mcp?.remedy).toContain('"pragma"');
+    expect(mcp?.remedy).not.toContain("\n");
   });
 
   it("counts only the WRITABLE files in the row's denominator", async () => {
@@ -770,19 +794,15 @@ describe("doctor — an unwritable MCP location", () => {
         },
       }),
     );
-    const rt = bootRuntime(FLAGS, cwd);
-    const vscodeDir = join(cwd, ".vscode");
-    const detection = await detectMcp(rt, "project", {
-      existsSync,
-      accessSync,
-      realpathSync: (path) =>
-        path.startsWith(vscodeDir)
-          ? `/nix/store/7e8f9a-vscode${path.slice(vscodeDir.length)}`
-          : realpathSync(path),
-    });
-    const health = await mcpHealth(detection, "project", cwd, ROOTS);
 
-    expect(health.detail).toBe("registered in 1 of 1 config files");
-    expect(health.items?.filter((i) => i.status === "skip")).toHaveLength(1);
+    const rows = await scopedChecks(
+      bootRuntime(FLAGS, cwd),
+      "pragma",
+      storeProbe(join(cwd, ".vscode"), "7e8f9a-vscode"),
+    );
+    const mcp = rows.find((r) => r.name === "mcp" && r.scope === "project");
+
+    expect(mcp?.detail).toBe("registered in 1 of 1 config files");
+    expect(mcp?.items?.filter((i) => i.status === "skip")).toHaveLength(1);
   });
 });
