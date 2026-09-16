@@ -8,8 +8,11 @@
 
 import type {
   DataViewsMessages,
+  DataViewsProvider,
+  Facet,
   ReadonlyChannel,
   RowRecord,
+  SchemaFieldDefinition,
   Selection,
 } from "@canonical/dataviews-core";
 import type { RowScopes } from "@canonical/dataviews-core/bindings";
@@ -80,6 +83,40 @@ export type UseHydrationFocusHandoffResult = {
  * false on the server and while hydrating, true after.
  */
 export type UseIsHydratedResult = boolean;
+
+/** What the answered-facets hook takes: the provider whose result answers. */
+export type UseAnsweredFacetsProps<
+  TFields extends
+    readonly SchemaFieldDefinition[] = readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = {
+  readonly provider: DataViewsProvider<TFields, TRow>;
+};
+
+/** The facets answering the applied query, keyed by field, or null while none does. */
+export type UseAnsweredFacetsResult = Readonly<Record<string, Facet>> | null;
+
+/** What the facets hook takes: the provider whose result carries the facets. */
+export type UseFacetsProps<
+  TFields extends
+    readonly SchemaFieldDefinition[] = readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = UseAnsweredFacetsProps<TFields, TRow>;
+
+/** What the facets hook returns, each keyed by field. */
+export type UseFacetsResult = {
+  /**
+   * The facets of the result answering the applied query, or null while no
+   * result answers it: what counts and ranges are read from.
+   */
+  readonly answered: UseAnsweredFacetsResult;
+  /**
+   * The facets the latest result answered, whichever query it answered, or
+   * null before any: what the server's options are listed from, so they stay
+   * until a newer result lands.
+   */
+  readonly latest: Readonly<Record<string, Facet>> | null;
+};
 
 /**
  * What `useMessages` returns: every message a root speaks, the application's

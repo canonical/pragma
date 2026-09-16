@@ -1,6 +1,6 @@
 /**
- * Every DataTable, sort panel, renderer switch, cards and server-backed
- * story, and the filters' faceted stories, have no axe violation:
+ * Every DataTable, sort panel, renderer switch, cards, chart prototype and
+ * server-backed story, and the filters' faceted stories, have no axe violation:
  * the automated half of the evidence the Storybook accessibility addon shows
  * in its panel, run with the package's tests so a story that gains a
  * violation fails `test` rather than waiting for someone to open the panel.
@@ -28,6 +28,8 @@ import * as settingsStories from "../../lib/_work_in_progress/DataViews/common/S
 import * as panelStories from "../../lib/_work_in_progress/DataViews/common/SortPanel/SortPanel.stories.js";
 import * as graphqlStories from "../../lib/_work_in_progress/DataViews/DataViews.graphql.stories.js";
 import * as restStories from "../../lib/_work_in_progress/DataViews/DataViews.rest.stories.js";
+import * as barChartStories from "../../lib/_work_in_progress/FacetBarChart/FacetBarChart.stories.js";
+import * as rangeChartStories from "../../lib/_work_in_progress/FacetRangeChart/FacetRangeChart.stories.js";
 import * as switchStories from "../../lib/_work_in_progress/RendererSwitch/RendererSwitch.stories.js";
 import {
   createGraphQLHandlers,
@@ -55,6 +57,8 @@ const played = {
   "REST API": composeStories(restStories),
   "GraphQL API": composeStories(graphqlStories),
   Cards: composeStories(cardsStories),
+  FacetBarChart: composeStories(barChartStories),
+  FacetRangeChart: composeStories(rangeChartStories),
   Filters: Object.fromEntries(
     Object.entries(composeStories(filtersStories)).filter(([name]) =>
       FACETED_FILTER_STORIES.has(name),

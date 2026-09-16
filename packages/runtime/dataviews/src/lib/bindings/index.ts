@@ -6,8 +6,8 @@
  * pagination facts a bar offers — each projected from the published state —
  * the filter records a root builds, the check a binding tells a provider
  * by, the provider's internal host, the query transition a command makes
- * with the command and its result, the list comparison, the ordering in
- * force and the next one a header's activation, or its menu's choice, leads
+ * with the command and its result, the list comparison, the comparison of
+ * one field's facet, the ordering in force and the next one a header's activation, or its menu's choice, leads
  * to, the wire key a form control is named by, and the parameters a link
  * carries an arrangement in, and the words a root speaks — the application's
  * messages over the English record. React uses it now; a Svelte binding
@@ -79,6 +79,7 @@ export {
   cycleSortTerm,
   placeSortTerm,
 } from "../query/index.js";
+export { areFieldFacetsEqual } from "../result/index.js";
 export type {
   Applicability,
   RowChannels,
