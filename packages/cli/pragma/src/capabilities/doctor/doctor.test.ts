@@ -36,6 +36,7 @@ import { bootFixtureRuntime } from "../../testing/helpers/fixtureGraph.js";
 import { storeProbe } from "../../testing/helpers/fsProbe.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import type { FsProbe } from "../setup/operations/writability.js";
+import { checkPackageRefs } from "./checks/checkPackageRefs.js";
 import { scopedChecks } from "./checks/targetHealth.js";
 import { doctorModule } from "./index.js";
 import { runChecks } from "./runChecks.js";
@@ -121,7 +122,15 @@ const byName = (data: DoctorData, name: string) =>
 
 describe("doctor — shape & spread", () => {
   it("returns the environment checks plus one row per scoped target", async () => {
-    const data = await runChecks(bootRuntime(FLAGS, tmp("pragma-proj-")));
+    // A fixture pack, not the distribution's own: the shape under test is the
+    // row table, and the store check booting the embedded snapshot cold costs
+    // three seconds on an idle machine (65,000 triples) and more than the
+    // five-second budget when every package's suite runs at once, which is how
+    // the release workflow runs them. What the embedded snapshot proves — that
+    // a first install's pack refs pass naming it — has its own case below,
+    // through the check that never boots the store.
+    const fixture = await bootFixtureRuntime({ ttl: CANONICAL_TTL });
+    const data = await runChecks(fixture.runtime);
     // Four unscoped environment checks, then the target table in both scopes
     // (all five targets are global, mcp and skills are also project) = 11,
     // plus the two `harnesses` inventory rows, one per scope = 13.
@@ -132,24 +141,6 @@ describe("doctor — shape & spread", () => {
     }
     // Deterministic under the isolated env.
     expect(byName(data, "Node version")?.status).toBe("pass");
-    // Nothing built, but the packs are the distribution's own — so the embedded
-    // snapshot answers reads and the check passes, naming what it is reading.
-    const pkgRefs = byName(data, "pack refs");
-    expect(pkgRefs?.status).toBe("pass");
-    expect(pkgRefs?.detail).toContain("shipped with the CLI");
-    expect(pkgRefs?.remedy).toBeUndefined();
-    // Provenance is one ITEM PER PACK, not a comma-joined string in the
-    // headline: four packs and two forty-character SHAs on one line was
-    // unreadable, and every other multi-part check here already uses items.
-    // The headline counts them; the items say which revision each one is.
-    expect(pkgRefs?.detail).toContain("packs");
-    expect((pkgRefs?.items?.length ?? 0) > 1).toBe(true);
-    for (const item of pkgRefs?.items ?? []) {
-      expect(item.label).not.toContain(",");
-      // A git hash is cut to seven — the length every other tool in this
-      // workflow prints, and short enough that four rows stay scannable.
-      expect(item.detail ?? "").not.toMatch(/[0-9a-f]{40}/);
-    }
 
     // The scoped rows carry the TARGET IDS verbatim — `mcp`, not "MCP
     // configured" — because the row name IS the fix command's argument. The
@@ -190,10 +181,37 @@ describe("doctor — shape & spread", () => {
     // No global config in the isolated XDG — an opt-in that is not set up yet.
     expect(byName(data, "config")?.status).toBe("available");
     expect(byName(data, "config")?.remedy).toBe("pragma setup config");
+    await fixture.dispose();
   });
 });
 
 describe("doctor — the pack-refs check", () => {
+  it("a first install reads the distribution's own packs, and says so", async () => {
+    // Nothing built, but the packs are the distribution's own — so the embedded
+    // snapshot answers reads and the check passes, naming what it is reading.
+    // The check alone, not the whole doctor: pack refs never boot the store, and
+    // booting the embedded snapshot cold is the one expensive thing a doctor
+    // run does.
+    const pkgRefs = await checkPackageRefs(
+      bootRuntime(FLAGS, tmp("pragma-proj-")),
+    );
+    expect(pkgRefs.status).toBe("pass");
+    expect(pkgRefs.detail).toContain("shipped with the CLI");
+    expect(pkgRefs.remedy).toBeUndefined();
+    // Provenance is one ITEM PER PACK, not a comma-joined string in the
+    // headline: four packs and two forty-character SHAs on one line was
+    // unreadable, and every other multi-part check here already uses items.
+    // The headline counts them; the items say which revision each one is.
+    expect(pkgRefs.detail).toContain("packs");
+    expect((pkgRefs.items?.length ?? 0) > 1).toBe(true);
+    for (const item of pkgRefs.items ?? []) {
+      expect(item.label).not.toContain(",");
+      // A git hash is cut to seven — the length every other tool in this
+      // workflow prints, and short enough that four rows stay scannable.
+      expect(item.detail ?? "").not.toMatch(/[0-9a-f]{40}/);
+    }
+  });
+
   it("a project with its OWN packs and nothing built is an attributable fail", async () => {
     // The install that must never read healthy: `origins.packs` is "project",
     // so the embedded snapshot is a DIFFERENT graph and every read throws
@@ -251,17 +269,20 @@ describe("doctor — the store check", () => {
 
 describe("doctor — dispatch & MCP", () => {
   it("exits 0 even when checks fail (failures live in the envelope)", async () => {
-    const outcome = await executeVerb(
-      doctorVerb,
-      {},
-      NO_MUT,
-      bootRuntime(FLAGS, tmp("pragma-proj-")),
-    );
+    // On the fixture pack, for the same reason the shape case is: a whole doctor
+    // run boots the store, and the embedded snapshot is the expensive one.
+    const fixture = await bootFixtureRuntime({ ttl: CANONICAL_TTL });
+    const outcome = await executeVerb(doctorVerb, {}, NO_MUT, fixture.runtime);
     expect(outcome.exitCode).toBe(0);
+    await fixture.dispose();
   });
 
   it("MCP doctor is read-only and returns the checks envelope", async () => {
-    const mcp = await projectMcp([doctorModule], tmp("pragma-proj-"));
+    // The MCP boots its own runtime from the cwd; the fixture's cwd carries a
+    // config that points at the built fixture pack, so the embedded snapshot is
+    // never parsed here either.
+    const fixture = await bootFixtureRuntime({ ttl: CANONICAL_TTL });
+    const mcp = await projectMcp([doctorModule], fixture.cwd);
     const tools = await mcp.listTools();
     const doctorTool = tools.find((t) => t.name === "doctor");
     expect(
@@ -273,6 +294,7 @@ describe("doctor — dispatch & MCP", () => {
     await mcp.cleanup();
     expect(envelope.ok).toBe(true);
     expect((envelope.data as DoctorData).checks).toHaveLength(13);
+    await fixture.dispose();
   });
 });
 
