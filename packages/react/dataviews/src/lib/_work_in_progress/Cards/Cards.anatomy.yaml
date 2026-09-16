@@ -1,0 +1,54 @@
+---
+# Cards — a collection's records as the design system's cards: one card per
+# record on the page, headed and named by its title field, the other fields
+# listed beneath it.
+#
+# PROVISIONAL. A work-in-progress spike: no design exists for data cards, so
+# this file records what the spike draws rather than what a design specifies,
+# and is rewritten when one does.
+#
+# Anatomy DSL 0.3.0. No validator runs on this file yet. The root and the
+# cards reference the design system's own blocks; the parts added around and
+# inside them are role nodes.
+#
+# Names — one per part, the same in the DOM and here:
+#   cards           DOM `ds data-cards`, a `section` named by `label`
+#   select all      DOM `.select-all`, a native checkbox and its label
+#   status          DOM `.status`, carrying `data-status`
+#   list            the design system's Cards group, `ds cards`, `role="list"`
+#   card            the design system's Card, `ds card data-card`,
+#                   `role="listitem"`, named by its title
+#   header          Card.Header: the record's checkbox, then its title
+#   title           DOM `.title`, the title field's value
+#   details         Card.Content holding a `dl` of the other fields
+#   field           DOM `.field`: a `dt` heading and a `dd` value
+#
+# Tokens are `/`-paths over `@canonical/design-tokens` 0.10.0 ids. The Card
+# and the Cards group bind their own; the spike adds only spacing and type:
+#   gap between the parts         dimension/200
+#   select-all checkbox to label  dimension/050
+#   field rows and columns        dimension/050, dimension/200
+#   text                          typography/text/primary, color/text
+# Findings owed to the design owners: a data card's anatomy (where selection,
+# a menu and status sit on a card), the card's span on the application grid
+# (the spike spans one intrinsic group of four columns), and whether a card
+# field list is a description list or a table of its own.
+anatomy:
+  root:
+    ref: ds:global.group.cards
+    name: cards
+    children:
+      - role: select-all
+      - role: status
+      - role: list
+        children:
+          - ref: ds:global.component.card
+            name: card
+            children:
+              - role: header
+                children:
+                  - role: checkbox
+                  - role: title
+              - role: details
+                children:
+                  - role: field

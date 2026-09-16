@@ -1,0 +1,100 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Cards.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# Cards recipes
+
+`Cards` shows a collection's records as the design system's cards: one card per record on the page, headed and named by its title field, with the other fields listed beneath it. The cards are the design system's own `Card`, laid out by its `Cards` group, and they form a list a reader moves through in order. `Cards` takes a provider; its connected twin reads the enclosing `DataViews` root instead. Both are work-in-progress spikes: neither is exported from the package root, and their shape may change or they may be withdrawn.
+
+## Fields and the title
+
+A card's fields are declared as a table's columns are, and a table's columns can be given to cards as they are: each has an `id`, a `header`, the record `field` it shows (its id by default) and, where it needs one, its own `cell`. `title` names the field that heads each card. It names the card for assistive technology and names the card's checkbox, so pick a field that tells one record from another.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+} from "@canonical/dataviews-core";
+import type { DisplayField } from "@canonical/dataviews-react";
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
+// A work-in-progress spike: not yet exported from the package root.
+import { Cards } from "./Cards.js";
+
+const fields: readonly DisplayField[] = [
+  { id: "name", header: "Host" },
+  { id: "status", header: "Status" },
+  { id: "region", header: "Region" },
+  { id: "cores", header: "Cores" },
+];
+
+export function Machines() {
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      collection: machineCollection,
+      source: createArraySource({ rows: machines, collection: machineCollection }),
+    }),
+  );
+  return (
+    <Cards provider={provider} fields={fields} title="name" label="Machines" />
+  );
+}
+```
+
+<Canvas of={Stories.Default} sourceState="none" />
+
+A field's own `cell` renders on a card exactly as it renders in a table cell, inside the same cell scope, so it can read the record through `useDataViewsCell`.
+
+<Canvas of={Stories.CustomCell} sourceState="none" />
+
+## Selecting cards
+
+With `selectable`, each card carries a checkbox named for its title, and one checkbox above the cards selects every card on the page or clears them, showing a mixed state while only some are selected. The selection is the provider's, so a record selected on a card is selected in every table on the same provider, and a selection made on another page is left alone.
+
+<Canvas of={Stories.Selectable} sourceState="none" />
+
+## Status
+
+Cards show the core's status as the table does. While nothing has arrived they say they are loading; when a request fails or there is nothing to show, they say why in a polite status; and cards that no longer answer the current query stay in view beneath a status that says so.
+
+<Canvas of={Stories.Loading} sourceState="none" />
+
+<Canvas of={Stories.Failed} sourceState="none" />
+
+## Ordering and paging
+
+Cards show nothing of the ordering or the paging themselves. Place `DataViews.SortPanel` and `DataViews.Pagination` beside the connected cards in the same root: the panel orders them and the bar pages them, as they would a table.
+
+<Canvas of={Stories.SortedAndPaged} sourceState="none" />
+
+## A table or cards
+
+Give a table and cards to `RendererSwitch` over one root, and the reader chooses between them. Both read one query, one page and one selection.
+
+<Canvas of={Stories.TableOrCards} sourceState="none" />
+
+## Without scripting
+
+The server draws the cards of the URL's query as plain list markup, with native checkboxes and real links in any cell that renders one. Ordering and paging keep the sort panel's and the pagination bar's own baselines. Nothing about a card needs scripts to be read.
+
+## The layout needs the design system's grid
+
+The cards are laid out by the design system's `Cards` group, which is a subgrid: it takes its column tracks from a parent carrying the `grid` preset from `@canonical/styles`. Link that package's stylesheet as well as this one, or the cards still read correctly — a list of cards, each with its title and fields — and simply do not line their sections up across a row.
+
+## What the spike leaves out
+
+No media on a card, since no field kind names one; no hiding or reordering of a card's fields; no virtualization, so every card on the page is drawn; no card menu; and no design values beyond the design system's own `Card` and `Cards`. The card's span on the grid is provisional.
+
+## Provisional coverage
+
+These notes are provisional, recorded for a spike and re-evaluated when data cards are designed.
+
+| Surface | Principal criteria | Behaviour today |
+|---|---|---|
+| Cards list | 1.3.1, 1.3.2, 2.4.3, 4.1.2 | A region named by `label` holding a list; one list item per record in result order; no grid role and no roving focus, so Tab moves through each card's controls in order |
+| Card | 1.3.1, 2.4.6, 4.1.2 | The design system's `Card` as a list item, named by its title field; the other fields as a description list, each value under its heading |
+| Card checkbox | 1.3.1, 2.1.1, 4.1.2 | A native checkbox named "Select" and the record's name; its state agrees with the provider's selection, shared with every table on the provider |
+| Select all displayed rows | 1.3.1, 2.1.1, 4.1.2 | A native labelled checkbox; checked only when every card on the page is selected, mixed when some are; acts on the page's records alone |
+| Cards status | 1.3.1, 4.1.3 | The core's status above the cards: a settled outcome announced once, politely; a passing state silent; never an empty list claimed as no results while the source has not answered |
+| Custom cells on a card | 1.1.1, 2.4.4, 4.1.2 | A field's own cell renders in the same cell scope as a table cell; its content contract is the cell's own |

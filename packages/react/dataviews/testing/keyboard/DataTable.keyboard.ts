@@ -39,6 +39,9 @@ const FILTERS = "_work_in_progress/DataViews/Filters";
 /** The table settings' stories, the path to every arrangement without a drag. */
 const SETTINGS = "_work_in_progress/DataViews/Settings";
 
+/** The cards' stories, a collection's records as the design system's cards. */
+const CARDS = "_work_in_progress/Cards";
+
 /** The renderer switch's stories, one collection shown through a chosen renderer. */
 const RENDERER_SWITCH = "_work_in_progress/RendererSwitch";
 
@@ -50,14 +53,15 @@ const GRAPHQL_API = "_work_in_progress/DataViews/GraphQL API";
 
 /**
  * The stories this pass walks: the table's own, the sort panel's, the
- * filters', the table settings', the renderer switch's, and the whole
- * composition over each mock endpoint.
+ * filters', the table settings', the cards', the renderer switch's, and
+ * the whole composition over each mock endpoint.
  */
 const TITLES: readonly string[] = [
   TABLE,
   SORT_PANEL,
   FILTERS,
   SETTINGS,
+  CARDS,
   RENDERER_SWITCH,
   REST_API,
   GRAPHQL_API,
@@ -445,7 +449,7 @@ const tabTo = async (page: Page, control: Locator): Promise<void> => {
   }
 };
 
-test.describe("DataTable, sort panel, filters, settings, renderer switch and server-backed stories, keyboard only", () => {
+test.describe("DataTable, sort panel, filters, settings, cards, renderer switch and server-backed stories, keyboard only", () => {
   for (const story of stories) {
     test(`${story.title} ${story.name}: every control is reached both ways, focus visible`, async ({
       page,
@@ -724,6 +728,29 @@ test.describe("DataTable, sort panel, filters, settings, renderer switch and ser
     await page.keyboard.press("Space");
     await expect(checkbox).toBeChecked();
     await expect(checkbox).toBeFocused();
+  });
+
+  test("Cards Selectable: Space checks a card's checkbox, and the page's, focus stays", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(CARDS, "Selectable").id);
+    const birch = page.getByRole("checkbox", {
+      name: "Select birch.example.com",
+    });
+    await tabTo(page, birch);
+    await page.keyboard.press("Space");
+    await expect(birch).toBeChecked();
+    await expect(birch).toBeFocused();
+    const all = page.getByRole("checkbox", {
+      name: "Select all displayed rows",
+    });
+    await tabTo(page, all);
+    await page.keyboard.press("Space");
+    await expect(all).toBeChecked();
+    await expect(all).toBeFocused();
+    await expect(
+      page.getByRole("checkbox", { name: "Select larch.example.com" }),
+    ).toBeChecked();
   });
 
   test("RendererSwitch TableOrSummary: the select's own arrow keys choose a renderer, focus stays on the choice", async ({
