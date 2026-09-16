@@ -49,6 +49,7 @@ export {
   userHome,
 } from "./platformPaths.js";
 export type { DetectContext } from "./signals.js";
+export { serializeTomlInlineEntry } from "./toml/index.js";
 export type {
   ConfigTarget,
   DetectedHarness,
