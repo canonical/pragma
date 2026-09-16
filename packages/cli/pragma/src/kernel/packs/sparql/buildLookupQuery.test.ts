@@ -169,6 +169,54 @@ const RANKED: PackLookup = {
   },
 };
 
+describe("the name FILTER a name-addressed resolve matches by", () => {
+  // Pinned as EMITTED TEXT because no store can prove the second half. A
+  // fixture graph shows that a padded name resolves (`packs/resolveEntity.test`
+  // does, over an entity named "Timeline " the way 66 shipped names are); only
+  // the emission says that the ARGUMENT is trimmed too, and that the regex is
+  // the two anchored runs rather than something that would also eat the spaces
+  // inside "Button Icon".
+  const TRIMMED =
+    'FILTER (LCASE(REPLACE(STR(?name), "^\\\\s+|\\\\s+$", "")) = LCASE(';
+
+  it("compares the name with BOTH sides trimmed, on both name forms", () => {
+    for (const query of [
+      buildLookupQuery(RANKED, "Timeline"),
+      buildNameResolveQuery(RANKED, "Timeline"),
+      buildLookupQuery(CONSTRAINED, "spacing.medium"),
+    ]) {
+      expect(query).toContain(`${TRIMMED}"`);
+    }
+  });
+
+  it("trims the ARGUMENT in TypeScript rather than asking the store to", () => {
+    // The store side can only trim `?name`. A padded ARGUMENT — a name pasted
+    // out of a table cell — has to be trimmed before it becomes a literal, or
+    // `lookup "Button "` still misses an entity whose own name is clean.
+    expect(buildLookupQuery(RANKED, "  Timeline\t")).toContain(
+      `${TRIMMED}"Timeline"))`,
+    );
+    expect(buildNameResolveQuery(RANKED, "\nTimeline ")).toContain(
+      `${TRIMMED}"Timeline"))`,
+    );
+  });
+
+  it("strips only the ENDS, leaving the spaces a name carries inside it", () => {
+    // `Button Icon` is a live block name. A whitespace-collapsing REPLACE would
+    // make it unaddressable, so the anchors are the whole point of the pattern.
+    const query = buildLookupQuery(RANKED, "Button Icon");
+    expect(query).toContain(`${TRIMMED}"Button Icon"))`);
+  });
+
+  it("leaves the IRI-addressed forms with no name FILTER at all", () => {
+    // An IRI is the address; `?name` is a label to project there, and filtering
+    // on it would re-impose the requirement the IRI form exists to avoid.
+    expect(
+      buildLookupByIriQuery(RANKED, "https://ds.canonical.com/a"),
+    ).not.toContain("FILTER (LCASE(");
+  });
+});
+
 describe("the ranking a name resolve orders by", () => {
   it("orders by the score and then by a key that cannot tie", () => {
     // Both halves matter. Without DESC(?score) the ranking is not read at all;

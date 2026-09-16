@@ -10,30 +10,43 @@
  * Return up to {@link maxResults} candidates most similar to `query`.
  *
  * Exact matches are excluded — a match means the caller should have resolved it
- * and never reached here.
+ * and never reached here. "Exact" is judged on the TRIMMED, case-folded token,
+ * which is the same equality the resolver's own name FILTER applies, so the two
+ * cannot disagree about whether a candidate is a match. They did:
+ * `block lookup Timeline` missed an entity whose `ds:name` ends in a space and
+ * then suggested "Timeline " back, which reads as the CLI declining to accept
+ * the word it just printed. Restating the query is never a useful suggestion —
+ * if a candidate really is the query, the miss is the bug and the suggestion
+ * would only hide it.
+ *
+ * Scoring reads the same trimmed forms, so padding costs a candidate no edit
+ * distance either; what is RETURNED is the candidate verbatim, padding and
+ * casing intact, because a suggestion names a value the graph holds.
  *
  * @param query - The token that failed to resolve.
  * @param candidates - All known names to rank against.
  * @param opts.maxResults - Max suggestions to return (default 5).
  * @param opts.threshold - Max normalized edit distance (default 0.4).
- * @returns Ranked suggestions, original casing preserved.
+ * @returns Ranked suggestions, original spelling preserved.
  */
 export function suggestNames(
   query: string,
   candidates: readonly string[],
   opts?: { maxResults?: number; threshold?: number },
 ): string[] {
-  if (query === "") return [];
-
   const maxResults = opts?.maxResults ?? 5;
   const threshold = opts?.threshold ?? 0.4;
-  const queryLower = query.toLowerCase();
+  const queryLower = query.trim().toLowerCase();
+
+  // A token that is nothing but whitespace has no word to rank against, the
+  // same as the empty one.
+  if (queryLower === "") return [];
 
   type Scored = { name: string; score: number };
   const scored: Scored[] = [];
 
   for (const candidate of candidates) {
-    const candidateLower = candidate.toLowerCase();
+    const candidateLower = candidate.trim().toLowerCase();
 
     if (candidateLower === queryLower) continue;
 

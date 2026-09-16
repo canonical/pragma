@@ -83,4 +83,39 @@ describe("suggestNames", () => {
   it("returns nothing for an empty query", () => {
     expect(suggestNames("", ["config"])).toEqual([]);
   });
+
+  it("returns nothing for a query that is only whitespace", () => {
+    expect(suggestNames("   ", ["config"])).toEqual([]);
+  });
+
+  it("never offers a candidate that IS the query once padding is ignored", () => {
+    // The reported defect, in the unit that produced the sentence:
+    // `block lookup Timeline` printed `Did you mean? - Timeline ` because 66
+    // shipped `ds:name` literals carry the source document's trailing space, and
+    // the exclusion compared the raw strings. A suggestion that differs from the
+    // query by a character no surface prints reads as the CLI refusing the word
+    // it just echoed — and if a candidate really is the query, the miss is the
+    // bug, so restating it would only hide the bug.
+    //
+    // The near-miss beside it is what proves the exclusion is the only thing
+    // dropped — an empty list would pass whether the rule worked or the
+    // threshold had simply swallowed both.
+    expect(suggestNames("Timeline", ["Timeline ", "Timelines"])).toEqual([
+      "Timelines",
+    ]);
+    // Both directions, and leading padding too: the query is the padded one
+    // here, and case is folded alongside.
+    expect(suggestNames("  timeline\t", ["Timeline", "Timelines"])).toEqual([
+      "Timelines",
+    ]);
+  });
+
+  it("suggests a padded candidate by its LITERAL value on a genuine typo", () => {
+    // Padding costs a candidate no edit distance, and the value handed back is
+    // the one the graph holds — the suggester matches loosely and quotes
+    // exactly, because a suggestion names something a reader can look up.
+    expect(suggestNames("Timelime", ["Timeline ", "block"])).toEqual([
+      "Timeline ",
+    ]);
+  });
 });

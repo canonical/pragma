@@ -111,8 +111,12 @@ async function lookup(
  * Every block name the shipped graph gives to more than one block, with each
  * block's IRI, its tier's declared name and whether it is a subcomponent.
  *
- * Read with the SAME `LCASE` the resolve filters by, so a pair that collides
- * only for a lookup (`Button` vs `button`) is in this set too.
+ * Read with the SAME equality the resolve filters by — case-folded AND
+ * end-trimmed — so a pair that collides only for a lookup (`Button` vs
+ * `button`, `Timeline` vs the padded `Timeline ` 66 shipped names are spelled
+ * like) is in this set too. An oracle that folded less than the resolve would
+ * hand the sweep below a name reaching more blocks than the oracle listed, and
+ * read the resolve's correct answer as a failure.
  */
 async function collisions(): Promise<
   Map<string, { uri: string; tier: string; part: boolean }[]>
@@ -124,7 +128,7 @@ async function collisions(): Promise<
       "  ?uri a ?class .",
       `  ?uri ${blockLookup.by} ?name .`,
       `  OPTIONAL { ?uri ${scope.via} ?tier . ?tier ${scope.by} ?tn . }`,
-      "  BIND(LCASE(STR(?name)) AS ?key)",
+      '  BIND(LCASE(REPLACE(STR(?name), "^\\\\s+|\\\\s+$", "")) AS ?key)',
       '  BIND(COALESCE(?tn, "") AS ?tierName)',
       "  BIND(EXISTS { ?uri a ds:Subcomponent } AS ?part)",
       "}",

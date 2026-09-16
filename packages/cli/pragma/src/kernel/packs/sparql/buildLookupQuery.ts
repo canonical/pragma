@@ -5,7 +5,8 @@
  * and which properties to read; the query text is generated here so
  * user-supplied names are always escaped SPARQL string literals, and level-gated
  * fields below the active level are excluded from the projection (fetch-gating).
- * Matching on the name is exact and case-insensitive.
+ * Matching on the name is exact, and insensitive to case and to surrounding
+ * whitespace — see {@link nameFilter}.
  *
  * WHAT an entity's name IS lives in one place — {@link nameBinding} — and every
  * form here uses it: the asserted `by` value, plus, for a lookup that DECLARES
@@ -389,11 +390,42 @@ function rankingClause(lookup: PackLookup): {
 }
 
 /**
+ * The name FILTER both name-addressed resolves share.
+ *
+ * A name is matched insensitively to case AND to the whitespace it is padded
+ * with, because the padding is an artefact of where the name came from rather
+ * than part of the name. Sixty-six `ds:name` literals in the shipped graph end
+ * in a space, copied across from the source document, and `block lookup
+ * Timeline` answered ENTITY_NOT_FOUND while offering "Timeline " straight back
+ * as a suggestion — the query and the answer differing by a character no
+ * surface prints and no user can type deliberately. The upstream transform is
+ * being corrected separately; a resolve a stray space can defeat is a defect on
+ * its own, and this is where that half is fixed.
+ *
+ * BOTH sides are trimmed, never one: the store side by REPLACE over the two
+ * anchored runs, the argument side in TypeScript before it is escaped into the
+ * literal. Trimming only `?name` would leave `block lookup "Button "` — a name
+ * pasted out of a table cell — missing an entity whose own name is clean.
+ *
+ * The regex the engine reads is `^\s+|\s+$` — the doubled backslashes in the
+ * source are the SPARQL string-literal escape and not part of the pattern.
+ * Verified against the pinned oxigraph, whose REPLACE takes both the `\s`
+ * class and the alternation, and whose `^`/`$` anchor the whole value rather
+ * than each line of it.
+ *
+ * @param name - The user-supplied name, untrimmed and unescaped.
+ * @returns The FILTER line to splice into the WHERE clause.
+ */
+function nameFilter(name: string): string {
+  return `  FILTER (LCASE(REPLACE(STR(?name), "^\\\\s+|\\\\s+$", "")) = LCASE("${escapeSparqlString(name.trim())}"))`;
+}
+
+/**
  * Build the SELECT retrieving the entities a name reaches, with their declared
  * fields, best first. The caller answers with the first and names the rest.
  *
  * @param lookup - The pack's lookup declaration.
- * @param name - User-supplied entity name (escaped here).
+ * @param name - User-supplied entity name (trimmed and escaped here).
  * @param level - Active canonical level; gated fields below it are excluded.
  * @returns SPARQL SELECT text, ranked and unlimited.
  */
@@ -413,7 +445,7 @@ export function buildLookupQuery(
     ranking.binds,
     optionals,
     scope.optional,
-    `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
+    nameFilter(name),
     "}",
     ranking.orderBy,
   ]
@@ -457,7 +489,7 @@ export function buildLookupByIriQuery(
  * Build the minimal name→URI resolve for a graphql-sourced lookup (and the
  * shared entry point for the sparql path's name form): maps the user-supplied
  * name to the entity IRIs, everything else comes from the field fetch. The name
- * is an escaped literal; all terms are validated pack terms.
+ * is a trimmed, escaped literal; all terms are validated pack terms.
  *
  * Ranked and unlimited, exactly like {@link buildLookupQuery} — the two paths
  * differ in where the VALUES come from, never in which entities a name reaches.
@@ -478,7 +510,7 @@ export function buildNameResolveQuery(
     nameBinding(lookup),
     ranking.binds,
     scope.optional,
-    `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
+    nameFilter(name),
     "}",
     ranking.orderBy,
   ]
