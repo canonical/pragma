@@ -52,6 +52,28 @@ const FormPanel: WithSidePanelRender = ({ close, ref }) => (
 
 const FormPanelButton = withSidePanel(Button, FormPanel);
 
+/**
+ * A panel composed without a header names itself through `aria-label`
+ * instead, and wires its own way out: without a header there is no close
+ * button either.
+ */
+const HeaderlessPanel: WithSidePanelRender = ({ close, ref }) => (
+  <SidePanel ref={ref} aria-label="Ubuntu mission">
+    <SidePanel.Content>
+      We deliver the world's free software, freely, to everybody on the same
+      terms. Whether you are a student or a global bank, you can download and
+      use Ubuntu free of charge.
+    </SidePanel.Content>
+    <SidePanel.Footer>
+      <Button importance="primary" onClick={close}>
+        Got it
+      </Button>
+    </SidePanel.Footer>
+  </SidePanel>
+);
+
+const OpenPanelButton = withSidePanel(Button, HeaderlessPanel);
+
 const meta = {
   title: "Components/SidePanel/withSidePanel",
   parameters: {
@@ -174,3 +196,53 @@ const FormPanelButton = withSidePanel(Button, FormPanel);
     },
   },
 };
+
+/**
+ * This story exists solely to show one rule: a panel composed without a
+ * header has no title to name it, so it must carry its own `aria-label`.
+ * Without a header there is also no close button, so the footer's action is
+ * the visible way out.
+ */
+export const WithoutHeader: Story = {
+  render: () => (
+    <div style={{ padding: "1rem" }}>
+      <OpenPanelButton>Open panel</OpenPanelButton>
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Open panel" }));
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+import { Button } from "@canonical/react-ds-global";
+import {
+  SidePanel,
+  withSidePanel,
+  type WithSidePanelRender,
+} from "@canonical/react-ds-app";
+
+const HeaderlessPanel: WithSidePanelRender = ({ close, ref }) => (
+  <SidePanel ref={ref} aria-label="Ubuntu mission">
+    <SidePanel.Content>
+      We deliver the world's free software, freely, to everybody on the same
+      terms. Whether you are a student or a global bank, you can download and
+      use Ubuntu free of charge.
+    </SidePanel.Content>
+    <SidePanel.Footer>
+      {/* With no header there is no close button — the footer is the way out */}
+      <Button importance="primary" onClick={close}>Got it</Button>
+    </SidePanel.Footer>
+  </SidePanel>
+);
+
+const OpenPanelButton = withSidePanel(Button, HeaderlessPanel);
+
+<OpenPanelButton>Open panel</OpenPanelButton>
+        `,
+      },
+    },
+  },
+};
+WithoutHeader.storyName = "Without a header";
