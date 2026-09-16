@@ -4,12 +4,29 @@
  * only @charset may precede it. Sass finds this file by its path inside the
  * package and inlines it in place, which is what a Sass entry wants:
  *
- *   @import "@canonical/styles-vanilla-adapter/src/layers";
  *   @use "@canonical/styles-vanilla-adapter/src/layers";
  *
  * From plain CSS or a bundler:
  *
  *   @import url("@canonical/styles-vanilla-adapter/layers.css");
+ *
+ * Those two name the same file by two different routes, and the difference is
+ * why this path is part of the public surface rather than an implementation
+ * detail. A bundler reads the package's `exports`, so it gets the tidy
+ * `/layers.css`. Sass does not: a load path resolves against the filesystem and
+ * never reads `exports`, so a Sass entry has to name where the file actually
+ * sits. Moving or renaming anything under `src/` therefore breaks every Sass
+ * consumer silently, and the export map will not save them.
+ *
+ * The tidier alternatives were measured and are not worth their cost. A
+ * forwarding `layers.css` at the package root cannot work at all: Sass leaves
+ * the `@import` inside it literal rather than inlining it, so the browser is
+ * asked to fetch a path that does not resolve. A forwarding `layers.scss` does
+ * work, but it would make a package with no build step ship a build-time
+ * language for the benefit of one kind of consumer. Moving the files to the
+ * package root also works, and is the clean answer, but `@canonical/styles` is
+ * shaped the same way for the same reason and the two should move together if
+ * either does.
  *
  * Listed lowest first, each position is an argument:
  *   vanilla.escapes
