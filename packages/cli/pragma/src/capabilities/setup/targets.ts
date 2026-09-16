@@ -49,6 +49,7 @@ import {
   editorFoundVia,
   LSP_SKIP_REMEDY,
   type LspDetection,
+  lspBlockHeadline,
   lspBlockReason,
   lspBlockRemedy,
   lspEditorNames,
@@ -278,7 +279,9 @@ const lspRowBlock = (
   if (actionable > 0) return undefined;
   const first: DetectedEditor | undefined = blockedLspEditors(d).at(0);
   if (first === undefined) return undefined;
-  const reason = lspBlockReason(first) as string;
+  // The row headline names the editor; the CHILD's own reason does not, because
+  // its label already has.
+  const reason = lspBlockHeadline(first) as string;
   return {
     action: "skip",
     detail: reason,

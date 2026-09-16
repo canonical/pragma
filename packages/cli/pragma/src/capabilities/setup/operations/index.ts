@@ -57,6 +57,7 @@ export {
   detectLsp,
   editorFoundVia,
   LSP_SKIP_REMEDY,
+  lspBlockHeadline,
   lspBlockReason,
   lspBlockRemedy,
   lspEditorNames,

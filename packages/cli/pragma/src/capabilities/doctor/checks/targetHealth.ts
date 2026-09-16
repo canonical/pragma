@@ -43,6 +43,7 @@ import {
   editorFoundVia,
   LSP_SKIP_REMEDY,
   type LspDetection,
+  lspBlockHeadline,
   lspBlockReason,
   lspBlockRemedy,
   lspEditorNames,
@@ -154,7 +155,9 @@ export const lspHealth = (d: LspDetection, roots: Roots): Health => {
   if (first !== undefined) {
     return {
       status: "skip",
-      detail: lspBlockReason(first) as string,
+      // The headline names the editor; the item's own detail does not, because
+      // its label already has.
+      detail: lspBlockHeadline(first) as string,
       items,
       remedy: lspBlockRemedy(d, first) as string,
     };

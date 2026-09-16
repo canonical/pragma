@@ -2940,8 +2940,15 @@ describe("setup lsp — how each editor was found", () => {
     expect(row?.action).toBe("skip");
     expect(row?.reason).toContain("no command-line launcher");
     expect(row?.children?.[0]?.action).toBe("skip");
-    // Per-editor, because each fork spells its own binary.
-    expect(row?.children?.[0]?.reason).toContain("VS Code");
+    // The ROW headline names the editor; the child's own reason does not,
+    // because its label already has — the name once per line, not three times.
+    expect(row?.reason).toBe(
+      "VS Code: no command-line launcher — found only its user directory",
+    );
+    expect(row?.children?.[0]?.reason).toBe(
+      "no command-line launcher — found only its user directory",
+    );
+    expect(row?.children?.[0]?.label).toContain("VS Code");
     const { plan: applied } = await buildSetupRun(rt, "lsp", "global");
     expect(applied.rows[0]?.selected).toBe(false);
   });

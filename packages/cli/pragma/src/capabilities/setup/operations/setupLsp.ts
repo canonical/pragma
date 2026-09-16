@@ -444,6 +444,13 @@ export const editorFoundVia = (e: DetectedEditor, roots: Roots): string => {
  * Why nothing can be installed into one blocked editor — one line, as the
  * renderer prints one.
  *
+ * It does NOT name the editor. Every place this lands already does: the setup
+ * child row is labelled `<cli> — <name> · <found via>`, doctor's item is
+ * labelled with the name, and the row headline prefixes it
+ * ({@link lspBlockHeadline}). Including it here made doctor print
+ * "VS Code: via user directory · VS Code is installed but has no …" — the name
+ * twice in one line and three times in two.
+ *
  * @param e - A detected editor carrying a {@link DetectedEditor.block}.
  * @returns The reason, or `undefined` when the editor is not blocked.
  */
@@ -452,12 +459,24 @@ export function lspBlockReason(e: DetectedEditor): string | undefined {
   if (block === undefined) return undefined;
   switch (block.kind) {
     case "no-cli":
-      return `${e.editor.name} is installed but has no command-line launcher — found only its user directory`;
+      return "no command-line launcher — found only its user directory";
     case "nix-store":
-      return `${e.editor.name}'s extensions folder is managed by Nix (it resolves to ${block.resolved})`;
+      return `extensions folder managed by Nix (it resolves to ${block.resolved})`;
     case "read-only":
-      return `${e.editor.name}'s extensions folder is not writable (${block.path})`;
+      return `extensions folder is not writable (${block.path})`;
   }
+}
+
+/**
+ * The same reason as a ROW headline, where nothing else has said which editor
+ * it is about.
+ *
+ * @param e - A detected editor carrying a {@link DetectedEditor.block}.
+ * @returns The headline, or `undefined` when the editor is not blocked.
+ */
+export function lspBlockHeadline(e: DetectedEditor): string | undefined {
+  const reason = lspBlockReason(e);
+  return reason === undefined ? undefined : `${e.editor.name}: ${reason}`;
 }
 
 /**
