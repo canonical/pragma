@@ -504,7 +504,7 @@ const skillsVerb = setupVerb(
 
 const lspVerb = setupVerb(
   ["setup", "lsp"],
-  "Install the Terrazzo design-token extension into the VS Code-family editors on this machine (PATH, /Applications, or user directory).",
+  "Install the Terrazzo design-token extension into the VS Code-family editors on this machine (on PATH, under /Applications or ~/Applications, or by its user directory).",
   "lsp",
   SUB_CAPABILITY,
 );
