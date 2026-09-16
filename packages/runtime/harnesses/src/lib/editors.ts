@@ -22,11 +22,15 @@
  *   user runs "Shell Command: Install '<cli>' command in PATH" from the
  *   command palette. `appBundleCandidates` (see `executablePaths.ts`) turns
  *   this column into the fallback candidate list.
- * - `userDir` is the editor's per-user configuration directory — the only
- *   trace a fresh install leaves that is neither a CLI nor an extension. It is
- *   resolved through {@link vscodeUserDir}, the ONE source of truth the
- *   harness rows' `homeConfigPath`, this registry, the CLI's editor probe and
- *   doctor all read, so the four cannot drift apart.
+ * - `product` names the VS Code product whose per-user configuration directory
+ *   this editor keeps — the only trace a fresh install leaves that is neither a
+ *   CLI nor an extension. The directory itself is resolved by
+ *   {@link vscodeUserDir}, the ONE source of truth the harness rows'
+ *   `homeConfigPath`, the CLI's editor probe and doctor all read, so the three
+ *   cannot drift apart. The column is the PRODUCT NAME rather than a
+ *   `(platform) => string` closure, because the name is the only thing a row
+ *   knows that the helper does not: a closure would make every row a copy of
+ *   the same call and leave the helper with no caller outside this file.
  *
  * Designed for the registry-per-editor future: when the extension is published
  * to a marketplace, a `registry` column (`"marketplace" | "open-vsx" |
@@ -61,12 +65,16 @@
  *   row keeps the launch-era names: a wrong CLI name degrades to "editor not
  *   found", never to a wrong install.
  *
- * Only the `vscode`/`vscode-insiders`/`vscodium` rows carry a `userDir`: those
+ * Only the `vscode`/`vscode-insiders`/`vscodium` rows carry a `product`: those
  * three are the products {@link vscodeUserDir} is documented for. The forks
  * rename the directory as well as the app (`~/Library/Application
  * Support/Cursor/User`, and so on), and guessing one would be a path nothing
- * has confirmed — a row without a `userDir` simply falls back to its CLI and
+ * has confirmed — a row without a `product` simply falls back to its CLI and
  * extensions probes, which is what it did before this column existed.
+ *
+ * `darwinBundles` is REQUIRED: every row in this table is a macOS-shipping
+ * editor, all six declare one, and an optional column would only have added a
+ * `?? []` at the one call site with no row able to reach it.
  */
 
 import type { PlatformEnv } from "./platformPaths.js";
@@ -129,13 +137,14 @@ export interface EditorCliDefinition {
    * The macOS application bundle name(s) that carry this editor's CLI inside
    * them, for the machines that have the editor and no `code` on PATH.
    */
-  readonly darwinBundles?: readonly string[];
+  readonly darwinBundles: readonly string[];
   /**
-   * The editor's per-user configuration directory, when it is one of the
-   * products {@link vscodeUserDir} covers. The last trace a fresh install
-   * leaves — no CLI, no extension — and therefore the last probe.
+   * The VS Code product whose per-user configuration directory this editor
+   * keeps, when it is one of the products {@link vscodeUserDir} covers. That
+   * directory is the last trace a fresh install leaves — no CLI, no extension
+   * — and therefore the last probe.
    */
-  readonly userDir?: (platform: PlatformEnv) => string;
+  readonly product?: VscodeProduct;
 }
 
 const editorClis: readonly EditorCliDefinition[] = [
@@ -145,7 +154,7 @@ const editorClis: readonly EditorCliDefinition[] = [
     cli: "code",
     extensionsDir: (p) => `${userHome(p)}/.vscode/extensions`,
     darwinBundles: ["Visual Studio Code.app"],
-    userDir: (p) => vscodeUserDir("Code", p),
+    product: "Code",
   },
   {
     id: "vscode-insiders",
@@ -153,7 +162,7 @@ const editorClis: readonly EditorCliDefinition[] = [
     cli: "code-insiders",
     extensionsDir: (p) => `${userHome(p)}/.vscode-insiders/extensions`,
     darwinBundles: ["Visual Studio Code - Insiders.app"],
-    userDir: (p) => vscodeUserDir("Code - Insiders", p),
+    product: "Code - Insiders",
   },
   {
     id: "vscodium",
@@ -161,7 +170,7 @@ const editorClis: readonly EditorCliDefinition[] = [
     cli: "codium",
     extensionsDir: (p) => `${userHome(p)}/.vscode-oss/extensions`,
     darwinBundles: ["VSCodium.app"],
-    userDir: (p) => vscodeUserDir("VSCodium", p),
+    product: "VSCodium",
   },
   {
     id: "cursor",
@@ -176,6 +185,8 @@ const editorClis: readonly EditorCliDefinition[] = [
     cli: "windsurf",
     // VERIFY(F1a): community-evidenced only (see module docblock).
     extensionsDir: (p) => `${userHome(p)}/.windsurf/extensions`,
+    // VERIFY(F1a): the bundle name follows the product name, like the CLI and
+    // the extensions dir above it.
     darwinBundles: ["Windsurf.app"],
   },
   {

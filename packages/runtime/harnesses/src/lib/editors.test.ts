@@ -54,11 +54,11 @@ describe("editorClis registry", () => {
     // opt-in on macOS, so a row without a bundle is a row that reports "editor
     // not found" on a stock machine that has the editor.
     for (const editor of editorClis) {
-      expect(editor.darwinBundles?.length).toBe(1);
-      expect(editor.darwinBundles?.[0]).toMatch(/\.app$/);
+      expect(editor.darwinBundles).toHaveLength(1);
+      expect(editor.darwinBundles[0]).toMatch(/\.app$/);
     }
     expect(
-      Object.fromEntries(editorClis.map((e) => [e.id, e.darwinBundles?.[0]])),
+      Object.fromEntries(editorClis.map((e) => [e.id, e.darwinBundles[0]])),
     ).toEqual({
       vscode: "Visual Studio Code.app",
       "vscode-insiders": "Visual Studio Code - Insiders.app",
@@ -69,16 +69,18 @@ describe("editorClis registry", () => {
     });
   });
 
-  it("carries a userDir for the three products vscodeUserDir covers, and no other", () => {
+  it("carries a product for the three vscodeUserDir covers, and no other", () => {
     // A fork's user directory is renamed along with the app, and guessing one
-    // would be a path nothing has confirmed. A row without a `userDir` falls
+    // would be a path nothing has confirmed. A row without a `product` falls
     // back to its CLI and extensions probes — what it did before the column.
     expect(
-      editorClis.filter((e) => e.userDir !== undefined).map((e) => e.id),
+      editorClis.filter((e) => e.product !== undefined).map((e) => e.id),
     ).toEqual(["vscode", "vscode-insiders", "vscodium"]);
+    // The column is the product NAME, so the row and the helper cannot drift:
+    // there is one place the platform switch lives.
     expect(
       editorClis.flatMap((e) =>
-        e.userDir === undefined ? [] : [e.userDir(PLATFORM)],
+        e.product === undefined ? [] : [vscodeUserDir(e.product, PLATFORM)],
       ),
     ).toEqual([
       "/home/tester/.config/Code/User",
