@@ -86,11 +86,20 @@ The cost is more pieces, more files, and a steeper initial learning curve for de
 
 ## VI. No magic
 
-Software becomes difficult to maintain when its behaviour cannot be understood by reading the source. Frameworks routinely hide complexity behind conventions that feel productive until something breaks, at which point the developer must reverse-engineer hidden behaviour to diagnose the problem. This trade-off---convenience now, opacity later---is rejected.
+Software becomes difficult to maintain when its behaviour cannot be understood by reading the source. Hidden machinery feels productive until something breaks, at which point the developer must reverse-engineer behaviour that no documented rule explains. This trade-off---convenience now, opacity later---is rejected.
 
-Every import is explicit. Every export is listed in a barrel file. Configuration files are plain data. The behaviour of the system is visible in the source, with no conventions that require framework knowledge to interpret and no build-time transforms that alter what ships. A component imports its stylesheet directly rather than relying on a build tool to discover and inject it by naming convention. Package dependencies appear in the manifest rather than being resolved through workspace hoisting.
+A construct is magic when its behaviour cannot be predicted from the source being read. What makes prediction possible is the tier's execution contract: the platform, plus the framework and compiler the tier is explicitly built on---their transforms, their runtime, and the conventions they define and document. Choosing a framework for a tier is choosing this contract in full, and a contributor who works in the tier accepts it in full. The contract's own idioms are therefore not magic, however much framework knowledge they take to read: JSX compiling to render calls, hooks, runes, etc. Not knowing the rules of hooks is the lack of knowledge, not hooks being magical.
 
-The choice of pure CSS over CSS-in-JS or preprocessors follows from the same reasoning. Preprocessors and CSS-in-JS libraries introduce a transformation layer between authoring and execution---what the developer writes is not what the browser runs. Pure CSS eliminates this gap. The stylesheet in the source is the stylesheet in the browser. CSS custom properties provide the theming and composition capabilities that preprocessors once required, without a compilation step that obscures the relationship between input and output.
+The contract's transforms are acceptable because they are total, deterministic, documented, applied at build time, and inspectable in their output, so that the reader predicts the shipped artifact from local source and documented rules.
+
+Magic is what lies outside the contract. A construct is magic when:
+
+- it requires a tool, plugin, or transform the contract does not include---an addition the framework does not need, such as a bundler plugin that resolves import aliases or discovers and injects a stylesheet by filename;
+- its behaviour depends on file placement, file naming, or configuration the contract does not define and document;
+- it is heuristic, so that identical source can behave differently by inference;
+- it defers a transform to runtime, so that its output never exists as an inspectable artifact.
+
+The principle does not reject frameworks; it rejects unreadability. The current tiers accept deliberately small contracts---React is a rendering library, not a framework; Svelte is little more than a compiler---and every contract must be learned before the source becomes predictable. A bigger framework would not be more magical, only heavier: more conventions to accept, more machinery between the source and what runs. Big frameworks are kept out as complexity, not as magic. Introducing a framework, or widening a tier's contract, is an inclusion to be justified under [XIII](#xiii-preference-towards-minimal-tooling).
 
 The cost is verbosity. Explicit code requires more characters, more files, and more deliberate wiring than code that relies on inference and convention. The benefit is that any developer can understand the system by reading it, debug it with standard tools, and refactor it with confidence that nothing hidden will break.
 
