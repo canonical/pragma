@@ -102,9 +102,13 @@ const homeConfigPathOf = (
 };
 
 /**
- * Resolve a harness + band into the concrete {@link ConfigTarget} a read/write
- * acts on: the project config path for the project band, the home config path
- * (which every global/both harness declares) for the global band.
+ * {@link resolveConfigTarget} for the ONE caller that surveys many rows at
+ * once: `groupConfigTargets` walks every detected harness, so a row with no
+ * location in this band on this host is a row to drop, not an error.
+ *
+ * It stays module-private for that reason — the widening is an internal
+ * convenience, and a published partial function would make every consumer
+ * handle an absence only the survey can reach.
  *
  * @param harness - The harness definition.
  * @param projectRoot - The project root for the project band.
@@ -113,7 +117,7 @@ const homeConfigPathOf = (
  * @returns The resolved config target, or `undefined` when this harness has no
  *   location in this band ON THIS HOST — see {@link homeConfigPathOf}.
  */
-export const resolveConfigTarget = (
+export const resolveConfigTargetOrNone = (
   harness: HarnessDefinition,
   projectRoot: string,
   band: ScopeBand,
@@ -134,9 +138,15 @@ export const resolveConfigTarget = (
 };
 
 /**
- * {@link resolveConfigTarget} for the callers that act on ONE named harness
- * and band: a read/write/remove was asked for a specific file, so "this host
- * has no such file" is a caller error rather than a row to drop.
+ * Resolve a harness + band into the concrete {@link ConfigTarget} a read/write
+ * acts on: the project config path for the project band, the home config path
+ * (which every global/both harness declares) for the global band.
+ *
+ * It is TOTAL. Every caller of this names one harness and one band — a
+ * read/write/remove was asked for a specific file — so "this host keeps no
+ * such file" (the VS Code rows under WSL) is a caller error here, and the
+ * survey that can legitimately meet one uses
+ * {@link resolveConfigTargetOrNone}.
  *
  * @param harness - The harness definition.
  * @param projectRoot - The project root for the project band.
@@ -144,13 +154,18 @@ export const resolveConfigTarget = (
  * @param platform - The captured host, for the home path.
  * @returns The resolved config target.
  */
-export const requireConfigTarget = (
+export const resolveConfigTarget = (
   harness: HarnessDefinition,
   projectRoot: string,
   band: ScopeBand,
   platform: PlatformEnv,
 ): ConfigTarget => {
-  const target = resolveConfigTarget(harness, projectRoot, band, platform);
+  const target = resolveConfigTargetOrNone(
+    harness,
+    projectRoot,
+    band,
+    platform,
+  );
   if (target === undefined) {
     throw new Error(
       `harness "${harness.id}" has no ${band}-band config location on this host`,
@@ -410,7 +425,7 @@ export const readMcpConfig = (
   band: ScopeBand = defaultBandOf(harness),
   platform: PlatformEnv = readPlatformEnv(),
 ): Task<Record<string, unknown>> =>
-  readMcpConfigFrom(requireConfigTarget(harness, projectRoot, band, platform));
+  readMcpConfigFrom(resolveConfigTarget(harness, projectRoot, band, platform));
 
 /**
  * Write or merge an MCP server entry into a harness config file.
@@ -433,7 +448,7 @@ export const writeMcpConfig = (
   platform: PlatformEnv = readPlatformEnv(),
 ): Task<void> =>
   writeMcpConfigTo(
-    requireConfigTarget(harness, projectRoot, band, platform),
+    resolveConfigTarget(harness, projectRoot, band, platform),
     serverName,
     config,
   );
@@ -457,6 +472,6 @@ export const removeMcpConfig = (
   platform: PlatformEnv = readPlatformEnv(),
 ): Task<void> =>
   removeMcpConfigFrom(
-    requireConfigTarget(harness, projectRoot, band, platform),
+    resolveConfigTarget(harness, projectRoot, band, platform),
     serverName,
   );
