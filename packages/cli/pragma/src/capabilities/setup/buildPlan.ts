@@ -11,6 +11,7 @@
  */
 
 import type { PragmaRuntime } from "../../kernel/runtime/index.js";
+import type { FsProbe } from "./operations/writability.js";
 import {
   defaultSelected,
   type PlanRow,
@@ -88,6 +89,10 @@ const messageOf = (reason: unknown): string =>
  * @param rt - The per-invocation runtime.
  * @param ids - The targets to plan (all five for the run-all).
  * @param scope - The resolved scope selection.
+ * @param probe - The writability filesystem seam, handed to every row's
+ *   `detect`. Defaults to the real one; a test injects a fixture to drive the
+ *   two arms no CI host has — a `/nix/store` path, and (as root) a directory
+ *   that refuses `W_OK` — without opening a second way in to the row bodies.
  * @returns One entry per (target, scope) the scope actually runs.
  * @note Impure — every target's `detect` reads the real filesystem.
  */
@@ -95,6 +100,7 @@ export async function detectTargets(
   rt: PragmaRuntime,
   ids: readonly TargetId[],
   scope: ScopeSelection,
+  probe?: FsProbe,
 ): Promise<DetectedRow[]> {
   const wanted = TARGETS.filter((target) => ids.includes(target.id));
   const pairs = scopesForSelection(scope).flatMap((scope) =>
@@ -106,7 +112,7 @@ export async function detectTargets(
       })),
   );
   const settled = await Promise.allSettled(
-    pairs.map(({ target, scope }) => target.detect(rt, scope)),
+    pairs.map(({ target, scope }) => target.detect(rt, scope, probe)),
   );
   return pairs.map(({ target, scope }, index) => {
     const outcome = settled[index] as PromiseSettledResult<unknown>;
