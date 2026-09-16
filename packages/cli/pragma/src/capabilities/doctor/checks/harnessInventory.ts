@@ -68,9 +68,13 @@ import type { CheckItem, CheckStatus, Scope } from "../types.js";
  * - `detected` — the harness is on this machine; pragma is not registered.
  * - `undetected` — in the registry, has a location in this scope, not found.
  * - `unscoped` — in the registry, but has NO config location in this scope at
- *   all (VS Code is `scope: "project"`, so it can never hold a global entry).
- *   Stated rather than omitted: a verbose listing that silently dropped a row
- *   reads as a bug in the listing.
+ *   all. Roo Code and Cline are `scope: "project"`, so neither can ever hold a
+ *   global entry: Cline is a VS Code EXTENSION whose config is the workspace
+ *   `.vscode/mcp.json`, and Roo Code's is `.roo/mcp.json` — neither keeps a
+ *   per-user file of its own. (VS Code itself used to be the example here, and
+ *   stopped being one when its per-user `mcp.json` was added: it is
+ *   `scope: "both"` now.) Stated rather than omitted: a verbose listing that
+ *   silently dropped a row reads as a bug in the listing.
  */
 export type InventoryState =
   | "registered"
@@ -202,7 +206,7 @@ const STATE_STATUS: Record<InventoryState, CheckStatus> = {
  *
  * The unscoped line says WHERE the harness keeps its config rather than naming
  * an internal partition. `no Global band` told the reader nothing: "band" was
- * this repository's word, and the fact underneath it — VS Code stores its MCP
+ * this repository's word, and the fact underneath it — Roo Code stores its MCP
  * config per project, so there is no global file for pragma to be in — is the
  * thing that explains the row.
  */

@@ -437,19 +437,16 @@ describe("detectHarnesses — VS Code installation signals", () => {
     expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
   });
 
-  it("a committed .vscode/mcp.json detects all three — they all read that file", () => {
-    // The one project signal the family shares, because the file itself is
-    // shared: whichever product is installed reads the same `servers` key, and
-    // the `(path, mcpKey)` dedup makes it a single write.
+  it("a committed .vscode/mcp.json detects VS Code ONLY — the file names no product", () => {
+    // The file is shared by the whole family, which is exactly why it is not a
+    // signal for the forks: its presence says a repo carries a VS Code config,
+    // never which product is installed. Detecting three editors from one file
+    // would offer three rows where one exists.
     const result = dryRunWith(
       detectHarnesses("/project", PLATFORM),
       only("/project/.vscode/mcp.json"),
     );
-    expect(result.value.map((d) => d.harness.id).sort()).toEqual([
-      "vscode",
-      "vscode-insiders",
-      "vscodium",
-    ]);
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
   });
 });
 

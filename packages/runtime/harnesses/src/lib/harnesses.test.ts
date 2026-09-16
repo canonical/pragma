@@ -588,22 +588,29 @@ describe("harnesses registry", () => {
       },
     );
 
-    it("neither Insiders nor VSCodium keys on a bare `.vscode` directory", () => {
-      // `.vscode/` belongs to VS Code itself. Keying on it would co-detect all
-      // three products in every VS Code project, and the prompt would offer
-      // three editors where one is installed. (The WRITE is unaffected either
-      // way — `groupConfigTargets` dedups by `(path, mcpKey)`.)
+    it("neither Insiders nor VSCodium keys on ANYTHING inside .vscode/", () => {
+      // `.vscode/` belongs to VS Code itself, and a committed
+      // `.vscode/mcp.json` says nothing about which product is installed.
+      // Keying on either would co-detect all three in every VS Code project:
+      // the prompt would offer three editors where one exists, and doctor's
+      // inventory would count three. (The WRITE is unaffected either way —
+      // `groupConfigTargets` dedups by `(path, mcpKey)`.)
       for (const id of ["vscode-insiders", "vscodium"]) {
         const paths = rowOf(id).detect.flatMap((s) =>
           "path" in s ? [s.path] : [],
         );
-        expect(paths).not.toContain(".vscode");
-        // The project file is still reachable once its own signals detect it.
-        expect(paths).toContain(".vscode/mcp.json");
+        expect(paths.some((path) => path.startsWith(".vscode"))).toBe(false);
+        // The project file is still the row's write target — reached whenever
+        // the row's OWN signals detect it.
+        expect(rowOf(id).configPath("/project")).toBe(
+          "/project/.vscode/mcp.json",
+        );
       }
-      expect(
-        rowOf("vscode").detect.flatMap((s) => ("path" in s ? [s.path] : [])),
-      ).toContain(".vscode");
+      const vscode = rowOf("vscode").detect.flatMap((s) =>
+        "path" in s ? [s.path] : [],
+      );
+      expect(vscode).toContain(".vscode");
+      expect(vscode).toContain(".vscode/mcp.json");
     });
 
     it("each family row probes its OWN CLI and extensions directory", () => {

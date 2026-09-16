@@ -2901,6 +2901,11 @@ describe("setup lsp — how each editor was found", () => {
     ]);
     expect(detection.editors[0]?.block).toBeUndefined();
     expect(detection.state).toBe("absent");
+    expect(
+      editorFoundVia(detection.editors[0], { global: home, project: "/p" }),
+    ).toBe(
+      "via app bundle (~/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code)",
+    );
 
     const execs = dryRun(composeLsp(detection)).effects.filter(
       (e) => e._tag === "Exec",
@@ -2953,5 +2958,114 @@ describe("setup lsp — how each editor was found", () => {
     expect(remedy).not.toContain("\n");
     expect(dryRun(composeLsp(detection)).effects).toEqual([]);
     expect(selectedEditors(detection)).toEqual([]);
+  });
+});
+
+/**
+ * The lsp row's remaining shapes: nothing to do, nothing to undo, and the
+ * read-only block's own remedy.
+ */
+describe("setup lsp — the row's quiet answers", () => {
+  let prevPath: string | undefined;
+  let stubDir = "";
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    stubDir = stubPath();
+    process.env.PATH = stubDir;
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  /** Seed a versioned extension copy under HOME's `dir`. */
+  const seed = (dir: string, version = "1.2.3"): void => {
+    mkdirSync(
+      join(
+        process.env.HOME as string,
+        dir,
+        "extensions",
+        `canonical.terrazzo-lsp-extension-${version}`,
+      ),
+      { recursive: true },
+    );
+  };
+
+  it("plans `no change` when every detected editor already carries it", async () => {
+    writeFileSync(join(stubDir, "code"), "");
+    writeFileSync(join(stubDir, "codium"), "");
+    seed(".vscode");
+    seed(".vscode-oss");
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "global",
+    );
+    const row = plan.rows.find((r) => r.target === "lsp");
+    expect(row?.action).toBe("none");
+    expect(row?.detail).toBe("Terrazzo extension in VS Code, VSCodium");
+    expect(row?.children?.every((c) => c.action === "unchanged")).toBe(true);
+  });
+
+  it("a read-only folder with nothing else installable is a row skip with the chmod remedy", async () => {
+    // One editor, and its extensions folder refuses W_OK — so there is nothing
+    // installable at all and the row's whole answer is the block. The remedy
+    // names the folder AND the by-hand command, against the CLI file this run
+    // actually found.
+    writeFileSync(join(stubDir, "codium"), "");
+    const extensions = join(
+      process.env.HOME as string,
+      ".vscode-oss",
+      "extensions",
+    );
+    mkdirSync(extensions, { recursive: true });
+    chmodSync(extensions, 0o500);
+    try {
+      const run = await buildSetupRun(
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+        "lsp",
+        "global",
+      );
+      // The remedy rides on the row's OUTCOME — the one dim line the recap
+      // prints beneath a skip — so the assertion reads it where a user sees it.
+      const row = run.applied({}).rows.find((r) => r.target === "lsp");
+      expect(row?.action).toBe("skip");
+      expect(row?.reason).toContain("not writable");
+      expect(row?.outcome?.status).toBe("skipped");
+      const remedy = row?.outcome?.remedy as string;
+      expect(remedy).toContain("make that folder writable");
+      expect(remedy).toContain(join(stubDir, "codium"));
+      expect(remedy).toContain("--install-extension");
+      expect(remedy).not.toContain("\n");
+    } finally {
+      chmodSync(extensions, 0o700);
+    }
+  });
+
+  it("a removal over a blocked editor is the same skip, not a reversal that cannot run", async () => {
+    // The copy IS there, and the uninstall would have to write into a folder
+    // pragma must not touch — so the row says so rather than composing a
+    // reversal that would fail.
+    writeFileSync(join(stubDir, "codium"), "");
+    seed(".vscode-oss");
+    const extensions = join(
+      process.env.HOME as string,
+      ".vscode-oss",
+      "extensions",
+    );
+    chmodSync(extensions, 0o500);
+    try {
+      const run = await buildSetupRun(
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+        "lsp",
+        "global",
+        true,
+      );
+      const row = run.applied({}).rows.find((r) => r.target === "lsp");
+      expect(row?.action).toBe("skip");
+      expect(row?.reason).toContain("not writable");
+      expect(row?.outcome?.remedy).toContain("--install-extension");
+    } finally {
+      chmodSync(extensions, 0o700);
+    }
   });
 });

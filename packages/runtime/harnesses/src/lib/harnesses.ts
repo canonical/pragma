@@ -307,18 +307,19 @@ const harnesses: readonly HarnessDefinition[] = [
     // Insiders channel: its own user directory (`Code - Insiders`), its own
     // dataFolderName (`.vscode-insiders`) and its own CLI (`code-insiders`).
     //
-    // It deliberately does NOT key on a bare `.vscode` directory, and neither
-    // does the VSCodium row below: `.vscode/` belongs to VS Code itself, so
-    // keying on it would co-detect all three products in every VS Code project
-    // and the prompt would offer three editors where one is installed. (The
-    // WRITE would be correct either way — `groupConfigTargets` dedups by
+    // It keys on NOTHING inside `.vscode/`, and neither does the VSCodium row
+    // below — not the directory, and not the `mcp.json` in it. Both belong to
+    // VS Code itself, and a committed `.vscode/mcp.json` says nothing about
+    // which product is installed, so keying on either would co-detect all
+    // three in every VS Code project: the prompt would offer three editors
+    // where one exists and doctor's inventory would count three. (The WRITE
+    // would be correct either way — `groupConfigTargets` dedups by
     // `(path, mcpKey)`, so the project file is written exactly once whichever
     // rows detect it — but a report the user cannot act on is its own defect.)
     // The project file is still reached: whenever Insiders is detected by one
     // of its OWN signals, its `configPath` resolves to the same
     // `.vscode/mcp.json`.
     detect: [
-      { type: "file", path: ".vscode/mcp.json" },
       { type: "directory", path: "$XDG_CONFIG_HOME/Code - Insiders/User" },
       {
         type: "directory",
@@ -345,9 +346,9 @@ const harnesses: readonly HarnessDefinition[] = [
     // same `servers` key — only the product directory (`VSCodium`), the
     // dataFolderName (`.vscode-oss`) and the CLI (`codium`) differ.
     //
-    // No bare `.vscode` signal, for the reason spelled out on the Insiders row.
+    // No `.vscode` signal of any kind, for the reason spelled out on the
+    // Insiders row.
     detect: [
-      { type: "file", path: ".vscode/mcp.json" },
       { type: "directory", path: "$XDG_CONFIG_HOME/VSCodium/User" },
       {
         type: "directory",
