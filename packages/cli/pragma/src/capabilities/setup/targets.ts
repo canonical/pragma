@@ -47,10 +47,10 @@ import {
   detectLsp,
   firstLspBlock,
   installableEditors,
+  installedEditorNames,
   LSP_SKIP_REMEDY,
   type LspDetection,
   lspBlockReason,
-  lspEditorNames,
   lspSkipReason,
   ownedLspEditors,
 } from "./operations/setupLsp.js";
@@ -312,9 +312,13 @@ const lspTarget = defineTarget<LspDetection>({
     // beside a child row reading `codium — VSCodium (unchanged)` said the
     // editor's name twice and "nothing happens here" twice.
     if (installable.length === 0) {
+      // Only the editors that CARRY it. This arm is reached whenever nothing
+      // is installable, which includes a host where one editor has the
+      // extension and another was found by its user directory alone — naming
+      // both said the extension was in an editor that has no copy.
       return {
         action: "none",
-        detail: `Terrazzo extension in ${lspEditorNames(d).join(", ")}`,
+        detail: `Terrazzo extension in ${installedEditorNames(d).join(", ")}`,
         children,
       };
     }

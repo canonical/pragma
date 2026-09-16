@@ -737,6 +737,43 @@ describe("doctor — the lsp row's per-editor provenance", () => {
     expect(lsp?.remedy).toBeUndefined();
   });
 
+  /**
+   * The mixed host, which is what the "installed" headline is easiest to get
+   * wrong on: one editor carries the extension and another was found by its
+   * user directory alone. Nothing is installable, so the row passes — and it
+   * must name only the editor that HAS a copy, or it contradicts the item
+   * printed directly below it.
+   */
+  it("the pass headline names only the editors that carry the extension", async () => {
+    const stubDir = tmp("pragma-doctor-mixed-");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+    mkdirSync(
+      join(
+        process.env.HOME as string,
+        ".vscode-oss",
+        "extensions",
+        "canonical.terrazzo-lsp-extension-1.2.3",
+      ),
+      { recursive: true },
+    );
+    // VS Code found by its configuration directory alone: no CLI, no copy.
+    mkdirSync(join(process.env.XDG_CONFIG_HOME as string, "Code", "User"), {
+      recursive: true,
+    });
+
+    const lsp = await lspRow();
+    expect(lsp?.status).toBe("pass");
+    expect(lsp?.detail).toBe("installed in VSCodium");
+    expect(lsp?.detail).not.toContain("VS Code,");
+    // Both editors are still reported, each with its own answer.
+    expect(lsp?.items?.map((i) => [i.label, i.status])).toEqual([
+      ["VS Code", "skip"],
+      ["VSCodium", "pass"],
+    ]);
+    expect(lsp?.items?.[0]?.detail).toContain("no command-line launcher");
+  });
+
   it("no editor anywhere is a skip naming every place that was looked", async () => {
     process.env.PATH = tmp("pragma-doctor-empty-path-");
     const lsp = await lspRow();
