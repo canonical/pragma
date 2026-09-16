@@ -43,10 +43,46 @@ export type CompletionsState = "absent" | "installed" | "stale";
 
 /**
  * The detected state of the Terrazzo LSP extension across the VS Code-family
- * editors on this machine, probed up front by `detectLsp`: `installed` (every
- * editor whose CLI is on PATH already has it — a re-run skips), `absent` (at
- * least one detected editor is missing it, so the sideload runs for those), or
- * `unknown` (NO editor CLI was found on PATH — the step is a named skip, since
- * there is nothing to install into).
+ * editors on this machine, probed up front by `detectLsp`.
+ *
+ * An editor is FOUND by any of three probes — its CLI on PATH, its CLI inside
+ * its macOS app bundle, or its per-user configuration directory — and the
+ * state is about every editor found, whichever probe found it:
+ *
+ * - `installed`: every found editor already carries a working copy, so a
+ *   re-run skips. A BLOCKED editor (no CLI to run, or an extensions folder
+ *   this command must not write to) counts here when it is installed: the
+ *   copy really is there, and the block is only about changing it.
+ * - `absent`: at least one found editor is missing it. The sideload runs for
+ *   the ones that are missing it AND can be written to — never for a blocked
+ *   editor, whose row carries its own remedy instead.
+ * - `unknown`: NO editor was found by any of the three probes, so the step is
+ *   a named skip: there is nothing on this machine to install into.
  */
 export type LspState = "installed" | "absent" | "unknown";
+
+/**
+ * Why a write cannot happen at a path — a fact with a remedy, never an error.
+ *
+ * The two kinds are kept apart because their remedies are unrelated: a store
+ * path needs a DECLARATION in the config that produced it, and a read-only
+ * path needs permissions changed. Collapsing them to one "not writable" would
+ * print the `chmod` advice at a Nix user, which cannot work — `chmod` on the
+ * store is not the fix, and the next `nixos-rebuild` would undo it.
+ *
+ * It lives here, beside {@link LspState} and {@link McpTargetState}, because
+ * it is the same kind of thing: a setup-domain state vocabulary that the lsp
+ * detection, the mcp detection, the target table and doctor all read.
+ * `probeWritable` (`operations/writability.ts`) is what produces one.
+ */
+export type WriteBlock =
+  | {
+      readonly kind: "nix-store";
+      /** The store path the target resolves to — the evidence, and the remedy's subject. */
+      readonly resolved: string;
+    }
+  | {
+      readonly kind: "read-only";
+      /** The existing node that refused `W_OK` — the path a remedy must name. */
+      readonly path: string;
+    };

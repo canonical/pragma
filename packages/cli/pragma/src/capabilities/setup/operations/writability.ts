@@ -18,25 +18,6 @@
  * nothing about whether THIS path is writable. So the probe walks the path it
  * was actually given.
  *
- * Three rules, in this order:
- *
- * 1. **Walk up to the nearest node that exists**, starting AT the target. The
- *    target itself when it is there — home-manager symlinks `mcp.json`
- *    directly into the store while leaving `User/` writable, so stopping at
- *    the parent directory would call that file writable and then fail on the
- *    write. Otherwise its nearest existing ancestor, because a path that does
- *    not exist yet is writable exactly when the directory that would hold it
- *    is.
- * 2. **`realpathSync` it**, so the answer is about the real filesystem rather
- *    than the symlink standing in front of it.
- * 3. **`/nix/store/` wins over `W_OK`.** Checked first, deliberately: the
- *    store is read-only, so `access(W_OK)` would fail there too and the row
- *    would report "read-only" with a remedy about file permissions — advice
- *    that cannot work, because `chmod` on the store is not the fix and would
- *    be undone by the next `nixos-rebuild`. The remedy for a store path is a
- *    declaration in the user's own config, and naming the store is what earns
- *    it.
- *
  * The whole filesystem surface is the injected {@link FsProbe}, so every
  * branch is exercised over a seam rather than by arranging a real read-only
  * directory (which a test running as root cannot do at all). It lives under
@@ -47,30 +28,10 @@
 
 import { accessSync, constants, existsSync, realpathSync } from "node:fs";
 import { dirname } from "node:path";
+import type { WriteBlock } from "../types.js";
 
 /** The store prefix a Nix-managed path resolves under. */
 const NIX_STORE_PREFIX = "/nix/store/";
-
-/**
- * Why a write cannot happen at a path — a fact with a remedy, never an error.
- *
- * The two kinds are kept apart because their remedies are unrelated: a store
- * path needs a DECLARATION in the config that produced it, and a read-only
- * path needs permissions changed (or the same install run by hand against a
- * writable location). Collapsing them to one "not writable" would print the
- * `chmod` advice at a Nix user, which cannot work.
- */
-export type WriteBlock =
-  | {
-      readonly kind: "nix-store";
-      /** The store path the target resolves to — the evidence, and the remedy's subject. */
-      readonly resolved: string;
-    }
-  | {
-      readonly kind: "read-only";
-      /** The existing node that refused `W_OK` — the path a remedy must name. */
-      readonly path: string;
-    };
 
 /**
  * The filesystem this probe uses — the seam, defaulting to `node:fs`.
@@ -94,8 +55,16 @@ const nodeFs: FsProbe = { existsSync, accessSync, realpathSync };
  * `dirname("/")` is `"/"`, so the loop terminates on the fixed point rather
  * than on a path shape — the same is true of a win32 drive root, which is why
  * the comparison is against the previous value and not against a separator.
+ *
+ * @param target - The path to start at.
+ * @param fs - The filesystem seam.
+ * @returns The nearest existing node, or `undefined`.
+ * @note Impure — stats each path it walks through the injected seam.
  */
-const nearestExisting = (target: string, fs: FsProbe): string | undefined => {
+const findNearestExisting = (
+  target: string,
+  fs: FsProbe,
+): string | undefined => {
   let current = target;
   for (;;) {
     if (fs.existsSync(current)) return current;
@@ -109,6 +78,25 @@ const nearestExisting = (target: string, fs: FsProbe): string | undefined => {
  * Probe whether `target` could be written, returning the {@link WriteBlock}
  * that says why not — or `undefined` when the write can go ahead.
  *
+ * Three rules, in this order:
+ *
+ * 1. **Walk up to the nearest node that exists**, starting AT the target. The
+ *    target itself when it is there — home-manager symlinks `mcp.json`
+ *    directly into the store while leaving `User/` writable, so stopping at
+ *    the parent directory would call that file writable and then fail on the
+ *    write. Otherwise its nearest existing ancestor, because a path that does
+ *    not exist yet is writable exactly when the directory that would hold it
+ *    is.
+ * 2. **`realpathSync` it**, so the answer is about the real filesystem rather
+ *    than the symlink standing in front of it.
+ * 3. **`/nix/store/` wins over `W_OK`.** Checked first, deliberately: the
+ *    store is read-only, so `access(W_OK)` would fail there too and the row
+ *    would report "read-only" with a remedy about file permissions — advice
+ *    that cannot work, because `chmod` on the store is not the fix and would
+ *    be undone by the next `nixos-rebuild`. The remedy for a store path is a
+ *    declaration in the user's own config, and naming the store is what earns
+ *    it.
+ *
  * @param target - The file or directory a write would create or modify.
  * @param fs - The filesystem seam; defaults to the real `node:fs`.
  * @returns The block, or `undefined` when the path is writable.
@@ -119,7 +107,7 @@ export function probeWritable(
   target: string,
   fs: FsProbe = nodeFs,
 ): WriteBlock | undefined {
-  const existing = nearestExisting(target, fs);
+  const existing = findNearestExisting(target, fs);
   // Nothing at or above the target exists. That is not a permission answer,
   // and inventing one either way would be a guess — the write will report its
   // own error if it is really unreachable.

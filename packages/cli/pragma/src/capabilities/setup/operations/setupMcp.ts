@@ -38,8 +38,8 @@ import { mkdir, sequence_, type Task } from "@canonical/task";
 import { MCP_SERVER_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import { type Roots, shortenPath } from "../plan.js";
-import type { McpTargetState, Scope } from "../types.js";
-import { type FsProbe, probeWritable, type WriteBlock } from "./writability.js";
+import type { McpTargetState, Scope, WriteBlock } from "../types.js";
+import { type FsProbe, probeWritable } from "./writability.js";
 
 /** The `writeMcpConfigTargets` builder, captured from the dynamic harness import. */
 type WriteMcpConfigTargets =
@@ -48,6 +48,10 @@ type WriteMcpConfigTargets =
 /** The `removeMcpConfigFrom` builder, captured from the dynamic harness import. */
 type RemoveMcpConfigFrom =
   typeof import("@canonical/harnesses").removeMcpConfigFrom;
+
+/** The one-line TOML entry serializer, captured from the same import. */
+type SerializeTomlInlineEntry =
+  typeof import("@canonical/harnesses").serializeTomlInlineEntry;
 
 /**
  * The detected MCP state: the per-file target groups (already scoped to the
@@ -84,6 +88,13 @@ export interface McpDetection {
   readonly platform: PlatformEnv;
   readonly writeMcpConfigTargets: WriteMcpConfigTargets;
   readonly removeMcpConfigFrom: RemoveMcpConfigFrom;
+  /**
+   * The TOML entry serializer a blocked Codex row prints its remedy with —
+   * carried here for the same reason the writer is: this module imports only
+   * TYPES from `@canonical/harnesses`, so the package stays off the fast path,
+   * and the pure message builders need the function synchronously.
+   */
+  readonly serializeTomlInlineEntry: SerializeTomlInlineEntry;
 }
 
 /**
@@ -225,6 +236,7 @@ export async function detectMcp(
       readMcpConfigFrom,
       readPlatformEnv,
       removeMcpConfigFrom,
+      serializeTomlInlineEntry,
       writeMcpConfigTargets,
     },
     { runTask },
@@ -286,6 +298,7 @@ export async function detectMcp(
     platform,
     writeMcpConfigTargets,
     removeMcpConfigFrom,
+    serializeTomlInlineEntry,
   };
 }
 
@@ -326,11 +339,30 @@ export const mcpGroupBlock = (
 ): WriteBlock | undefined => d.blockedByPath.get(path);
 
 /**
- * Why one group's file cannot be written — one line, as the renderer prints
- * one.
+ * Why one BLOCKED group's file cannot be written — one line, as the renderer
+ * prints one.
  *
  * @param d - The detection gathered up front.
- * @param group - The group whose file is blocked.
+ * @param group - A group whose file is blocked.
+ * @param roots - The two roots the path renders relative to.
+ * @returns The reason.
+ */
+function describeMcpBlock(
+  block: WriteBlock,
+  path: string,
+  roots: Roots,
+): string {
+  const where = shortenPath(path, roots);
+  return block.kind === "nix-store"
+    ? `${where} is managed by Nix (it resolves to ${block.resolved})`
+    : `${where} is not writable (${block.path})`;
+}
+
+/**
+ * Why one group's file cannot be written, or `undefined` when it can be.
+ *
+ * @param d - The detection gathered up front.
+ * @param group - The group whose file may be blocked.
  * @param roots - The two roots the path renders relative to.
  * @returns The reason, or `undefined` when the file can be written.
  */
@@ -340,53 +372,108 @@ export function mcpBlockReason(
   roots: Roots,
 ): string | undefined {
   const block = mcpGroupBlock(d, group.path);
-  if (block === undefined) return undefined;
-  const where = shortenPath(group.path, roots);
-  return block.kind === "nix-store"
-    ? `${where} is managed by Nix (it resolves to ${block.resolved})`
-    : `${where} is not writable (${block.path})`;
+  return block === undefined
+    ? undefined
+    : describeMcpBlock(block, group.path, roots);
 }
 
 /**
  * The remedy beneath a blocked group: the EXACT entry a write would have
- * emitted, and where it belongs.
+ * emitted, and nothing else.
  *
  * It is serialized through the group's own `serializeEntry` — the same
- * function the writer uses — so the line a user copies into their
+ * function the writer uses — so the entry a user copies into their
  * home-manager or NixOS config is byte-for-byte what `setup mcp` would have
  * written, and the next detection classifies it `registered` rather than
  * `drifted`. A hand-written sample in this string would be a second
  * serializer to keep in sync, and the failure mode is a config the tool then
  * offers to "repair" forever.
  *
+ * It is written in the file's OWN FORMAT. A JSON body pasted into Codex's
+ * `config.toml` is not an entry, it is a syntax error, and the row that
+ * printed it was the one row whose whole job was to say what to write. The
+ * TOML spelling is the dotted-key inline table — the same entry the writer's
+ * `[mcp_servers.pragma]` table holds, in the one-line form a remedy can print
+ * (the renderer gives it one dim line).
+ *
  * Every write in the group is included, keyed by its own `mcpKey`: a shared
  * `.vscode/mcp.json` holds two independent entries, and half the answer is
  * not an answer.
  *
+ * The line does NOT restate the path or the cause. The reason line directly
+ * above it has said both ({@link mcpBlockReason}), and a remedy that repeats
+ * them is the duplication the LSP remedies beside it dropped: a remedy states
+ * the action.
+ *
  * @param d - The detection gathered up front.
  * @param group - The group whose file is blocked.
- * @returns The remedy line, or `undefined` when the file can be written.
+ * @param roots - The two roots the path renders relative to.
+ * @returns The remedy line.
  */
-export function mcpBlockRemedy(
+function blockedMcpRemedy(
   d: McpDetection,
   group: TargetGroup,
-): string | undefined {
-  const block = mcpGroupBlock(d, group.path);
-  if (block === undefined) return undefined;
+  roots: Roots,
+): string {
   const want = pragmaMcpEntry(d.cwd, group.scope);
-  const body = Object.fromEntries(
-    group.writes.map((write) => [
-      write.mcpKey,
-      { [MCP_SERVER_NAME]: write.serializeEntry(want) },
-    ]),
-  );
-  const why = block.kind === "nix-store" ? "managed by Nix" : "read-only";
-  return `${group.path} is ${why} — put this entry there through your own config: ${JSON.stringify(body)}`;
+  const where = shortenPath(group.path, roots);
+  const toml = group.writes[0]?.configFormat === "toml";
+  const body = toml
+    ? group.writes
+        .map((write) =>
+          d.serializeTomlInlineEntry(
+            write.mcpKey,
+            MCP_SERVER_NAME,
+            write.serializeEntry(want),
+          ),
+        )
+        .join(" ")
+    : JSON.stringify(
+        Object.fromEntries(
+          group.writes.map((write) => [
+            write.mcpKey,
+            { [MCP_SERVER_NAME]: write.serializeEntry(want) },
+          ]),
+        ),
+      );
+  return `put this entry in the config that owns ${where}: ${body}`;
 }
 
 /** The groups whose file cannot be written, in `d.groups` order. */
 export const blockedMcpGroups = (d: McpDetection): readonly TargetGroup[] =>
   d.groups.filter((group) => d.blockedByPath.has(group.path));
+
+/**
+ * The FIRST group whose file cannot be written, with its reason and its remedy
+ * already derived — or `undefined` when every file in the scope is writable.
+ *
+ * It hands back the derived strings rather than the group, for the reason
+ * `firstLspBlock` spells out: the blockedness is what makes the two strings
+ * exist, so a caller that took the group and asked for them separately had to
+ * assert that both were there, on both surfaces.
+ *
+ * @param d - The detection gathered up front.
+ * @param roots - The two roots the path renders relative to.
+ * @returns The first block's reason and remedy, or `undefined`.
+ */
+export const firstMcpBlock = (
+  d: McpDetection,
+  roots: Roots,
+): { readonly reason: string; readonly remedy: string } | undefined => {
+  // A walk rather than `blockedMcpGroups(d).at(0)`: the group and its block
+  // come out together, so nothing has to assert afterwards that the block a
+  // filter just proved is there really is.
+  for (const group of d.groups) {
+    const block = mcpGroupBlock(d, group.path);
+    if (block !== undefined) {
+      return {
+        reason: describeMcpBlock(block, group.path, roots),
+        remedy: blockedMcpRemedy(d, group, roots),
+      };
+    }
+  }
+  return undefined;
+};
 
 /** The target groups the user selected (by path), or all when none recorded. */
 export function selectedGroups(
