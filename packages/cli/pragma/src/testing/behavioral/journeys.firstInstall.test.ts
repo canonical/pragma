@@ -16,7 +16,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { storyModules } from "../../capabilities/distribution.js";
 import { checkPackageRefs } from "../../capabilities/doctor/checks/checkPackageRefs.js";
 import { promptListVerb } from "../../capabilities/prompt/verbs.js";
@@ -26,6 +26,14 @@ import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
+
+// Every case here boots its own runtime — a fresh install is what is under test —
+// and the first read in the process parses the embedded pack cold: 65,000 triples,
+// three seconds on an idle machine and more when every package's suite runs at
+// once, which is how the release workflow runs them. The budget is a fact about
+// the pack's size, not about any assertion, and it belongs to the file because
+// whichever case runs first is the one that pays it.
+vi.setConfig({ testTimeout: 60_000 });
 
 const JSON_FLAGS: GlobalFlags = {
   llm: false,
@@ -174,11 +182,7 @@ describe("first install — empty results are honest, not papered over", () => {
       expect(row.symbol).toBeTruthy();
       if (row.via) expect(row.via).not.toBe(row.block);
     }
-    // An explicit budget, because this case boots the embedded pack and that
-    // pack grew to 53,467 triples when the token graph joined it. The default
-    // five seconds was enough for the old snapshot and is not for this one,
-    // which is a fact about the store's size rather than about this assertion.
-  }, 60_000);
+  });
 
   it("prompt list exits calmly with no prompts (the graph carries no ds:Prompt)", async () => {
     expect(await readData(promptListVerb as VerbSpec, emptyCwd())).toEqual({
