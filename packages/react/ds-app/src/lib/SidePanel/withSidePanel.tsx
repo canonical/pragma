@@ -33,7 +33,7 @@ import type {
  * ```
  *
  * Everything `SidePanel` accepts lives on the element the function returns —
- * `aria-label`, `closeOnEscape`, `onOpenChange`, `className` — so the
+ * `aria-label`, `disableEscapeClose`, `onOpenChange`, `className` — so the
  * consumer sees the real panel, not an options bag. **One duty comes with
  * that freedom: the factory must attach the `ref` it receives to the
  * `<SidePanel>`** (`<SidePanel ref={ref}>`). The trigger toggles the panel

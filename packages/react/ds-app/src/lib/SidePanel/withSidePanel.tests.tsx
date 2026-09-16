@@ -103,7 +103,7 @@ describe("withSidePanel", () => {
 
   it("renders the panel the factory composes, props and all", () => {
     const ToggledButton = withSidePanel(Button, ({ ref }) => (
-      <SidePanel ref={ref} aria-label="Filters" closeOnEscape={false}>
+      <SidePanel ref={ref} aria-label="Filters" disableEscapeClose>
         <SidePanel.Content>Body</SidePanel.Content>
       </SidePanel>
     ));
@@ -112,7 +112,7 @@ describe("withSidePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open panel" }));
     expect(getDialog(container)).toHaveAttribute("aria-label", "Filters");
 
-    // closeOnEscape sits on the panel the factory wrote: Escape is ignored.
+    // disableEscapeClose sits on the panel the factory wrote: Escape is ignored.
     fireEvent.keyDown(getDialog(container), { key: "Escape" });
     expect(getDialog(container)).toHaveAttribute("open");
   });

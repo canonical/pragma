@@ -5,8 +5,11 @@ type OwnProps = {
   children: ReactNode;
   /** Accessible name for the close button. Defaults to "Close panel". */
   dismissLabel?: string;
-  /** Hide the close button, for a panel dismissed only from its footer. */
-  dismissible?: boolean;
+  /**
+   * Hide the close button, for a panel dismissed only from its footer.
+   * Defaults to false, so the close button is shown.
+   */
+  undismissible?: boolean;
 };
 
 /**

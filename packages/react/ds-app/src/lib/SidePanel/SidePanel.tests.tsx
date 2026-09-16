@@ -274,14 +274,14 @@ describe("SidePanel", () => {
       expect(onOpenChange).toHaveBeenLastCalledWith(false);
     });
 
-    it("ignores Escape when closeOnEscape is false", () => {
+    it("ignores Escape when disableEscapeClose is set", () => {
       const handle = createRef<SidePanelHandle>();
       const onOpenChange = vi.fn();
       const { container } = render(
         <SidePanel
           ref={handle}
           onOpenChange={onOpenChange}
-          closeOnEscape={false}
+          disableEscapeClose
           aria-label="Panel"
         >
           <SidePanel.Content>Body</SidePanel.Content>

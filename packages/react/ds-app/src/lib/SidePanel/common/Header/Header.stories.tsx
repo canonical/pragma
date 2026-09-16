@@ -65,14 +65,14 @@ export const Default: Story = {
 /** A panel dismissed only from its footer omits the close button. */
 export const NotDismissible: Story = {
   args: {
-    dismissible: false,
+    undismissible: true,
   },
   parameters: {
     docs: {
       source: {
         code: `
 <SidePanel${openOnMount}>
-  <SidePanel.Header dismissible={false}>Panel title</SidePanel.Header>
+  <SidePanel.Header undismissible>Panel title</SidePanel.Header>
 </SidePanel>
         `,
       },

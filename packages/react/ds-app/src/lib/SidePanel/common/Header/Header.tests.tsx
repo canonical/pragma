@@ -56,7 +56,7 @@ describe("SidePanel.Header", () => {
     });
 
     it("is omitted when the panel is dismissed from elsewhere", () => {
-      renderInPanel(<Header dismissible={false}>Panel title</Header>);
+      renderInPanel(<Header undismissible>Panel title</Header>);
       expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
 

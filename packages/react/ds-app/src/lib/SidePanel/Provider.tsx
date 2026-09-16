@@ -49,7 +49,7 @@ const componentCssClassName = "ds side-panel";
  * @implements ds:apps.pattern.side_panel
  */
 const Provider = ({
-  closeOnEscape = true,
+  disableEscapeClose = false,
   className,
   children,
   ref,
@@ -159,7 +159,7 @@ const Provider = ({
         onKeyDown={(event) => {
           onKeyDown?.(event);
           if (
-            closeOnEscape &&
+            !disableEscapeClose &&
             event.key === "Escape" &&
             !event.defaultPrevented
           ) {

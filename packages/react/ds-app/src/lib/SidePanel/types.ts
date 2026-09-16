@@ -44,11 +44,11 @@ type OwnProps = {
    */
   onOpenChange?: (open: boolean) => void;
   /**
-   * Close when Escape is pressed while focus is inside the panel. Defaults to
-   * true. Focus outside the panel belongs to the application, so Escape there
-   * is deliberately not intercepted.
+   * Stop Escape from closing the panel. Defaults to false, so Escape closes
+   * the panel while focus is inside it. Focus outside the panel belongs to the
+   * application, so Escape there is deliberately not intercepted.
    */
-  closeOnEscape?: boolean;
+  disableEscapeClose?: boolean;
   /**
    * Panel contents. Compose from `SidePanel.Header`, `SidePanel.Content` and
    * `SidePanel.Footer`; the header and footer stay put while the content

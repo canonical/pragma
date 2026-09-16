@@ -20,7 +20,7 @@ const Header = ({
   children,
   className,
   dismissLabel = "Close panel",
-  dismissible = true,
+  undismissible = false,
   ...props
 }: HeaderProps): React.ReactElement => {
   const context = useSidePanelContext();
@@ -33,7 +33,7 @@ const Header = ({
       <h2 className="title" id={context?.titleId}>
         {children}
       </h2>
-      {context && dismissible && (
+      {context && !undismissible && (
         <Button
           className="close"
           icon="close"
