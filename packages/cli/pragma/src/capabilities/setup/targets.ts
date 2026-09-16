@@ -41,20 +41,29 @@ import {
   detectConfigFile,
 } from "./operations/setupConfig.js";
 import {
+  blockedLspEditors,
   composeLsp,
   composeLspRemoval,
+  type DetectedEditor,
   detectLsp,
+  editorFoundVia,
   LSP_SKIP_REMEDY,
   type LspDetection,
+  lspBlockReason,
+  lspBlockRemedy,
   lspEditorNames,
   lspSkipReason,
   ownedLspEditors,
 } from "./operations/setupLsp.js";
 import {
+  blockedMcpGroups,
   composeMcp,
   composeMcpRemoval,
   detectMcp,
   type McpDetection,
+  mcpBlockReason,
+  mcpBlockRemedy,
+  mcpGroupBlock,
   mcpGroupState,
   ownedMcpGroups,
   selectedGroups,
@@ -72,7 +81,7 @@ import {
 import {
   type PlanAction,
   type PlanChildRow,
-  type SetupPlan,
+  type Roots,
   shortenPath,
   type TargetId,
 } from "./plan.js";
@@ -89,8 +98,10 @@ export interface TargetDraft {
   readonly remedy?: string;
 }
 
-/** The context a draft is rendered against — the plan's two named roots. */
-export type Roots = SetupPlan["roots"];
+// The two named roots every draft's paths render against. Declared with the
+// plan (it is that structure's own field) and re-exported here, where every
+// row and every consumer of a row already looks.
+export type { Roots } from "./plan.js";
 
 /**
  * One row of the table, generic over its own detection type. Every consumer
@@ -215,63 +226,116 @@ const completionsTarget = defineTarget<CompletionsDetection>({
   composeRemoval: (d, undoKey) => composeCompletionsRemoval(d, undoKey),
 });
 
+/**
+ * The named skip for a machine with no VS Code-family editor at all — the one
+ * finding the forward plan and the removal share verbatim.
+ */
+const lspNothingFound = (d: LspDetection): TargetDraft => ({
+  action: "skip",
+  detail: lspSkipReason(d),
+  reason: lspSkipReason(d),
+  remedy: LSP_SKIP_REMEDY,
+});
+
+/**
+ * One child per detected editor, exactly like the mcp row's files: a machine
+ * with several VS Code forks should not have the extension pushed into all of
+ * them because they happen to be installed.
+ *
+ * Each label carries HOW the editor was found, because that is the fact a user
+ * whose run did nothing needs — whether pragma missed their editor or found it
+ * and could not act. A blocked editor is a child `skip` with its own reason,
+ * so the row names it instead of silently offering it.
+ */
+const lspChildren = (d: LspDetection, roots: Roots): PlanChildRow[] =>
+  d.editors.map((e): PlanChildRow => {
+    const label = `${e.editor.cli} — ${e.editor.name} · ${editorFoundVia(e, roots)}`;
+    const reason = lspBlockReason(e);
+    if (reason !== undefined) {
+      return { key: e.editor.cli, label, action: "skip", reason };
+    }
+    return {
+      key: e.editor.cli,
+      label,
+      action: e.installed ? "unchanged" : "add",
+    };
+  });
+
+/**
+ * The row-level skip for a machine where every editor is blocked — `undefined`
+ * when there is still work the row can do.
+ *
+ * `actionable` is the row's own count of editors it could act on (pending
+ * installs going forward, owned copies on a removal). Zero of those AND at
+ * least one block means the row's whole answer is the block, so it carries the
+ * FIRST one's reason and the remedy that matches it: a Nix declaration, a
+ * `chmod`, or the palette command, never one sentence standing for all three.
+ */
+const lspRowBlock = (
+  d: LspDetection,
+  actionable: number,
+): TargetDraft | undefined => {
+  if (actionable > 0) return undefined;
+  const first: DetectedEditor | undefined = blockedLspEditors(d).at(0);
+  if (first === undefined) return undefined;
+  const reason = lspBlockReason(first) as string;
+  return {
+    action: "skip",
+    detail: reason,
+    reason,
+    remedy: lspBlockRemedy(d, first) as string,
+  };
+};
+
 const lspTarget = defineTarget<LspDetection>({
   id: "lsp",
   title: "Terrazzo LSP extension",
   scopes: ["global"],
   detect: (rt) => detectLsp(rt.cwd),
-  plan: (d) => {
-    if (d.state === "unknown") {
-      return {
-        action: "skip",
-        detail: lspSkipReason(d),
-        reason: lspSkipReason(d),
-        remedy: LSP_SKIP_REMEDY,
-      };
-    }
-    // One child per detected editor, exactly like the mcp row's files: a
-    // machine with several VS Code forks on PATH should not have the extension
-    // pushed into all of them because they happen to be installed.
-    const children: PlanChildRow[] = d.editors.map((e) => ({
-      key: e.editor.cli,
-      label: `${e.editor.cli} — ${e.editor.name}`,
-      action: e.installed ? ("unchanged" as const) : ("add" as const),
-    }));
+  plan: (d, _scope, roots) => {
+    if (d.state === "unknown") return lspNothingFound(d);
+    const children = lspChildren(d, roots);
+    // The editors an install could actually act on: missing the extension AND
+    // not blocked. A blocked editor is not a candidate the user declined.
+    const installable = d.editors.filter(
+      (e) => !e.installed && e.block === undefined,
+    );
+    const blocked = lspRowBlock(d, installable.length);
+    if (blocked !== undefined) return { ...blocked, children };
     // The detail names WHAT is being placed and WHERE — never the row's own
     // state, which the action column already carries. `installed (VSCodium)`
     // beside a child row reading `codium — VSCodium (unchanged)` said the
     // editor's name twice and "nothing happens here" twice.
-    if (d.state === "installed") {
+    if (installable.length === 0) {
       return {
         action: "none",
         detail: `Terrazzo extension in ${lspEditorNames(d).join(", ")}`,
         children,
       };
     }
-    const pending = d.editors.filter((e) => !e.installed);
     return {
       action: "install",
-      detail: `Terrazzo extension → ${pending
+      detail: `Terrazzo extension → ${installable
         .map((e) => e.editor.name)
         .join(", ")}`,
       children,
     };
   },
-  removalPlan: (d) => {
-    // No editor CLI on PATH is the SAME named skip the forward plan reports:
+  removalPlan: (d, _scope, roots) => {
+    // No editor found at all is the SAME named skip the forward plan reports:
     // there is nothing on this machine to run an uninstall with.
-    if (d.state === "unknown") {
-      return {
-        action: "skip",
-        detail: lspSkipReason(d),
-        reason: lspSkipReason(d),
-        remedy: LSP_SKIP_REMEDY,
-      };
-    }
+    if (d.state === "unknown") return lspNothingFound(d);
     // Removal is composed from what detection says we OWN — a copy that is
     // present, whatever its version. The forward plan's version gate would let
     // a dead pre-0.8.3 copy this command installed survive its own `--undo`.
     const owned = ownedLspEditors(d);
+    // Nothing owned AND something blocked is the same skip the forward row
+    // reports, for the same reason: the uninstall would need a CLI this
+    // machine has not got, or a write pragma must not make.
+    const blocked = lspRowBlock(d, owned.length);
+    if (blocked !== undefined) {
+      return { ...blocked, children: lspChildren(d, roots) };
+    }
     if (owned.length === 0) {
       return { action: "none", detail: "no editor carries the extension" };
     }
@@ -308,10 +372,18 @@ const mcpChild = (
   group: McpDetection["groups"][number],
   roots: Roots,
 ): PlanChildRow => {
+  const label = shortenPath(group.path, roots);
+  // A file pragma cannot write is a child SKIP with its own reason, not an
+  // `add` that fails. The probe ran before anything was composed, so the row
+  // knows this without having tried.
+  const blocked = mcpBlockReason(d, group, roots);
+  if (blocked !== undefined) {
+    return { key: group.path, label, action: "skip", reason: blocked };
+  }
   const state = mcpGroupState(d, group.path);
   return {
     key: group.path,
-    label: shortenPath(group.path, roots),
+    label,
     action:
       state === "registered"
         ? "unchanged"
@@ -335,7 +407,25 @@ const mcpTarget = defineTarget<McpDetection>({
       };
     }
     const children = d.groups.map((group) => mcpChild(d, group, roots));
-    const pending = children.filter((c) => c.action !== "unchanged");
+    // Every file blocked means the row's whole answer is the block: it carries
+    // the first one's reason and the entry to declare by hand.
+    const writable = d.groups.filter(
+      (group) => mcpGroupBlock(d, group.path) === undefined,
+    );
+    if (writable.length === 0) {
+      const first = blockedMcpGroups(d)[0] as McpDetection["groups"][number];
+      const reason = mcpBlockReason(d, first, roots) as string;
+      return {
+        action: "skip",
+        detail: reason,
+        reason,
+        remedy: mcpBlockRemedy(d, first) as string,
+        children,
+      };
+    }
+    const pending = children.filter(
+      (c) => c.action !== "unchanged" && c.action !== "skip",
+    );
     return {
       action: pending.length === 0 ? "none" : "update",
       detail: `${d.groups.length} ${

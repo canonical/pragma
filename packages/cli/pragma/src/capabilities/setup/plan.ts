@@ -118,6 +118,17 @@ export interface SetupPlan {
 }
 
 /**
+ * The context a path renders against — the plan's two named roots.
+ *
+ * It lives here, beside {@link SetupPlan}, because it IS that structure's
+ * `roots` field and every reader of it already imports this module: the target
+ * table, the renderers, the doctor checks, and the operations whose messages
+ * shorten a path. Declaring it in the target table instead put the operations
+ * in the position of importing the module that imports them.
+ */
+export type Roots = SetupPlan["roots"];
+
+/**
  * Whether a plan action would touch the filesystem. `none` and `skip` are the
  * two quiet outcomes: a converged re-run composes no effects at all, so mtimes
  * stay untouched and a second `--yes` writes nothing.

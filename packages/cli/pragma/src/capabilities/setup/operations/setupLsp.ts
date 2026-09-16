@@ -11,18 +11,39 @@
  * NOT used: it hardcodes the `code` CLI, which is precisely what left
  * VSCodium/Cursor/Windsurf/Antigravity machines unable to install at all.
  *
- * `detectLsp` probes FOR REAL up front, and spawns NOTHING: an editor is
- * detected when its CLI resolves on PATH (the `editorClis` registry names
- * them), carries the extension when its extensions dir holds a
- * `canonical.terrazzo-lsp-extension-<version>/` entry, and is "installed" when
- * that entry is also new enough to work. Running
- * `--list-extensions` instead would be the natural probe, but Cursor's Linux
- * launcher OPENS THE EDITOR on that flag — a detection step must never launch
- * an app, so the fs is the source of truth. The full extension id is matched
- * (not the old `terrazzo` substring, which any other terrazzo-named extension
- * could false-positive).
+ * `detectLsp` probes FOR REAL up front, and spawns NOTHING. An editor is
+ * detected THREE ways, and each row records which one found it, because "no
+ * editor found" and "found but nothing can be installed into it" are different
+ * answers and only one of them is about this machine lacking the editor:
  *
- * No editor CLI found is a NAMED SKIP, not an error: the message says what was
+ * 1. its CLI on PATH (the `editorClis` registry names them);
+ * 2. its CLI inside its macOS APP BUNDLE — a stock macOS install puts nothing
+ *    on PATH until the user runs the palette's "Shell Command: Install
+ *    '<cli>' command in PATH", which is opt-in and usually never taken, so a
+ *    PATH-only probe reported a machine that HAS VS Code as having none;
+ * 3. its per-user configuration DIRECTORY, which is the last trace a fresh
+ *    install leaves. Nothing can be installed through a directory, so such an
+ *    editor is reported with a `no-cli` block whose remedy is the palette
+ *    command that settles it.
+ *
+ * It carries the extension when its extensions dir holds a
+ * `canonical.terrazzo-lsp-extension-<version>/` entry, and is "installed" when
+ * that entry is also new enough to work. Running `--list-extensions` instead
+ * would be the natural probe, but Cursor's Linux launcher OPENS THE EDITOR on
+ * that flag — a detection step must never launch an app, so the fs is the
+ * source of truth. The full extension id is matched (not the old `terrazzo`
+ * substring, which any other terrazzo-named extension could false-positive).
+ *
+ * Detection also asks whether the extensions directory could be WRITTEN, via
+ * `probeWritable`, BEFORE any install is composed. A home-manager-managed
+ * `~/.vscode/extensions` is a symlink into `/nix/store`, so
+ * `--install-extension` there failed with a raw fs error or silently changed
+ * nothing; that is now a named skip carrying the declaration that does work.
+ * Per the owner, 2026-09-16, the decision is made by the DIRECTORY, never by
+ * the OS: a Nix user's home is ordinary, and a non-Nix user can have a
+ * read-only mount.
+ *
+ * Every one of those is a NAMED SKIP, not an error: the message says what was
  * looked for and what to do, and the run exits 0 — there is nothing on this
  * machine the step could honestly fail at. Real failures (fetch, sideload)
  * travel the task failure channel (`checkExecOk`) with a recovery that names a
@@ -51,7 +72,9 @@ import {
   failPragma,
   guardMissingBinary,
 } from "../../shared/index.js";
+import { type Roots, shortenPath } from "../plan.js";
 import type { LspState } from "../types.js";
+import { type FsProbe, probeWritable, type WriteBlock } from "./writability.js";
 
 /** The full extension id, as the editor's extensions dir spells it. */
 const EXTENSION_ID = "canonical.terrazzo-lsp-extension";
@@ -74,6 +97,20 @@ const LSP_PACKAGE = "@canonical/terrazzo-lsp-extension";
  */
 export interface DetectedEditor {
   readonly editor: EditorCliDefinition;
+  /**
+   * WHICH of the three probes found this editor. Reported per editor by both
+   * surfaces, because it is the fact that tells a user whose `setup lsp` did
+   * nothing whether the editor was missed or merely unreachable — the
+   * question the old single-line "no editor CLI on PATH" could not answer.
+   */
+  readonly foundBy: "path" | "bundle" | "user-dir";
+  /**
+   * The CLI file the probe actually found, when it found one. Every exec runs
+   * THIS path rather than the bare name: a bundle CLI is not on PATH at all,
+   * and even for a PATH hit the probed file is the one this run verified
+   * exists — re-resolving the bare name at spawn time could reach another.
+   */
+  readonly cliPath?: string;
   /** Any `canonical.terrazzo-lsp-extension-*` entry, whatever its version. */
   readonly present: boolean;
   /** Present AND at least {@link MIN_EXTENSION_VERSION} — i.e. it works. */
@@ -93,7 +130,26 @@ export interface DetectedEditor {
    * believe.
    */
   readonly presentEntries: readonly string[];
+  /**
+   * Why nothing can be installed into this editor, when that is the case: no
+   * CLI to run at all, or an extensions directory this command must not write
+   * to. Absent means the install can proceed.
+   *
+   * A block is carried on the DETECTION rather than discovered by the writer
+   * on purpose. The write is what used to discover it, and it discovered it as
+   * a raw `EACCES` on a `failed` row with no next step; probing first turns
+   * the same machine into a named skip with a remedy, and lets doctor report it
+   * without writing anything at all.
+   */
+  readonly block?: EditorBlock;
 }
+
+/**
+ * Why an editor cannot be installed into: the two filesystem answers
+ * {@link probeWritable} gives, plus the one this module adds — an editor found
+ * only by its user directory, which has no CLI to run.
+ */
+export type EditorBlock = WriteBlock | { readonly kind: "no-cli" };
 
 /**
  * The detected LSP state: the editors whose CLI is on PATH (each with its
@@ -115,8 +171,9 @@ export interface LspDetection {
 }
 
 /**
- * Whether an editor CLI resolves on PATH, given the candidate paths the host
- * would consider for it.
+ * The FIRST candidate path that exists, or `undefined` when none does — used
+ * for both candidate lists (PATH, then the macOS app bundle), so a caller
+ * learns not only whether the CLI is there but which file it is.
  *
  * The candidates come from `@canonical/harnesses`' `executableCandidates` —
  * the same helper harness detection resolves `process` signals with — rather
@@ -129,8 +186,8 @@ export interface LspDetection {
  * failure. One implementation of the platform rules means the probe cannot
  * drift away from detection's.
  */
-const cliOnPath = (candidates: readonly string[]): boolean =>
-  candidates.some((candidate) => existsSync(candidate));
+const resolveCli = (candidates: readonly string[]): string | undefined =>
+  candidates.find((candidate) => existsSync(candidate));
 
 /**
  * The oldest extension release whose bundled language server actually starts.
@@ -225,29 +282,79 @@ const extensionState = (
 };
 
 /**
- * Probe every registry editor: CLI presence via PATH lookup, installed-state
- * via the extensions dir — no spawns (see the module docblock for why).
+ * Probe every registry editor: its CLI on PATH, then inside its macOS app
+ * bundle, then its per-user directory; its installed-state via the extensions
+ * dir; and whether that dir could be written. No spawns (see the module
+ * docblock for why).
  *
  * @param _cwd - Unused; kept so every `detectX` shares the (cwd) shape.
+ * @param platform - The captured host; defaults to the live one. Injected so a
+ *   test can drive the darwin arm — the one this repo's CI host cannot run.
+ * @param probe - The writability filesystem seam; defaults to the real one.
  * @returns The detected {@link LspDetection}.
- * @note Impure — reads PATH dirs and editor extension dirs off the real fs.
+ * @note Impure — reads PATH dirs, app bundles and editor extension dirs off
+ * the real fs.
  */
-export async function detectLsp(_cwd: string): Promise<LspDetection> {
-  const { editorClis, executableCandidates, readPlatformEnv, userDataBase } =
-    await import("@canonical/harnesses");
-  const platform = readPlatformEnv();
-  const editors: DetectedEditor[] = editorClis
-    .filter((editor) => cliOnPath(executableCandidates(editor.cli, platform)))
-    .map((editor) => {
-      const { present, current, entries } = extensionState(editor, platform);
-      return {
+export async function detectLsp(
+  _cwd: string,
+  platform?: PlatformEnv,
+  probe?: FsProbe,
+): Promise<LspDetection> {
+  const {
+    appBundleCandidates,
+    editorClis,
+    executableCandidates,
+    readPlatformEnv,
+    userDataBase,
+  } = await import("@canonical/harnesses");
+  // Not a default parameter value: `readPlatformEnv` arrives through the
+  // dynamic import that keeps `@canonical/harnesses` off the fast path, so it
+  // cannot be named in the signature.
+  const host = platform ?? readPlatformEnv();
+  const editors: DetectedEditor[] = editorClis.flatMap((editor) => {
+    const onPath = resolveCli(executableCandidates(editor.cli, host));
+    const inBundle =
+      onPath ??
+      resolveCli(
+        appBundleCandidates(editor.cli, host, editor.darwinBundles ?? []),
+      );
+    const userDir = editor.userDir?.(host);
+    // The three probes, strongest first. A CLI is what an install RUNS, so a
+    // resolved one always wins; the user directory proves the editor is here
+    // and nothing more, which is why it carries its own block.
+    const found:
+      | Pick<DetectedEditor, "foundBy" | "cliPath" | "block">
+      | undefined =
+      onPath !== undefined
+        ? { foundBy: "path", cliPath: onPath }
+        : inBundle !== undefined
+          ? { foundBy: "bundle", cliPath: inBundle }
+          : userDir !== undefined && existsSync(userDir)
+            ? { foundBy: "user-dir", block: { kind: "no-cli" } }
+            : undefined;
+    if (found === undefined) return [];
+    const { present, current, entries } = extensionState(editor, host);
+    const extensionsDir = editor.extensionsDir(host);
+    return [
+      {
         editor,
+        ...found,
         present,
         installed: current,
-        extensionsDir: editor.extensionsDir(platform),
+        extensionsDir,
         presentEntries: entries,
-      };
-    });
+        // A `no-cli` block is not overwritten by a writability answer: there is
+        // no CLI to run whatever the directory permits, and the palette command
+        // is the remedy either way.
+        ...(found.block === undefined
+          ? (() => {
+              const block = probeWritable(extensionsDir, probe);
+              return block === undefined ? {} : { block };
+            })()
+          : {}),
+      },
+    ];
+  });
   const state: LspState =
     editors.length === 0
       ? "unknown"
@@ -259,7 +366,7 @@ export async function detectLsp(_cwd: string): Promise<LspDetection> {
     state,
     editors,
     probed: editorClis.map((editor) => editor.cli),
-    stagingDir: join(userDataBase(platform), BIN_NAME, "lsp"),
+    stagingDir: join(userDataBase(host), BIN_NAME, "lsp"),
   };
 }
 
@@ -279,7 +386,12 @@ export const selectedEditors = (
   d: LspDetection,
   chosen?: readonly string[],
 ): readonly DetectedEditor[] => {
-  const pending = d.editors.filter((e) => !e.installed);
+  // A BLOCKED editor is never pending. It is not a candidate the user declined
+  // — it is one this command cannot act on, and composing its sideload anyway
+  // is what produced the raw fs failure the block exists to replace.
+  const pending = d.editors.filter(
+    (e) => !e.installed && e.block === undefined,
+  );
   return chosen === undefined
     ? pending
     : pending.filter((e) => chosen.includes(e.editor.cli));
@@ -290,15 +402,118 @@ export const lspEditorNames = (d: LspDetection): string[] =>
   d.editors.map((e) => e.editor.name);
 
 /**
- * The named-skip reason for a machine with no VS Code-family CLI on PATH. It
- * names every CLI that was probed, because a skip the user cannot act on is
- * only honest if it says what would have counted.
+ * The named-skip reason for a machine with no VS Code-family editor at all. It
+ * names every CLI that was probed AND every place it was looked for, because a
+ * skip the user cannot act on is only honest if it says what would have
+ * counted — and "not on PATH" was a misleading half of the answer once the
+ * bundle and user-directory probes existed.
  *
  * @param d - The detection gathered up front.
  * @returns The reason line.
  */
 export const lspSkipReason = (d: LspDetection): string =>
-  `no VS Code-family editor CLI on PATH (${d.probed.join(", ")})`;
+  `no VS Code-family editor found — looked for ${d.probed.join(", ")} on PATH, under /Applications, and for a user directory`;
+
+/**
+ * How one editor was found, as a phrase both surfaces print — the provenance a
+ * user needs to tell "pragma missed my editor" from "pragma found it and could
+ * not act". Authored once, because `setup`'s child row and `doctor`'s item are
+ * the same finding.
+ *
+ * The evidence path travels with it wherever there is one: the CLI file the
+ * probe resolved. An editor found only by its user directory has no CLI, and
+ * the phrase alone is the whole finding there.
+ *
+ * @param e - One detected editor.
+ * @param roots - The two roots every path renders relative to.
+ * @returns The phrase, e.g. `via PATH (/usr/bin/codium)`.
+ */
+export const editorFoundVia = (e: DetectedEditor, roots: Roots): string => {
+  const where =
+    e.foundBy === "path"
+      ? "PATH"
+      : e.foundBy === "bundle"
+        ? "app bundle"
+        : "user directory";
+  return e.cliPath === undefined
+    ? `via ${where}`
+    : `via ${where} (${shortenPath(e.cliPath, roots)})`;
+};
+
+/**
+ * Why nothing can be installed into one blocked editor — one line, as the
+ * renderer prints one.
+ *
+ * @param e - A detected editor carrying a {@link DetectedEditor.block}.
+ * @returns The reason, or `undefined` when the editor is not blocked.
+ */
+export function lspBlockReason(e: DetectedEditor): string | undefined {
+  const block = e.block;
+  if (block === undefined) return undefined;
+  switch (block.kind) {
+    case "no-cli":
+      return `${e.editor.name} is installed but has no command-line launcher — found only its user directory`;
+    case "nix-store":
+      return `${e.editor.name}'s extensions folder is managed by Nix (it resolves to ${block.resolved})`;
+    case "read-only":
+      return `${e.editor.name}'s extensions folder is not writable (${block.path})`;
+  }
+}
+
+/**
+ * The remedy for an editor found without a CLI: the palette command that puts
+ * one on PATH. Named per editor, because each fork spells its own binary.
+ */
+export const lspNoCliRemedy = (e: DetectedEditor): string =>
+  `run "Shell Command: Install '${e.editor.cli}' command in PATH" from ${e.editor.name}'s command palette, then run \`${BIN_NAME} setup lsp\` again`;
+
+/**
+ * The remedy for a Nix-managed extensions folder: declare the VSIX in the
+ * config that owns the folder.
+ *
+ * It does NOT name a marketplace id, because there is no listing — the module
+ * docblock above says so, and sideloading the bundled VSIX is the only install
+ * path that exists. So the line gives both halves a home-manager user needs:
+ * where to get the file, and the attribute that installs it.
+ */
+export const lspNixRemedy = (d: LspDetection): string =>
+  `fetch the VSIX with \`bun add ${LSP_PACKAGE}@latest\` in ${d.stagingDir}, then declare it yourself: programs.vscode.profiles.default.extensions = [ (pkgs.vscode-utils.buildVscodeExtension { src = ${lspVsixPath(d)}; }) ];`;
+
+/**
+ * The remedy for a read-only extensions folder: make it writable, or run the
+ * sideload by hand once it is. The command names the CLI file this run
+ * actually found, never a bare name it hopes resolves.
+ */
+export const lspReadOnlyRemedy = (d: LspDetection, e: DetectedEditor): string =>
+  `make that folder writable, then install by hand with \`${e.cliPath ?? e.editor.cli} --install-extension ${lspVsixPath(d)}\``;
+
+/**
+ * The remedy matching one blocked editor's block — the single dim line the
+ * renderer prints beneath the row.
+ *
+ * @param d - The detection gathered up front.
+ * @param e - A detected editor carrying a {@link DetectedEditor.block}.
+ * @returns The remedy, or `undefined` when the editor is not blocked.
+ */
+export function lspBlockRemedy(
+  d: LspDetection,
+  e: DetectedEditor,
+): string | undefined {
+  const block = e.block;
+  if (block === undefined) return undefined;
+  switch (block.kind) {
+    case "no-cli":
+      return lspNoCliRemedy(e);
+    case "nix-store":
+      return lspNixRemedy(d);
+    case "read-only":
+      return lspReadOnlyRemedy(d, e);
+  }
+}
+
+/** The editors this command cannot act on, in registry order. */
+export const blockedLspEditors = (d: LspDetection): readonly DetectedEditor[] =>
+  d.editors.filter((e) => e.block !== undefined);
 
 /**
  * The remedy beneath that skip. It states plainly that nothing is possible here
@@ -357,15 +572,19 @@ export function composeLsp(
     ]),
   );
 
-  const sideloads = pending.map(({ editor }) => {
-    const command = `${editor.cli} --install-extension ${vsixPath}`;
+  const sideloads = pending.map(({ editor, cliPath }) => {
+    // The CLI FILE detection resolved, not the bare name: an editor found in
+    // its macOS app bundle has nothing on PATH to spawn, and even a PATH hit is
+    // better spawned as the file this run verified.
+    const bin = cliPath ?? editor.cli;
+    const command = `${bin} --install-extension ${vsixPath}`;
     return guardMissingBinary(
-      editor.cli,
+      bin,
       {
-        message: `The \`${editor.cli}\` CLI disappeared from PATH mid-run — restore it, then run \`${BIN_NAME} setup lsp\` again.`,
+        message: `${editor.name}'s CLI disappeared mid-run — restore it, then run \`${BIN_NAME} setup lsp\` again.`,
       },
       flatMap(
-        exec(editor.cli, ["--install-extension", vsixPath], d.stagingDir),
+        exec(bin, ["--install-extension", vsixPath], d.stagingDir),
         (result) =>
           checkExecOk(command, result as ExecResult, {
             message:
@@ -392,7 +611,11 @@ export function composeLsp(
  * @returns The editors carrying a copy.
  */
 export const ownedLspEditors = (d: LspDetection): readonly DetectedEditor[] =>
-  d.editors.filter((e) => e.present);
+  // A blocked editor is excluded even when it carries a copy: the uninstall
+  // would need a CLI this machine has not got, or a write into a directory
+  // pragma must not touch. The row says so rather than composing a reversal
+  // that cannot run.
+  d.editors.filter((e) => e.present && e.block === undefined);
 
 /**
  * Compose the removal: one `<editor cli> --uninstall-extension <id>` per owned
@@ -438,17 +661,15 @@ export function composeLspRemoval(
   // and the plan row says so. Same shape as the other rows' empty removals.
   if (owned.length === 0) return sequence_([]);
   return sequence_(
-    owned.map(({ editor, extensionsDir, presentEntries }) => {
-      const command = `${editor.cli} --uninstall-extension ${EXTENSION_ID}`;
+    owned.map(({ editor, cliPath, extensionsDir, presentEntries }) => {
+      // The resolved CLI file, for the reason `composeLsp` spells out.
+      const bin = cliPath ?? editor.cli;
+      const command = `${bin} --uninstall-extension ${EXTENSION_ID}`;
       const ownedPaths = presentEntries.map((entry) =>
         join(extensionsDir, entry),
       );
       const uninstall = flatMap(
-        exec(
-          editor.cli,
-          ["--uninstall-extension", EXTENSION_ID],
-          extensionsDir,
-        ),
+        exec(bin, ["--uninstall-extension", EXTENSION_ID], extensionsDir),
         (result) =>
           checkExecOk(command, result as ExecResult, {
             message:
@@ -488,9 +709,9 @@ export function composeLspRemoval(
       );
       return mkdir(extensionsDir, true, {
         undo: guardMissingBinary(
-          editor.cli,
+          bin,
           {
-            message: `The \`${editor.cli}\` CLI disappeared from PATH mid-run — restore it, then run \`${BIN_NAME} setup lsp --undo\` again.`,
+            message: `${editor.name}'s CLI disappeared mid-run — restore it, then run \`${BIN_NAME} setup lsp --undo\` again.`,
           },
           verified,
         ),
@@ -514,10 +735,10 @@ export function composeLspRemoval(
  * @returns The uninstall command, or undefined.
  */
 export function lspUninstallRemedy(d: LspDetection): string | undefined {
-  const cli = ownedLspEditors(d).at(0)?.editor.cli;
-  return cli === undefined
+  const owner = ownedLspEditors(d).at(0);
+  return owner === undefined
     ? undefined
-    : `${cli} --uninstall-extension ${EXTENSION_ID}`;
+    : `${owner.cliPath ?? owner.editor.cli} --uninstall-extension ${EXTENSION_ID}`;
 }
 
 /** The VSIX path a failed sideload leaves behind for a manual retry. */

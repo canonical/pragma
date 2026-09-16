@@ -45,22 +45,37 @@ export {
 } from "./setupConfig.js";
 export type { SetupRun } from "./setupGenerator.js";
 export { buildSetupRun } from "./setupGenerator.js";
-export type { LspDetection } from "./setupLsp.js";
+export type {
+  DetectedEditor,
+  EditorBlock,
+  LspDetection,
+} from "./setupLsp.js";
 export {
+  blockedLspEditors,
   composeLsp,
   composeLspRemoval,
   detectLsp,
+  editorFoundVia,
   LSP_SKIP_REMEDY,
+  lspBlockReason,
+  lspBlockRemedy,
   lspEditorNames,
+  lspNixRemedy,
+  lspNoCliRemedy,
+  lspReadOnlyRemedy,
   lspSkipReason,
   lspUninstallRemedy,
   ownedLspEditors,
 } from "./setupLsp.js";
 export type { McpDetection } from "./setupMcp.js";
 export {
+  blockedMcpGroups,
   composeMcp,
   composeMcpRemoval,
   detectMcp,
+  mcpBlockReason,
+  mcpBlockRemedy,
+  mcpGroupBlock,
   mcpGroupState,
   mcpWriteState,
   ownedMcpGroups,
@@ -77,3 +92,5 @@ export {
   staleSkillLinks,
   withinRoot,
 } from "./setupSkills.js";
+export type { FsProbe, WriteBlock } from "./writability.js";
+export { probeWritable } from "./writability.js";

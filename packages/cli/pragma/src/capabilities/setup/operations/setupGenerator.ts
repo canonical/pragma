@@ -294,6 +294,13 @@ const buildRowsPrompt = (plan: SetupPlan): PromptDefinition => {
  * choices below already carry the detected state per child (`— unchanged`,
  * `— add`, `— update`), which is the answer the meta-question was standing in
  * front of.
+ *
+ * A child whose action is `skip` is not a choice at all — the same rule
+ * {@link buildRowsPrompt} holds for a skipped ROW, and for the same reason:
+ * summon's choice shape has no disabled state, so offering a file pragma
+ * cannot write (or an editor it cannot install into) would let the user select
+ * work that then does nothing. Such a child stays a visible row in the plan
+ * and the recap, carrying its reason.
  */
 const buildChildPrompt = (
   plan: SetupPlan,
@@ -301,7 +308,9 @@ const buildChildPrompt = (
   message: string,
   when?: PromptDefinition["when"],
 ): PromptDefinition => {
-  const children = childrenOf(plan, target);
+  const children = childrenOf(plan, target).filter(
+    (child) => child.action !== "skip",
+  );
   return {
     name: CHILD_ANSWER[target] as string,
     type: "multiselect",
