@@ -38,10 +38,10 @@ const componentCssClassName = "ds side-panel";
  * a header must carry its own `aria-label` (see the `WithoutHeader` story in
  * `withSidePanel`). Note the title is not a heading element: the panel is a
  * layer on top of the page, not part of its document outline.
- * 
+ *
  * The panel is `position: fixed` and therefore out of the document flow: an
  * `overflow: hidden` ancestor does not clip it
- * 
+ *
  * Because the panel is its own scroll container and is offset with a
  * transform, it both clips and re-anchors its descendants: an overlay that
  * needs to escape the panel's box — a `Popover` or `ContextualMenu`, whose
