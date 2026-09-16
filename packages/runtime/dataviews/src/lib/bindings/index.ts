@@ -9,8 +9,10 @@
  * with the command and its result, the list comparison, the ordering in
  * force and the next one a header's activation, or its menu's choice, leads
  * to, the wire key a form control is named by, and the parameters a link
- * carries an arrangement in. React uses it now; a Svelte binding would use
- * the same names rather than solve its own geometry.
+ * carries an arrangement in, and the words a root speaks — the application's
+ * messages over the English record. React uses it now; a Svelte binding
+ * would use the same names rather than solve its own geometry or word its
+ * own English.
  */
 
 export type {
@@ -52,6 +54,7 @@ export {
   readSizingBounds,
   resolveColumns,
 } from "../geometry/index.js";
+export { resolveMessages } from "../messages/index.js";
 export type {
   ArrangedColumn,
   ColumnCommandConfig,
