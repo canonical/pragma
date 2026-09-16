@@ -51,6 +51,10 @@ A location that differs by platform is declared as one signal per platform, sinc
 
 A row should carry both project-relative *and* user-level signals where the harness has them. Project-relative signals alone answer only "does this repo carry a committed config", which misses the common case of an installed editor with the config directory gitignored.
 
+The distinction also decides the GLOBAL band. `listHarnessesForBand` admits a `both`-scoped row into the global band only when one of its own user-level signals matched: a committed `.vscode/` travels with the repository, so on its own it must not create a per-user config for every contributor who clones. A row whose every declared signal is project-relative (`cursor`) has nothing to earn the band with, so the rule leaves it alone. `DetectedHarness.matched` is what detection records for this — a tier cannot tell a project directory from one in the user's home, since both score `high`.
+
+`homeConfigPath` may return `undefined`, which means "this harness has no per-user location ON THIS HOST" — not the same as a row that declares none, which is a registry error. The VS Code rows return it under WSL: the editor a WSL user drives is the Windows one, reading `%APPDATA%\Code\User\mcp.json` on the Windows side, so the Linux-side file is read by nothing. `resolveConfigTarget` reports that as no target and `groupConfigTargets` drops it, leaving the project file as the row's only band.
+
 Multiple harnesses can be detected simultaneously — a developer may use both Claude Code and Cursor, and a VS Code install with a Cline extension detects **both** `vscode` and `cline` (they share `.vscode/mcp.json` under two different `mcpKey`s).
 
 ## MCP Configuration
