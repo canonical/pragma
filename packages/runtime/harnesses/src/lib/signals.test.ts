@@ -88,6 +88,52 @@ describe("checkSignal — directory / file", () => {
     expect(seen).toContain("/home/tester/.config/opencode");
   });
 
+  it("resolves a %APPDATA%/ path against the win32 config base", () => {
+    const seen: string[] = [];
+    const result = check(
+      { type: "directory", path: "%APPDATA%/Code/User" },
+      ctx({
+        platform: platform({
+          platform: "win32",
+          home: "C:/Users/tester",
+          env: { APPDATA: "D:/roaming" },
+        }),
+      }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path.replaceAll("\\", "/"));
+          return path.replaceAll("\\", "/") === "D:/roaming/Code/User";
+        }),
+      },
+    );
+    expect(result).toBe(true);
+    expect(seen).toContain("D:/roaming/Code/User");
+  });
+
+  it("falls back to ~/AppData/Roaming for a %APPDATA%/ path when the var is unset", () => {
+    // The two coincide by default; they diverge only for a user who has
+    // relocated %APPDATA% — exactly the user a `~/AppData/Roaming` literal
+    // loses, which is why the prefix exists at all.
+    const seen: string[] = [];
+    const result = check(
+      { type: "directory", path: "%APPDATA%/Code/User" },
+      ctx({
+        platform: platform({ platform: "win32", home: "C:/Users/tester" }),
+      }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path.replaceAll("\\", "/"));
+          return (
+            path.replaceAll("\\", "/") ===
+            "C:/Users/tester/AppData/Roaming/Code/User"
+          );
+        }),
+      },
+    );
+    expect(result).toBe(true);
+    expect(seen).toContain("C:/Users/tester/AppData/Roaming/Code/User");
+  });
+
   it("resolves a ~/ path against the platform home", () => {
     const seen: string[] = [];
     const result = check({ type: "file", path: "~/.claude.json" }, ctx(), {
@@ -196,6 +242,7 @@ describe("checkSignal — extension", () => {
     // for the VS Code family (Antigravity included).
     expect(probed).toEqual([
       "/home/tester/.vscode/extensions",
+      "/home/tester/.vscode-insiders/extensions",
       "/home/tester/.vscode-oss/extensions",
       "/home/tester/.cursor/extensions",
       "/home/tester/.windsurf/extensions",

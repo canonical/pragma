@@ -19,7 +19,12 @@ export {
   type TargetGroup,
 } from "./configTargets.js";
 export { default as detectHarnesses } from "./detectHarnesses.js";
-export { default as editorClis, type EditorCliDefinition } from "./editors.js";
+export {
+  default as editorClis,
+  type EditorCliDefinition,
+  type VscodeProduct,
+  vscodeUserDir,
+} from "./editors.js";
 export { executableCandidates } from "./executablePaths.js";
 export { default as findHarnessById } from "./findHarnessById.js";
 export { default as harnesses } from "./harnesses.js";

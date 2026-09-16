@@ -190,4 +190,70 @@ describe("groupTargetsForScope", () => {
     );
     expect(groups.map((g) => g.path)).toEqual(["/project/.vscode/mcp.json"]);
   });
+
+  /**
+   * VS Code's two bands. The row is `both` now, so the same detection resolves
+   * to a different file per selection — which is the whole point of the change:
+   * the DEFAULT global run reaches VS Code without `--local`.
+   */
+  it("resolves VS Code to its per-user mcp.json under scope=global", () => {
+    const groups = groupTargetsForScope(
+      [vscode],
+      "/project",
+      "global",
+      PLATFORM,
+    );
+    expect(groups.map((g) => g.path)).toEqual([
+      "/home/tester/.config/Code/User/mcp.json",
+    ]);
+    expect(groups[0]?.scope).toBe("global");
+    expect(groups[0]?.writes.map((w) => w.mcpKey)).toEqual(["servers"]);
+  });
+
+  it("writes ONLY the project file for VS Code under scope=both", () => {
+    // A dual-scope harness has already written its project file in the project
+    // band, so the global band under `both` takes global-ONLY rows — no
+    // double-write. `--global` is the selection that reaches the user file.
+    const groups = groupTargetsForScope([vscode], "/project", "both", PLATFORM);
+    expect(groups.map((g) => g.path)).toEqual(["/project/.vscode/mcp.json"]);
+  });
+
+  it("collapses the three VS Code products to ONE project write", () => {
+    // All three resolve to `.vscode/mcp.json` under the same `servers` key, so
+    // the `(path, mcpKey)` dedup makes a single write however many of them
+    // detect — the file is never written three times.
+    const insiders = detected(requireHarness("vscode-insiders"));
+    const vscodium = detected(requireHarness("vscodium"));
+    const groups = groupConfigTargets(
+      [vscode, insiders, vscodium],
+      "/project",
+      "project",
+      PLATFORM,
+    );
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.harnessNames).toEqual([
+      "VS Code",
+      "VS Code Insiders",
+      "VSCodium",
+    ]);
+    expect(groups[0]?.writes).toHaveLength(1);
+  });
+
+  it("gives each VS Code product its OWN per-user file under scope=global", () => {
+    // Per-user, the three products are three different directories — the
+    // shared project file is the only place they coincide.
+    const insiders = detected(requireHarness("vscode-insiders"));
+    const vscodium = detected(requireHarness("vscodium"));
+    const groups = groupConfigTargets(
+      [vscode, insiders, vscodium],
+      "/project",
+      "global",
+      PLATFORM,
+    );
+    expect(groups.map((g) => g.path)).toEqual([
+      "/home/tester/.config/Code - Insiders/User/mcp.json",
+      "/home/tester/.config/Code/User/mcp.json",
+      "/home/tester/.config/VSCodium/User/mcp.json",
+    ]);
+  });
 });

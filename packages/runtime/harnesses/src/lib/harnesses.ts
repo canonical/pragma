@@ -6,6 +6,7 @@
  * ranges to handle config format changes across versions.
  */
 
+import { vscodeUserDir } from "./editors.js";
 import {
   copilotMcpEntry,
   crushMcpEntry,
@@ -229,53 +230,135 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "vscode",
     name: "VS Code",
     version: "*",
-    scope: "project",
+    // BOTH bands, not project-only. VS Code has kept a PER-USER `mcp.json`
+    // since 1.102, in its user directory beside `settings.json` and under the
+    // same `servers` key as the project file. Declaring the row project-only
+    // meant the DEFAULT global `setup mcp` never touched VS Code at all, and
+    // the only way to get an entry into it was `--local` — a workaround
+    // several colleagues found for themselves and reported as the fix. It was
+    // never a choice about scope; it was a missing location.
+    scope: "both",
     // The first two signals are PROJECT-relative (`resolveFsPath` resolves an
     // unprefixed path against `ctx.projectRoot`), so on their own this row can
     // only see "this repo carries a committed `.vscode/`" — a developer with
     // VS Code installed and `.vscode/` gitignored, the common case, was
-    // invisible. The four that follow are the user-level and binary probes
-    // every sibling GUI-editor row already has:
-    // - `$XDG_CONFIG_HOME/Code/User` is VS Code's user config dir on Linux. It
-    //   is spelled in XDG form deliberately (see `resolveFsPath`'s docblock): a
-    //   user who sets `$XDG_CONFIG_HOME` keeps nothing under `~/.config`, so a
-    //   `~/.config/Code/User` literal would report the editor absent.
-    // - `~/Library/Application Support/Code/User` is the SAME directory on
-    //   macOS, and needs its own row because nothing else here finds it: the
-    //   XDG probe above resolves to `~/.config` on darwin (`xdgConfigHome` is
+    // invisible. The five that follow are the user-level and binary probes
+    // every sibling GUI-editor row already has.
+    //
+    // The three user-directory signals are ONE directory per platform, spelled
+    // in the three prefix forms the signal grammar resolves (see
+    // `resolveFsPath`), and each must agree with `vscodeUserDir` — the helper
+    // `homeConfigPath` below resolves through — or the row would detect a
+    // directory it then declines to write into. `harnesses.test.ts` pins that
+    // agreement by resolving each signal against `dirname(homeConfigPath)` on
+    // every platform.
+    // - `$XDG_CONFIG_HOME/Code/User` is the Linux location. In XDG form
+    //   deliberately: a user who sets `$XDG_CONFIG_HOME` keeps nothing under
+    //   `~/.config`, so a `~/.config/Code/User` literal would report the
+    //   editor absent.
+    // - `~/Library/Application Support/Code/User` is the macOS location, and
+    //   it needs its own row because nothing else here finds it: the XDG probe
+    //   resolves to `~/.config` on darwin (`xdgConfigHome` is
     //   platform-independent BY DESIGN — a tool documenting `~/.config/<tool>`
     //   reads it on macOS too), and a default macOS install puts no `code` on
     //   PATH until the user runs "Install 'code' command in PATH" from the
-    //   palette. Written as a `~/…` literal rather than through
-    //   `platformPaths`, because VS Code's user dir follows env-paths' DATA
-    //   base on darwin (`~/Library/Application Support`) and the XDG CONFIG
-    //   base on linux — no single helper spans both, and `userConfigBase`'s
-    //   darwin arm (`~/Library/Preferences`) is the wrong one. The literal is
-    //   inert on linux/win32: the path simply never exists there.
+    //   palette.
+    // - `%APPDATA%/Code/User` is the Windows location. It has a prefix of its
+    //   own rather than a `~/AppData/Roaming` literal, because that literal
+    //   silently misses a relocated `%APPDATA%` — and a silent miss here is a
+    //   clean skip on a machine that has the editor.
     // - `~/.vscode/extensions` is present on any install with ≥1 extension —
     //   on macOS as well as linux, it is the same path — and is the directory
     //   `checkExtension` already globs on behalf of Cline and Roo Code. A
-    //   FRESH install has none, which is exactly the gap the two config-dir
-    //   probes above cover: both are created on first launch.
+    //   FRESH install has none, which is exactly the gap the config-dir probes
+    //   above cover: all three are created on first launch.
     // - `code` on PATH covers `/usr/bin/code` (deb), `/snap/bin/code` (the snap
-    //   is CLASSIC confinement, so its home and PATH are the real ones) and
-    //   `code.cmd` on win32 — `executableCandidates` owns those rules.
+    //   is CLASSIC confinement, so its home and PATH are the real ones),
+    //   `code.cmd` on win32 and — through `appBundleCandidates` — the CLI
+    //   inside `Visual Studio Code.app` on a macOS host that never ran the
+    //   palette command.
     // Tiers fall out of `toSignalTier` correctly: the dirs score `high`, the
     // process `medium` — right, since `code` on PATH means "installed", not
     // "this project uses it".
-    // Win32's user dir (`%APPDATA%\Code\User`) has no row: the signal grammar
-    // expands `~` and `$XDG_CONFIG_HOME` only, so a `~/AppData/Roaming` literal
-    // would silently miss a relocated `%APPDATA%`. It belongs with the rest of
-    // the unvalidated win32 surface in AV-287 (see `platformPaths.ts`).
     detect: [
       { type: "directory", path: ".vscode" },
       { type: "file", path: ".vscode/mcp.json" },
       { type: "directory", path: "$XDG_CONFIG_HOME/Code/User" },
       { type: "directory", path: "~/Library/Application Support/Code/User" },
+      { type: "directory", path: "%APPDATA%/Code/User" },
       { type: "directory", path: "~/.vscode/extensions" },
       { type: "process", name: "code" },
     ],
     configPath: (root) => `${root}/.vscode/mcp.json`,
+    // The per-user `mcp.json`, in the same directory the three signals above
+    // probe — resolved through `vscodeUserDir` so the read, the write and the
+    // detection can never name different files.
+    homeConfigPath: (p) => `${vscodeUserDir("Code", p)}/mcp.json`,
+    configFormat: "json",
+    mcpKey: "servers",
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
+    id: "vscode-insiders",
+    name: "VS Code Insiders",
+    version: "*",
+    scope: "both",
+    // The same shape as the `vscode` row above, for the parallel-install
+    // Insiders channel: its own user directory (`Code - Insiders`), its own
+    // dataFolderName (`.vscode-insiders`) and its own CLI (`code-insiders`).
+    //
+    // It deliberately does NOT key on a bare `.vscode` directory, and neither
+    // does the VSCodium row below: `.vscode/` belongs to VS Code itself, so
+    // keying on it would co-detect all three products in every VS Code project
+    // and the prompt would offer three editors where one is installed. (The
+    // WRITE would be correct either way — `groupConfigTargets` dedups by
+    // `(path, mcpKey)`, so the project file is written exactly once whichever
+    // rows detect it — but a report the user cannot act on is its own defect.)
+    // The project file is still reached: whenever Insiders is detected by one
+    // of its OWN signals, its `configPath` resolves to the same
+    // `.vscode/mcp.json`.
+    detect: [
+      { type: "file", path: ".vscode/mcp.json" },
+      { type: "directory", path: "$XDG_CONFIG_HOME/Code - Insiders/User" },
+      {
+        type: "directory",
+        path: "~/Library/Application Support/Code - Insiders/User",
+      },
+      { type: "directory", path: "%APPDATA%/Code - Insiders/User" },
+      { type: "directory", path: "~/.vscode-insiders/extensions" },
+      { type: "process", name: "code-insiders" },
+    ],
+    configPath: (root) => `${root}/.vscode/mcp.json`,
+    homeConfigPath: (p) => `${vscodeUserDir("Code - Insiders", p)}/mcp.json`,
+    configFormat: "json",
+    mcpKey: "servers",
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
+    id: "vscodium",
+    name: "VSCodium",
+    version: "*",
+    scope: "both",
+    // Per the owner, 2026-09-16: VSCodium is an MCP client row, the same shape
+    // as VS Code's. VSCodium is upstream VS Code with the branding and
+    // telemetry stripped, so it reads the same per-user `mcp.json` under the
+    // same `servers` key — only the product directory (`VSCodium`), the
+    // dataFolderName (`.vscode-oss`) and the CLI (`codium`) differ.
+    //
+    // No bare `.vscode` signal, for the reason spelled out on the Insiders row.
+    detect: [
+      { type: "file", path: ".vscode/mcp.json" },
+      { type: "directory", path: "$XDG_CONFIG_HOME/VSCodium/User" },
+      {
+        type: "directory",
+        path: "~/Library/Application Support/VSCodium/User",
+      },
+      { type: "directory", path: "%APPDATA%/VSCodium/User" },
+      { type: "directory", path: "~/.vscode-oss/extensions" },
+      { type: "process", name: "codium" },
+    ],
+    configPath: (root) => `${root}/.vscode/mcp.json`,
+    homeConfigPath: (p) => `${vscodeUserDir("VSCodium", p)}/mcp.json`,
     configFormat: "json",
     mcpKey: "servers",
     skillsPath: (root) => `${root}/.agents/skills`,
@@ -478,9 +561,5 @@ const harnesses: readonly HarnessDefinition[] = [
 //   `omp`) is a separate project that DOES ship a first-party MCP client, which
 //   is why it has a row and this one does not. Neither entry was written in
 //   ignorance of the other.
-//
-// - `vscodium` as an MCP CLIENT: VSCodium has no first-party MCP surface (no
-//   Copilot agent mode), so there is nothing to configure. As an extension
-//   HOST it is fully supported via the editor-CLI registry (`editors.ts`).
 
 export default harnesses;

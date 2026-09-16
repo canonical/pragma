@@ -22,7 +22,12 @@ import {
 } from "@canonical/task";
 import editorClis from "./editors.js";
 import { executableCandidates } from "./executablePaths.js";
-import { type PlatformEnv, userHome, xdgConfigHome } from "./platformPaths.js";
+import {
+  type PlatformEnv,
+  userConfigBase,
+  userHome,
+  xdgConfigHome,
+} from "./platformPaths.js";
 import type { DetectionSignal } from "./types.js";
 
 /** The context threaded through every signal check: the project root + host. */
@@ -44,22 +49,44 @@ export const CONFIDENCE_RANK: Record<Confidence, number> = {
 /** The literal prefix marking a signal path as XDG-config-relative. */
 const XDG_CONFIG_PREFIX = "$XDG_CONFIG_HOME/";
 
+/** The literal prefix marking a signal path as `%APPDATA%`-relative. */
+const APPDATA_PREFIX = "%APPDATA%/";
+
 /**
  * Resolve a directory/file signal path: a `$XDG_CONFIG_HOME/…` path against the
- * XDG config base, a `~/…` path against the platform home, anything else
- * against the project root.
+ * XDG config base, a `%APPDATA%/…` path against the platform config base, a
+ * `~/…` path against the platform home, anything else against the project root.
  *
  * The XDG form is spelled out rather than written `~/.config/…` because the two
  * are NOT the same directory: a user who sets `$XDG_CONFIG_HOME` keeps nothing
  * under `~/.config`, and resolving against home would report the harness absent
  * and skip it. A tool documenting `~/.config/<tool>` is following the XDG
  * convention and should be declared in this form.
+ *
+ * `%APPDATA%/…` is the same argument for Windows, and it follows the same
+ * precedent rather than inventing a second mechanism: a `~/AppData/Roaming/…`
+ * literal silently misses a user whose `%APPDATA%` has been relocated, and the
+ * miss is a clean skip on a machine that HAS the tool. It resolves through
+ * {@link userConfigBase}, whose win32 arm is `%APPDATA% ?? ~/AppData/Roaming`.
+ * Off win32 the prefix is inert in the sense that matters — no Windows product
+ * directory exists there — though `userConfigBase` still resolves it (to
+ * `~/Library/Preferences/…` on darwin, and to the XDG base on linux, where a
+ * `$XDG_CONFIG_HOME/` sibling signal probes the same path anyway). A
+ * function-valued signal `path` was the alternative; it was rejected because it
+ * would break the documented one-string-per-signal ontology the whole registry
+ * is written in, for a case a third prefix covers.
  */
 const resolveFsPath = (path: string, ctx: DetectContext): string => {
   if (path.startsWith(XDG_CONFIG_PREFIX)) {
     return join(
       xdgConfigHome(ctx.platform),
       path.slice(XDG_CONFIG_PREFIX.length),
+    );
+  }
+  if (path.startsWith(APPDATA_PREFIX)) {
+    return join(
+      userConfigBase(ctx.platform),
+      path.slice(APPDATA_PREFIX.length),
     );
   }
   return path.startsWith("~/")

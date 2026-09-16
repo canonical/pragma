@@ -746,11 +746,13 @@ describe("resolveConfigTarget", () => {
   });
 
   it("throws for a global band on a harness with no homeConfigPath", () => {
-    // vscode is a project-only row (its user-profile mcp.json is per-profile,
-    // so no global band is offered) — the assertion's exercising case.
-    const vscode = findHarnessById("vscode") as (typeof harnesses)[number];
+    // Cline is a project-only row: it is a VS Code EXTENSION whose config is
+    // the workspace `.vscode/mcp.json`, with no per-user file of its own — the
+    // assertion's exercising case. (VS Code itself used to stand here, and
+    // stopped being project-only when its per-user `mcp.json` was added.)
+    const cline = findHarnessById("cline") as (typeof harnesses)[number];
     expect(() =>
-      resolveConfigTarget(vscode, "/project", "global", PLATFORM),
+      resolveConfigTarget(cline, "/project", "global", PLATFORM),
     ).toThrow(/homeConfigPath/);
   });
 });

@@ -338,6 +338,96 @@ describe("detectHarnesses — VS Code installation signals", () => {
 
     expect(result.value).toEqual([]);
   });
+
+  /**
+   * The Windows arm of the user directory — the platform whose config base is
+   * relocatable and whose miss is silent. `%APPDATA%/Code/User` is resolved by
+   * a prefix of its own rather than a `~/AppData/Roaming` literal precisely so
+   * a relocated `%APPDATA%` is still found.
+   */
+  it("detects a Windows install from %APPDATA%/Code/User alone, relocation honoured", () => {
+    const win32 = (env: Record<string, string | undefined>): PlatformEnv => ({
+      platform: "win32",
+      env: { PATH: "C:/Windows/System32", ...env },
+      home: "C:/Users/tester",
+      isWsl: false,
+    });
+    const seen: string[] = [];
+    const relocated = dryRunWith(
+      detectHarnesses("/project", win32({ APPDATA: "D:/roaming" })),
+      new Map<string, (effect: Effect) => unknown>([
+        [
+          "Exists",
+          (effect: Effect): unknown => {
+            const { path } = effect as Effect & {
+              _tag: "Exists";
+              path: string;
+            };
+            const posix = path.replaceAll("\\", "/");
+            seen.push(posix);
+            return posix === "D:/roaming/Code/User";
+          },
+        ],
+      ]),
+    );
+    expect(relocated.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+    expect(relocated.value[0]?.confidence).toBe("high");
+    // The default location is what a machine with no %APPDATA% set resolves.
+    expect(seen).toContain("D:/roaming/Code/User");
+    const fallback = dryRunWith(
+      detectHarnesses("/project", win32({})),
+      only("C:/Users/tester/AppData/Roaming/Code/User"),
+    );
+    expect(fallback.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+  });
+
+  /**
+   * Insiders and VSCodium, each found by its OWN signals — and each one alone.
+   * A bare `.vscode` directory must detect VS Code and nothing else (the rule
+   * the Cline row has always held), or a prompt in every VS Code project would
+   * offer three editors where one is installed.
+   */
+  it("detects VSCodium alone from its own user directory", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/home/tester/.config/VSCodium/User"),
+    );
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscodium"]);
+    expect(result.value[0]?.confidence).toBe("high");
+    expect(result.value[0]?.configPath).toBe("/project/.vscode/mcp.json");
+  });
+
+  it("detects VS Code Insiders alone from its own CLI on PATH", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", withPath("/usr/local/bin")),
+      only("/usr/local/bin/code-insiders"),
+    );
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode-insiders"]);
+    expect(result.value[0]?.confidence).toBe("medium");
+  });
+
+  it("a bare .vscode directory detects VS Code ONLY — not Insiders, not VSCodium", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/project/.vscode"),
+    );
+    expect(result.value.map((d) => d.harness.id)).toEqual(["vscode"]);
+  });
+
+  it("a committed .vscode/mcp.json detects all three — they all read that file", () => {
+    // The one project signal the family shares, because the file itself is
+    // shared: whichever product is installed reads the same `servers` key, and
+    // the `(path, mcpKey)` dedup makes it a single write.
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      only("/project/.vscode/mcp.json"),
+    );
+    expect(result.value.map((d) => d.harness.id).sort()).toEqual([
+      "vscode",
+      "vscode-insiders",
+      "vscodium",
+    ]);
+  });
 });
 
 /**
