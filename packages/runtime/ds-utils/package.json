@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ds-utils",
   "description": "Framework-agnostic design system helpers: navigation trees, debounce, throttle, humanizeNumber, pluralize",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -45,13 +45,13 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/ds-types": "^0.37.0"
+    "@canonical/ds-types": "^0.38.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
-    "@canonical/biome-config": "^0.37.0",
-    "@canonical/typescript-config": "^0.37.0",
-    "@canonical/webarchitect": "^0.37.0",
+    "@canonical/biome-config": "^0.38.0",
+    "@canonical/typescript-config": "^0.38.0",
+    "@canonical/webarchitect": "^0.38.0",
     "@types/node": "^26.0.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

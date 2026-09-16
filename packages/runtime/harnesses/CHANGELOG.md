@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+### Features
+
+* **harnesses:** register the pragma MCP server with Oh My Pi ([#1186](https://github.com/canonical/pragma/issues/1186)) ([fa2133f](https://github.com/canonical/pragma/commit/fa2133f620f61e41ff3e206cd0f85b841a55eb26))
+* **pragma-cli:** register and install into VS Code-family editors on every platform and under Nix ([#1303](https://github.com/canonical/pragma/issues/1303)) ([a43bb81](https://github.com/canonical/pragma/commit/a43bb81ef060a2a283e02f867e8f81c3f8095739))
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/harnesses

@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* refactor(components)!: wrap every component stylesheet in ds.components.global (#1123) ([9b43a18](https://github.com/canonical/pragma/commit/9b43a187a675972f464df9d2fb1eb52aa57612ad)), closes [#1123](https://github.com/canonical/pragma/issues/1123)
+
+### BREAKING CHANGES
+
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application's own unlayered CSS now beats every rule this
+  package ships, whatever the selectors on either side, because an unlayered
+  author rule outranks every layered one. Before, an application override competed
+  with these stylesheets by specificity and source order, so an override that used
+  to lose now wins; one that used to win still does. An application that does not
+  want to win by accident puts its CSS in a layer — `@layer app`, which the styles
+  package's statement places above the component tiers. Separately, an application
+  tier's rule for a component now beats this package's by cascade layer rather
+  than by load order, which is the point; a tier that was relying on losing that
+  race will see its own rule take effect.
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 * feat(react/ds-global)!: extend native props via ComponentProps intersection (#297) (#851) ([4c96482](https://github.com/canonical/pragma/commit/4c96482e5b9eff2a86cdca939a17b1f0374e498f)), closes [#297](https://github.com/canonical/pragma/issues/297) [#851](https://github.com/canonical/pragma/issues/851) [#297](https://github.com/canonical/pragma/issues/297) [#297](https://github.com/canonical/pragma/issues/297) [#628](https://github.com/canonical/pragma/issues/628)

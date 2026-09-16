@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+### Bug Fixes
+
+* **tokens:** follow the focus-ring rename and rebuild the embedded graph ([#1183](https://github.com/canonical/pragma/issues/1183)) ([ca2cbef](https://github.com/canonical/pragma/commit/ca2cbefa9cb903778d8e40d13732d8a56a244274))
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 ### Features

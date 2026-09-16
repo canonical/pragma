@@ -3,6 +3,158 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* feat(styles)!: the component-tier layers follow the tier tree (#1153) ([dd99204](https://github.com/canonical/pragma/commit/dd99204020714c35752fb71f5d64715778a694c4)), closes [#1153](https://github.com/canonical/pragma/issues/1153)
+* feat(styles)!: tokens, elements and layout entries (#1146) ([3c5bd8c](https://github.com/canonical/pragma/commit/3c5bd8c2cbe7d530d4bc3d2718a92ea1ba510c9e)), closes [#1146](https://github.com/canonical/pragma/issues/1146)
+* feat(templates)!: the root contract and the imports (#1122) ([e7cb864](https://github.com/canonical/pragma/commit/e7cb8643f6d2b12373a218194d45a3177d6105ab)), closes [#1122](https://github.com/canonical/pragma/issues/1122) [#552](https://github.com/canonical/pragma/issues/552)
+* feat(styles)!: layer everything @canonical/styles ships (#1120) ([e166c63](https://github.com/canonical/pragma/commit/e166c63f7d57a17161cac075b585b6da5d2fb105)), closes [#1120](https://github.com/canonical/pragma/issues/1120)
+
+### Bug Fixes
+
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+
+### Documentation
+
+* **styles:** the cascade contract ([#1132](https://github.com/canonical/pragma/issues/1132)) ([9e65162](https://github.com/canonical/pragma/commit/9e6516276a1c23d49a359aa8788d59a7f04c18c3)), closes [high-density](https://github.com/hi/issues/density)
+
+### Features
+
+* **styles:** export density and spacing subpaths ([#1102](https://github.com/canonical/pragma/issues/1102)) ([7fa3e67](https://github.com/canonical/pragma/commit/7fa3e67e391da4bd0470e49261f661c883b13e10))
+* **styles:** export modifier shim subpaths ([#1099](https://github.com/canonical/pragma/issues/1099)) ([ab060ae](https://github.com/canonical/pragma/commit/ab060ae0a573a14f8cedbf433db3dd0ffa0e3864))
+
+### BREAKING CHANGES
+
+* `@canonical/react-ds-global` now declares an `exports` map, so
+  the package answers only to the paths it lists: the package name, `./index.css`,
+  `./package.json` and any published file under `./dist/` named exactly. Two forms
+  that used to resolve no longer do. A folder in place of a file —
+  `@canonical/react-ds-global/dist/esm`, or
+  `@canonical/react-ds-global/dist/esm/lib/component/Button` — no longer finds the
+  `index.js` inside it; name the file. Anything outside `dist` —
+  `@canonical/react-ds-global/README.md`, or a `src/…` path that happened to
+  resolve in a workspace checkout — now fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`;
+  those files were never published. Importing the package by name, or the
+  stylesheet by its subpath, is unaffected.
+* **styles:** `ds.components.app` is retired. A package that wrapped its
+  stylesheets in it moves to the tier it belongs to — `ds.components.apps` for the
+  shared applications package, and its own `ds.components.apps-<name>`, declared
+  by the package itself, for one application's tier. An application that copied
+  the order statement to put its own CSS above the design system's replaces the
+  two component names with the five.
+* **styles:** `ds.components.app` is retired. A package that wrapped its
+  stylesheets in it moves to the tier it belongs to — `ds.components.apps` for the
+  shared applications package, and its own `ds.components.apps-<name>`, declared
+  by the package itself, for one application's tier. An application that copied
+  the order statement to put its own CSS above the design system's replaces the
+  two component names with the five.
+* `ds.components.app` is retired. A package that wrapped its
+  stylesheets in it moves to the tier it belongs to — `ds.components.apps` for the
+  shared applications package, and its own `ds.components.apps-<name>`, declared
+  by the package itself, for one application's tier. An application that copied
+  the order statement to put its own CSS above the design system's replaces the
+  two component names with the five.
+* **styles:** An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* **styles:** Everything this package ships is now in a named cascade layer,
+  so an application's own unlayered CSS beats every rule here, where before it
+  competed with unlayered rules by source order and specificity. An override that
+  used to lose now wins, and one that used to win still does. To keep the layer
+  order in force for your own CSS, put it in a layer above `ds.components.app` —
+  the README's "Migrating to the layered release" section has the statement to
+  copy. There is nothing to add to your markup. `normalize.css` is also no longer
+  a transitive dependency: an application relying on the parts of it this package
+  does not use must depend on it directly.
+* Everything this package ships is now in a named cascade layer,
+  so an application's own unlayered CSS beats every rule here, where before it
+  competed with unlayered rules by source order and specificity. An override that
+  used to lose now wins, and one that used to win still does. To keep the layer
+  order in force for your own CSS, put it in a layer above `ds.components.app` —
+  the README's "Migrating to the layered release" section has the statement to
+  copy. There is nothing to add to your markup. `normalize.css` is also no longer
+  a transitive dependency: an application relying on the parts of it this package
+  does not use must depend on it directly.
+* **styles:** mapper.css no longer exists. An application importing
+  @canonical/styles-typography, or one of the three engines, is unaffected — the
+  composed entry delivers exactly what it did. An application that imported
+  mapper.css by path takes tokens.css and elements.css instead, in that order, or
+  the composed entry if it wants the engine too. An application that imported an
+  engine by path and relied on it dragging in the mapper now imports tokens.css and
+  elements.css alongside it.
+* **styles:** The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* **styles:** The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* **styles:** The typographic engine now applies only inside an element
+  carrying the class `ds`, and nowhere else. An application that is the design
+  system's throughout adds the class to its document element, beside the context
+  and density classes it already carries: `<html class="ds app comfortable">`.
+  Without it, headings and paragraphs fall back to the browser's own defaults and
+  no baseline alignment happens. An application that is only partly the design
+  system's marks the regions it has migrated, and the rest of its page keeps its
+  own typography — which is the point: this package no longer restyles bare
+  elements it does not own. A heading, paragraph or code element that is itself
+  the marked element is styled only where a `:scope` twin exists (`.p`, `.code`,
+  `.editorial`); put the mark on the region rather than on a single heading.
+  Below the `@scope` floor (Chrome 118, Safari 17.4, Firefox 146) the whole block
+  is dropped and none of this package applies.
+* **styles:** These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To
+  keep the design system's order in force for your own CSS, put that CSS in a
+  layer above ds.components.app. What each element computes is unchanged.
+* **styles:** These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To keep
+  the design system's order in force for your own CSS, put that CSS in a layer
+  above ds.components.app. What each element computes is unchanged.
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/styles

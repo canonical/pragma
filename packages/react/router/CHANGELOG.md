@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+**Note:** Version bump only for package @canonical/router-react
+
+
+
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 * feat(router)!: type-level truth — reject what the runtime cannot do (#1063) ([8d12c0f](https://github.com/canonical/pragma/commit/8d12c0f2bdd162d640bec393b69d4f4de6bb6da3)), closes [#1063](https://github.com/canonical/pragma/issues/1063)

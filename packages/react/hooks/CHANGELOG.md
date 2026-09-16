@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* refactor(utils)!: move navigation, debounce and throttle to @canonical/ds-utils (#1109), closes [#1109](https://github.com/canonical/pragma/issues/1109)
+* feat(ds-types)!: separate "not an item" from "you may not choose this" (#1150) ([195b67c](https://github.com/canonical/pragma/commit/195b67caf205122e587555b84b445a1e5f146e6e)), closes [#1150](https://github.com/canonical/pragma/issues/1150)
+* refactor(ds-global)!: ContextualMenu takes a flat items list with first-class separators (#811), closes [#811](https://github.com/canonical/pragma/issues/811)
+
+### Features
+
+* **react-hooks:** add usePreferredShortcuts, a switch for single-key shortcuts ([#1265](https://github.com/canonical/pragma/issues/1265)) ([b4b1b1f](https://github.com/canonical/pragma/commit/b4b1b1f9718fb20c97ec4d59225fac3244dc4b93))
+
+### BREAKING CHANGES
+
+* @canonical/utils no longer exports debounce, throttle,
+  humanizeNumber, pluralize, the HumanizeNumberOptions, HumanizeResult and
+  PluralizeOptions types, the AllOrNone type, or any navigation export —
+  annotateTree, createNavigationReducer, findAncestorPath,
+  getFirstInteractiveChild, getItemId, getLastInteractiveChild, getParentItem,
+  isInteractive, prepareIndex, resolveOrientation, NavigationActionType, and the
+  NavigationAction, NavigationReducerOptions, NavigationState, NodeStatus,
+  Orientation and OrientationConfig types. They are now exported, unchanged, from
+  @canonical/ds-utils. Consumers change the import specifier and add
+  @canonical/ds-utils as a dependency; no call site changes.
+* `_Item<A | B>` now resolves per union member instead of to the
+  union's common keys. Code that relied on the collapsed shape must instantiate
+  `_Item` with the whole entry union.
+* `ContextualMenu`'s `groups: MenuItem[]` prop is replaced by
+  `items: MenuEntry[]`, a flat list of menu items and `{ type: "separator" }`
+  entries. Migrate by concatenating each group's `items` and placing a separator
+  between them.
+
+  The `role="group"` wrappers and their `aria-label`s are gone with the grouped
+  model, so labelled sections ("Recent", "All items") can no longer be expressed —
+  a separator divides sections visually and for assistive technology, but does not
+  name them.
+
+  Removed, the grouped menu being their only consumer: `createCrossGroupStateReducer`
+  and `getFirstEnabledLeaf` from `@canonical/utils`; `getMenuGroupProps` and
+  `MenuGroupPropsResult` from `@canonical/react-hooks`; `getGroupProps` from
+  `useContextualMenu`.
+* `getFirstEnabledChild` and `getLastEnabledChild` are renamed to
+  `getFirstInteractiveChild` and `getLastInteractiveChild`. They now skip
+  presentational nodes as well as disabled ones, so "enabled" no longer describes
+  what they select. There is no alias — the old name would report the old
+  behaviour.
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/react-hooks

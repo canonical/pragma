@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+### Bug Fixes
+
+* **biome-config:** move $schema and app scaffold to biome 2.5.13 in lockstep ([#1288](https://github.com/canonical/pragma/issues/1288)) ([4e4fca1](https://github.com/canonical/pragma/commit/4e4fca12b361f1cd2ffcaaa1e79013c3377333bb))
+* **biome:** ignore .build-cache once, in the shared config ([#1136](https://github.com/canonical/pragma/issues/1136)) ([29eeb70](https://github.com/canonical/pragma/commit/29eeb70cd887ac29558ae8a1bc42790169fc42b9))
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/biome-config

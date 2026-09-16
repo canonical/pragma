@@ -3,6 +3,67 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+### Bug Fixes
+
+* **cli:** a filtered empty page keeps the story's recovery, worded for both cases ([#1281](https://github.com/canonical/pragma/issues/1281)) ([d813777](https://github.com/canonical/pragma/commit/d813777fd2da34abad26045ab7d51950935b6a68)), closes [#1270](https://github.com/canonical/pragma/issues/1270)
+* **cli:** a lookup ignores the whitespace a name carries from the document ([#1305](https://github.com/canonical/pragma/issues/1305)) ([63d0bf0](https://github.com/canonical/pragma/commit/63d0bf00986d7fd33e0611729bfe8219ae55ae87))
+* **cli:** read prefix declarations, not prose ([#1219](https://github.com/canonical/pragma/issues/1219)) ([54aa20b](https://github.com/canonical/pragma/commit/54aa20b430cab735c818415121188f57ac78482e))
+* **cli:** six defects two users found — paging notice, pasted IRIs, filtered empties, stray positionals ([#1270](https://github.com/canonical/pragma/issues/1270)) ([de28f00](https://github.com/canonical/pragma/commit/de28f00618a0b143a306f3b9c480827bd6132824))
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+* **tokens:** follow the focus-ring rename and rebuild the embedded graph ([#1183](https://github.com/canonical/pragma/issues/1183)) ([ca2cbef](https://github.com/canonical/pragma/commit/ca2cbefa9cb903778d8e40d13732d8a56a244274))
+
+### Features
+
+* **cli:** a tier scope — lists show the top-level tiers unless asked otherwise ([#1294](https://github.com/canonical/pragma/issues/1294)) ([5c95529](https://github.com/canonical/pragma/commit/5c95529f9bdcc40ed7ea7001ec06addef1ebc2c0))
+* **cli:** answer the token graph — symbols, variables, values, consumers and chains ([#1218](https://github.com/canonical/pragma/issues/1218)) ([464c027](https://github.com/canonical/pragma/commit/464c02769f43e5e4e0e61cf90a7adb1f10cc1479))
+* **cli:** graph connect — relation paths between two entities, and an honest "unlinked" ([#1214](https://github.com/canonical/pragma/issues/1214)) ([5d3cc71](https://github.com/canonical/pragma/commit/5d3cc718c8fdabe587d807d218246143d0aed6d5))
+* **harnesses:** register the pragma MCP server with Oh My Pi ([#1186](https://github.com/canonical/pragma/issues/1186)) ([fa2133f](https://github.com/canonical/pragma/commit/fa2133f620f61e41ff3e206cd0f85b841a55eb26))
+* **pragma-cli:** register and install into VS Code-family editors on every platform and under Nix ([#1303](https://github.com/canonical/pragma/issues/1303)) ([a43bb81](https://github.com/canonical/pragma/commit/a43bb81ef060a2a283e02f867e8f81c3f8095739))
+
+### BREAKING CHANGES
+
+* **cli:** `token list` no longer publishes a `category` column, and
+  `token lookup` no longer publishes `category`, `valueLight` or `valueDark`.
+  Those read a class no shipped graph asserts, so no install can have been
+  receiving them; callers of the JSON shape should read `type` and the `values`
+  expand instead.
+
+  Names come from `rdfs:label`, and NO IRI-derived fallback is declared: the
+  kernel's derivation publishes a dotted local name with slashes, which
+  contradicts the dotted notation used for symbol names everywhere else and would
+  make this answer disagree with the anatomy's spelling of the same symbol. The
+  consequence is deliberate and visible — until the token-ontology pack publishes
+  name literals, `token list` answers empty rather than publishing names nothing
+  else recognises.
+
+  * feat(cli): add the variable noun over the platform stratum
+
+  The token graph names two different things and the CLI could only address one.
+  A SYMBOL is the logical dotted name (`color.text`); a VARIABLE is what a
+  stylesheet actually declares (`--color-text`), and 236 of the 1,156 variables
+  stand for no symbol at all — the duplicated legacy twins the ontology names as
+  such, plus the computed states and resets. `--disabled--color-text` and
+  `--modifier-color-text` are nobody's symbol, so no surface keyed on symbols can
+  reach them.
+
+  `variable list` publishes one row per platform name with the symbol it stands
+  for, its tier, its visibility, the platform, and the coordinates its
+  declarations are selected at. `variable lookup` adds every place it is
+* **cli:** a list-shaped verb called with no `--limit` now returns at most
+  300 rows instead of 500. No answer that fitted one page before fits fewer pages
+  now — the largest pre-existing population is 252 — but a caller who relied on
+  500 being the number reads 300 in `--help` and in the generated reference, and
+  one who wants everything raises `--limit` or walks `--after` as before.
+
+  Also repointed: the first-install journey asserted `token list` answers no rows
+  "because the graph carries no ds:Token". It answers 745 now, so the case moved
+  in both directions — one asserting the noun resolves offline on a first install,
+  one asserting `token consumers` is the honestly-empty verb it inherited the role
+  from. And three tool descriptions lost a `--`-prefixed CSS custom-property
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 ### Bug Fixes

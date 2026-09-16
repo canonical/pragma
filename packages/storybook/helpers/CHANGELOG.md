@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+### Bug Fixes
+
+* **storybook-helpers:** let IconExplorer follow the docs page colour scheme ([#1118](https://github.com/canonical/pragma/issues/1118)) ([ece4039](https://github.com/canonical/pragma/commit/ece4039c5d1f4f924e20ba5c38ea587a2f0e312a))
+
+### Features
+
+* **storybook:** searchable icon explorer for the Icon docs page ([#1111](https://github.com/canonical/pragma/issues/1111)) ([7709673](https://github.com/canonical/pragma/commit/7709673b8775ce45d16a4023b68952be1faad374))
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/storybook-helpers

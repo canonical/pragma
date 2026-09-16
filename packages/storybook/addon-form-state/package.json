@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-form-state",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "type": "module",
   "files": [
     "dist"
@@ -52,9 +52,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
-    "@canonical/biome-config": "^0.37.0",
-    "@canonical/typescript-config-react": "^0.37.0",
-    "@canonical/webarchitect": "^0.37.0",
+    "@canonical/biome-config": "^0.38.0",
+    "@canonical/typescript-config-react": "^0.38.0",
+    "@canonical/webarchitect": "^0.38.0",
     "@storybook/react-vite": "^10.3.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

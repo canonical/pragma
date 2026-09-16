@@ -3,6 +3,47 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* refactor(react-ds-app)!: wrap the app-tier component stylesheets in their tier layers (#1125) ([0eacf5e](https://github.com/canonical/pragma/commit/0eacf5e6949acbb09618206748164e4c8d48f404)), closes [#1125](https://github.com/canonical/pragma/issues/1125)
+
+### Bug Fixes
+
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+
+### BREAKING CHANGES
+
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application's own unlayered CSS now beats every rule these
+  packages ship, whatever the selectors on either side, because an unlayered
+  author rule outranks every layered one. Before, an application override competed
+  with these stylesheets by specificity and source order, so an override that used
+  to lose now wins; one that used to win still does. An application that does not
+  want to win by accident puts its CSS in a layer — `@layer app`, which the styles
+  package's statement places above the component tiers. Separately, an app tier's
+  rule for a component now beats @canonical/react-ds-global's by cascade layer
+  instead of by load order, which is the point of the two tier names: an
+  application that was getting the global tier's `.ds.button` because its bundler
+  emitted the app tier first will now get the app tier's.
+* The layer these packages write into is renamed. An application
+  that named `ds.components.app` in its own order statement, or that wrote rules
+  into it to sit alongside an application tier, must use the tier's own name
+  instead — `ds.components.apps-lxd` and its siblings, or `ds.components.apps` for
+  the shared tier. Nothing else about the rules changes.
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/react-ds-app-portal

@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles-vanilla-adapter",
   "description": "Cascade layer order, boundary and confined element styles for running pragma alongside Vanilla Framework.",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "type": "module",
   "exports": {
     "./layers.css": "./src/layers.css",
@@ -39,15 +39,15 @@
     "test:fixtures": "vitest run --project=fixtures"
   },
   "dependencies": {
-    "@canonical/styles": "^0.37.0"
+    "@canonical/styles": "^0.38.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
-    "@canonical/biome-config": "^0.37.0",
-    "@canonical/react-ds-global": "^0.37.0",
-    "@canonical/react-ds-global-form": "^0.37.0",
-    "@canonical/typescript-config": "^0.37.0",
-    "@canonical/webarchitect": "^0.37.0",
+    "@canonical/biome-config": "^0.38.0",
+    "@canonical/react-ds-global": "^0.38.0",
+    "@canonical/react-ds-global-form": "^0.38.0",
+    "@canonical/typescript-config": "^0.38.0",
+    "@canonical/webarchitect": "^0.38.0",
     "@types/node": "^26.0.0",
     "@vitest/browser": "^4.0.18",
     "@vitest/browser-playwright": "^4.0.18",

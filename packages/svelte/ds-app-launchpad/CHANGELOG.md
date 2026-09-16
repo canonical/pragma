@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+### Bug Fixes
+
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+
+### Features
+
+* **Breadcrumbs:** migrate to design tokens ([#943](https://github.com/canonical/pragma/issues/943)) ([9d4d533](https://github.com/canonical/pragma/commit/9d4d5331530d234d3aef91e7d3c7b19ef46e39b2))
+* **ButtonPrimitive:** migrate to design tokens ([#950](https://github.com/canonical/pragma/issues/950)) ([e5f9de6](https://github.com/canonical/pragma/commit/e5f9de6afb1949d55ac0f00525d186b2207d9e7a))
+* **Checkbox:** migrate to design tokens ([#946](https://github.com/canonical/pragma/issues/946)) ([b135f61](https://github.com/canonical/pragma/commit/b135f611fd69fb35a76ca4afe199eac8ca1790a9))
+* **Radio:** migrate to design tokens ([#947](https://github.com/canonical/pragma/issues/947)) ([3a88504](https://github.com/canonical/pragma/commit/3a88504a2217792ebafa5c461296d89123f65753))
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/svelte-ds-app-launchpad

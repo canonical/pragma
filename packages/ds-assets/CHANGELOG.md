@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+### Features
+
+* **ds-assets:** add cut and paste icons, redraw copy ([#1185](https://github.com/canonical/pragma/issues/1185)) ([b68a1d9](https://github.com/canonical/pragma/commit/b68a1d90fc3b8c8d7f5a09ee9189f44c5082d4ab))
+* **storybook:** searchable icon explorer for the Icon docs page ([#1111](https://github.com/canonical/pragma/issues/1111)) ([7709673](https://github.com/canonical/pragma/commit/7709673b8775ce45d16a4023b68952be1faad374))
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/ds-assets

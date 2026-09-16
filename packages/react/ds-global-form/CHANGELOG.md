@@ -3,6 +3,80 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* refactor(utils)!: move navigation, debounce and throttle to @canonical/ds-utils (#1109), closes [#1109](https://github.com/canonical/pragma/issues/1109)
+* fix(react-ds-global-form)!: transitions read the motion tokens (#1134) ([a818b33](https://github.com/canonical/pragma/commit/a818b33427d34d7d16af538305af84931c0bc020)), closes [#1134](https://github.com/canonical/pragma/issues/1134)
+* refactor(react-ds-global-form)!: wrap every component stylesheet in ds.components.global (#1127) ([0cbd000](https://github.com/canonical/pragma/commit/0cbd0009d7c123fcb4584ade18c65626ec9fbb3b)), closes [#1127](https://github.com/canonical/pragma/issues/1127)
+
+### Bug Fixes
+
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+* **react-ds-global-form:** refine choice options, toggle fields and label markers ([#1242](https://github.com/canonical/pragma/issues/1242)) ([38c7e71](https://github.com/canonical/pragma/commit/38c7e71781c9c428db9a2be0d2dd4611389c693f))
+* **tokens:** follow the focus-ring rename and rebuild the embedded graph ([#1183](https://github.com/canonical/pragma/issues/1183)) ([ca2cbef](https://github.com/canonical/pragma/commit/ca2cbefa9cb903778d8e40d13732d8a56a244274))
+
+### BREAKING CHANGES
+
+* @canonical/utils no longer exports debounce, throttle,
+  humanizeNumber, pluralize, the HumanizeNumberOptions, HumanizeResult and
+  PluralizeOptions types, the AllOrNone type, or any navigation export —
+  annotateTree, createNavigationReducer, findAncestorPath,
+  getFirstInteractiveChild, getItemId, getLastInteractiveChild, getParentItem,
+  isInteractive, prepareIndex, resolveOrientation, NavigationActionType, and the
+  NavigationAction, NavigationReducerOptions, NavigationState, NodeStatus,
+  Orientation and OrientationConfig types. They are now exported, unchanged, from
+  @canonical/ds-utils. Consumers change the import specifier and add
+  @canonical/ds-utils as a dependency; no call site changes.
+* a form control's colour and border transitions now last 165ms
+  instead of 150ms, and a combobox list item's 165ms instead of 100ms. Nothing
+  about the resting rendering changes — only how long a colour, a border or the
+  switch knob takes to settle — but the numbers are different, so an application
+  that has tuned its own timings against these should re-check them. There is no
+  150ms motion token to read; the nearest named step is the fast one, 0.165s.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* an application's unlayered CSS now beats every rule in
+  `@canonical/react-ds-global-form`, whatever the selectors on either side,
+  because unlayered author rules outrank every layered one. An application that
+  overrides a form control with a plain rule keeps winning, and wins more easily
+  than before. An application that relied on this package's rules beating its own
+  must move its CSS into `@layer app`, which sits above `ds.components.global` in
+  the order `@canonical/styles` declares. The package's rules also no longer
+  outrank the styles package's own layers, which is the point of the change.
+* an application's unlayered CSS now beats every rule in
+  `@canonical/react-ds-global-form`, whatever the selectors on either side,
+  because unlayered author rules outrank every layered one. An application that
+  overrides a form control with a plain rule keeps winning, and wins more easily
+  than before. An application that relied on this package's rules beating its own
+  must move its CSS into `@layer app`, which sits above `ds.components.global` in
+  the order `@canonical/styles` declares. The package's rules also no longer
+  outrank the styles package's own layers, which is the point of the change.
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 ### Bug Fixes

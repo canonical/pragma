@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* feat(ds-types)!: separate "not an item" from "you may not choose this" (#1150) ([195b67c](https://github.com/canonical/pragma/commit/195b67caf205122e587555b84b445a1e5f146e6e)), closes [#1150](https://github.com/canonical/pragma/issues/1150)
+* refactor(ds-types)!: require a key or url on the navigation item (#1142) ([cb7f3b4](https://github.com/canonical/pragma/commit/cb7f3b4c07d56eb543d34aaf53ce6f44f2821dd8)), closes [#1142](https://github.com/canonical/pragma/issues/1142)
+* refactor(ds-global)!: ContextualMenu takes a flat items list with first-class separators (#811), closes [#811](https://github.com/canonical/pragma/issues/811)
+
+### BREAKING CHANGES
+
+* `_Item<A | B>` now resolves per union member instead of to the
+  union's common keys. Code that relied on the collapsed shape must instantiate
+  `_Item` with the whole entry union.
+* `ContextualMenu`'s `groups: MenuItem[]` prop is replaced by
+  `items: MenuEntry[]`, a flat list of menu items and `{ type: "separator" }`
+  entries. Migrate by concatenating each group's `items` and placing a separator
+  between them.
+
+  The `role="group"` wrappers and their `aria-label`s are gone with the grouped
+  model, so labelled sections ("Recent", "All items") can no longer be expressed —
+  a separator divides sections visually and for assistive technology, but does not
+  name them.
+
+  Removed, the grouped menu being their only consumer: `createCrossGroupStateReducer`
+  and `getFirstEnabledLeaf` from `@canonical/utils`; `getMenuGroupProps` and
+  `MenuGroupPropsResult` from `@canonical/react-hooks`; `getGroupProps` from
+  `useContextualMenu`.
+* `getFirstEnabledChild` and `getLastEnabledChild` are renamed to
+  `getFirstInteractiveChild` and `getLastInteractiveChild`. They now skip
+  presentational nodes as well as disabled ones, so "enabled" no longer describes
+  what they select. There is no alias — the old name would report the old
+  behaviour.
+* `Item` requires a `key` or a `url`. Items with neither
+  no longer type-check — give a navigable item its `url` and a
+  non-navigable one a `key`. Types built on `Item` must use
+  `type X = Item & { … }` rather than `interface X extends Item`, and
+  `_DistributiveOmit<Item, K>` rather than `Omit<Item, K>`.
+  `MenuSeparator.key` is required: write `{ type: "separator", key: "…" }`.
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/ds-types

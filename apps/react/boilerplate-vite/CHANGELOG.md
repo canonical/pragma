@@ -3,6 +3,51 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* feat(react-head)!: render head tags so server rendering emits them (#1192) ([76ac99d](https://github.com/canonical/pragma/commit/76ac99dde1d80790d8ac518c485548831a69c26a)), closes [#1192](https://github.com/canonical/pragma/issues/1192)
+* feat(templates)!: the root contract and the imports (#1122) ([e7cb864](https://github.com/canonical/pragma/commit/e7cb8643f6d2b12373a218194d45a3177d6105ab)), closes [#1122](https://github.com/canonical/pragma/issues/1122) [#552](https://github.com/canonical/pragma/issues/552)
+
+### Bug Fixes
+
+* **summon:** serve the design system's icons in scaffolded React apps ([f4987a8](https://github.com/canonical/pragma/commit/f4987a8057846c04ad67914b633a5832dcb9ceca))
+
+### BREAKING CHANGES
+
+* `@canonical/react-ds-global` now declares an `exports` map, so
+  the package answers only to the paths it lists: the package name, `./index.css`,
+  `./package.json` and any published file under `./dist/` named exactly. Two forms
+  that used to resolve no longer do. A folder in place of a file —
+  `@canonical/react-ds-global/dist/esm`, or
+  `@canonical/react-ds-global/dist/esm/lib/component/Button` — no longer finds the
+  `index.js` inside it; name the file. Anything outside `dist` —
+  `@canonical/react-ds-global/README.md`, or a `src/…` path that happened to
+  resolve in a workspace checkout — now fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`;
+  those files were never published. Importing the package by name, or the
+  stylesheet by its subpath, is unaffected.
+* `useHead`, `createHeadCollector`, `HeadTags` and
+  `HeadCollector` are gone, and `HeadProvider` no longer takes a `collector`.
+  `HeadMeta` and `HeadLink` survive as the elements own props rather than
+  hand-written attribute lists, so a page can declare the preload, icon and
+  hreflang links the old shapes rejected.
+  Replace a `useHead({ title, meta, link })` call with a `<Head title meta link />`
+  element rendered by the page, and move any per-page title suffix into the root
+  `<HeadProvider titleTemplate={…}>`. A `deps` array has no successor and needs
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 **Note:** Version bump only for package @canonical/react-boilerplate-vite

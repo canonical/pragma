@@ -3,6 +3,519 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* feat(react-head)!: render head tags so server rendering emits them (#1192) ([76ac99d](https://github.com/canonical/pragma/commit/76ac99dde1d80790d8ac518c485548831a69c26a)), closes [#1192](https://github.com/canonical/pragma/issues/1192)
+* fix(ds-global)!: a menu separator is presentational, not disabled (#1155) ([d7afbc7](https://github.com/canonical/pragma/commit/d7afbc7c4dc611f45e226c0120e1871370126d99)), closes [#1155](https://github.com/canonical/pragma/issues/1155) [#1150](https://github.com/canonical/pragma/issues/1150)
+* refactor(ds-app)!: wrap the application-tier stylesheets the first four forges missed (#1133) ([eaaa63d](https://github.com/canonical/pragma/commit/eaaa63d2cef38637dabecf17b92642a16223a01d)), closes [#1133](https://github.com/canonical/pragma/issues/1133) [canonical/pragma#1122](https://github.com/canonical/pragma/issues/1122) [#1123](https://github.com/canonical/pragma/issues/1123) [#1127](https://github.com/canonical/pragma/issues/1127) [#1122](https://github.com/canonical/pragma/issues/1122) [canonical/pragma#1122](https://github.com/canonical/pragma/issues/1122) [#1120](https://github.com/canonical/pragma/issues/1120)
+* refactor(react-ds-app)!: wrap the app-tier component stylesheets in their tier layers (#1125) ([0eacf5e](https://github.com/canonical/pragma/commit/0eacf5e6949acbb09618206748164e4c8d48f404)), closes [#1125](https://github.com/canonical/pragma/issues/1125)
+* refactor(utils)!: move navigation, debounce and throttle to @canonical/ds-utils (#1109), closes [#1109](https://github.com/canonical/pragma/issues/1109)
+* feat(styles)!: the component-tier layers follow the tier tree (#1153) ([dd99204](https://github.com/canonical/pragma/commit/dd99204020714c35752fb71f5d64715778a694c4)), closes [#1153](https://github.com/canonical/pragma/issues/1153)
+* feat(styles)!: tokens, elements and layout entries (#1146) ([3c5bd8c](https://github.com/canonical/pragma/commit/3c5bd8c2cbe7d530d4bc3d2718a92ea1ba510c9e)), closes [#1146](https://github.com/canonical/pragma/issues/1146)
+* refactor(styles-typography)!: tokens and elements as separate files (#1145) ([8c37c0b](https://github.com/canonical/pragma/commit/8c37c0b69dfd69e7c3f6735d93634a3e33e17690)), closes [#1145](https://github.com/canonical/pragma/issues/1145) [high-density](https://github.com/hi/issues/density)
+* fix(react-ds-global)!: the Button's density seat wins by order, not by specificity (#1137) ([722e409](https://github.com/canonical/pragma/commit/722e4092c1cbd052d6387bb9709cc1314c753a2c)), closes [#1137](https://github.com/canonical/pragma/issues/1137) [#1120](https://github.com/canonical/pragma/issues/1120)
+* fix(react-ds-global-form)!: transitions read the motion tokens (#1134) ([a818b33](https://github.com/canonical/pragma/commit/a818b33427d34d7d16af538305af84931c0bc020)), closes [#1134](https://github.com/canonical/pragma/issues/1134)
+* refactor(components)!: wrap every component stylesheet in ds.components.global (#1123) ([9b43a18](https://github.com/canonical/pragma/commit/9b43a187a675972f464df9d2fb1eb52aa57612ad)), closes [#1123](https://github.com/canonical/pragma/issues/1123)
+* feat(styles-typography)!: the mapper and the engines in ds.typography (#1143) ([c3ac09b](https://github.com/canonical/pragma/commit/c3ac09b93e6d343943692b3271664af4fcd4c77f)), closes [#1143](https://github.com/canonical/pragma/issues/1143)
+* refactor(react-ds-global-form)!: wrap every component stylesheet in ds.components.global (#1127) ([0cbd000](https://github.com/canonical/pragma/commit/0cbd0009d7c123fcb4584ade18c65626ec9fbb3b)), closes [#1127](https://github.com/canonical/pragma/issues/1127)
+* feat(templates)!: the root contract and the imports (#1122) ([e7cb864](https://github.com/canonical/pragma/commit/e7cb8643f6d2b12373a218194d45a3177d6105ab)), closes [#1122](https://github.com/canonical/pragma/issues/1122) [#552](https://github.com/canonical/pragma/issues/552)
+* feat(ds-types)!: separate "not an item" from "you may not choose this" (#1150) ([195b67c](https://github.com/canonical/pragma/commit/195b67caf205122e587555b84b445a1e5f146e6e)), closes [#1150](https://github.com/canonical/pragma/issues/1150)
+* refactor(ds-types)!: require a key or url on the navigation item (#1142) ([cb7f3b4](https://github.com/canonical/pragma/commit/cb7f3b4c07d56eb543d34aaf53ce6f44f2821dd8)), closes [#1142](https://github.com/canonical/pragma/issues/1142)
+* refactor(ds-global)!: ContextualMenu takes a flat items list with first-class separators (#811), closes [#811](https://github.com/canonical/pragma/issues/811)
+* feat(styles)!: layer everything @canonical/styles ships (#1120) ([e166c63](https://github.com/canonical/pragma/commit/e166c63f7d57a17161cac075b585b6da5d2fb105)), closes [#1120](https://github.com/canonical/pragma/issues/1120)
+
+### Bug Fixes
+
+* **biome-config:** move $schema and app scaffold to biome 2.5.13 in lockstep ([#1288](https://github.com/canonical/pragma/issues/1288)) ([4e4fca1](https://github.com/canonical/pragma/commit/4e4fca12b361f1cd2ffcaaa1e79013c3377333bb))
+* **biome:** ignore .build-cache once, in the shared config ([#1136](https://github.com/canonical/pragma/issues/1136)) ([29eeb70](https://github.com/canonical/pragma/commit/29eeb70cd887ac29558ae8a1bc42790169fc42b9))
+* **button:** center icon in the density-seated Button ([#1197](https://github.com/canonical/pragma/issues/1197)) ([9388df0](https://github.com/canonical/pragma/commit/9388df0afde312e5f445e0bd373ae668df301ef6))
+* **ci:** verify the publish against the registry origin, not its CDN cache ([#1097](https://github.com/canonical/pragma/issues/1097)) ([6aab090](https://github.com/canonical/pragma/commit/6aab0906cee52e4d58745aa4391a4e8be5f3b629))
+* **cli:** a filtered empty page keeps the story's recovery, worded for both cases ([#1281](https://github.com/canonical/pragma/issues/1281)) ([d813777](https://github.com/canonical/pragma/commit/d813777fd2da34abad26045ab7d51950935b6a68)), closes [#1270](https://github.com/canonical/pragma/issues/1270)
+* **cli:** a lookup ignores the whitespace a name carries from the document ([#1305](https://github.com/canonical/pragma/issues/1305)) ([63d0bf0](https://github.com/canonical/pragma/commit/63d0bf00986d7fd33e0611729bfe8219ae55ae87))
+* **cli:** read prefix declarations, not prose ([#1219](https://github.com/canonical/pragma/issues/1219)) ([54aa20b](https://github.com/canonical/pragma/commit/54aa20b430cab735c818415121188f57ac78482e))
+* **cli:** six defects two users found — paging notice, pasted IRIs, filtered empties, stray positionals ([#1270](https://github.com/canonical/pragma/issues/1270)) ([de28f00](https://github.com/canonical/pragma/commit/de28f00618a0b143a306f3b9c480827bd6132824))
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+* **ds-global:** open the ContextualMenu story previews in their own iframes ([#1239](https://github.com/canonical/pragma/issues/1239)) ([ff68b82](https://github.com/canonical/pragma/commit/ff68b82cdc8635848b68e010dbe861d62afdad6e))
+* **modal:** correct inline-size clamp for modal width ([#1279](https://github.com/canonical/pragma/issues/1279)) ([b6536ea](https://github.com/canonical/pragma/commit/b6536eacfa75188fce21c13bace465b215f856da))
+* **react-ds-global-form:** refine choice options, toggle fields and label markers ([#1242](https://github.com/canonical/pragma/issues/1242)) ([38c7e71](https://github.com/canonical/pragma/commit/38c7e71781c9c428db9a2be0d2dd4611389c693f))
+* **router-core:** keep the reader in place when setSearchParams restates the page ([#1252](https://github.com/canonical/pragma/issues/1252)) ([c3a58d1](https://github.com/canonical/pragma/commit/c3a58d150e76e87526ed0f8bc962379b597bb5c8)), closes [#1250](https://github.com/canonical/pragma/issues/1250)
+* **storybook-helpers:** let IconExplorer follow the docs page colour scheme ([#1118](https://github.com/canonical/pragma/issues/1118)) ([ece4039](https://github.com/canonical/pragma/commit/ece4039c5d1f4f924e20ba5c38ea587a2f0e312a))
+* **styles-typography:** the baseline unit works undeclared, in rem or px ([#1144](https://github.com/canonical/pragma/issues/1144)) ([92720ee](https://github.com/canonical/pragma/commit/92720ee8a7ff4e1546bbdf1f81ceee89cdcc6ac0)), closes [high-density](https://github.com/hi/issues/density)
+* **summon:** serve the design system's icons in scaffolded React apps ([f4987a8](https://github.com/canonical/pragma/commit/f4987a8057846c04ad67914b633a5832dcb9ceca))
+* **tokens:** follow the focus-ring rename and rebuild the embedded graph ([#1183](https://github.com/canonical/pragma/issues/1183)) ([ca2cbef](https://github.com/canonical/pragma/commit/ca2cbefa9cb903778d8e40d13732d8a56a244274))
+
+### Documentation
+
+* **styles:** the cascade contract ([#1132](https://github.com/canonical/pragma/issues/1132)) ([9e65162](https://github.com/canonical/pragma/commit/9e6516276a1c23d49a359aa8788d59a7f04c18c3)), closes [high-density](https://github.com/hi/issues/density)
+
+### Features
+
+* **Breadcrumbs:** migrate to design tokens ([#943](https://github.com/canonical/pragma/issues/943)) ([9d4d533](https://github.com/canonical/pragma/commit/9d4d5331530d234d3aef91e7d3c7b19ef46e39b2))
+* **ButtonPrimitive:** migrate to design tokens ([#950](https://github.com/canonical/pragma/issues/950)) ([e5f9de6](https://github.com/canonical/pragma/commit/e5f9de6afb1949d55ac0f00525d186b2207d9e7a))
+* **Checkbox:** migrate to design tokens ([#946](https://github.com/canonical/pragma/issues/946)) ([b135f61](https://github.com/canonical/pragma/commit/b135f611fd69fb35a76ca4afe199eac8ca1790a9))
+* **cli:** a tier scope — lists show the top-level tiers unless asked otherwise ([#1294](https://github.com/canonical/pragma/issues/1294)) ([5c95529](https://github.com/canonical/pragma/commit/5c95529f9bdcc40ed7ea7001ec06addef1ebc2c0))
+* **cli:** answer the token graph — symbols, variables, values, consumers and chains ([#1218](https://github.com/canonical/pragma/issues/1218)) ([464c027](https://github.com/canonical/pragma/commit/464c02769f43e5e4e0e61cf90a7adb1f10cc1479))
+* **cli:** graph connect — relation paths between two entities, and an honest "unlinked" ([#1214](https://github.com/canonical/pragma/issues/1214)) ([5d3cc71](https://github.com/canonical/pragma/commit/5d3cc718c8fdabe587d807d218246143d0aed6d5))
+* **ds-assets:** add cut and paste icons, redraw copy ([#1185](https://github.com/canonical/pragma/issues/1185)) ([b68a1d9](https://github.com/canonical/pragma/commit/b68a1d90fc3b8c8d7f5a09ee9189f44c5082d4ab))
+* **ds-global:** add Modal pattern ([#1039](https://github.com/canonical/pragma/issues/1039)) ([8abd498](https://github.com/canonical/pragma/commit/8abd498e856db8a7be54c07221c57e89c0736ef0)), closes [#851](https://github.com/canonical/pragma/issues/851)
+* **harnesses:** register the pragma MCP server with Oh My Pi ([#1186](https://github.com/canonical/pragma/issues/1186)) ([fa2133f](https://github.com/canonical/pragma/commit/fa2133f620f61e41ff3e206cd0f85b841a55eb26))
+* **pragma-cli:** register and install into VS Code-family editors on every platform and under Nix ([#1303](https://github.com/canonical/pragma/issues/1303)) ([a43bb81](https://github.com/canonical/pragma/commit/a43bb81ef060a2a283e02f867e8f81c3f8095739))
+* **pragma-docs:** add the documentation site ([#1112](https://github.com/canonical/pragma/issues/1112)) ([25bb918](https://github.com/canonical/pragma/commit/25bb91878979f029c7784fb79036d6d5265cf0b9))
+* **prism-contract:** add the documentation site's data contract ([#1107](https://github.com/canonical/pragma/issues/1107)) ([b2d1259](https://github.com/canonical/pragma/commit/b2d1259893619da647e8f55612928286e1e897db))
+* **prism-graph-example:** add a hand-written provider for the contract ([#1113](https://github.com/canonical/pragma/issues/1113)) ([b4a0adb](https://github.com/canonical/pragma/commit/b4a0adbdd65475cd0218054273e730786655c739))
+* **prism-pragma-provider:** compile pragma's TTL corpus into a schema ([#1110](https://github.com/canonical/pragma/issues/1110)) ([2137b6b](https://github.com/canonical/pragma/commit/2137b6b8b9df5a0aa049a0de85750f71d3a00304))
+* **Radio:** migrate to design tokens ([#947](https://github.com/canonical/pragma/issues/947)) ([3a88504](https://github.com/canonical/pragma/commit/3a88504a2217792ebafa5c461296d89123f65753))
+* **react-hooks:** add usePreferredShortcuts, a switch for single-key shortcuts ([#1265](https://github.com/canonical/pragma/issues/1265)) ([b4b1b1f](https://github.com/canonical/pragma/commit/b4b1b1f9718fb20c97ec4d59225fac3244dc4b93))
+* **storybook:** searchable icon explorer for the Icon docs page ([#1111](https://github.com/canonical/pragma/issues/1111)) ([7709673](https://github.com/canonical/pragma/commit/7709673b8775ce45d16a4023b68952be1faad374))
+* **styles-vanilla-adapter:** the three stylesheets and the README ([#1105](https://github.com/canonical/pragma/issues/1105)) ([5c8503e](https://github.com/canonical/pragma/commit/5c8503e1afb9cc37f4f061524d5b7499014dea8a))
+* **styles:** export density and spacing subpaths ([#1102](https://github.com/canonical/pragma/issues/1102)) ([7fa3e67](https://github.com/canonical/pragma/commit/7fa3e67e391da4bd0470e49261f661c883b13e10))
+* **styles:** export modifier shim subpaths ([#1099](https://github.com/canonical/pragma/issues/1099)) ([ab060ae](https://github.com/canonical/pragma/commit/ab060ae0a573a14f8cedbf433db3dd0ffa0e3864))
+* **styles:** prefer exact typography line heights ([#1106](https://github.com/canonical/pragma/issues/1106)) ([964f6f1](https://github.com/canonical/pragma/commit/964f6f12916c8977dfce5fc87afc77f5043f2ef1))
+
+### Tests
+
+* **styles-vanilla-adapter:** computed-style fixtures ([#1108](https://github.com/canonical/pragma/issues/1108)) ([68704f9](https://github.com/canonical/pragma/commit/68704f9f58f03645b9cb7073f6c9ee53a75bb6df)), closes [#1120](https://github.com/canonical/pragma/issues/1120) [#1121](https://github.com/canonical/pragma/issues/1121) [#1134](https://github.com/canonical/pragma/issues/1134)
+
+### BREAKING CHANGES
+
+* @canonical/utils no longer exports debounce, throttle,
+  humanizeNumber, pluralize, the HumanizeNumberOptions, HumanizeResult and
+  PluralizeOptions types, the AllOrNone type, or any navigation export —
+  annotateTree, createNavigationReducer, findAncestorPath,
+  getFirstInteractiveChild, getItemId, getLastInteractiveChild, getParentItem,
+  isInteractive, prepareIndex, resolveOrientation, NavigationActionType, and the
+  NavigationAction, NavigationReducerOptions, NavigationState, NodeStatus,
+  Orientation and OrientationConfig types. They are now exported, unchanged, from
+  @canonical/ds-utils. Consumers change the import specifier and add
+  @canonical/ds-utils as a dependency; no call site changes.
+* `_Item<A | B>` now resolves per union member instead of to the
+  union's common keys. Code that relied on the collapsed shape must instantiate
+  `_Item` with the whole entry union.
+* `@canonical/react-ds-global` now declares an `exports` map, so
+  the package answers only to the paths it lists: the package name, `./index.css`,
+  `./package.json` and any published file under `./dist/` named exactly. Two forms
+  that used to resolve no longer do. A folder in place of a file —
+  `@canonical/react-ds-global/dist/esm`, or
+  `@canonical/react-ds-global/dist/esm/lib/component/Button` — no longer finds the
+  `index.js` inside it; name the file. Anything outside `dist` —
+  `@canonical/react-ds-global/README.md`, or a `src/…` path that happened to
+  resolve in a workspace checkout — now fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`;
+  those files were never published. Importing the package by name, or the
+  stylesheet by its subpath, is unaffected.
+* `ContextualMenu`'s `groups: MenuItem[]` prop is replaced by
+  `items: MenuEntry[]`, a flat list of menu items and `{ type: "separator" }`
+  entries. Migrate by concatenating each group's `items` and placing a separator
+  between them.
+
+  The `role="group"` wrappers and their `aria-label`s are gone with the grouped
+  model, so labelled sections ("Recent", "All items") can no longer be expressed —
+  a separator divides sections visually and for assistive technology, but does not
+  name them.
+
+  Removed, the grouped menu being their only consumer: `createCrossGroupStateReducer`
+  and `getFirstEnabledLeaf` from `@canonical/utils`; `getMenuGroupProps` and
+  `MenuGroupPropsResult` from `@canonical/react-hooks`; `getGroupProps` from
+  `useContextualMenu`.
+* **styles-vanilla-adapter:** `ds.components.app` is no longer in the statement; a
+  sheet that opens it sorts by first appearance.
+* **styles:** `ds.components.app` is retired. A package that wrapped its
+  stylesheets in it moves to the tier it belongs to — `ds.components.apps` for the
+  shared applications package, and its own `ds.components.apps-<name>`, declared
+  by the package itself, for one application's tier. An application that copied
+  the order statement to put its own CSS above the design system's replaces the
+  two component names with the five.
+* **styles:** `ds.components.app` is retired. A package that wrapped its
+  stylesheets in it moves to the tier it belongs to — `ds.components.apps` for the
+  shared applications package, and its own `ds.components.apps-<name>`, declared
+  by the package itself, for one application's tier. An application that copied
+  the order statement to put its own CSS above the design system's replaces the
+  two component names with the five.
+* `ds.components.app` is retired. A package that wrapped its
+  stylesheets in it moves to the tier it belongs to — `ds.components.apps` for the
+  shared applications package, and its own `ds.components.apps-<name>`, declared
+  by the package itself, for one application's tier. An application that copied
+  the order statement to put its own CSS above the design system's replaces the
+  two component names with the five.
+* `getFirstEnabledChild` and `getLastEnabledChild` are renamed to
+  `getFirstInteractiveChild` and `getLastInteractiveChild`. They now skip
+  presentational nodes as well as disabled ones, so "enabled" no longer describes
+  what they select. There is no alias — the old name would report the old
+  behaviour.
+* `Item` requires a `key` or a `url`. Items with neither
+  no longer type-check — give a navigable item its `url` and a
+  non-navigable one a `key`. Types built on `Item` must use
+  `type X = Item & { … }` rather than `interface X extends Item`, and
+  `_DistributiveOmit<Item, K>` rather than `Omit<Item, K>`.
+  `MenuSeparator.key` is required: write `{ type: "separator", key: "…" }`.
+* `MenuSeparator` no longer has a `disabled` field. It was
+  documented as set by `useContextualMenu` and never by consumers, so code that
+  only builds menus is unaffected; code that read `separator.disabled` should
+  read `separator.presentational`.
+* **cli:** `token list` no longer publishes a `category` column, and
+  `token lookup` no longer publishes `category`, `valueLight` or `valueDark`.
+  Those read a class no shipped graph asserts, so no install can have been
+  receiving them; callers of the JSON shape should read `type` and the `values`
+  expand instead.
+
+  Names come from `rdfs:label`, and NO IRI-derived fallback is declared: the
+  kernel's derivation publishes a dotted local name with slashes, which
+  contradicts the dotted notation used for symbol names everywhere else and would
+  make this answer disagree with the anatomy's spelling of the same symbol. The
+  consequence is deliberate and visible — until the token-ontology pack publishes
+  name literals, `token list` answers empty rather than publishing names nothing
+  else recognises.
+
+  * feat(cli): add the variable noun over the platform stratum
+
+  The token graph names two different things and the CLI could only address one.
+  A SYMBOL is the logical dotted name (`color.text`); a VARIABLE is what a
+  stylesheet actually declares (`--color-text`), and 236 of the 1,156 variables
+  stand for no symbol at all — the duplicated legacy twins the ontology names as
+  such, plus the computed states and resets. `--disabled--color-text` and
+  `--modifier-color-text` are nobody's symbol, so no surface keyed on symbols can
+  reach them.
+
+  `variable list` publishes one row per platform name with the symbol it stands
+  for, its tier, its visibility, the platform, and the coordinates its
+  declarations are selected at. `variable lookup` adds every place it is
+* `useHead`, `createHeadCollector`, `HeadTags` and
+  `HeadCollector` are gone, and `HeadProvider` no longer takes a `collector`.
+  `HeadMeta` and `HeadLink` survive as the elements own props rather than
+  hand-written attribute lists, so a page can declare the preload, icon and
+  hreflang links the old shapes rejected.
+  Replace a `useHead({ title, meta, link })` call with a `<Head title meta link />`
+  element rendered by the page, and move any per-page title suffix into the root
+  `<HeadProvider titleTemplate={…}>`. A `deps` array has no successor and needs
+* a consumer that adds its own class to a `<button class="ds
+  button">` and styles it at the component root's specificity, (0,2,0), from a
+  stylesheet that loads after this one now wins those declarations, where the
+  Button's density seat used to take them whatever the order. The measured case is
+  `@canonical/react-ds-global-form`'s combobox reset button, which returns to a
+  centred 16px line box (the rendered box stays 40×30) from a left-aligned glyph on
+  the density baseline. A consumer that wants the seat to keep winning should not
+  re-declare the seat's properties on a `.ds.button`; a consumer that wants its own
+  rule to win regardless of order must raise it to (0,3,0), for example by naming
+  the component root as well as its own class.
+* a form control's colour and border transitions now last 165ms
+  instead of 150ms, and a combobox list item's 165ms instead of 100ms. Nothing
+  about the resting rendering changes — only how long a colour, a border or the
+  switch knob takes to settle — but the numbers are different, so an application
+  that has tuned its own timings against these should re-check them. There is no
+  150ms motion token to read; the nearest named step is the fast one, 0.165s.
+* **cli:** a list-shaped verb called with no `--limit` now returns at most
+  300 rows instead of 500. No answer that fitted one page before fits fewer pages
+  now — the largest pre-existing population is 252 — but a caller who relied on
+  500 being the number reads 300 in `--help` and in the generated reference, and
+  one who wants everything raises `--limit` or walks `--after` as before.
+
+  Also repointed: the first-install journey asserted `token list` answers no rows
+  "because the graph carries no ds:Token". It answers 745 now, so the case moved
+  in both directions — one asserting the noun resolves offline on a first install,
+  one asserting `token consumers` is the honestly-empty verb it inherited the role
+  from. And three tool descriptions lost a `--`-prefixed CSS custom-property
+* **styles-vanilla-adapter:** a page that writes its own rules into a layer named
+  `adapter` has to write `ds.adapter`; the fourteen-name statement changes
+  accordingly.
+* **styles-vanilla-adapter:** adapter.css now needs the @canonical/styles release
+  that ships the three entries.
+* **styles:** An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application's own unlayered CSS now beats every rule
+  @canonical/react-ds-app and @canonical/svelte-ds-app ship, whatever the
+  selectors on either side, because an unlayered author rule outranks every
+  layered one. Before, an application override competed with these stylesheets by
+  specificity and source order, so an override that used to lose now wins; one
+  that used to win still does. An application that does not want to win by
+  accident puts its CSS in a layer — `@layer app`, which is where the summon
+  application template now puts a generated application's own stylesheets.
+  Separately, an application tier's rule for a component now beats the matching
+  global package's by cascade layer instead of by load order. Neither of these two
+  packages collides with its global tier today, so no rule changes hands on this
+  release.
+* An application's own unlayered CSS now beats every rule these
+  packages ship, whatever the selectors on either side, because an unlayered
+  author rule outranks every layered one. Before, an application override competed
+  with these stylesheets by specificity and source order, so an override that used
+  to lose now wins; one that used to win still does. An application that does not
+  want to win by accident puts its CSS in a layer — `@layer app`, which the styles
+  package's statement places above the component tiers. Separately, an app tier's
+  rule for a component now beats @canonical/react-ds-global's by cascade layer
+  instead of by load order, which is the point of the two tier names: an
+  application that was getting the global tier's `.ds.button` because its bundler
+  emitted the app tier first will now get the app tier's.
+* An application's own unlayered CSS now beats every rule this
+  package ships, whatever the selectors on either side, because an unlayered
+  author rule outranks every layered one. Before, an application override competed
+  with these stylesheets by specificity and source order, so an override that used
+  to lose now wins; one that used to win still does. An application that does not
+  want to win by accident puts its CSS in a layer — `@layer app`, which the styles
+  package's statement places above the component tiers. Separately, an application
+  tier's rule for a component now beats this package's by cascade layer rather
+  than by load order, which is the point; a tier that was relying on losing that
+  race will see its own rule take effect.
+* An application's own unlayered CSS now beats every rule this
+  package ships, whatever the selectors on either side, because an unlayered
+  author rule outranks every layered one. Before, an application override competed
+  with these stylesheets by specificity and source order, so an override that used
+  to lose now wins; one that used to win still does. An application that does not
+  want to win by accident puts its CSS in a layer — `@layer app`, which the styles
+  package's statement places above the component tiers. Separately, an application
+  tier's rule for a component now beats this package's by cascade layer rather
+  than by load order, which is the point; a tier that was relying on losing that
+  race will see its own rule take effect.
+* an application's unlayered CSS now beats every rule in
+  `@canonical/react-ds-global-form`, whatever the selectors on either side,
+  because unlayered author rules outrank every layered one. An application that
+  overrides a form control with a plain rule keeps winning, and wins more easily
+  than before. An application that relied on this package's rules beating its own
+  must move its CSS into `@layer app`, which sits above `ds.components.global` in
+  the order `@canonical/styles` declares. The package's rules also no longer
+  outrank the styles package's own layers, which is the point of the change.
+* an application's unlayered CSS now beats every rule in
+  `@canonical/react-ds-global-form`, whatever the selectors on either side,
+  because unlayered author rules outrank every layered one. An application that
+  overrides a form control with a plain rule keeps winning, and wins more easily
+  than before. An application that relied on this package's rules beating its own
+  must move its CSS into `@layer app`, which sits above `ds.components.global` in
+  the order `@canonical/styles` declares. The package's rules also no longer
+  outrank the styles package's own layers, which is the point of the change.
+* **styles:** Everything this package ships is now in a named cascade layer,
+  so an application's own unlayered CSS beats every rule here, where before it
+  competed with unlayered rules by source order and specificity. An override that
+  used to lose now wins, and one that used to win still does. To keep the layer
+  order in force for your own CSS, put it in a layer above `ds.components.app` —
+  the README's "Migrating to the layered release" section has the statement to
+  copy. There is nothing to add to your markup. `normalize.css` is also no longer
+  a transitive dependency: an application relying on the parts of it this package
+  does not use must depend on it directly.
+* Everything this package ships is now in a named cascade layer,
+  so an application's own unlayered CSS beats every rule here, where before it
+  competed with unlayered rules by source order and specificity. An override that
+  used to lose now wins, and one that used to win still does. To keep the layer
+  order in force for your own CSS, put it in a layer above `ds.components.app` —
+  the README's "Migrating to the layered release" section has the statement to
+  copy. There is nothing to add to your markup. `normalize.css` is also no longer
+  a transitive dependency: an application relying on the parts of it this package
+  does not use must depend on it directly.
+* **styles:** mapper.css no longer exists. An application importing
+  @canonical/styles-typography, or one of the three engines, is unaffected — the
+  composed entry delivers exactly what it did. An application that imported
+  mapper.css by path takes tokens.css and elements.css instead, in that order, or
+  the composed entry if it wants the engine too. An application that imported an
+  engine by path and relied on it dragging in the mapper now imports tokens.css and
+  elements.css alongside it.
+* mapper.css no longer exists. An application importing
+  @canonical/styles-typography, or one of the three engines, is unaffected — the
+  composed entry delivers exactly what it did. An application that imported
+  mapper.css by path takes tokens.css and elements.css instead, in that order, or
+  the composed entry if it wants the engine too. An application that imported an
+  engine by path and relied on it dragging in the mapper now imports tokens.css and
+  elements.css alongside it.
+* **styles-vanilla-adapter:** the `coexist` class on the document element does nothing
+  and should be removed; a mixed page imports adapter.css instead of
+  @canonical/styles.
+* The cascade layer these two packages write into is renamed
+  from `ds.components.app` to `ds.components.apps`. An application that names
+  pragma's component layers in its own order statement, or that writes a rule
+  into `ds.components.app` to sit beside them, has to use the new name. The
+  layer's position is unchanged — above `ds.components.global`, below the
+  consumer's own `app` layer — so nothing computes differently.
+* The layer these packages write into is renamed. An application
+  that named `ds.components.app` in its own order statement, or that wrote rules
+  into it to sit alongside an application tier, must use the tier's own name
+  instead — `ds.components.apps-lxd` and its siblings, or `ds.components.apps` for
+  the shared tier. Nothing else about the rules changes.
+* **styles-vanilla-adapter:** the mixed page's root carries `coexist` next to its
+  context, density and `light`; the last step drops it instead of adding `ds`.
+* **styles-vanilla-adapter:** the mixed page's root carries `coexist` next to its
+  context, density and `light`; the last step drops it instead of adding `ds`.
+* **styles:** The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* **styles:** The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* **styles:** The typographic engine now applies only inside an element
+  carrying the class `ds`, and nowhere else. An application that is the design
+  system's throughout adds the class to its document element, beside the context
+  and density classes it already carries: `<html class="ds app comfortable">`.
+  Without it, headings and paragraphs fall back to the browser's own defaults and
+  no baseline alignment happens. An application that is only partly the design
+  system's marks the regions it has migrated, and the rest of its page keeps its
+  own typography — which is the point: this package no longer restyles bare
+  elements it does not own. A heading, paragraph or code element that is itself
+  the marked element is styled only where a `:scope` twin exists (`.p`, `.code`,
+  `.editorial`); put the mark on the region rather than on a single heading.
+  Below the `@scope` floor (Chrome 118, Safari 17.4, Firefox 146) the whole block
+  is dropped and none of this package applies.
+* **styles:** These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To
+  keep the design system's order in force for your own CSS, put that CSS in a
+  layer above ds.components.app. What each element computes is unchanged.
+* **styles:** These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To keep
+  the design system's order in force for your own CSS, put that CSS in a layer
+  above ds.components.app. What each element computes is unchanged.
+* These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To keep
+  the design system's order in force for your own CSS, put that CSS in a layer
+  above ds.components.app. What each element computes is unchanged.
+* **styles-typography:** These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To keep
+  the design system's order in force for your own CSS, put that CSS in a layer
+  above ds.components.app. What each element computes is unchanged.
+* These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To keep
+  the design system's order in force for your own CSS, put that CSS in a layer
+  above ds.components.app. What each element computes is unchanged.
+* this supersedes the breaking note on the first commit of this
+  branch, which described the affected population too widely.
+
+  Only a rule in the same cascade layer changes outcome — `ds.components.global`,
+  which holds the global-tier packages. In practice that is one rule today: the
+  combobox clear button in @canonical/react-ds-global-form, which goes back to a
+  centred 16px line box (its box on screen stays 40x30 pixels). The Svelte
+  ds-global package has no `.ds.button` rule at all.
+
+  Nothing outside that layer changes. An application's own stylesheet in
+  `ds.components.app` or in `app`, and any unlayered consumer stylesheet, beat the
+  Button's seat before this change and beat it after, whatever the load order —
+  that is what the layers are for.
+
+  A global-tier package should not redeclare the seat's properties (`line-height`,
+  `box-sizing`, `align-items`, `justify-content`, `padding-block`) on a
+  `.ds.button` at all: between two sheets in one layer only the emitted order
+  decides, and nobody controls that. PRA-153 carries the clear button. A consumer
+  who wants their own rule to win should put it in their own layer or leave it
+  unlayered, not lengthen its selector.
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 * feat(react/ds-global)!: extend native props via ComponentProps intersection (#297) (#851) ([4c96482](https://github.com/canonical/pragma/commit/4c96482e5b9eff2a86cdca939a17b1f0374e498f)), closes [#297](https://github.com/canonical/pragma/issues/297) [#851](https://github.com/canonical/pragma/issues/851) [#297](https://github.com/canonical/pragma/issues/297) [#297](https://github.com/canonical/pragma/issues/297) [#628](https://github.com/canonical/pragma/issues/628)

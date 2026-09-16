@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* refactor(utils)!: move navigation, debounce and throttle to @canonical/ds-utils (#1109), closes [#1109](https://github.com/canonical/pragma/issues/1109)
+* refactor(ds-types)!: require a key or url on the navigation item (#1142) ([cb7f3b4](https://github.com/canonical/pragma/commit/cb7f3b4c07d56eb543d34aaf53ce6f44f2821dd8)), closes [#1142](https://github.com/canonical/pragma/issues/1142)
+
+### Bug Fixes
+
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+
+### BREAKING CHANGES
+
+* @canonical/utils no longer exports debounce, throttle,
+  humanizeNumber, pluralize, the HumanizeNumberOptions, HumanizeResult and
+  PluralizeOptions types, the AllOrNone type, or any navigation export —
+  annotateTree, createNavigationReducer, findAncestorPath,
+  getFirstInteractiveChild, getItemId, getLastInteractiveChild, getParentItem,
+  isInteractive, prepareIndex, resolveOrientation, NavigationActionType, and the
+  NavigationAction, NavigationReducerOptions, NavigationState, NodeStatus,
+  Orientation and OrientationConfig types. They are now exported, unchanged, from
+  @canonical/ds-utils. Consumers change the import specifier and add
+  @canonical/ds-utils as a dependency; no call site changes.
+* `Item` requires a `key` or a `url`. Items with neither
+  no longer type-check — give a navigable item its `url` and a
+  non-navigable one a `key`. Types built on `Item` must use
+  `type X = Item & { … }` rather than `interface X extends Item`, and
+  `_DistributiveOmit<Item, K>` rather than `Omit<Item, K>`.
+  `MenuSeparator.key` is required: write `{ type: "separator", key: "…" }`.
+
+
 # [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
 
 ### Features
