@@ -2,11 +2,14 @@ import type {
   ViewCommand,
   ViewSettledOutcome,
 } from "@canonical/dataviews-core";
+import { resolveMessages } from "@canonical/dataviews-core/bindings";
 import { describe, expect, it } from "vitest";
 import { buildStoredView } from "../../../../../../testing/fixtures.js";
 import describeViewStatus from "./describeViewStatus.js";
 
 const view = buildStoredView({ revision: 2 });
+
+const english = resolveMessages();
 
 type Command = ViewCommand;
 type Outcome = ViewSettledOutcome;
@@ -22,15 +25,19 @@ const commands: readonly Command[] = [
 /** What the status says for each command settling to one outcome. */
 const describeSettledAs = (outcome: Outcome, modified = false): string[] =>
   commands.map((command) =>
-    describeViewStatus({ command, status: "settled", outcome }, modified),
+    describeViewStatus(
+      { command, status: "settled", outcome },
+      modified,
+      english,
+    ),
   );
 
 describe("describeViewStatus", () => {
   it("says nothing before the first command, then what is in flight", () => {
-    expect(describeViewStatus(null, false)).toBe("");
+    expect(describeViewStatus(null, false, english)).toBe("");
     expect(
       commands.map((command) =>
-        describeViewStatus({ command, status: "pending" }, false),
+        describeViewStatus({ command, status: "pending" }, false, english),
       ),
     ).toEqual([
       "Opening the view…",
@@ -109,5 +116,42 @@ describe("describeViewStatus", () => {
     expect(
       describeSettledAs({ status: "failed", reason: "quota exceeded" })[4],
     ).toBe("Not deleted: quota exceeded.");
+  });
+
+  it("words every outcome in the messages it is given", () => {
+    const messages = resolveMessages({
+      viewPending: (command) => `en cours : ${command}`,
+      viewDeleted: "Vue supprimée.",
+      viewConflicted: (command, name) => `conflit ${command} ${name}`,
+    });
+    expect(
+      describeViewStatus(
+        { command: "save", status: "pending" },
+        false,
+        messages,
+      ),
+    ).toBe("en cours : save");
+    expect(
+      describeViewStatus(
+        {
+          command: "remove",
+          status: "settled",
+          outcome: { status: "removed" },
+        },
+        false,
+        messages,
+      ),
+    ).toBe("Vue supprimée.");
+    expect(
+      describeViewStatus(
+        {
+          command: "save-as",
+          status: "settled",
+          outcome: { status: "conflict", view },
+        },
+        false,
+        messages,
+      ),
+    ).toBe("conflit save-as Failed");
   });
 });

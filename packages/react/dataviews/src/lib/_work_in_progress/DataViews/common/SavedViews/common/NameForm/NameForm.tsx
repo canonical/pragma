@@ -27,6 +27,8 @@ const componentCssClassName = "ds data-views-saved-views-name-form";
 export default function NameForm({
   label,
   submit,
+  nameLabel,
+  cancel,
   initial,
   pending,
   onSubmit,
@@ -67,7 +69,7 @@ export default function NameForm({
     >
       {/* The input's `id` lands on its wrapper, so no `for` can reach it. */}
       <span id={labelId} className="label">
-        Name
+        {nameLabel}
       </span>
       <TextInput
         ref={input}
@@ -99,7 +101,7 @@ export default function NameForm({
         {submit}
       </Button>
       <Button type="button" onClick={onCancel}>
-        Cancel
+        {cancel}
       </Button>
     </form>
   );

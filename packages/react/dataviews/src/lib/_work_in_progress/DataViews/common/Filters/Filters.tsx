@@ -305,7 +305,8 @@ const renderControl = (
  *
  * With `primary` fields marked, the controls shown by default are theirs, in
  * the order marked, then any other field's that carries a restriction; the
- * rest are a native disclosure, "More filters", which needs no script and
+ * rest are a native disclosure, named by the messages' `moreFilters`, which
+ * needs no script and
  * whose controls submit with the form. While the disclosure is open no
  * control moves in or out of it, so a control keeps focus while its field
  * gains or loses a restriction; closing it brings out what was restricted
@@ -317,13 +318,13 @@ const renderControl = (
  * name may change or move before the first release.
  */
 export default function Filters({
-  label = "Filters",
+  label,
   labels,
   primary,
   className,
   ...rest
 }: DataViewsFiltersProps): ReactElement {
-  const { provider, filters } = useDataViewsRoot("Filters");
+  const { provider, filters, messages } = useDataViewsRoot("Filters");
   const facets = useFacets({ provider });
   const restricted = useRestrictedFields({ provider });
   const groupRef = useRef<HTMLFieldSetElement>(null);
@@ -427,7 +428,7 @@ export default function Filters({
           that had it leaves with the restriction it removed, or is
           disabled. */}
       <fieldset ref={groupRef} className="group" tabIndex={-1}>
-        <legend className="legend">{label}</legend>
+        <legend className="legend">{label ?? messages.filters}</legend>
         {(hasPrimary ? outside : schema.fields).map(renderField)}
         {/* Open while pinned, and kept while pinned though nothing is left
             inside: the pin is the disclosure's own state, and must never
@@ -441,7 +442,7 @@ export default function Filters({
             open={pinned !== null}
             onToggle={handleToggle}
           >
-            <summary className="summary">More filters</summary>
+            <summary className="summary">{messages.moreFilters}</summary>
             {inside.map(renderField)}
           </details>
         ) : null}
@@ -452,7 +453,7 @@ export default function Filters({
         omit={NO_OWN_KEYS}
       />
       <Button type="submit" importance="secondary" className="submit">
-        Apply filters
+        {messages.submitFilters}
       </Button>
     </form>
   );

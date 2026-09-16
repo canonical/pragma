@@ -12,6 +12,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import elementAt from "../../../testing/elementAt.js";
 import {
   createMachineProvider,
   declareMachineOrdering,
@@ -127,6 +128,42 @@ describe("the announcer speaks once per root", () => {
     expect(
       within(second).queryByRole("columnheader", { name: "Status" }),
     ).toBeNull();
+  });
+
+  it("says a sort panel's move in its own root, and nothing in the other", async () => {
+    const provider = createProvider();
+    provider.setSort([
+      { field: "name", direction: "asc" },
+      { field: "status", direction: "desc" },
+    ]);
+    render(
+      <>
+        <section aria-label="First root">
+          <DataViews provider={provider}>
+            <DataViews.SortPanel />
+          </DataViews>
+        </section>
+        <section aria-label="Second root">
+          <DataViews provider={provider}>
+            <DataViews.SortPanel />
+          </DataViews>
+        </section>
+      </>,
+    );
+    const first = screen.getByRole("region", { name: "First root" });
+    const second = screen.getByRole("region", { name: "Second root" });
+    const panel = within(first).getByRole("region", { name: "Sort" });
+    fireEvent.click(
+      within(elementAt(within(panel).getAllByRole("listitem"), 1)).getByRole(
+        "button",
+        { name: "Move up" },
+      ),
+    );
+    await readAnnouncements();
+    expect(listSaidIn(first)).toEqual([
+      "Sorted by status, descending; then name, ascending.",
+    ]);
+    expect(listSaidIn(second)).toEqual([]);
   });
 
   it("leaves one region after StrictMode's rehearsal mount, speaking once", async () => {

@@ -152,9 +152,7 @@ export const SavedViews: Story = {
   play: async ({ canvas }) => {
     await open(canvas, "Failed machines");
     await waitFor(() =>
-      expect(getSummary(canvas)).toHaveTextContent(
-        "Showing 1–3 out of 3 items",
-      ),
+      expect(getSummary(canvas)).toHaveTextContent("Showing 1–3 out of 3 rows"),
     );
     await expect(
       canvas.getByRole("checkbox", { name: "failed" }),

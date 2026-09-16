@@ -6,10 +6,13 @@
  * `COUNTED_EXACTLY` is the counts block complete local input declares; one
  * display status of each kind, for the parts that render one; and a stored
  * view as a store lists it, spelled as the core fixtures spell theirs; the
- * Filters stories the story harnesses play and check; and the operator and
- * facet case tables every executor runs.
+ * Filters stories the story harnesses play and check; the operator and
+ * facet case tables every executor runs; and the mark and the samples every
+ * worded message is called with, which the English sweep reads a message's
+ * own words from.
  */
 
+import type { DataViewsMessages } from "@canonical/dataviews-core";
 import {
   type Completion,
   type Count,
@@ -488,3 +491,177 @@ export const FACET_CASES: readonly FacetCase[] = [
     pins: "nothing matching lists no status and bounds nothing",
   },
 ];
+
+/**
+ * What stands for a name or a reason in the sample arguments below: a
+ * character no message's own words contain, so what a message says around
+ * it can be told from what it was handed.
+ */
+export const MESSAGE_MARK = "\u0001";
+
+/**
+ * Arguments to call every worded message with, each set reaching another of
+ * its wordings — a singular and a plural, each direction, each command — and
+ * null for a message that is text. Keyed by every message, so a message the
+ * record gains is a compile error here until it has samples, and the English
+ * it adds is looked for.
+ */
+export const MESSAGE_SAMPLES: {
+  readonly [TKey in keyof DataViewsMessages]: DataViewsMessages[TKey] extends (
+    ...args: infer TArgs
+  ) => string
+    ? readonly TArgs[]
+    : null;
+} = {
+  statusPending: null,
+  statusRegrouping: null,
+  statusFailed: [[MESSAGE_MARK]],
+  statusRefreshFailed: [[MESSAGE_MARK]],
+  statusStale: [[MESSAGE_MARK]],
+  statusNoResults: null,
+  statusNoData: null,
+  selectAllRows: null,
+  selectRow: [[MESSAGE_MARK]],
+  columnWidth: [[1], [7]],
+  sortPrecedence: [
+    ["asc", 1, 1],
+    ["desc", 2, 3],
+  ],
+  sortRefused: [[[MESSAGE_MARK]]],
+  sortApplied: [
+    [
+      [
+        { name: MESSAGE_MARK, direction: "asc" },
+        { name: MESSAGE_MARK, direction: "desc" },
+      ],
+    ],
+  ],
+  sortDefaulted: [
+    [
+      [
+        { name: MESSAGE_MARK, direction: "asc" },
+        { name: MESSAGE_MARK, direction: "desc" },
+      ],
+    ],
+  ],
+  sortAbsent: null,
+  columnOptions: [[MESSAGE_MARK]],
+  sortAscending: null,
+  sortDescending: null,
+  removeFromSort: null,
+  hideColumn: null,
+  moveColumnLeft: null,
+  moveColumnRight: null,
+  tableSettings: null,
+  hideNamedColumn: [[MESSAGE_MARK]],
+  showNamedColumn: [[MESSAGE_MARK]],
+  moveNamedColumnLeft: [[MESSAGE_MARK]],
+  moveNamedColumnRight: [[MESSAGE_MARK]],
+  columnAlwaysShown: [[MESSAGE_MARK]],
+  resetTableSettings: null,
+  columnHidden: [[MESSAGE_MARK]],
+  columnShown: [[MESSAGE_MARK, 2, 3]],
+  columnMoved: [[MESSAGE_MARK, 2, 3]],
+  tableSettingsReset: null,
+  sortPanel: null,
+  sortTerm: [
+    [MESSAGE_MARK, "asc"],
+    [MESSAGE_MARK, "desc"],
+  ],
+  moveSortTermUp: null,
+  moveSortTermDown: null,
+  removeSortTerm: null,
+  filters: null,
+  moreFilters: null,
+  submitFilters: null,
+  filterFrom: [[MESSAGE_MARK]],
+  filterTo: [[MESSAGE_MARK]],
+  filterLowest: [[MESSAGE_MARK]],
+  filterHighest: [[MESSAGE_MARK]],
+  clearFilter: [[MESSAGE_MARK]],
+  filterIsAnyOf: [[MESSAGE_MARK]],
+  filterIsNoneOf: [[MESSAGE_MARK]],
+  matchAnyInstead: null,
+  matchNoneInstead: null,
+  facetCount: [[{ kind: "exact", value: 7 }], [{ kind: "at-least", value: 7 }]],
+  filterContains: [[MESSAGE_MARK]],
+  filterStartsWith: [[MESSAGE_MARK]],
+  filterIncomplete: [[false], [true]],
+  filterRefused: [
+    [[MESSAGE_MARK], false],
+    [[MESSAGE_MARK, MESSAGE_MARK], true],
+  ],
+  search: null,
+  submitSearch: null,
+  pagination: null,
+  rowsPerPage: null,
+  submitPageSize: null,
+  rowsShown: [
+    [1, 1, { kind: "exact", value: 7 }],
+    [1, 7, { kind: "at-least", value: 7 }],
+    [1, 0, { kind: "unknown" }],
+    [1, 1, { kind: "unknown" }],
+  ],
+  page: null,
+  pageCount: [[1], [7]],
+  submitPage: null,
+  goToFirstPage: null,
+  goToPreviousPage: null,
+  goToNextPage: null,
+  goToLastPage: null,
+  savedViews: null,
+  viewsUnscripted: null,
+  view: null,
+  viewNone: null,
+  viewModified: null,
+  saveView: null,
+  overwriteView: null,
+  revertView: null,
+  discardViewChanges: null,
+  saveViewAs: null,
+  renameView: null,
+  deleteView: null,
+  retryViews: null,
+  saveAsForm: null,
+  submitSaveAs: null,
+  renameForm: [[MESSAGE_MARK]],
+  submitRename: null,
+  viewName: null,
+  cancel: null,
+  deleteForm: [[MESSAGE_MARK]],
+  submitDelete: null,
+  viewsPending: null,
+  viewsUnavailable: [[MESSAGE_MARK]],
+  viewsUnreadable: [[1], [7]],
+  arrangementUnsaved: [[MESSAGE_MARK]],
+  viewNameRefused: [[MESSAGE_MARK]],
+  viewPending: [["open"], ["save"], ["save-as"], ["rename"], ["remove"]],
+  viewOpened: [[MESSAGE_MARK]],
+  viewSaved: [[MESSAGE_MARK]],
+  viewRenamed: [[MESSAGE_MARK]],
+  viewDeleted: null,
+  viewRefused: [[MESSAGE_MARK, [MESSAGE_MARK]]],
+  viewConflicted: [
+    ["open", MESSAGE_MARK],
+    ["save", MESSAGE_MARK],
+    ["save-as", MESSAGE_MARK],
+    ["rename", MESSAGE_MARK],
+    ["remove", MESSAGE_MARK],
+  ],
+  viewMissing: [["open"], ["save"], ["save-as"], ["rename"], ["remove"]],
+  viewUnreadable: [
+    ["open", MESSAGE_MARK],
+    ["save", MESSAGE_MARK],
+    ["rename", MESSAGE_MARK],
+    ["remove", MESSAGE_MARK],
+  ],
+  viewFailed: [
+    ["open", MESSAGE_MARK],
+    ["save", MESSAGE_MARK],
+    ["rename", MESSAGE_MARK],
+    ["remove", MESSAGE_MARK],
+  ],
+  selectionActions: null,
+  rowsSelected: [[7]],
+  deselectRows: [[1], [7]],
+};

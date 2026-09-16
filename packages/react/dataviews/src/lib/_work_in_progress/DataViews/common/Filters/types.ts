@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react";
 
 type OwnProps = {
-  /** The group's legend, which names it. Defaults to "Filters". */
+  /** The group's legend, which names it. Defaults to the messages' `filters`. */
   readonly label?: string;
   /**
    * Visible names for fields, keyed by field name. A field with no entry is
@@ -12,8 +12,8 @@ type OwnProps = {
   readonly labels?: Readonly<Record<string, string>> | undefined;
   /**
    * The fields whose controls show by default, in the order given. Every
-   * other field the source declares filterable stays reachable under "More
-   * filters", and a field carrying a restriction always shows its control,
+   * other field the source declares filterable stays reachable in the disclosure
+   * the messages' `moreFilters` names, and a field carrying a restriction always shows its control,
    * so an applied restriction is never hidden. Left out or empty, every
    * field shows. A presentation choice the application makes: the source
    * never declares it and the collection's schema never carries it. Naming a

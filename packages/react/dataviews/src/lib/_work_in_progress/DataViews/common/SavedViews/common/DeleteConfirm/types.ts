@@ -4,10 +4,14 @@
  * places.
  */
 export type DeleteConfirmProps = {
-  /** The name of the view to delete. */
-  readonly name: string;
+  /** The question deleting asks first, naming the view. */
+  readonly question: string;
+  /** The submitting button's text. */
+  readonly submit: string;
+  /** The cancel button's text. */
+  readonly cancel: string;
   /** Whether a command is in flight; deleting waits for it. */
   readonly pending: boolean;
-  readonly onConfirm: () => void;
+  readonly onSubmit: () => void;
   readonly onCancel: () => void;
 };

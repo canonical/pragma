@@ -30,6 +30,8 @@ describe("regression 0005 — a refused name was not asked again", () => {
       <NameForm
         label="Save as a new view"
         submit="Save view"
+        nameLabel="Name"
+        cancel="Cancel"
         initial=""
         pending={false}
         onSubmit={onSubmit}

@@ -1,10 +1,10 @@
 import type { ComponentProps, ReactNode } from "react";
 
 type OwnProps = {
-  /** The group's accessible name. Defaults to "Selection actions". */
+  /** The group's accessible name. Defaults to the messages' `selectionActions`. */
   readonly label?: string;
   /**
-   * The selection indicator: the count of selected items by default. A
+   * The selection indicator: the count of selected rows by default. A
    * caller's own indicator — a menu opening the selection, say — replaces it;
    * `null` shows none.
    */

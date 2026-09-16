@@ -9,9 +9,11 @@ const componentCssClassName = "ds data-views-saved-views-confirm";
  * on Cancel, so a stray Enter deletes nothing. Escape cancels.
  */
 export default function DeleteConfirm({
-  name,
+  question,
+  submit,
+  cancel,
   pending,
-  onConfirm,
+  onSubmit,
   onCancel,
 }: DeleteConfirmProps): ReactElement {
   const messageId = useId();
@@ -29,19 +31,19 @@ export default function DeleteConfirm({
       }}
     >
       <p id={messageId} className="message">
-        {`Delete "${name}"? This cannot be undone.`}
+        {question}
       </p>
       <Button
         type="button"
         anticipation="destructive"
         disabled={pending}
-        onClick={onConfirm}
+        onClick={onSubmit}
       >
-        Delete view
+        {submit}
       </Button>
       {/* The safe answer takes focus, so Enter cancels and Escape is not the only way out. */}
       <Button autoFocus type="button" onClick={onCancel}>
-        Cancel
+        {cancel}
       </Button>
     </div>
   );

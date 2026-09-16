@@ -1,4 +1,7 @@
-import type { PredicateOperand } from "@canonical/dataviews-core";
+import type {
+  DataViewsMessages,
+  PredicateOperand,
+} from "@canonical/dataviews-core";
 import {
   applyQueryCommand,
   spellWireKey,
@@ -9,7 +12,7 @@ import {
   useHydrationFocusHandoff,
   useIsHydrated,
 } from "../../../../../../hooks/index.js";
-import { useFilterHandle } from "../../../../hooks/index.js";
+import { useDataViewsRoot, useFilterHandle } from "../../../../hooks/index.js";
 import { NO_RECORDS } from "../constants.js";
 import { spellCount } from "../utils/index.js";
 import type { ChoicesFilterProps } from "./types.js";
@@ -18,17 +21,24 @@ const componentCssClassName = "ds data-views-filters-choices";
 
 const NONE_SELECTED: ReadonlySet<PredicateOperand> = new Set();
 
-/** What each set operator adds to the field's name in the legend. */
-const LEGEND_WORDING = { isAny: " is any of", isNone: " is none of" } as const;
+/** The message naming each set operator's group, by the field's label. */
+const LEGEND_MESSAGES = {
+  isAny: "filterIsAnyOf",
+  isNone: "filterIsNoneOf",
+} as const satisfies Readonly<
+  Record<ChoicesFilterProps["operator"], keyof DataViewsMessages>
+>;
 
 /** The other set operator, which a standing set may move to. */
 const ALTERNATIVE_OPERATOR = { isAny: "isNone", isNone: "isAny" } as const;
 
-/** What the control moving a set to each operator says. */
-const SWITCH_WORDING = {
-  isAny: "Match any of these instead",
-  isNone: "Match none of these instead",
-} as const;
+/** The message naming the control that moves a set to each operator. */
+const SWITCH_MESSAGES = {
+  isAny: "matchAnyInstead",
+  isNone: "matchNoneInstead",
+} as const satisfies Readonly<
+  Record<ChoicesFilterProps["operator"], keyof DataViewsMessages>
+>;
 
 /**
  * One closed-set filter: a checkbox per option, so the applied set is
@@ -69,6 +79,7 @@ export default function ChoicesFilter({
   leavesWhenCleared,
   onLeave,
 }: ChoicesFilterProps): ReactElement | null {
+  const { messages } = useDataViewsRoot("Filters");
   const field = useFilterHandle(handle);
   const alternativeField = useFilterHandle(alternativeHandle);
   const hydrated = useIsHydrated();
@@ -125,7 +136,7 @@ export default function ChoicesFilter({
       return null;
     }
     const alternative = ALTERNATIVE_OPERATOR[operator];
-    const text = SWITCH_WORDING[alternative];
+    const text = messages[SWITCH_MESSAGES[alternative]];
     if (hydrated) {
       return (
         <Button
@@ -159,14 +170,16 @@ export default function ChoicesFilter({
   };
   return (
     <fieldset className={componentCssClassName}>
-      <legend className="legend">{`${label}${LEGEND_WORDING[operator]}`}</legend>
+      <legend className="legend">
+        {messages[LEGEND_MESSAGES[operator]](label)}
+      </legend>
       {listed.map((option, place) => {
         const countId = `${baseId}-count-${place}`;
         // A facet that lists no record holding an option counts none.
         const count =
           counts === null
             ? null
-            : spellCount(counts.get(String(option)) ?? NO_RECORDS);
+            : spellCount(counts.get(String(option)) ?? NO_RECORDS, messages);
         return (
           <div key={String(option)} className="option">
             <label>

@@ -1,7 +1,6 @@
 import { Button } from "@canonical/react-ds-global";
 import { type ReactElement, useCallback, useRef } from "react";
 import { useDataViewsValue, useMergedRef } from "../../../../hooks/index.js";
-import { pluralizeNoun } from "../../../../utils/index.js";
 import { useDataViewsRoot } from "../../hooks/index.js";
 import type { DataViewsActionsProps } from "./types.js";
 import "./styles.css";
@@ -40,7 +39,7 @@ const componentCssClassName = "ds data-table-action-bar contrasted";
  * name may change or move before the first release.
  */
 export default function Actions({
-  label = "Selection actions",
+  label,
   indicator,
   children,
   className,
@@ -48,7 +47,7 @@ export default function Actions({
   ref,
   ...rest
 }: DataViewsActionsProps): ReactElement | null {
-  const { provider } = useDataViewsRoot("Actions");
+  const { provider, messages } = useDataViewsRoot("Actions");
   const { selection } = provider;
   const count = useDataViewsValue(selection.state).ids.size;
 
@@ -81,7 +80,7 @@ export default function Actions({
       {...rest}
       ref={attach}
       role="group"
-      aria-label={label}
+      aria-label={label ?? messages.selectionActions}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       onFocus={(event) => {
         const from = event.relatedTarget;
@@ -92,7 +91,9 @@ export default function Actions({
       }}
     >
       {indicator === undefined ? (
-        <span role="status" className="indicator">{`${count} selected`}</span>
+        <span role="status" className="indicator">
+          {messages.rowsSelected(count)}
+        </span>
       ) : (
         indicator
       )}
@@ -102,7 +103,7 @@ export default function Actions({
         importance="tertiary"
         icon="close"
         className="deselect"
-        aria-label={`Deselect ${count} ${pluralizeNoun(count, "item")}`}
+        aria-label={messages.deselectRows(count)}
         onClick={() => {
           selection.clear();
         }}

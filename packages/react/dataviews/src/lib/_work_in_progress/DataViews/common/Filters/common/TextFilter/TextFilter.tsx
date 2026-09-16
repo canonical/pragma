@@ -1,18 +1,21 @@
+import type { DataViewsMessages } from "@canonical/dataviews-core";
 import { spellWireKey } from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
 import { type ReactElement, useId, useRef } from "react";
-import { useFilterHandle } from "../../../../hooks/index.js";
+import { useDataViewsRoot, useFilterHandle } from "../../../../hooks/index.js";
 import { describeFilterFeedback } from "../utils/index.js";
 import type { TextFilterProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds data-views-filters-text";
 
-/** What each text operator adds to the field's name. */
-const OPERATOR_WORDING = {
-  contains: "contains",
-  startsWith: "starts with",
-} as const;
+/** The message naming each text operator's input, by the field's label. */
+const OPERATOR_MESSAGES = {
+  contains: "filterContains",
+  startsWith: "filterStartsWith",
+} as const satisfies Readonly<
+  Record<TextFilterProps["operator"], keyof DataViewsMessages>
+>;
 
 /**
  * One text filter: the text a text field must contain, or start with.
@@ -38,6 +41,7 @@ export default function TextFilter({
   leavesWhenCleared,
   onLeave,
 }: TextFilterProps): ReactElement | null {
+  const { messages } = useDataViewsRoot("Filters");
   const field = useFilterHandle(handle);
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,8 +50,8 @@ export default function TextFilter({
     return null;
   }
   const feedbackId = `${inputId}-feedback`;
-  const message = describeFilterFeedback(field.feedback, retained);
-  const name = `${label} ${OPERATOR_WORDING[operator]}`;
+  const message = describeFilterFeedback(field.feedback, retained, messages);
+  const name = messages[OPERATOR_MESSAGES[operator]](label);
   return (
     <div className={componentCssClassName}>
       <label htmlFor={inputId} className="label">
@@ -90,7 +94,7 @@ export default function TextFilter({
             }
           }}
         >
-          {`Clear ${name}`}
+          {messages.clearFilter(name)}
         </Button>
       ) : null}
       {/* Mounted even when empty, so a message appearing is announced. */}
