@@ -4,8 +4,8 @@
  * Before the fix, what the table last announced was state of the table
  * itself, so saying something — "Name is always shown", which changes no
  * arrangement — rendered the table again and every header cell with it.
- * The announcement now holds what it says, and saying something renders the
- * region alone.
+ * The announcer holds what it says, and saying something renders its region
+ * alone.
  *
  * Header cells are counted by wrapping the module that renders them: React
  * offers no per-component render count to read otherwise, as regression
@@ -16,6 +16,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { createMachineProvider, machine } from "../../../testing/machines.js";
+import readAnnouncements from "../../../testing/readAnnouncements.js";
 import { DataTable } from "../../lib/_work_in_progress/DataTable/index.js";
 import { DataViews } from "../../lib/_work_in_progress/DataViews/index.js";
 
@@ -37,7 +38,7 @@ vi.mock(
 );
 
 describe("regression 0054 — an announcement rendered the header row again", () => {
-  it("renders no header cell to say that a column is always shown", () => {
+  it("renders no header cell to say that a column is always shown", async () => {
     const { provider } = createMachineProvider({
       rows: [machine("m-1", "alpha")],
     });
@@ -58,9 +59,7 @@ describe("regression 0054 — an announcement rendered the header row again", ()
     });
     renders.count = 0;
     fireEvent.click(item);
-    expect(
-      document.querySelector(".ds.data-table-announcement"),
-    ).toHaveTextContent("Name is always shown");
+    expect(await readAnnouncements()).toEqual(["Name is always shown"]);
     expect(renders.count).toBe(0);
   });
 });

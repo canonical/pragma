@@ -11,27 +11,25 @@ import {
   readProviderHost,
   resolveEffectiveOrdering,
 } from "@canonical/dataviews-core/bindings";
-import { useMemo, useState } from "react";
-import { areSortTermsEqual } from "../../../utils/index.js";
+import { type ReactNode, useMemo, useState } from "react";
+import { ORDERING_TOPIC, SORT_REFUSAL_TOPIC } from "../../../common/index.js";
+import { useStableCallback } from "../../../hooks/index.js";
+import {
+  areSortTermsEqual,
+  composeMessage,
+  describeOrdering,
+} from "../../../utils/index.js";
 import type { SortPrecedence } from "../common/index.js";
 import { readFieldName } from "../common/utils/index.js";
 import type { UseHeaderSortProps, UseHeaderSortResult } from "./types.js";
-import useStableCallback from "./useStableCallback.js";
-
-/**
- * What a header says before the source's reason when a sort changed nothing,
- * collected so it can be localised in one place.
- */
-const SORT_UNCHANGED = "Sort unchanged";
 
 /** The last activation a source refused, and the header it came from. */
 type SortRefusal = {
   readonly columnId: string;
-  readonly reason: string;
+  /** Every reason the source gave, worded when they are read. */
+  readonly reasons: readonly string[];
   /** The ordering it was refused over. */
   readonly sort: readonly SortTerm[];
-  /** How many refusals in a row, so a repeat reads as new. */
-  readonly repeats: number;
 };
 
 /**
@@ -39,6 +37,12 @@ type SortRefusal = {
  * shows of it, the one column that claims it, the reason a refused
  * activation gives, where a column's link leads without scripting, and the
  * actions every header shares.
+ *
+ * Each action says what it did through the table's announcer: the ordering
+ * it applied — each term by the heading of the column showing its field, or
+ * by the field where none shows it — or why the source refused it. The
+ * refusal also stands beside its header for as long as the ordering it was
+ * refused over does.
  *
  * The ordering, the precedences, the claimed column and the stated fields
  * are derived again only when the ordering or the columns change — not on
@@ -55,6 +59,8 @@ export default function useHeaderSort<
   columns,
   slice,
   window: queryWindow,
+  messages,
+  announce,
 }: UseHeaderSortProps<TFields, TRow>): UseHeaderSortResult {
   const declared = provider.capabilities.sort;
   // The last activation the source refused, until the next one is accepted.
@@ -96,11 +102,35 @@ export default function useHeaderSort<
   // The fields the reader's own ordering names, which a menu can remove.
   const stated = useMemo(() => new Set(sort.map((term) => term.field)), [sort]);
 
-  // Apply one header's change to the ordering, saying why when the source
-  // refuses it. A header hands back only its column's id, and the field is
-  // read from the columns shown now, so the two can never disagree. The
-  // reason is kept with the ordering it was refused over, and counted, so a
-  // second identical refusal is announced again.
+  /**
+   * What an ordering is announced as, each term by the heading of the column
+   * showing its field — drawn as it is drawn — or by the field where no
+   * column shows it.
+   */
+  const describeApplied = (applied: readonly SortTerm[]): ReactNode =>
+    composeMessage((place) =>
+      describeOrdering(
+        applied,
+        declared.default,
+        (field) =>
+          place(
+            columns.find((column) => readFieldName(column) === field)?.header ??
+              field,
+          ),
+        messages,
+      ),
+    );
+
+  // Apply one header's change to the ordering, and say what it did: the
+  // ordering now in force under the ordering's topic, since what the rows are
+  // ordered by has one latest answer, or why the source refused it under the
+  // refusal's, since a refusal is not an ordering. A header hands back only
+  // its column's id, and the field is read from the columns shown now, so the
+  // two can never disagree. A refusal is kept with the ordering it was
+  // refused over.
+  //
+  // @note Impure: sets the collection's ordering, holds the refusal it was
+  // given and speaks through the table's announcer.
   const applyToColumn = (
     columnId: string,
     build: (field: string, sort: readonly SortTerm[]) => readonly SortTerm[],
@@ -110,23 +140,23 @@ export default function useHeaderSort<
     if (column === undefined) {
       return;
     }
-    const refused = provider
-      .setSort(build(readFieldName(column), provider.state.get().slice.sort))
-      .at(0);
-    // Read now, not in the updater: React may run the updater after a later
-    // change in the same event, and the reason belongs to this ordering.
-    const refusedOver = provider.state.get().slice.sort;
-    setRefusal((previous) =>
-      refused === undefined
-        ? null
-        : {
-            columnId,
-            // One full stop, whether or not the source ended its reason.
-            reason: `${SORT_UNCHANGED}: ${refused.reason.replace(/\.$/, "")}.`,
-            sort: refusedOver,
-            repeats: (previous?.repeats ?? 0) + 1,
-          },
+    const refusals = provider.setSort(
+      build(readFieldName(column), provider.state.get().slice.sort),
     );
+    // Read now, not later: React may apply the state below after a later
+    // change in the same event, and the outcome belongs to this ordering.
+    const applied = provider.state.get().slice.sort;
+    if (refusals.length === 0) {
+      setRefusal(null);
+      announce(describeApplied(applied), ORDERING_TOPIC);
+      return;
+    }
+    // Every reason, not the first: a source that refuses an arity refuses
+    // the term that broke it beside every field it cannot order by, and a
+    // reader told only the first would go on asking for the rest.
+    const reasons = refusals.map(({ reason }) => reason);
+    setRefusal({ columnId, reasons, sort: applied });
+    announce(messages.sortRefused(reasons), SORT_REFUSAL_TOPIC);
   };
   const sortColumn = useStableCallback(
     (columnId: string, additive: boolean) => {
@@ -169,9 +199,7 @@ export default function useHeaderSort<
   }
   const readReason = (columnId: string): string | null =>
     standing?.columnId === columnId
-      ? // A trailing no-break space on every other refusal: the text a live
-        // region holds must change to be read again.
-        `${standing.reason}${standing.repeats % 2 === 0 ? "\u00a0" : ""}`
+      ? messages.sortRefused(standing.reasons)
       : null;
 
   const { spellQuery } = readProviderHost(provider);

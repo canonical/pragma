@@ -1,12 +1,11 @@
 import { resolveColumnArrangement } from "@canonical/dataviews-core/bindings";
 import { useMemo } from "react";
-import { useDataViewsValue } from "../../../hooks/index.js";
+import { useDataViewsValue, useStableValue } from "../../../hooks/index.js";
 import { areColumnsEqual } from "../common/utils/index.js";
 import type {
   UseColumnArrangementProps,
   UseColumnArrangementResult,
 } from "./types.js";
-import useStableValue from "./useStableValue.js";
 
 /**
  * The columns one table renders, as the provider's presentation arranges

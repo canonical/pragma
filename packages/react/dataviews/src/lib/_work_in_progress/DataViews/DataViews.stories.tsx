@@ -191,7 +191,7 @@ ${queryIssuesCode}`,
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(getSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     await expect(
@@ -280,9 +280,7 @@ ${queryIssuesCode}`,
       expect(canvas.getByRole("checkbox", { name: "failed" })).toBeChecked(),
     );
     await waitFor(() =>
-      expect(getSummary(canvas)).toHaveTextContent(
-        "Showing 1–3 out of 3 items",
-      ),
+      expect(getSummary(canvas)).toHaveTextContent("Showing 1–3 out of 3 rows"),
     );
     // An edit the filters make is written back to the location.
     await userEvent.click(canvas.getByRole("checkbox", { name: "running" }));
@@ -294,9 +292,7 @@ ${queryIssuesCode}`,
     await waitFor(() =>
       // The location carried no page size, so the default page holds all
       // nine.
-      expect(getSummary(canvas)).toHaveTextContent(
-        "Showing 1–9 out of 9 items",
-      ),
+      expect(getSummary(canvas)).toHaveTextContent("Showing 1–9 out of 9 rows"),
     );
   },
 };

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { DataTable as Table } from "../../../DataTable/index.js";
+import { ScopedDataTable } from "../../../DataTable/index.js";
 import { useDataViewsRoot } from "../../hooks/index.js";
 import type { DataViewsDataTableProps } from "./types.js";
 
@@ -7,10 +7,12 @@ import type { DataViewsDataTableProps } from "./types.js";
  * The collection's rows: the DataTable, bound to the enclosing root's
  * provider.
  *
- * It renders exactly what `DataTable` renders for that provider. The one
- * difference is where the provider comes from: this part reads the root it
- * is placed in, and throws outside one, rather than taking a provider prop.
- * Its records are the widest shape: a custom cell types them through
+ * It renders exactly what `DataTable` renders for that provider. The
+ * difference is where the provider, the words and the announcer come from:
+ * this part reads the root it is placed in, and throws outside one, rather
+ * than taking a provider or messages of its own, and says what its
+ * activations did through the root's one announcer rather than one of its
+ * own. Its records are the widest shape: a custom cell types them through
  * `useDataViewsCell(collection)`, with the collection as its witness.
  *
  * `import { DataViews } from "@canonical/dataviews-react";`
@@ -21,6 +23,13 @@ import type { DataViewsDataTableProps } from "./types.js";
 export default function DataTable(
   props: DataViewsDataTableProps,
 ): ReactElement {
-  const { provider } = useDataViewsRoot("DataTable");
-  return <Table {...props} provider={provider} />;
+  const { provider, messages, announce } = useDataViewsRoot("DataTable");
+  return (
+    <ScopedDataTable
+      {...props}
+      provider={provider}
+      messages={messages}
+      announce={announce}
+    />
+  );
 }

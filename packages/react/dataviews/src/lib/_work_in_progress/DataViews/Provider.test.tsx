@@ -207,4 +207,24 @@ describe("DataViews root", () => {
     expect(screen.getByTestId("right-feedback")).toHaveTextContent("none");
     expect(screen.getByTestId("right-applied")).toHaveTextContent("8");
   });
+
+  it("hands its parts its own words, and a second root on the provider its own", () => {
+    const { provider } = createMachineProvider({ rows: [] });
+    render(
+      <>
+        <DataViews provider={provider} messages={{ pagination: "Pages" }}>
+          <DataViews.Pagination />
+        </DataViews>
+        <DataViews provider={provider}>
+          <DataViews.Pagination />
+        </DataViews>
+      </>,
+    );
+    expect(
+      screen.getByRole("navigation", { name: "Pages" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "Pagination" }),
+    ).toBeInTheDocument();
+  });
 });

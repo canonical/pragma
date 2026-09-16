@@ -9,6 +9,7 @@
  * a column keeps its offers object while its changes hold.
  */
 
+import { resolveMessages } from "@canonical/dataviews-core/bindings";
 import { act, renderHook } from "@testing-library/react";
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
@@ -31,6 +32,8 @@ describe("regression 0058 — a column change renewed every header's offers", ()
         provider,
         columns,
         headerRow: createRef<HTMLDivElement>(),
+        messages: resolveMessages(),
+        announce: () => {},
       }),
     );
     const read = (id: string) => hook.result.current.readOffers(id);

@@ -6,6 +6,7 @@
  */
 
 import type {
+  DataViewsMessages,
   DataViewsProvider,
   DisplayStatus,
   RowRecord,
@@ -18,7 +19,10 @@ import type {
   ReactElement,
   ReactNode,
 } from "react";
-import type { DataTableVirtualization } from "../../common/index.js";
+import type {
+  AnnouncerTopic,
+  DataTableVirtualization,
+} from "../../common/index.js";
 
 export type { DataTableVirtualization } from "../../common/index.js";
 
@@ -103,6 +107,13 @@ type OwnProps<
   readonly columns: readonly DataTableColumn[];
   /** The table's accessible name. */
   readonly label: string;
+  /**
+   * The words the table renders and announces, over the English record: a
+   * standalone table is its own root. The connected table takes its root's
+   * instead. Define a worded message once — a new function on every render
+   * re-renders every heading, menu and row checkbox that reads it.
+   */
+  readonly messages?: Partial<DataViewsMessages>;
   /** Render a leading selection column backed by the provider's selection. */
   readonly selectable?: boolean;
   /**
@@ -112,7 +123,7 @@ type OwnProps<
    */
   readonly rowLabel?: (row: TRow, rowId: string) => string;
   /**
-   * Replaces the default text of a status: no rows to render, or rows that
+   * Replaces the messages' text of a status: no rows to render, or rows that
    * no longer answer the current query. The status is the core's, decided
    * once from the collection's state. Held the same way as `rowLabel`
    * while rows show alone: the latest one is always called, and its
@@ -166,3 +177,19 @@ export type DataTableProps<
     | "aria-busy"
     | "aria-rowcount"
   >;
+
+/**
+ * Props of the table's body within its UI scope: the table's own, with the
+ * words and the announcer it speaks through supplied rather than resolved —
+ * by a standalone table from its own, by a connected one from its root.
+ * Never exported from the package: it is how the two tables share one body.
+ */
+export type ScopedDataTableProps<
+  TFields extends readonly SchemaFieldDefinition[],
+  TRow extends object = RowRecord,
+> = Omit<DataTableProps<TFields, TRow>, "messages"> & {
+  /** Every message the table renders and announces, resolved. */
+  readonly messages: DataViewsMessages;
+  /** Say an outcome through the announcer of the table's UI scope. */
+  readonly announce: (message: ReactNode, topic?: AnnouncerTopic) => void;
+};

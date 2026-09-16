@@ -19,7 +19,7 @@ describe("PaginationBar SSR", () => {
     const { provider } = createMachineProvider();
     const html = renderToString(<PaginationBar provider={provider} />);
     expect(html).toContain('aria-label="Pagination"');
-    expect(html).toContain("Items per page:");
+    expect(html).toContain("Rows per page");
     // No count yet, so no total and an empty summary.
     expect(html).not.toContain('class="total"');
     expect(html).toMatch(/class="summary"[^>]*><\/span>/);
@@ -99,8 +99,21 @@ describe("PaginationBar SSR", () => {
       }),
     });
     const html = renderToString(<PaginationBar provider={provider} />);
-    expect(html).toContain("Showing 1–2 out of 5 items");
+    expect(html).toContain("Showing 1–2 out of 5 rows");
     expect(html).toContain("of 3 pages");
     expect(source.calls).toHaveLength(0);
+  });
+
+  it("carries the words it is given in the server's markup", () => {
+    const { provider } = createMachineProvider();
+    const html = renderToString(
+      <PaginationBar
+        provider={provider}
+        messages={{ rowsPerPage: "Lignes par page", pagination: "Pages" }}
+      />,
+    );
+    expect(html).toContain('aria-label="Pages"');
+    expect(html).toContain("Lignes par page");
+    expect(html).not.toContain("Rows per page");
   });
 });

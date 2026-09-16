@@ -55,6 +55,7 @@ import {
   machine,
   machines,
 } from "../../../../testing/machines.js";
+import readAnnouncements from "../../../../testing/readAnnouncements.js";
 import type { ManualSource } from "../../../../testing/types.js";
 import { useDataViewsCell, useDataViewsValue } from "../../hooks/index.js";
 import { DataViews } from "../DataViews/index.js";
@@ -572,23 +573,28 @@ describe("DataTable", () => {
     ]);
   });
 
-  it("says politely why a term past the source's maximum changed nothing", () => {
+  it("says politely why a term past the source's maximum changed nothing", async () => {
     const { provider } = renderOrderingTable(2);
     fireEvent.click(findSortButton("Name"));
     fireEvent.click(findSortButton("Status"), { shiftKey: true });
     const reason = findSortReason("Cores");
-    expect(reason).toHaveAttribute("aria-live", "polite");
+    // Shown, not live: the table's announcer is what says it.
+    expect(reason).not.toHaveAttribute("aria-live");
     expect(reason).toBeEmptyDOMElement();
+    // The orderings the two clicks applied are spoken before the refusal.
+    await readAnnouncements();
 
     fireEvent.click(findSortButton("Cores"), { shiftKey: true });
     expect(provider.state.get().slice.sort).toEqual([
       { field: "name", direction: "asc" },
       { field: "status", direction: "asc" },
     ]);
-    expect(reason?.textContent?.trim()).toBe(
+    expect(reason?.textContent).toBe(
       "Sort unchanged: this source orders by at most 2 terms.",
     );
-    expect(reason).toHaveAttribute("aria-atomic", "true");
+    expect((await readAnnouncements()).at(-1)).toBe(
+      "Sort unchanged: this source orders by at most 2 terms.",
+    );
     // Only the header activated says it.
     expect(findSortReason("Name")).toBeEmptyDOMElement();
 
@@ -1166,7 +1172,7 @@ describe("DataTable", () => {
     ).toHaveClass("disabled");
   });
 
-  it("hides a column from its header menu, announces it, and hands focus to the heading now in its place", () => {
+  it("hides a column from its header menu, announces it, and hands focus to the heading now in its place", async () => {
     const { provider, source } = renderOrderingTable(
       3,
       [],
@@ -1183,9 +1189,7 @@ describe("DataTable", () => {
     expect(
       screen.queryByRole("columnheader", { name: "Status" }),
     ).not.toBeInTheDocument();
-    expect(
-      document.querySelector(".ds.data-table-announcement"),
-    ).toHaveTextContent("Status hidden");
+    expect(await readAnnouncements()).toEqual(["Status hidden"]);
     // Cores stands where Status stood: its first control takes the focus.
     expect(findSortButton("Cores")).toHaveFocus();
     expect(provider.state.get().slice).toBe(slice);
@@ -1236,7 +1240,7 @@ describe("DataTable", () => {
     ).toHaveClass("disabled");
   });
 
-  it("moves a column from its header menu, announcing where it stands, focus kept on its trigger, asking the source for nothing", () => {
+  it("moves a column from its header menu, announcing where it stands, focus kept on its trigger, asking the source for nothing", async () => {
     const { provider, source } = renderOrderingTable(
       3,
       [],
@@ -1256,9 +1260,9 @@ describe("DataTable", () => {
         .map((header) => header.getAttribute("aria-labelledby"))
         .map((id) => document.getElementById(id ?? "")?.textContent),
     ).toEqual(["Status", "Name", "Cores"]);
-    expect(
-      document.querySelector(".ds.data-table-announcement"),
-    ).toHaveTextContent("Name moved to position 2 of 3");
+    expect(await readAnnouncements()).toEqual([
+      "Name moved to position 2 of 3",
+    ]);
     expect(
       screen.getByRole("button", { name: "Column options for Name" }),
     ).toHaveFocus();

@@ -135,17 +135,6 @@
     --data-table-settings-track: var(--dimension-400);
   }
 
-  /* What the table last announced of its columns, beside the table: read
-     politely, drawing nothing and taking no room. Unthemable geometry. */
-  .ds.data-table-announcement {
-    position: absolute;
-    inline-size: 0;
-    block-size: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
   .ds.data-table-body-cell,
   .ds.data-table-header-cell {
     /* A grid item's automatic minimum size is its content, which would let
@@ -289,8 +278,8 @@
       white-space: nowrap;
     }
 
-    /* Why an activation changed nothing: read politely, and shown below
-       the heading, over the first row, while it stands. It spans the
+    /* Why an activation changed nothing, shown below the heading, over the
+       first row, while it stands; the table's announcer says it. It spans the
        heading and wraps within it, so a trailing column's reason never
        widens the table's scroll area. Empty, it takes no room. */
     & > .sort-reason {

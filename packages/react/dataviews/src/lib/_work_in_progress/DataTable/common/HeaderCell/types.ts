@@ -61,8 +61,9 @@ export type HeaderCellProps = {
    */
   readonly hydrated: boolean;
   /**
-   * Why the last activation of this header changed nothing, announced
-   * politely, or null.
+   * Why the last activation of this header changed nothing, worded, or null:
+   * shown beside the control while it stands, and said by the table's
+   * announcer when it happened.
    */
   readonly reason: string | null;
   /**

@@ -1,0 +1,14 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /* What a root announces: read politely, drawing nothing and taking no room.
+     Unthemable geometry. */
+  .ds.data-views-announcer {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

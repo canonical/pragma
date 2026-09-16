@@ -7,6 +7,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import type {
+  DataViewsMessages,
   EmptyOr,
   ReadonlyChannel,
   RowRecord,
@@ -206,12 +207,23 @@ describe("the pagination bar's props", () => {
     expectTypeOf<PaginationBarProps<Fields>>().not.toHaveProperty("aria-label");
   });
 
-  it("is the connected part's props with the provider", () => {
-    // The connected part is the same bar; only its provider's source differs.
+  it("is the connected part's props with the provider and the messages", () => {
+    // The connected part is the same bar; only where its provider and its
+    // words come from differs — the root supplies both.
     expectTypeOf<DataViewsPaginationProps>().not.toHaveProperty("provider");
+    expectTypeOf<DataViewsPaginationProps>().not.toHaveProperty("messages");
     expectTypeOf<
-      Omit<PaginationBarProps<Fields>, "provider">
+      Omit<PaginationBarProps<Fields>, "provider" | "messages">
     >().toEqualTypeOf<DataViewsPaginationProps>();
+  });
+
+  it("takes the words a standalone bar speaks, any of them or all", () => {
+    expectTypeOf<PaginationBarProps<Fields>["messages"]>().toEqualTypeOf<
+      Partial<DataViewsMessages> | undefined
+    >();
+    expectTypeOf<DataViewsProps<Fields>["messages"]>().toEqualTypeOf<
+      Partial<DataViewsMessages> | undefined
+    >();
   });
 });
 
@@ -240,6 +252,11 @@ describe("connected part props", () => {
     // The root supplies it; the records are the widest shape, narrowed by a
     // custom cell through `useDataViewsCell(collection)`.
     expectTypeOf<DataViewsDataTableProps>().not.toHaveProperty("provider");
+    // Nor its words: the root supplies those too.
+    expectTypeOf<DataViewsDataTableProps>().not.toHaveProperty("messages");
+    expectTypeOf<DataTableProps<Fields>["messages"]>().toEqualTypeOf<
+      Partial<DataViewsMessages> | undefined
+    >();
     expectTypeOf<DataViewsDataTableProps>().toHaveProperty("columns");
     // The presentation is the one authority for the arrangement: no
     // layout record is passed, and a column may declare `hideable`.
@@ -257,7 +274,7 @@ describe("connected part props", () => {
       []
     >();
     expectTypeOf<
-      Omit<DataTableProps<Fields, RowRecord>, "provider">
+      Omit<DataTableProps<Fields, RowRecord>, "provider" | "messages">
     >().toEqualTypeOf<DataViewsDataTableProps>();
   });
 

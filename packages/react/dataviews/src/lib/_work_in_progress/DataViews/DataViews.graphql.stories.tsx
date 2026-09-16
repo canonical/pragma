@@ -115,13 +115,13 @@ export const Answered: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 items",
+        "Showing 1–5 rows",
       ),
     );
     await userEvent.click(canvas.getByRole("button", { name: "Next page" }));
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 6–10 items",
+        "Showing 6–10 rows",
       ),
     );
   },
@@ -176,7 +176,7 @@ export const FailedOverKeptRows: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 items",
+        "Showing 1–5 rows",
       ),
     );
     await userEvent.click(canvas.getByRole("button", { name: "Next page" }));
@@ -236,13 +236,13 @@ export const TextApplied: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 items",
+        "Showing 1–5 rows",
       ),
     );
     const host = canvas.getByRole("textbox", { name: "Host contains" });
     await userEvent.type(host, "ELM");
     await waitFor(() =>
-      expect(readPaginationSummary(canvas)).toHaveTextContent("Showing item 1"),
+      expect(readPaginationSummary(canvas)).toHaveTextContent("Showing row 1"),
     );
     await expect(
       canvas.getByRole("row", { name: /elm\.example\.com/ }),

@@ -3,6 +3,7 @@ import type {
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
 import type { ReactElement } from "react";
+import { Announcer } from "../../common/index.js";
 import Context from "./Context.js";
 import {
   Actions,
@@ -20,11 +21,18 @@ import type { DataViewsProps } from "./types.js";
 /**
  * The DataViews root: mounts the collection provider's context for the
  * hooks and connected parts of the composition, observes the provider for
- * as long as it is mounted, and owns the filter records its parts edit
- * through.
+ * as long as it is mounted, owns the filter records its parts edit
+ * through, and speaks for them.
  *
- * Pure composition — no single root element (AGENTS.md rule 6): the root is
- * a context mount, not a DOM node.
+ * Every word its parts render or announce comes from `messages`, over
+ * English. What a part's command did that has no place on screen — a new
+ * ordering, a column moved, a refusal no control shows — is said through
+ * the root's one polite live region, rendered after its children; a second
+ * root over the same provider has its own and says nothing of this one's
+ * commands.
+ *
+ * No single root element (AGENTS.md rule 6): the root is a context mount
+ * and its announcer's region, not a DOM node wrapping its children.
  *
  * `import { DataViews } from "@canonical/dataviews-react";`
  *
@@ -34,9 +42,20 @@ import type { DataViewsProps } from "./types.js";
 export default function DataViews<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
->({ provider, children }: DataViewsProps<TFields, TRow>): ReactElement {
-  const value = useProviderState({ provider });
-  return <Context value={value}>{children}</Context>;
+>({
+  provider,
+  messages,
+  children,
+}: DataViewsProps<TFields, TRow>): ReactElement {
+  const { value, announcer } = useProviderState(
+    messages === undefined ? { provider } : { provider, messages },
+  );
+  return (
+    <Context value={value}>
+      {children}
+      <Announcer ref={announcer} />
+    </Context>
+  );
 }
 
 /** The connected action bar, over the current selection. */

@@ -1,4 +1,5 @@
 import type {
+  DataViewsMessages,
   ResultWindow,
   RowRecord,
   SchemaFieldDefinition,
@@ -20,12 +21,8 @@ import {
   useMemo,
   useRef,
 } from "react";
-import { useDataViewsValue } from "../../hooks/index.js";
-import {
-  interceptSubmit,
-  listHiddenFields,
-  pluralizeNoun,
-} from "../../utils/index.js";
+import { useDataViewsValue, useMessages } from "../../hooks/index.js";
+import { interceptSubmit, listHiddenFields } from "../../utils/index.js";
 import { PageControl } from "./common/index.js";
 import { useRedrawOnDestinationInputs } from "./hooks/index.js";
 import type { PaginationBarProps } from "./types.js";
@@ -41,30 +38,11 @@ const DEFAULT_SIZES: readonly number[] = [50, 75, 100];
  * is announced; the count is said as the source claims it — exactly, as a
  * lower bound, or not at all.
  */
-const describeSummary = ({
-  page,
-  size,
-  shown,
-  total,
-}: DisplayPagination): string => {
-  if (shown === null) {
-    return "";
-  }
-  const first = (page - 1) * size + 1;
-  const range = shown === 0 ? "0" : `${first}–${first + shown - 1}`;
-  switch (total.kind) {
-    case "exact":
-      return shown === 1
-        ? `Showing item ${first} out of ${total.value}`
-        : `Showing ${range} out of ${total.value} ${pluralizeNoun(total.value, "item")}`;
-    case "at-least":
-      return shown === 1
-        ? `Showing item ${first} out of at least ${total.value}`
-        : `Showing ${range} out of at least ${total.value} ${pluralizeNoun(total.value, "item")}`;
-    case "unknown":
-      return shown === 1 ? `Showing item ${first}` : `Showing ${range} items`;
-  }
-};
+const describeSummary = (
+  { page, size, shown, total }: DisplayPagination,
+  messages: DataViewsMessages,
+): string =>
+  shown === null ? "" : messages.rowsShown((page - 1) * size + 1, shown, total);
 
 const listSizeOptions = (values: readonly number[]) =>
   values.map((value) => ({ value: String(value), label: String(value) }));
@@ -96,9 +74,10 @@ const renderHiddenFields = (
  *
  * That is the design system's description of the block; its keyset variant
  * is the core's `cursor` pagination kind. What this implementation covers:
- * the page size, which items are on screen out of how many, and the way to
+ * the page size, which rows are on screen out of how many, and the way to
  * every other page. It takes its provider explicitly, as DataTable does, so
- * a standalone table gets the same footer as a composed one. It offers only
+ * a standalone table gets the same footer as a composed one, and its words
+ * from `messages`, over English. It offers only
  * pages the collection can reach, and a focused control that becomes
  * unavailable hands the focus to the page select.
  *
@@ -121,7 +100,8 @@ export default function PaginationBar<
   TRow extends object = RowRecord,
 >({
   provider,
-  label = "Pagination",
+  messages: given,
+  label,
   sizes = DEFAULT_SIZES,
   LinkComponent = "a",
   className,
@@ -132,6 +112,7 @@ export default function PaginationBar<
       "PaginationBar requires a provider created by createDataViewsProvider",
     );
   }
+  const messages = useMessages(given);
   // Observed for as long as the bar is mounted: a standalone bar is a mount
   // that reads the provider, and the ref-count makes a bar inside a root
   // that already observes cost nothing.
@@ -219,12 +200,12 @@ export default function PaginationBar<
   return (
     <nav
       {...rest}
-      aria-label={label}
+      aria-label={label ?? messages.pagination}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       <div className="leading">
         <form method="get" className="page-size" onSubmit={interceptSubmit}>
-          <label htmlFor={sizeId}>Items per page:</label>
+          <label htmlFor={sizeId}>{messages.rowsPerPage}</label>
           <SelectInput
             id={sizeId}
             name="size"
@@ -244,12 +225,12 @@ export default function PaginationBar<
               new size is a new window, so the old page cannot survive it. */}
           {renderHiddenFields(destinations.query, ["page", "size", "cursor"])}
           <Button type="submit" importance="secondary" className="submit">
-            Apply page size
+            {messages.submitPageSize}
           </Button>
         </form>
         <span className="divider" />
         <span role="status" className="summary">
-          {describeSummary(facts)}
+          {describeSummary(facts, messages)}
         </span>
       </div>
       <div className="trailing">
@@ -257,7 +238,7 @@ export default function PaginationBar<
           <SelectInput
             ref={pageSelect}
             name="page"
-            aria-label="Page"
+            aria-label={messages.page}
             aria-describedby={pages === null ? undefined : totalId}
             value={String(page)}
             options={pageOptions}
@@ -270,12 +251,12 @@ export default function PaginationBar<
           />
           {pages === null ? null : (
             <span id={totalId} className="total">
-              {`of ${pages} ${pluralizeNoun(pages, "page")}`}
+              {messages.pageCount(pages)}
             </span>
           )}
           {renderHiddenFields(destinations.current, ["page"])}
           <Button type="submit" importance="secondary" className="submit">
-            Go to page
+            {messages.submitPage}
           </Button>
         </form>
         <span className="divider" />
@@ -284,7 +265,7 @@ export default function PaginationBar<
             LinkComponent={LinkComponent}
             icon="back-to-top"
             className="first"
-            label="First page"
+            label={messages.goToFirstPage}
             destination={destinations.first}
             reachable={page > 1}
             onNavigate={go(1, null)}
@@ -293,7 +274,7 @@ export default function PaginationBar<
             LinkComponent={LinkComponent}
             icon="chevron-left"
             className="previous"
-            label="Previous page"
+            label={messages.goToPreviousPage}
             destination={destinations.previous}
             reachable={page > 1}
             onNavigate={go(facts.back, facts.backCursor)}
@@ -302,7 +283,7 @@ export default function PaginationBar<
             LinkComponent={LinkComponent}
             icon="chevron-right"
             className="next"
-            label="Next page"
+            label={messages.goToNextPage}
             destination={destinations.next}
             reachable={facts.hasNext}
             onNavigate={go(page + 1, facts.nextCursor)}
@@ -311,7 +292,7 @@ export default function PaginationBar<
             LinkComponent={LinkComponent}
             icon="back-to-top"
             className="last"
-            label="Last page"
+            label={messages.goToLastPage}
             destination={destinations.last}
             reachable={pages !== null && page !== pages}
             onNavigate={go(pages ?? page, null)}

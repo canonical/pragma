@@ -5,14 +5,14 @@
  * through the settings part.
  */
 
+import { resolveMessages } from "@canonical/dataviews-core/bindings";
 import { act, renderHook } from "@testing-library/react";
-import { createRef } from "react";
+import { createRef, type ReactNode } from "react";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
 import {
   createMachineProvider,
   machine,
 } from "../../../../../testing/machines.js";
-import type { AnnouncementHandle } from "../common/index.js";
 import type { DataTableColumn } from "../types.js";
 import useColumnManagement from "./useColumnManagement.js";
 
@@ -23,7 +23,7 @@ const columns: readonly DataTableColumn[] = [
 
 /**
  * The hook over a provider, with a header row the test builds or none, and
- * an announcement that records what it is told.
+ * an announcer that records what it is told.
  */
 const mountHook = (
   row: HTMLDivElement | null = null,
@@ -32,11 +32,16 @@ const mountHook = (
   const { provider } = createMachineProvider({ rows: [machine("m-1", "a")] });
   const headerRow = createRef<HTMLDivElement>();
   Object.assign(headerRow, { current: row });
+  const announce = vi.fn<(message: ReactNode) => void>();
   const hook = renderHook(() =>
-    useColumnManagement({ provider, columns: declared, headerRow }),
+    useColumnManagement({
+      provider,
+      columns: declared,
+      headerRow,
+      messages: resolveMessages(),
+      announce,
+    }),
   );
-  const announce = vi.fn<AnnouncementHandle["announce"]>();
-  Object.assign(hook.result.current.announcer, { current: { announce } });
   return { provider, hook, announce };
 };
 
@@ -74,20 +79,6 @@ describe("useColumnManagement", () => {
     expect(hook.result.current.resettable).toBe(false);
   });
 
-  it("says nothing where the table renders no announcement", () => {
-    const { provider } = createMachineProvider({ rows: [machine("m-1", "a")] });
-    const headerRow = createRef<HTMLDivElement>();
-    const hook = renderHook(() =>
-      useColumnManagement({ provider, columns, headerRow }),
-    );
-    act(() => {
-      hook.result.current.changeColumn("status", "move-left");
-    });
-    expect(provider.presentation.state.get().presentation).toEqual({
-      "table.order": ["status", "name"],
-    });
-  });
-
   it("reads each declared column's offers, and throws for a column it does not declare", () => {
     const { hook } = mountHook();
     expect(hook.result.current.readOffers("status")).toEqual({
@@ -106,38 +97,54 @@ describe("useColumnManagement", () => {
     expect(hook.result.current.listDestinations()).toBeNull();
   });
 
-  it("says where each change leaves the column", () => {
+  it("says where each change leaves the column, in the messages' words", () => {
     const { hook, announce } = mountHook();
     act(() => {
       hook.result.current.changeColumn("status", "move-left");
     });
-    expect(announce).toHaveBeenLastCalledWith({
-      kind: "moved",
-      column: columns.at(1),
-      position: 1,
-      count: 2,
-    });
+    expect(announce).toHaveBeenLastCalledWith(
+      "Status moved to position 1 of 2",
+    );
     act(() => {
       hook.result.current.changeColumn("status", "hide");
     });
-    expect(announce).toHaveBeenLastCalledWith({
-      kind: "hidden",
-      column: columns.at(1),
-    });
+    expect(announce).toHaveBeenLastCalledWith("Status hidden");
     act(() => {
       hook.result.current.changeColumn("status", "show");
     });
-    expect(announce).toHaveBeenLastCalledWith({
-      kind: "shown",
-      column: columns.at(1),
-      position: 1,
-      count: 2,
-    });
+    expect(announce).toHaveBeenLastCalledWith("Status shown, position 1 of 2");
     expect(hook.result.current.resettable).toBe(true);
     act(() => {
       hook.result.current.resetColumns();
     });
-    expect(announce).toHaveBeenLastCalledWith({ kind: "reset" });
+    expect(announce).toHaveBeenLastCalledWith("Table settings reset");
+  });
+
+  it("says a column that cannot be hidden is always shown, and changes nothing", () => {
+    const { provider, hook, announce } = mountHook(null, [
+      { id: "name", header: "Name", hideable: false },
+      { id: "status", header: "Status" },
+    ]);
+    act(() => {
+      hook.result.current.changeColumn("name", "hide");
+    });
+    expect(announce).toHaveBeenCalledExactlyOnceWith("Name is always shown");
+    expect(provider.presentation.state.get().presentation).toEqual({});
+  });
+
+  it("says every column refused in one moment, not the last alone", () => {
+    const { hook, announce } = mountHook(null, [
+      { id: "name", header: "Name", hideable: false },
+      { id: "status", header: "Status", hideable: false },
+    ]);
+    act(() => {
+      hook.result.current.changeColumn("name", "hide");
+      hook.result.current.changeColumn("status", "hide");
+    });
+    // Each column is its own subject: neither refusal stands for the other.
+    expect(announce).toHaveBeenCalledTimes(2);
+    expect(announce).toHaveBeenNthCalledWith(1, "Name is always shown");
+    expect(announce).toHaveBeenNthCalledWith(2, "Status is always shown");
   });
 
   it("moves the focus a hidden column took with it to the header control standing where it stood", () => {
@@ -197,11 +204,7 @@ describe("useColumnManagement", () => {
     });
     // Only the first hide changed anything; a refused hide of a hideable
     // column is not "always shown".
-    expect(announce).toHaveBeenCalledTimes(1);
-    expect(announce).toHaveBeenLastCalledWith({
-      kind: "hidden",
-      column: columns.at(0),
-    });
+    expect(announce).toHaveBeenCalledExactlyOnceWith("Name hidden");
   });
 
   it("leaves focus that is somewhere, and has nowhere to put focus that is not", () => {

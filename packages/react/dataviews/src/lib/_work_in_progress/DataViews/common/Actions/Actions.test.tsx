@@ -46,7 +46,8 @@ describe("DataViews.Actions", () => {
   it("is absent while nothing is selected", () => {
     const provider = makeProvider();
     const { container } = mount(provider);
-    expect(container).toBeEmptyDOMElement();
+    // Nothing of the bar: the root's announcer region, empty, is the root's.
+    expect(container.querySelector(".ds.data-table-action-bar")).toBeNull();
     select(provider, ["m1"]);
     expect(bar()).toBeInTheDocument();
   });

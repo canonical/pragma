@@ -118,7 +118,7 @@ export const FirstPage: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     await expect(canvas.getByText("of 3 pages")).toBeInTheDocument();
@@ -139,7 +139,7 @@ export const MiddlePage: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 6–10 out of 12 items",
+        "Showing 6–10 out of 12 rows",
       ),
     );
     await expectAvailable(canvas, [true, true, true, true]);
@@ -162,7 +162,7 @@ export const LastPage: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 11–12 out of 12 items",
+        "Showing 11–12 out of 12 rows",
       ),
     );
     await expectAvailable(canvas, [true, true, false, false]);
@@ -198,7 +198,7 @@ import { platform } from "./router.js";`,
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     const next = canvas.getByRole("link", { name: "Next page" });
@@ -214,7 +214,7 @@ import { platform } from "./router.js";`,
     await userEvent.click(next);
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 6–10 out of 12 items",
+        "Showing 6–10 out of 12 rows",
       ),
     );
     await expect(
@@ -245,7 +245,7 @@ export const WithoutACount: Story = {
   render: renderWith({ source: createUncountedSource }),
   play: async ({ canvas }) => {
     await waitFor(() =>
-      expect(canvas.getByRole("status")).toHaveTextContent("Showing 1–5 items"),
+      expect(canvas.getByRole("status")).toHaveTextContent("Showing 1–5 rows"),
     );
     await expect(canvas.queryByText(/^of /)).toBeNull();
     await expectAvailable(canvas, [false, false, true, false]);
@@ -300,7 +300,7 @@ export const StickyInAScrollingFrame: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 1–12 out of 12 items",
+        "Showing 1–12 out of 12 rows",
       ),
     );
     const bar = canvas.getByRole("navigation", { name: "Pagination" });

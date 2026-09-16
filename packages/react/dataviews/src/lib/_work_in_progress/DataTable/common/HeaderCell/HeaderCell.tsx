@@ -4,12 +4,13 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   type ReactElement,
+  useContext,
   useRef,
 } from "react";
+import { MessagesContext } from "../../../../common/index.js";
 import { useHydrationFocusHandoff } from "../../../../hooks/index.js";
 import { HeaderMenu } from "../HeaderMenu/index.js";
 import { ResizeHandle } from "../ResizeHandle/index.js";
-import describeSortPrecedence from "./describeSortPrecedence.js";
 import isFocusWithinOwnColumn from "./isFocusWithinOwnColumn.js";
 import type { HeaderCellProps } from "./types.js";
 
@@ -55,7 +56,8 @@ const isActivationKey = (event: KeyboardEvent<HTMLButtonElement>): boolean =>
  * once there are two terms; its control is described by both, as
  * "descending, 2nd of 3". Only the header of the ordering's first term
  * carries `aria-sort`. An activation the source refuses changes nothing
- * and says why, politely. Once scripts run, a menu beside the control
+ * and shows why beside the control, which the table's announcer says. Once
+ * scripts run, a menu beside the control
  * carries the same sort for a reader who uses neither a precise pointer
  * nor a modifier key, and hides the column or moves it past the column
  * beside it; a column that can be neither sorted, hidden nor moved has no
@@ -84,6 +86,7 @@ export default function HeaderCell({
   width,
   labelId,
 }: HeaderCellProps): ReactElement {
+  const messages = useContext(MessagesContext);
   // Whether Shift was held when a key began activating the button: a click
   // a key produces carries `detail` 0, and not every browser copies the
   // modifier onto it.
@@ -201,16 +204,17 @@ export default function HeaderCell({
       )}
       {precedence === null ? null : (
         <span id={descriptionId} hidden>
-          {describeSortPrecedence(precedence)}
+          {messages.sortPrecedence(
+            precedence.direction,
+            precedence.position,
+            precedence.count,
+          )}
         </span>
       )}
       {sortable && hydrated ? (
-        // A live region rather than a status role: it is polite, it exists
-        // before it speaks, and it leaves the table's one status alone. Its
-        // text is shown beside the control while it stands.
-        <span aria-live="polite" aria-atomic="true" className="sort-reason">
-          {reason}
-        </span>
+        // Shown beside the control while it stands, and no live region: the
+        // table's announcer said it when it happened, so it is heard once.
+        <span className="sort-reason">{reason}</span>
       ) : null}
       {/* Offered once scripts run, wherever the menu has something to do. */}
       {hydrated &&

@@ -4,6 +4,7 @@
  */
 
 import type {
+  DataViewsMessages,
   DataViewsProvider,
   Presentation,
   ResultWindow,
@@ -12,9 +13,9 @@ import type {
   Slice,
   SortDirection,
 } from "@canonical/dataviews-core";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
+import type { AnnouncerTopic } from "../../../common/index.js";
 import type {
-  AnnouncementHandle,
   ColumnChange,
   ColumnSetting,
   SettingsDestinations,
@@ -32,9 +33,13 @@ export type UseColumnManagementProps<
   readonly columns: readonly DataTableColumn[];
   /** The header row, whose controls take the focus a hidden column leaves. */
   readonly headerRow: RefObject<HTMLDivElement | null>;
+  /** The words a change to the columns is announced in. */
+  readonly messages: DataViewsMessages;
+  /** Say, through the table's announcer, what a change to the columns did. */
+  readonly announce: (message: ReactNode, topic?: AnnouncerTopic) => void;
 };
 
-/** The table's column management, as its menus and its announcement read it. */
+/** The table's column management, as its menus read it. */
 export type UseColumnManagementResult = {
   /** Every declared column in the arrangement's order, with the changes it takes. */
   readonly settings: readonly ColumnSetting[];
@@ -45,8 +50,6 @@ export type UseColumnManagementResult = {
    * those changes hold; throws for a column the table does not declare.
    */
   readonly readOffers: (columnId: string) => ColumnSetting["offers"];
-  /** The announcement the table renders, which says what each change did. */
-  readonly announcer: RefObject<AnnouncementHandle | null>;
   /** Apply one change to one column; one identity for every column. */
   readonly changeColumn: (columnId: string, change: ColumnChange) => void;
   /** Return to the arrangement beneath the viewer's own changes. */
@@ -104,6 +107,10 @@ export type UseHeaderSortProps<
   readonly slice: Slice;
   /** The applied query's window. */
   readonly window: ResultWindow;
+  /** The words an activation's outcome is shown and announced in. */
+  readonly messages: DataViewsMessages;
+  /** Say, through the table's announcer, what an activation did. */
+  readonly announce: (message: ReactNode, topic?: AnnouncerTopic) => void;
 };
 
 /** What the header row's sort hook gives each header. */
@@ -114,7 +121,7 @@ export type UseHeaderSortResult = {
   readonly primaryColumnId: string | null;
   /** The fields the reader's own ordering names, which a column's menu can remove. */
   readonly stated: ReadonlySet<string>;
-  /** Why the last activation of a column changed nothing, or null. */
+  /** Why the last activation of a column changed nothing, worded, or null. */
   readonly readReason: (columnId: string) => string | null;
   /**
    * Where a plain activation of a column leads without scripting, as

@@ -8,8 +8,9 @@ import type { DataViewsPaginationProps } from "./types.js";
  * enclosing root's provider.
  *
  * It renders exactly what `PaginationBar` renders for that provider. The one
- * difference is where the provider comes from: this part reads the root it
- * is placed in, and throws outside one, rather than taking a provider prop.
+ * difference is where the provider and the words come from: this part reads
+ * the root it is placed in, and throws outside one, rather than taking a
+ * provider or messages of its own.
  *
  * `import { DataViews } from "@canonical/dataviews-react";`
  *
@@ -19,6 +20,6 @@ import type { DataViewsPaginationProps } from "./types.js";
 export default function Pagination(
   props: DataViewsPaginationProps,
 ): ReactElement {
-  const { provider } = useDataViewsRoot("Pagination");
-  return <PaginationBar {...props} provider={provider} />;
+  const { provider, messages } = useDataViewsRoot("Pagination");
+  return <PaginationBar {...props} provider={provider} messages={messages} />;
 }
