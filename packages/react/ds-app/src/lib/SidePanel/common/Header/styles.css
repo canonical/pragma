@@ -23,11 +23,10 @@
 
     > .title {
       flex: 1 1 auto;
-      margin: 0;
       /*
-        A panel title is a heading, not body text: heading-4 resolves a step above
-        `--typography-text-primary-font-size`, which is the same size as
-        heading-5/6 and read as body copy.
+        A panel title reads as a heading, not body text: heading-4 resolves a
+        step above `--typography-text-primary-font-size`, which is the same
+        size as heading-5/6 and read as body copy.
       */
       font-size: var(--typography-heading-4-font-size);
       line-height: var(--typography-heading-4-line-height);

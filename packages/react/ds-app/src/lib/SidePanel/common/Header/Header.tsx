@@ -10,9 +10,14 @@ const componentCssClassName = "ds side-panel-header";
  * Header for SidePanel. Never scrolls: it stays visible while
  * `SidePanel.Content` scrolls beneath it.
  *
- * Owns the heading the panel is labelled by, and the close button — which is
+ * Owns the title the panel is labelled by, and the close button — which is
  * wired through context, so rendering this outside a SidePanel yields a plain
- * heading rather than an error.
+ * title rather than an error.
+ *
+ * The title is not a heading element: headings structure the page's document
+ * outline, and a panel opens from anywhere in it, so no heading level would be
+ * right everywhere. The title names the panel through `aria-labelledby`
+ * instead, which is what a screen reader announces when the panel opens.
  *
  * @implements ds:apps.subcomponent.side_panel-header
  */
@@ -30,9 +35,9 @@ const Header = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
-      <h2 className="title" id={context?.titleId}>
+      <span className="title" id={context?.titleId}>
         {children}
-      </h2>
+      </span>
       {context && !undismissible && (
         <Button
           className="close"

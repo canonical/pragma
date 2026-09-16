@@ -47,7 +47,15 @@ const meta: Meta<typeof Header> = {
 export default meta;
 type Story = StoryObj<typeof Header>;
 
-/** Heading at the start, close button at the end. */
+/**
+ * Heading at the start, close button at the end.
+ *
+ * The title is a `<span>`, not a heading element: headings structure the
+ * page's document outline, and a panel opens from anywhere in it, so no
+ * heading level would be right everywhere. The title names the panel through
+ * `aria-labelledby` instead, which is what a screen reader announces when the
+ * panel opens.
+ */
 export const Default: Story = {
   parameters: {
     docs: {

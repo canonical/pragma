@@ -32,10 +32,11 @@ const componentCssClassName = "ds side-panel";
  * `SidePanel.Footer`. Header and footer stay put; only the content scrolls.
  *
  * The panel needs an accessible name, and the composition supplies it: render
- * a `SidePanel.Header` — its heading names the panel — or pass `aria-label`
+ * a `SidePanel.Header` — its title names the panel — or pass `aria-label`
  * when the panel has no header. Nothing enforces or warns about this; a panel
  * composed with neither simply renders unnamed, and assistive technology
- * cannot tell the user what opened.
+ * cannot tell the user what opened. Note the title is not a heading element:
+ * The side panel is a separate UI region positioned alongside the main page content. It is not part of the main document outline.
  *
  * Because the panel is its own scroll container and is offset with a
  * transform, it both clips and re-anchors its descendants: an overlay that
@@ -146,7 +147,7 @@ const Provider = ({
       <dialog
         ref={dialogRef}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
-        // The header's heading names the panel. Without a header the consumer
+        // The header's title names the panel. Without a header the consumer
         // supplies `aria-label`, and pointing at an absent element is worse than
         // not pointing at all — so the two are mutually exclusive.
         aria-label={ariaLabel}

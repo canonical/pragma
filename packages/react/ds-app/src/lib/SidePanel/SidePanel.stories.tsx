@@ -263,7 +263,7 @@ const TooltippedButton = withTooltip(
 
 /**
  * Both parts are optional; the layout must not collapse without them. Note
- * the `aria-label`: without a `SidePanel.Header` there is no heading to name
+ * the `aria-label`: without a `SidePanel.Header` there is no title to name
  * the panel, so the label is required instead.
  */
 export const WithoutHeaderOrFooter: Story = {
@@ -283,7 +283,7 @@ export const WithoutHeaderOrFooter: Story = {
     docs: {
       source: {
         code: `
-{/* No SidePanel.Header means no heading to name the panel,
+{/* No SidePanel.Header means no title to name the panel,
     so it must be named with aria-label instead. */}
 <SidePanel
   aria-label="Panel without a header"

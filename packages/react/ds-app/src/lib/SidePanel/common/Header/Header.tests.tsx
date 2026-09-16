@@ -20,9 +20,7 @@ describe("SidePanel.Header", () => {
   describe("rendering", () => {
     it("applies the base and custom class", () => {
       renderInPanel(<Header className="custom-class">Panel title</Header>);
-      const element = screen.getByRole("heading", {
-        name: "Panel title",
-      }).parentElement;
+      const element = screen.getByText("Panel title").parentElement;
       expect(element?.className).toContain("ds side-panel-header");
       expect(element?.className).toContain("custom-class");
     });
@@ -32,11 +30,12 @@ describe("SidePanel.Header", () => {
       expect(screen.getByTestId("test-component")).toBeInTheDocument();
     });
 
-    it("puts the panel's title id on its heading, so the panel is named by it", () => {
+    it("puts the panel's title id on its title, so the panel is named by it", () => {
       renderInPanel(<Header>Panel title</Header>, { titleId: "panel-title" });
-      expect(
-        screen.getByRole("heading", { name: "Panel title" }),
-      ).toHaveAttribute("id", "panel-title");
+      expect(screen.getByText("Panel title")).toHaveAttribute(
+        "id",
+        "panel-title",
+      );
     });
   });
 
@@ -62,14 +61,12 @@ describe("SidePanel.Header", () => {
 
     /*
       The header degrades rather than throws outside a panel: there is nothing
-      to ask to close, so it renders the heading alone. That is what lets it be
+      to ask to close, so it renders the title alone. That is what lets it be
       documented and tested in isolation.
     */
     it("is omitted outside a panel, where there is nothing to close", () => {
       render(<Header>Panel title</Header>);
-      expect(
-        screen.getByRole("heading", { name: "Panel title" }),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Panel title")).toBeInTheDocument();
       expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
   });

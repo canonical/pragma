@@ -80,9 +80,7 @@ describe("SidePanel", () => {
       // Open so the parts are visible: a closed dialog is `display: none`,
       // and role queries skip hidden elements.
       openPanel(handle.current);
-      expect(
-        screen.getByRole("heading", { name: "Panel title" }),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Panel title")).toBeInTheDocument();
       expect(screen.getByText("Body")).toBeInTheDocument();
       expect(screen.getByText("Actions")).toBeInTheDocument();
     });
@@ -328,7 +326,7 @@ describe("SidePanel", () => {
   });
 
   describe("accessible name", () => {
-    it("is labelled by the header's heading", () => {
+    it("is labelled by the header's title", () => {
       const handle = createRef<SidePanelHandle>();
       const { container } = render(
         <SidePanel ref={handle}>
@@ -336,14 +334,11 @@ describe("SidePanel", () => {
           <SidePanel.Content>Body</SidePanel.Content>
         </SidePanel>,
       );
-      // Open so the heading is visible: a closed dialog is `display: none`,
-      // and role queries skip hidden elements.
+      // Open so the title is visible: a closed dialog is `display: none`,
+      // and queries skip hidden elements.
       openPanel(handle.current);
-      const heading = screen.getByRole("heading", { name: "Panel title" });
-      expect(getDialog(container)).toHaveAttribute(
-        "aria-labelledby",
-        heading.id,
-      );
+      const title = screen.getByText("Panel title");
+      expect(getDialog(container)).toHaveAttribute("aria-labelledby", title.id);
     });
 
     it("defers to a consumer aria-label, rather than pointing at nothing", () => {

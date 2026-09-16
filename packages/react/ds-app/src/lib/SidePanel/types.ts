@@ -11,7 +11,7 @@ import type {
 export interface SidePanelContextValue {
   /** Close the panel. */
   close: () => void;
-  /** Id the panel is labelled by. `Header` puts it on its heading. */
+  /** Id the panel is labelled by. `Header` puts it on its title. */
   titleId: string;
 }
 
@@ -81,7 +81,7 @@ type OwnProps = {
  * accepts (data-*, aria-*, event handlers, …) reaches the DOM.
  *
  * The panel needs an accessible name: compose a `SidePanel.Header` — its
- * heading names the panel — or pass `aria-label` when the panel has no
+ * title names the panel — or pass `aria-label` when the panel has no
  * header. This is a composition obligation, not a runtime check: nothing
  * warns about a panel rendered with neither.
  */

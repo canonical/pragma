@@ -1,7 +1,13 @@
 import type { ComponentProps, ReactNode } from "react";
 
 type OwnProps = {
-  /** Heading content. Names the panel for assistive technology. */
+  /**
+   * Title content. Names the panel for assistive technology.
+   *
+   * The title is deliberately not a heading element: the panel is a layer on
+   * top of the page, not part of its document outline, so it names the dialog
+   * through `aria-labelledby` instead.
+   */
   children: ReactNode;
   /** Accessible name for the close button. Defaults to "Close panel". */
   dismissLabel?: string;
