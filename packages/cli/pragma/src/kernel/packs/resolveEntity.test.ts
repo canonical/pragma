@@ -7,9 +7,10 @@
  * and nothing else — as accepting a name, a prefixed name, an absolute IRI, or
  * a glob. These assert that the resolver honours the shape it is handed rather
  * than the source its pack declares, that an entity is addressable by IRI even
- * when it carries no `by` value, and that an ambiguous name answers with the
- * same entity on every store and every machine — while NAMING the ones it did
- * not answer with.
+ * when it carries no `by` value, that a name reaches its entity through the
+ * whitespace either side may be padded with, and that an ambiguous name answers
+ * with the same entity on every store and every machine — while NAMING the ones
+ * it did not answer with.
  *
  * That last clause is a REVERSAL, signed off by the owner. It used to read "an
  * ambiguous name resolves to the SAME entity every time", and the suite proved
@@ -145,6 +146,64 @@ describe("pack lookup addressing (PROTECTED)", () => {
       const options = lookupOptions(SPQ.lookup as PackLookup, BLOCK_PREFIXES);
       expect(options.title({ uri: `${DS}nameless.widget` })).toBe(
         "ds:nameless.widget",
+      );
+    });
+  });
+
+  describe("a name resolves through the whitespace the graph carries", () => {
+    // `ds:padded.timeline` is named "Timeline " in the fixture, exactly as 66
+    // shipped names are — the transform that reads the source document keeps the
+    // cell's trailing space. That padding is not part of the name: no surface
+    // prints it and no user can type it on purpose, so a resolve it can defeat
+    // is broken for every one of those entities.
+    it("resolves a padded name by the name a user can type", async () => {
+      const out = await lookupVia(SPQ, "Timeline");
+      expect(out.errors).toEqual([]);
+      expect(uris(out)).toEqual([`${DS}padded.timeline`]);
+    });
+
+    it("resolves it on the graphql path too, where the resolve is the same SPARQL", async () => {
+      const out = await lookupVia(GQL, "Timeline");
+      expect(out.errors).toEqual([]);
+      expect(uris(out)).toEqual([`${DS}padded.timeline`]);
+    });
+
+    it("trims the ARGUMENT as well, so a pasted name reaches a clean entity", async () => {
+      // The other direction, and the reason both sides are trimmed rather than
+      // just `?name`: a name copied out of a table cell arrives padded, and
+      // Modal's own name is not.
+      const out = await lookupVia(SPQ, "  Modal\t");
+      expect(out.errors).toEqual([]);
+      expect(uris(out)).toEqual([`${DS}modal`]);
+    });
+
+    it("still folds case while it folds the padding", async () => {
+      expect(uris(await lookupVia(SPQ, "timeline"))).toEqual([
+        `${DS}padded.timeline`,
+      ]);
+    });
+
+    it("keeps the entity's own name LITERAL in the answer", async () => {
+      // The trim is a matching rule, not a rendering one. What the graph holds
+      // is what a reader is shown, so the upstream correction to the transform
+      // is visible when it lands instead of being papered over here.
+      const out = await lookupVia(SPQ, "Timeline");
+      expect(out.results.at(0)?.name).toBe("Timeline ");
+    });
+
+    it("suggests it by its literal name on a genuine typo", async () => {
+      // A real miss still names the padded candidate exactly as the graph holds
+      // it — the trim decides what MATCHES and changes nothing about what a
+      // reader is shown. What can no longer happen is the reported
+      // `Did you mean? - Timeline` whose only difference from the query was the
+      // padding: that case resolves now, and the suggester's own refusal to
+      // restate a query is asserted in `project/cli/suggest.test.ts`.
+      const reason = await lookupVia(SPQ, "Timelime").catch(
+        (error: unknown) => error,
+      );
+      expect(reason).toMatchObject({ code: "ENTITY_NOT_FOUND" });
+      expect((reason as { suggestions: string[] }).suggestions).toContain(
+        "Timeline ",
       );
     });
   });

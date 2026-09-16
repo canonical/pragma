@@ -248,10 +248,17 @@ ${ROSTER_MEMBERS}
  * parity, ontology and GraphQL-engine suites assert over the base graph and
  * must keep seeing exactly two components.
  *
- * It models the three shapes the addressing path gets wrong: two components
+ * It models the four shapes the addressing path gets wrong: two components
  * sharing one `ds:name` (declared zeta-first so the store's enumeration order
- * and IRI order DISAGREE), and a component carrying no `ds:name` at all
- * (reachable only by IRI, the way 131 of the 144 live code standards are).
+ * and IRI order DISAGREE), a component carrying no `ds:name` at all (reachable
+ * only by IRI, the way 131 of the 144 live code standards are), and a component
+ * whose `ds:name` is PADDED with a trailing space.
+ *
+ * That last one is copied from the live graph, not invented: 66 shipped names
+ * end in a space, carried across by the transform that reads them out of the
+ * source document, and `block lookup Timeline` used to answer
+ * ENTITY_NOT_FOUND while suggesting "Timeline " back. It is spelled with the
+ * live name so the fixture reads as the report it came from.
  *
  * The shared name is a SHAPE probe, not the live ambiguity: neither chip's tier
  * outranks the other, so this fixture can only prove that both are returned in a
@@ -275,4 +282,9 @@ ds:alpha.chip a ds:Component ;
 ds:nameless.widget a ds:Component ;
   ds:tier ds:global ;
   ds:summary "Carries no ds:name; addressable only by IRI." .
+
+ds:padded.timeline a ds:Component ;
+  ds:name "Timeline " ;
+  ds:tier ds:global ;
+  ds:summary "Its ds:name carries the source document's trailing space." .
 `;
