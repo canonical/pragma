@@ -37,7 +37,7 @@ import {
   useStableCallback,
   useStableValue,
 } from "../../../../hooks/index.js";
-import { readFieldName } from "../../../../utils/index.js";
+import { describeStatus, readFieldName } from "../../../../utils/index.js";
 import {
   useColumnArrangement,
   useColumnManagement,
@@ -58,7 +58,6 @@ import {
   TableBody,
 } from "../index.js";
 import { areColumnModelsEqual, readSizing } from "../utils/index.js";
-import describeStatus from "./describeStatus.js";
 import "../../styles.css";
 
 /**

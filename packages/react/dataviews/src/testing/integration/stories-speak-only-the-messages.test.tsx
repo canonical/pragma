@@ -26,6 +26,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import preview from "../../../.storybook/preview.js";
 import findEnglish from "../../../testing/findEnglish.js";
 import serveMockApi from "../../../testing/serveMockApi.js";
+import * as cardsStories from "../../lib/_work_in_progress/Cards/Cards.stories.js";
 import * as tableStories from "../../lib/_work_in_progress/DataTable/DataTable.stories.js";
 import * as actionsStories from "../../lib/_work_in_progress/DataViews/common/Actions/Actions.stories.js";
 import * as filtersStories from "../../lib/_work_in_progress/DataViews/common/Filters/Filters.stories.js";
@@ -82,6 +83,7 @@ const parts = {
   Settings: composeStories(settingsStories),
   SortPanel: composeStories(sortPanelStories),
   RendererSwitch: composeStories(switchStories),
+  Cards: composeStories(cardsStories),
 };
 
 /**
@@ -97,6 +99,9 @@ const AUTHORED: Readonly<Record<string, readonly string[]>> = {
   // The name a switch's story gives its own collection, which says the
   // record's "Show" without being its word.
   RendererSwitch: ["Show machines as"],
+  // The cards' stories place a switch of their own, named the same way, and
+  // one story's own cell writes a sentence saying the record's "from".
+  Cards: ["Show machines as", "Waiting on an address from the upstream pool."],
 };
 
 /** List every phrase a part's stories author, the shared ones included. */

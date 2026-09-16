@@ -1,0 +1,71 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Cards styles
+   *
+   * A work-in-progress spike: no design exists for data cards, so the cards
+   * are the design system's own, laid out by its Cards group on an intrinsic
+   * grid, and only the arrangement around and inside them is set here, bound
+   * to the spacing and type tokens the other parts bind. Every value is
+   * provisional, recorded in the anatomy beside the code.
+   */
+  /* The root is `data-cards`, not the kebab of the component name: a bare
+   * `.ds.cards` is the design system's own group class, which this renderer
+   * composes, so the two would collide on one element.
+   *
+   * The cards are laid out by the design system's own Cards group, which is a
+   * subgrid: it takes its columns from a parent carrying the `grid` preset of
+   * `@canonical/styles`. That preset is not part of this package's stylesheet,
+   * so an application linking only this one gets cards that read correctly and
+   * line up by nothing — the recipe says so beside the layout. */
+  .ds.data-cards {
+    --data-cards-gap: var(--dimension-200);
+    --data-cards-status-padding-block: var(--dimension-100);
+    --data-cards-select-all-gap: var(--dimension-050);
+    --data-cards-field-row-gap: var(--dimension-050);
+    --data-cards-field-column-gap: var(--dimension-200);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--data-cards-gap);
+    color: var(--color-text);
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+
+    & > .status {
+      padding-block: var(--data-cards-status-padding-block);
+    }
+
+    & > .select-all {
+      display: flex;
+      align-items: center;
+      gap: var(--data-cards-select-all-gap);
+    }
+
+    & .data-card > .header {
+      justify-content: flex-start;
+    }
+
+    & .data-card .title {
+      overflow-wrap: anywhere;
+    }
+
+    & .data-card .fields {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      gap: var(--data-cards-field-row-gap) var(--data-cards-field-column-gap);
+      margin: 0;
+    }
+
+    & .data-card .field {
+      display: contents;
+    }
+
+    & .data-card dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+  }
+}

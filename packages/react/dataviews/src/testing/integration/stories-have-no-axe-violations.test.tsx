@@ -1,6 +1,6 @@
 /**
- * Every DataTable, sort panel, renderer switch and server-backed story,
- * and the filters' faceted stories, have no axe violation:
+ * Every DataTable, sort panel, renderer switch, cards and server-backed
+ * story, and the filters' faceted stories, have no axe violation:
  * the automated half of the evidence the Storybook accessibility addon shows
  * in its panel, run with the package's tests so a story that gains a
  * violation fails `test` rather than waiting for someone to open the panel.
@@ -21,6 +21,7 @@ import preview from "../../../.storybook/preview.js";
 import expectNoAxeViolations from "../../../testing/expectNoAxeViolations.js";
 import { FACETED_FILTER_STORIES } from "../../../testing/fixtures.js";
 import serveMockApi from "../../../testing/serveMockApi.js";
+import * as cardsStories from "../../lib/_work_in_progress/Cards/Cards.stories.js";
 import * as tableStories from "../../lib/_work_in_progress/DataTable/DataTable.stories.js";
 import * as filtersStories from "../../lib/_work_in_progress/DataViews/common/Filters/Filters.stories.js";
 import * as settingsStories from "../../lib/_work_in_progress/DataViews/common/Settings/Settings.stories.js";
@@ -53,6 +54,7 @@ const rendered = {
 const played = {
   "REST API": composeStories(restStories),
   "GraphQL API": composeStories(graphqlStories),
+  Cards: composeStories(cardsStories),
   Filters: Object.fromEntries(
     Object.entries(composeStories(filtersStories)).filter(([name]) =>
       FACETED_FILTER_STORIES.has(name),
