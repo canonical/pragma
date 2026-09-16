@@ -80,10 +80,9 @@ type OwnProps = {
  * Props extend the native props of the `<dialog>` root, so every attribute it
  * accepts (data-*, aria-*, event handlers, …) reaches the DOM.
  *
- * The panel needs an accessible name: compose a `SidePanel.Header` — its
- * title names the panel — or pass `aria-label` when the panel has no
- * header. This is a composition obligation, not a runtime check: nothing
- * warns about a panel rendered with neither.
+ * The header's title names the panel automatically; a panel composed without
+ * a header must carry its own `aria-label` (see the `WithoutHeader` story in
+ * `withSidePanel`).
  */
 export type SidePanelProps = OwnProps &
   Omit<ComponentProps<"dialog">, keyof OwnProps | "open">;

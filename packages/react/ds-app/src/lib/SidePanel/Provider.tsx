@@ -13,12 +13,7 @@ const componentCssClassName = "ds side-panel";
  * accompanies the current view rather than interrupting it.
  *
  * It renders a **non-modal** `<dialog>` opened with `show()`, so the
- * application behind stays clickable and tabbable. That is the whole design
- * constraint, and everything else follows from it: a non-modal dialog
- * gets no top layer (hence `position: fixed` and a z-index), no `::backdrop`,
- * no focus trap, and no native Escape handling — so this component supplies
- * the last two itself. It deliberately carries no `aria-modal`, because the
- * page is not inert and saying otherwise would misinform assistive technology.
+ * application behind stays clickable and tabbable.
  *
  * The panel is controlled through its `ref`: `open()` shows it and moves focus
  * in, `close()` hides it and hands focus back. The ref is required, since the
@@ -31,13 +26,22 @@ const componentCssClassName = "ds side-panel";
  * Compose the body from `SidePanel.Header`, `SidePanel.Content` and
  * `SidePanel.Footer`. Header and footer stay put; only the content scrolls.
  *
- * The panel needs an accessible name, and the composition supplies it: render
- * a `SidePanel.Header` — its title names the panel — or pass `aria-label`
- * when the panel has no header. Nothing enforces or warns about this; a panel
- * composed with neither simply renders unnamed, and assistive technology
- * cannot tell the user what opened. Note the title is not a heading element:
- * The side panel is a separate UI region positioned alongside the main page content. It is not part of the main document outline.
+ * There are two consumption patterns, `withSidePanel` and `SidePanel`.
+ * `withSidePanel` is meant for static content: the call belongs at module
+ * scope, where the function it is handed can only see module-level values, so
+ * the panel it returns is the same on every render. If the panel must show
+ * data from the parent — for example a different machine's details depending
+ * on which machine is selected — compose `SidePanel` directly and drive it
+ * through its `ref`. Otherwise, use `withSidePanel`.
  *
+ * The header's title names the panel automatically; a panel composed without
+ * a header must carry its own `aria-label` (see the `WithoutHeader` story in
+ * `withSidePanel`). Note the title is not a heading element: the panel is a
+ * layer on top of the page, not part of its document outline.
+ * 
+ * The panel is `position: fixed` and therefore out of the document flow: an
+ * `overflow: hidden` ancestor does not clip it
+ * 
  * Because the panel is its own scroll container and is offset with a
  * transform, it both clips and re-anchors its descendants: an overlay that
  * needs to escape the panel's box — a `Popover` or `ContextualMenu`, whose

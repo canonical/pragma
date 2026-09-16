@@ -78,35 +78,22 @@ const meta = {
   title: "Components/SidePanel/withSidePanel",
   parameters: {
     docs: {
-      description: {
-        component: `
-Pairs a trigger with a panel it toggles — for **transient, local panels**:
-forms, filters, anything that the consumer doesn't need to know the state of
-the side panel. The dialog's native open state is the only one; the toggle
-reads it and flips it.
-
-The trigger can be anything that takes an \`onClick\` — a \`Button\`, the
-router's \`Link\`, a bare anchor — and its own \`onClick\` still runs,
-first, when pressed.
-
-The second argument is a **factory**: the HOC calls it with \`{ close, ref }\`
-and it returns the complete \`<SidePanel>\` element, so everything the panel
-accepts lives on that element. The factory must attach the \`ref\` it
-receives — \`<SidePanel ref={ref}>\` — because the trigger toggles the panel
-through it; \`SidePanel\` requires its \`ref\`, so forgetting it is a compile
-error, not a silent nothing.
-        `,
-      },
       story: {
         // The panel is `position: fixed`: inside its own iframe it fills the
         // frame and stays contained in the docs page.
         inline: false,
         iframeHeight: "30rem",
       },
+      // The stories use custom renders, so autodocs' default "dynamic" source
+      // (reconstructed from args, in the docs frame) has nothing to show —
+      // doubly so with the iframed previews above. Serve the consumer-facing
+      // snippet explicitly instead.
+      source: { type: "code", language: "tsx" },
     },
   },
 } satisfies Meta;
 
+/* The docs page for these stories lives in withSidePanel.mdx. */
 export default meta;
 type Story = StoryObj<typeof meta>;
 
