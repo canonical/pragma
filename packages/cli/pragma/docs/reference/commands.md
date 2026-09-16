@@ -825,7 +825,7 @@ pragma setup config [options]
 
 ### pragma setup lsp
 
-Install the Terrazzo design-token extension into your VS Code-family editors.
+Install the Terrazzo design-token extension into the VS Code-family editors on this machine (PATH, /Applications, or user directory).
 
 ```
 pragma setup lsp [options]
