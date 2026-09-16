@@ -38,17 +38,26 @@ import type {
   ConfigDetection,
 } from "../../setup/operations/index.js";
 import {
+  blockedMcpGroups,
+  describeEditorSource,
+  type FsProbe,
+  firstLspBlock,
+  firstMcpBlock,
+  installableEditors,
+  LSP_SKIP_REMEDY,
   type LspDetection,
+  lspBlockReason,
   lspEditorNames,
   lspSkipReason,
   type McpDetection,
+  mcpBlockReason,
   mcpGroupState,
   mcpWriteState,
   type SkillsDetection,
   skillsSkipReason,
   skillsSkipRemedy,
 } from "../../setup/operations/index.js";
-import { shortenPath, TARGET_IDS } from "../../setup/plan.js";
+import { type Roots, shortenPath, TARGET_IDS } from "../../setup/plan.js";
 import { MCP_NO_LOCATION } from "../../setup/targets.js";
 import type { CheckItem, CheckResult, Scope } from "../types.js";
 import { checkShellCompletions } from "./checkShellCompletions.js";
@@ -88,15 +97,78 @@ const configHealth = (
   return { status: "pass", detail: `${path} — valid` };
 };
 
-/** The `lsp` row — the first this report has ever had. */
-const lspHealth = (d: LspDetection): Health => {
+/**
+ * The `lsp` row: one sub-item per editor, saying HOW it was found and where
+ * pragma stands in it.
+ *
+ * Provenance per editor is the point. A colleague whose macOS `setup lsp`
+ * reported nothing had VS Code installed the whole time, and a one-line row
+ * ("not installed in …", or a bare skip) could not tell them whether pragma had
+ * missed the editor or found it and could not act. Per the owner, 2026-09-16,
+ * this report says per editor how it was found and why a step was skipped.
+ *
+ * The row's own status keeps the report's invariant that every `available` row
+ * has a remedy: any editor that CAN be installed into makes the row
+ * `available`, whose derived fix is `pragma setup lsp`. A row where NOTHING is
+ * installed and nothing is installable is a `skip` carrying the first block's
+ * own remedy — a Nix declaration, a `chmod`, or the palette command — never
+ * the derived command, which would only reproduce the skip.
+ *
+ * An INSTALLED editor is a `pass` even when its extensions folder is blocked.
+ * The copy is there and works; the block only says this command cannot CHANGE
+ * it. Reporting a skip instead told the owner of a site-managed folder that
+ * already held the extension to chmod it and install again, and made a machine
+ * that is installed everywhere it can be a permanent `○ lsp`.
+ */
+const lspHealth = (d: LspDetection, roots: Roots): Health => {
   if (d.state === "unknown") {
-    return { status: "skip", detail: lspSkipReason(d) };
+    return {
+      status: "skip",
+      detail: lspSkipReason(d),
+      remedy: LSP_SKIP_REMEDY,
+    };
   }
-  const editors = lspEditorNames(d).join(", ");
-  return d.state === "installed"
-    ? { status: "pass", detail: `installed in ${editors}` }
-    : { status: "available", detail: `not installed in ${editors}` };
+  const items: CheckItem[] = d.editors.map((e): CheckItem => {
+    const reason = e.installed ? undefined : lspBlockReason(e);
+    const state = reason ?? (e.installed ? "installed" : "not installed");
+    return {
+      label: e.editor.name,
+      status: e.installed
+        ? "pass"
+        : reason !== undefined
+          ? "skip"
+          : "available",
+      detail: `${describeEditorSource(e, roots)} · ${state}`,
+    };
+  });
+  const installable = installableEditors(d);
+  if (installable.length > 0) {
+    return {
+      status: "available",
+      detail: `not installed in ${installable.map((e) => e.editor.name).join(", ")}`,
+      items,
+    };
+  }
+  // Nothing installable. The row is the block's only when nothing is installed
+  // either — otherwise the honest headline is what IS in place.
+  const block = d.editors.some((e) => e.installed)
+    ? undefined
+    : firstLspBlock(d);
+  if (block !== undefined) {
+    return {
+      status: "skip",
+      // The headline names the editor; the item's own detail does not, because
+      // its label already has.
+      detail: block.headline,
+      items,
+      remedy: block.remedy,
+    };
+  }
+  return {
+    status: "pass",
+    detail: `installed in ${lspEditorNames(d).join(", ")}`,
+    items,
+  };
 };
 
 /**
@@ -118,6 +190,12 @@ async function mcpHealth(
   const items: CheckItem[] = d.groups.map((group) => {
     const state = mcpGroupState(d, group.path);
     const label = shortenPath(group.path, roots);
+    // A file pragma must not write is reported as a skip, not as an
+    // `available` whose `fix:` would fail the moment it ran.
+    const blocked = mcpBlockReason(d, group, roots);
+    if (blocked !== undefined) {
+      return { label, status: "skip" as const, detail: blocked };
+    }
     if (state === "absent") {
       return { label, status: "available", detail: "not registered" };
     }
@@ -132,6 +210,22 @@ async function mcpHealth(
         : `registered, but \`${MCP_SERVER_NAME}\` is not on PATH`,
     };
   });
+  // Every location blocked means the row's whole answer is the block: it
+  // carries the first one's remedy — the entry to declare by hand — rather than
+  // the derived `pragma setup mcp`, which would only reproduce the skip.
+  const blockedGroups = blockedMcpGroups(d);
+  const block =
+    blockedGroups.length === d.groups.length
+      ? firstMcpBlock(d, roots)
+      : undefined;
+  if (block !== undefined) {
+    return {
+      status: "skip",
+      detail: block.reason,
+      items,
+      remedy: block.remedy,
+    };
+  }
   const configured = items.filter((item) => item.status === "pass").length;
   const failing = items.filter((item) => item.status === "fail").length;
   if (failing > 0) {
@@ -141,6 +235,7 @@ async function mcpHealth(
       items,
     };
   }
+  const writable = items.length - blockedGroups.length;
   if (configured === 0) {
     // Absence in the LOCAL PROJECT is not a failure: registering there is
     // opt-in, so a repository with no checked-in MCP config is healthy. The
@@ -153,13 +248,13 @@ async function mcpHealth(
         }
       : {
           status: "available",
-          detail: `not registered in any of ${items.length} config files`,
+          detail: `not registered in any of ${writable} config files`,
           items,
         };
   }
   return {
-    status: configured === items.length ? "pass" : "available",
-    detail: `registered in ${configured} of ${items.length} config files`,
+    status: configured === writable ? "pass" : "available",
+    detail: `registered in ${configured} of ${writable} config files`,
     items,
   };
 }
@@ -267,7 +362,7 @@ async function healthOf(
       };
     }
     case "lsp":
-      return lspHealth(row.detection as LspDetection);
+      return lspHealth(row.detection as LspDetection, roots);
     case "mcp":
       return mcpHealth(row.detection as McpDetection, row.scope, rt.cwd, roots);
     default:
@@ -406,15 +501,21 @@ export const fixCommandFor = (id: string, scope: Scope, bin: string): string =>
  *
  * @param rt - The per-invocation runtime.
  * @param bin - The binary name the `fix:` lines are derived from.
+ * @param probe - The writability filesystem seam, threaded to every row's
+ *   detection. Defaults to the real one; a test injects a fixture to reach the
+ *   blocked arms — a `/nix/store` path, a directory that refuses `W_OK` —
+ *   through THIS entry point, rather than opening the row bodies up as exports
+ *   nothing in production would call.
  * @returns One {@link CheckResult} per (target, scope), plus one per scope.
  * @note Impure — every target's detection reads the real filesystem.
  */
 export async function scopedChecks(
   rt: PragmaRuntime,
   bin: string,
+  probe?: FsProbe,
 ): Promise<CheckResult[]> {
   const roots = await resolveRoots(rt);
-  const detected = await detectTargets(rt, [...TARGET_IDS], "both");
+  const detected = await detectTargets(rt, [...TARGET_IDS], "both", probe);
   const [targetRows, inventoryRows] = await Promise.all([
     Promise.all(
       detected.map(async (row): Promise<CheckResult> => {

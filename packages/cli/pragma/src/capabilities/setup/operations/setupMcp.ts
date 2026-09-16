@@ -17,6 +17,14 @@
  * write itself stays idempotent (a re-merge of the identical entry is
  * byte-for-byte), so a re-run is a no-op the recap reports as "unchanged" — the
  * same state-awareness `setup skills` has always had.
+ *
+ * And it asks, for each group, whether the file could be WRITTEN at all —
+ * `probeWritable`, before a single write is composed. A NixOS or home-manager
+ * user whose config directory is managed produced a `failed` row carrying a
+ * raw `EACCES` and no next step, on a machine configured exactly as its owner
+ * intends; that is now a named skip whose remedy is the entry itself, printed
+ * through the same serializer the write would have used, for the user to put
+ * in the config that owns the directory.
  */
 
 import { dirname } from "node:path";
@@ -29,7 +37,9 @@ import type {
 import { mkdir, sequence_, type Task } from "@canonical/task";
 import { MCP_SERVER_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
-import type { McpTargetState, Scope } from "../types.js";
+import { type Roots, shortenPath } from "../plan.js";
+import type { McpTargetState, Scope, WriteBlock } from "../types.js";
+import { type FsProbe, probeWritable } from "./writability.js";
 
 /** The `writeMcpConfigTargets` builder, captured from the dynamic harness import. */
 type WriteMcpConfigTargets =
@@ -38,6 +48,10 @@ type WriteMcpConfigTargets =
 /** The `removeMcpConfigFrom` builder, captured from the dynamic harness import. */
 type RemoveMcpConfigFrom =
   typeof import("@canonical/harnesses").removeMcpConfigFrom;
+
+/** The one-line TOML entry serializer, captured from the same import. */
+type SerializeTomlInlineEntry =
+  typeof import("@canonical/harnesses").serializeTomlInlineEntry;
 
 /**
  * The detected MCP state: the per-file target groups (already scoped to the
@@ -61,10 +75,26 @@ export interface McpDetection {
   readonly stateByPath: ReadonlyMap<string, McpTargetState>;
   /** Each write's own state, keyed by {@link mcpWriteKey} — see the docblock. */
   readonly stateByWrite: ReadonlyMap<string, McpTargetState>;
+  /**
+   * The groups whose file cannot be written, by group path — a Nix-managed or
+   * read-only location, probed up front.
+   *
+   * Keyed by the group's path rather than per write, because writability is a
+   * property of the FILE: two harnesses sharing `.vscode/mcp.json` are blocked
+   * or not together, whatever keys they own inside it.
+   */
+  readonly blockedByPath: ReadonlyMap<string, WriteBlock>;
   readonly cwd: string;
   readonly platform: PlatformEnv;
   readonly writeMcpConfigTargets: WriteMcpConfigTargets;
   readonly removeMcpConfigFrom: RemoveMcpConfigFrom;
+  /**
+   * The TOML entry serializer a blocked Codex row prints its remedy with —
+   * carried here for the same reason the writer is: this module imports only
+   * TYPES from `@canonical/harnesses`, so the package stays off the fast path,
+   * and the pure message builders need the function synchronously.
+   */
+  readonly serializeTomlInlineEntry: SerializeTomlInlineEntry;
 }
 
 /**
@@ -188,12 +218,14 @@ const mcpWriteKey = (write: ConfigTarget): string =>
  *
  * @param rt - The per-invocation runtime.
  * @param scope - The scope being planned (global or project).
+ * @param probe - The writability filesystem seam; defaults to the real one.
  * @returns The scope's target groups, their prior states, + the config writer.
  * @note Impure — reads the filesystem via `detectHarnesses` + `readMcpConfigFrom`.
  */
 export async function detectMcp(
   rt: PragmaRuntime,
   scope: Scope,
+  probe?: FsProbe,
 ): Promise<McpDetection> {
   const cwd = rt.cwd;
   const [
@@ -204,6 +236,7 @@ export async function detectMcp(
       readMcpConfigFrom,
       readPlatformEnv,
       removeMcpConfigFrom,
+      serializeTomlInlineEntry,
       writeMcpConfigTargets,
     },
     { runTask },
@@ -224,6 +257,14 @@ export async function detectMcp(
   // than measured separately.
   const stateByPath = new Map<string, McpTargetState>();
   const stateByWrite = new Map<string, McpTargetState>();
+  // Writability, per file, before anything is composed. Cheap (a stat walk and
+  // one `access`), and it is what turns an unavoidable failure into a row that
+  // says what to do instead.
+  const blockedByPath = new Map<string, WriteBlock>();
+  for (const group of groups) {
+    const block = probeWritable(group.path, probe);
+    if (block !== undefined) blockedByPath.set(group.path, block);
+  }
   await Promise.all(
     groups.map(async (group) => {
       const want = pragmaMcpEntry(cwd, group.scope);
@@ -252,10 +293,12 @@ export async function detectMcp(
     groups,
     stateByPath,
     stateByWrite,
+    blockedByPath,
     cwd,
     platform,
     writeMcpConfigTargets,
     removeMcpConfigFrom,
+    serializeTomlInlineEntry,
   };
 }
 
@@ -282,6 +325,155 @@ export function mcpWriteState(
 ): McpTargetState {
   return d.stateByWrite.get(mcpWriteKey(write)) ?? "absent";
 }
+
+/**
+ * The block on one group's file, or `undefined` when it can be written.
+ *
+ * @param d - The detection gathered up front.
+ * @param path - The group's config file path.
+ * @returns The {@link WriteBlock}, or undefined.
+ */
+export const mcpGroupBlock = (
+  d: McpDetection,
+  path: string,
+): WriteBlock | undefined => d.blockedByPath.get(path);
+
+/**
+ * Why one BLOCKED group's file cannot be written — one line, as the renderer
+ * prints one.
+ *
+ * @param d - The detection gathered up front.
+ * @param group - A group whose file is blocked.
+ * @param roots - The two roots the path renders relative to.
+ * @returns The reason.
+ */
+function describeMcpBlock(
+  block: WriteBlock,
+  path: string,
+  roots: Roots,
+): string {
+  const where = shortenPath(path, roots);
+  return block.kind === "nix-store"
+    ? `${where} is managed by Nix (it resolves to ${block.resolved})`
+    : `${where} is not writable (${block.path})`;
+}
+
+/**
+ * Why one group's file cannot be written, or `undefined` when it can be.
+ *
+ * @param d - The detection gathered up front.
+ * @param group - The group whose file may be blocked.
+ * @param roots - The two roots the path renders relative to.
+ * @returns The reason, or `undefined` when the file can be written.
+ */
+export function mcpBlockReason(
+  d: McpDetection,
+  group: TargetGroup,
+  roots: Roots,
+): string | undefined {
+  const block = mcpGroupBlock(d, group.path);
+  return block === undefined
+    ? undefined
+    : describeMcpBlock(block, group.path, roots);
+}
+
+/**
+ * The remedy beneath a blocked group: the EXACT entry a write would have
+ * emitted, and nothing else.
+ *
+ * It is serialized through the group's own `serializeEntry` — the same
+ * function the writer uses — so the entry a user copies into their
+ * home-manager or NixOS config is byte-for-byte what `setup mcp` would have
+ * written, and the next detection classifies it `registered` rather than
+ * `drifted`. A hand-written sample in this string would be a second
+ * serializer to keep in sync, and the failure mode is a config the tool then
+ * offers to "repair" forever.
+ *
+ * It is written in the file's OWN FORMAT. A JSON body pasted into Codex's
+ * `config.toml` is not an entry, it is a syntax error, and the row that
+ * printed it was the one row whose whole job was to say what to write. The
+ * TOML spelling is the dotted-key inline table — the same entry the writer's
+ * `[mcp_servers.pragma]` table holds, in the one-line form a remedy can print
+ * (the renderer gives it one dim line).
+ *
+ * Every write in the group is included, keyed by its own `mcpKey`: a shared
+ * `.vscode/mcp.json` holds two independent entries, and half the answer is
+ * not an answer.
+ *
+ * The line does NOT restate the path or the cause. The reason line directly
+ * above it has said both ({@link mcpBlockReason}), and a remedy that repeats
+ * them is the duplication the LSP remedies beside it dropped: a remedy states
+ * the action.
+ *
+ * @param d - The detection gathered up front.
+ * @param group - The group whose file is blocked.
+ * @param roots - The two roots the path renders relative to.
+ * @returns The remedy line.
+ */
+function blockedMcpRemedy(
+  d: McpDetection,
+  group: TargetGroup,
+  roots: Roots,
+): string {
+  const want = pragmaMcpEntry(d.cwd, group.scope);
+  const where = shortenPath(group.path, roots);
+  const toml = group.writes[0]?.configFormat === "toml";
+  const body = toml
+    ? group.writes
+        .map((write) =>
+          d.serializeTomlInlineEntry(
+            write.mcpKey,
+            MCP_SERVER_NAME,
+            write.serializeEntry(want),
+          ),
+        )
+        .join(" ")
+    : JSON.stringify(
+        Object.fromEntries(
+          group.writes.map((write) => [
+            write.mcpKey,
+            { [MCP_SERVER_NAME]: write.serializeEntry(want) },
+          ]),
+        ),
+      );
+  return `put this entry in the config that owns ${where}: ${body}`;
+}
+
+/** The groups whose file cannot be written, in `d.groups` order. */
+export const blockedMcpGroups = (d: McpDetection): readonly TargetGroup[] =>
+  d.groups.filter((group) => d.blockedByPath.has(group.path));
+
+/**
+ * The FIRST group whose file cannot be written, with its reason and its remedy
+ * already derived — or `undefined` when every file in the scope is writable.
+ *
+ * It hands back the derived strings rather than the group, for the reason
+ * `firstLspBlock` spells out: the blockedness is what makes the two strings
+ * exist, so a caller that took the group and asked for them separately had to
+ * assert that both were there, on both surfaces.
+ *
+ * @param d - The detection gathered up front.
+ * @param roots - The two roots the path renders relative to.
+ * @returns The first block's reason and remedy, or `undefined`.
+ */
+export const firstMcpBlock = (
+  d: McpDetection,
+  roots: Roots,
+): { readonly reason: string; readonly remedy: string } | undefined => {
+  // A walk rather than `blockedMcpGroups(d).at(0)`: the group and its block
+  // come out together, so nothing has to assert afterwards that the block a
+  // filter just proved is there really is.
+  for (const group of d.groups) {
+    const block = mcpGroupBlock(d, group.path);
+    if (block !== undefined) {
+      return {
+        reason: describeMcpBlock(block, group.path, roots),
+        remedy: blockedMcpRemedy(d, group, roots),
+      };
+    }
+  }
+  return undefined;
+};
 
 /** The target groups the user selected (by path), or all when none recorded. */
 export function selectedGroups(
@@ -314,7 +506,11 @@ export function composeMcp(
   // file (VS Code + Cline) a single read-modify-write — dry-run safe. The
   // written entry is SCOPE-shaped per group (a global entry omits `cwd`).
   const pending = groups.filter(
-    (group) => mcpGroupState(d, group.path) !== "registered",
+    (group) =>
+      mcpGroupState(d, group.path) !== "registered" &&
+      // A blocked file is never written. The write is what USED to discover the
+      // block, and it discovered it as a raw fs error on a `failed` row.
+      !d.blockedByPath.has(group.path),
   );
   return sequence_(
     pending.map((group) =>
@@ -334,7 +530,13 @@ export function composeMcp(
  * foreign server in a file that does is never touched.
  */
 export const ownedMcpGroups = (d: McpDetection): readonly TargetGroup[] =>
-  d.groups.filter((group) => mcpGroupState(d, group.path) !== "absent");
+  d.groups.filter(
+    (group) =>
+      mcpGroupState(d, group.path) !== "absent" &&
+      // A blocked file cannot be written, so it cannot be un-written either.
+      // The row says so rather than composing a reversal that would fail.
+      !d.blockedByPath.has(group.path),
+  );
 
 /**
  * Compose the removal of the pragma entry from every owned file.

@@ -26,6 +26,11 @@
  * path — a consumer that routes it through this barrel statically would undo
  * that, and the setup guard test would say so.
  *
+ * Every line here has an importer that goes THROUGH it. The modules also
+ * import each other directly (`targets.ts` reaches `setupLsp.js`, and its
+ * siblings reach `writability.js`), and re-exporting those edges as well would
+ * make this file a second, wider surface that nothing asked for.
+ *
  * Deliberately internal: the config seed literal, the per-target message
  * builders, and the MCP entry writer. They are inputs to the composers above,
  * not operations a caller performs.
@@ -49,8 +54,12 @@ export type { LspDetection } from "./setupLsp.js";
 export {
   composeLsp,
   composeLspRemoval,
+  describeEditorSource,
   detectLsp,
+  firstLspBlock,
+  installableEditors,
   LSP_SKIP_REMEDY,
+  lspBlockReason,
   lspEditorNames,
   lspSkipReason,
   lspUninstallRemedy,
@@ -58,9 +67,13 @@ export {
 } from "./setupLsp.js";
 export type { McpDetection } from "./setupMcp.js";
 export {
+  blockedMcpGroups,
   composeMcp,
   composeMcpRemoval,
   detectMcp,
+  firstMcpBlock,
+  mcpBlockReason,
+  mcpGroupBlock,
   mcpGroupState,
   mcpWriteState,
   ownedMcpGroups,
@@ -77,3 +90,4 @@ export {
   staleSkillLinks,
   withinRoot,
 } from "./setupSkills.js";
+export type { FsProbe } from "./writability.js";

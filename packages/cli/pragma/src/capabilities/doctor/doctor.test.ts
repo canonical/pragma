@@ -33,7 +33,9 @@ import {
   CANONICAL_TTL,
 } from "../../testing/fixtures/graph/canonical.js";
 import { bootFixtureRuntime } from "../../testing/helpers/fixtureGraph.js";
+import { storeProbe } from "../../testing/helpers/fsProbe.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
+import type { FsProbe } from "../setup/operations/writability.js";
 import { scopedChecks } from "./checks/targetHealth.js";
 import { doctorModule } from "./index.js";
 import { runChecks } from "./runChecks.js";
@@ -334,10 +336,45 @@ describe("doctor — the harness inventory", () => {
     expect(project?.items?.[0]?.detail).toContain("detected, not registered");
     expect(project?.items?.[0]?.detail).toContain(".vscode/mcp.json");
 
-    // Nothing detected in the global scope, and that is a skip — not a fault.
+    // The GLOBAL scope holds nothing. VS Code is dual-scope now, so the row
+    // CAN write a per-user file — but a committed `.vscode/` is evidence about
+    // this repository, not about this machine, and the global band has to be
+    // earned by a user-level signal. Without one there is no global location
+    // to report and nothing for `setup mcp` to do there.
     expect(global?.status).toBe("skip");
-    expect(global?.detail).toBe("no harnesses detected");
-    expect(global?.items).toBeUndefined();
+    expect(global?.items ?? []).toEqual([]);
+    const globalMcp = rows.find(
+      (r) => r.name === "mcp" && r.scope === "global",
+    );
+    expect(globalMcp?.status).toBe("skip");
+  });
+
+  it("holds the global hit once a USER-LEVEL signal has earned it", async () => {
+    // The same repository, on a machine that really has VS Code: its per-user
+    // directory exists, so the global band is earned and the row reports the
+    // per-user `mcp.json` it would write — detected, not registered — with the
+    // `mcp` row beside it naming the command that settles it.
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".vscode"), { recursive: true });
+    mkdirSync(join(process.env.XDG_CONFIG_HOME as string, "Code", "User"), {
+      recursive: true,
+    });
+
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const { global } = inventory(rows);
+
+    expect(global?.status).toBe("pass");
+    expect(global?.detail).toBe("1 detected · 0 registered");
+    expect(global?.items?.map((i) => i.label)).toEqual(["VS Code"]);
+    expect(global?.items?.[0]?.status).toBe("available");
+    expect(global?.items?.[0]?.detail).toContain("detected, not registered");
+    expect(global?.items?.[0]?.detail).toContain("Code/User/mcp.json");
+
+    const globalMcp = rows.find(
+      (r) => r.name === "mcp" && r.scope === "global",
+    );
+    expect(globalMcp?.status).toBe("available");
+    expect(globalMcp?.remedy).toBe("pragma setup mcp");
   });
 
   it("--verbose lists every registry harness, undetected ones as a NON-failing skip", async () => {
@@ -348,9 +385,9 @@ describe("doctor — the harness inventory", () => {
     const { global, project } = inventory(rows);
 
     // Every harness the registry knows, in both scopes.
-    expect(project?.items).toHaveLength(14);
-    expect(global?.items).toHaveLength(14);
-    expect(project?.detail).toBe("1 detected · 0 registered · 14 known");
+    expect(project?.items).toHaveLength(16);
+    expect(global?.items).toHaveLength(16);
+    expect(project?.detail).toBe("1 detected · 0 registered · 16 known");
 
     // `types.ts` forbids inflating the failure count: a machine that simply
     // does not have Cursor is not a broken machine.
@@ -368,10 +405,14 @@ describe("doctor — the harness inventory", () => {
   });
 
   it("says where a harness DOES keep its config, rather than omitting it", async () => {
-    // `vscode` is `scope: "project"`, so it can NEVER carry a global entry. A
+    // `roo-code` is `scope: "project"`, so it can NEVER carry a global entry. A
     // verbose global listing that silently dropped it would read as a bug in
     // the listing; the row says why instead. The mirror case is Windsurf, which
     // is `scope: "global"` and keeps nothing per project.
+    //
+    // VS Code used to be this example and stopped being one when its per-user
+    // `mcp.json` was added: it is `scope: "both"` now, and asserting otherwise
+    // would pin a fact the registry no longer holds.
     //
     // The sentence states the FACT, not the partition: `no Global band` named
     // an internal word for the answer instead of giving it.
@@ -381,11 +422,11 @@ describe("doctor — the harness inventory", () => {
     );
     const { global, project } = inventory(rows);
 
-    const vscodeGlobal = global?.items?.find((i) => i.label === "VS Code");
-    expect(vscodeGlobal?.detail).toBe(
+    const rooGlobal = global?.items?.find((i) => i.label === "Roo Code");
+    expect(rooGlobal?.detail).toBe(
       "keeps no global config — it is per-project only",
     );
-    expect(vscodeGlobal?.status).toBe("skip");
+    expect(rooGlobal?.status).toBe("skip");
 
     const windsurfProject = project?.items?.find((i) => i.label === "Windsurf");
     expect(windsurfProject?.detail).toBe(
@@ -535,5 +576,233 @@ describe("doctor — an unconfigured opt-in integration is available, not a faul
     expect(check?.detail).toContain("not registered");
     // The fix is the target's own invocation, derived from the row's id + scope.
     expect(check?.remedy).toBe("pragma setup mcp");
+  });
+});
+
+/**
+ * The `lsp` row's per-editor provenance, and the rows that say a step was
+ * skipped rather than failing at it.
+ *
+ * Per the owner, 2026-09-16: doctor says per editor HOW it was found and WHY a
+ * step was skipped. A colleague whose macOS run reported no editor had VS Code
+ * installed the whole time, and a one-line row could not tell them whether
+ * pragma had missed the editor or found it and could not act.
+ *
+ * The blocked arms read a filesystem no CI host has, so they are driven over
+ * `scopedChecks`'s own probe seam — the same entry point `doctor` runs, with
+ * the filesystem answer injected, rather than the row bodies opened up as
+ * exports nothing in production would call.
+ */
+describe("doctor — the lsp row's per-editor provenance", () => {
+  /** The `lsp` row of a report, optionally over an injected filesystem. */
+  const lspRow = async (probe?: FsProbe) => {
+    const rows = await scopedChecks(
+      bootRuntime(FLAGS, tmp("pragma-doctor-proj-")),
+      "pragma",
+      probe,
+    );
+    return rows.find((r) => r.name === "lsp");
+  };
+
+  it("names one item per editor, with `via PATH` and its standing", async () => {
+    const stubDir = tmp("pragma-doctor-editors-");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+
+    const lsp = await lspRow();
+    // Nothing installed yet, so the row is the optional integration it is —
+    // and its derived fix keeps the "every available row has a remedy" rule.
+    expect(lsp?.status).toBe("available");
+    expect(lsp?.remedy).toBe("pragma setup lsp");
+    expect(lsp?.items?.map((i) => i.label)).toEqual(["VSCodium"]);
+    expect(lsp?.items?.[0]?.status).toBe("available");
+    expect(lsp?.items?.[0]?.detail).toContain("via PATH");
+    expect(lsp?.items?.[0]?.detail).toContain(join(stubDir, "codium"));
+    expect(lsp?.items?.[0]?.detail).toContain("not installed");
+  });
+
+  it("reports an editor found only by its user directory as a skipped item", async () => {
+    // Installed, and nothing to install WITH. The item says both.
+    mkdirSync(join(process.env.XDG_CONFIG_HOME as string, "Code", "User"), {
+      recursive: true,
+    });
+
+    const lsp = await lspRow();
+    expect(lsp?.status).toBe("skip");
+    expect(lsp?.detail).toContain("no command-line launcher");
+    expect(lsp?.items?.[0]?.label).toBe("VS Code");
+    expect(lsp?.items?.[0]?.status).toBe("skip");
+    expect(lsp?.items?.[0]?.detail).toContain("via user directory");
+    // The remedy is the editor's own palette command — NOT the derived
+    // `pragma setup lsp`, which would only reproduce the skip.
+    expect(lsp?.remedy).toContain("Install 'code' command in PATH");
+    expect(lsp?.remedy).not.toContain("\n");
+  });
+
+  it("a store-managed extensions folder is a skip carrying the Nix declaration", async () => {
+    const stubDir = tmp("pragma-doctor-nix-path-");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+    const extensions = join(
+      process.env.HOME as string,
+      ".vscode-oss",
+      "extensions",
+    );
+    mkdirSync(extensions, { recursive: true });
+
+    const lsp = await lspRow(storeProbe(extensions, "9z8y7x-vscodium"));
+    expect(lsp?.status).toBe("skip");
+    expect(lsp?.detail).toContain("managed by Nix");
+    expect(lsp?.items?.[0]?.status).toBe("skip");
+    expect(lsp?.items?.[0]?.detail).toContain("via PATH");
+    expect(lsp?.items?.[0]?.detail).toContain("managed by Nix");
+    // There is no marketplace listing, so the line gives both halves a
+    // home-manager user needs: where the VSIX comes from, and how to declare it.
+    expect(lsp?.remedy).toContain("buildVscodeExtension");
+    expect(lsp?.remedy).toContain("terrazzo-lsp.vsix");
+    expect(lsp?.remedy).not.toContain("\n");
+  });
+
+  it("a blocked editor beside an installable one keeps the row available", async () => {
+    // The invariant the row must not break: any editor that CAN be installed
+    // into makes the row `available`, whose derived fix is the setup command.
+    // A blocked sibling is reported as its own skipped item, not as the row's
+    // verdict.
+    const stubDir = tmp("pragma-doctor-mixed-path-");
+    writeFileSync(join(stubDir, "code"), "");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+    const extensions = join(
+      process.env.HOME as string,
+      ".vscode-oss",
+      "extensions",
+    );
+    mkdirSync(extensions, { recursive: true });
+
+    const lsp = await lspRow(storeProbe(extensions, "9z8y7x-vscodium"));
+    expect(lsp?.status).toBe("available");
+    expect(lsp?.detail).toBe("not installed in VS Code");
+    expect(lsp?.items?.map((i) => [i.label, i.status])).toEqual([
+      ["VS Code", "available"],
+      ["VSCodium", "skip"],
+    ]);
+    // The derived fix stands, because there is still something to install.
+    expect(lsp?.remedy).toBe("pragma setup lsp");
+  });
+
+  it("reports an installed editor as a pass, provenance included", async () => {
+    const stubDir = tmp("pragma-doctor-installed-path-");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+    mkdirSync(
+      join(
+        process.env.HOME as string,
+        ".vscode-oss",
+        "extensions",
+        "canonical.terrazzo-lsp-extension-1.2.3",
+      ),
+      { recursive: true },
+    );
+
+    const lsp = await lspRow();
+    expect(lsp?.status).toBe("pass");
+    expect(lsp?.detail).toBe("installed in VSCodium");
+    expect(lsp?.items?.[0]?.status).toBe("pass");
+    expect(lsp?.items?.[0]?.detail).toContain("via PATH");
+    expect(lsp?.items?.[0]?.detail).toContain("· installed");
+  });
+
+  it("an INSTALLED editor in a blocked folder is a pass, not a skip", async () => {
+    // A site-managed (or Nix-managed) extensions folder that ALREADY holds the
+    // extension is a working machine. Reporting a skip there told its owner to
+    // chmod the folder and install an extension they already have, and made
+    // the row a permanent `○ lsp` nothing could clear.
+    const stubDir = tmp("pragma-doctor-blocked-installed-");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+    const extensions = join(
+      process.env.HOME as string,
+      ".vscode-oss",
+      "extensions",
+    );
+    mkdirSync(join(extensions, "canonical.terrazzo-lsp-extension-1.2.3"), {
+      recursive: true,
+    });
+
+    const lsp = await lspRow(storeProbe(extensions, "9z8y7x-vscodium"));
+    expect(lsp?.status).toBe("pass");
+    expect(lsp?.detail).toBe("installed in VSCodium");
+    expect(lsp?.items?.[0]?.status).toBe("pass");
+    expect(lsp?.items?.[0]?.detail).toContain("· installed");
+    expect(lsp?.remedy).toBeUndefined();
+  });
+
+  it("no editor anywhere is a skip naming every place that was looked", async () => {
+    process.env.PATH = tmp("pragma-doctor-empty-path-");
+    const lsp = await lspRow();
+    expect(lsp?.status).toBe("skip");
+    expect(lsp?.detail).toContain("no VS Code-family editor found");
+    expect(lsp?.detail).toContain("under /Applications or ~/Applications");
+    expect(lsp?.detail).toContain("by its user directory");
+    expect(lsp?.remedy).toContain("no action is possible on this machine");
+  });
+});
+
+/**
+ * The `mcp` row over a location pragma must not write. It used to be an
+ * `available` row whose `fix:` would have failed the moment it ran.
+ */
+describe("doctor — an unwritable MCP location", () => {
+  it("reports a store-managed file as a skip whose remedy IS the entry", async () => {
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".vscode"), { recursive: true });
+
+    const rows = await scopedChecks(
+      bootRuntime(FLAGS, cwd),
+      "pragma",
+      storeProbe(cwd, "4b5c6d-project"),
+    );
+    const mcp = rows.find((r) => r.name === "mcp" && r.scope === "project");
+
+    expect(mcp?.status).toBe("skip");
+    expect(mcp?.detail).toContain("managed by Nix");
+    expect(mcp?.items?.every((i) => i.status === "skip")).toBe(true);
+    // The exact entry a write would have emitted, so what the user declares
+    // classifies as registered next time rather than as drift.
+    expect(mcp?.remedy).toContain('"servers"');
+    expect(mcp?.remedy).toContain('"pragma"');
+    expect(mcp?.remedy).not.toContain("\n");
+  });
+
+  it("counts only the WRITABLE files in the row's denominator", async () => {
+    // Two locations, one of them managed: "registered in 1 of 1" is the honest
+    // headline, not "1 of 2" over a file this command will never write.
+    const cwd = tmp("pragma-doctor-proj-");
+    // A `pragma` on PATH, so the registered entry reads `pass` rather than
+    // "registered, but `pragma` is not on PATH" — this case is about the
+    // DENOMINATOR, and a failing sibling would decide the row instead.
+    const binDir = tmp("pragma-doctor-bin-");
+    writeFileSync(join(binDir, "pragma"), "");
+    process.env.PATH = binDir;
+    mkdirSync(join(cwd, ".vscode"), { recursive: true });
+    mkdirSync(join(cwd, ".roo"), { recursive: true });
+    writeFileSync(
+      join(cwd, ".roo", "mcp.json"),
+      JSON.stringify({
+        mcpServers: {
+          pragma: { command: "pragma", args: ["mcp", "serve"], cwd },
+        },
+      }),
+    );
+
+    const rows = await scopedChecks(
+      bootRuntime(FLAGS, cwd),
+      "pragma",
+      storeProbe(join(cwd, ".vscode"), "7e8f9a-vscode"),
+    );
+    const mcp = rows.find((r) => r.name === "mcp" && r.scope === "project");
+
+    expect(mcp?.detail).toBe("registered in 1 of 1 config files");
+    expect(mcp?.items?.filter((i) => i.status === "skip")).toHaveLength(1);
   });
 });

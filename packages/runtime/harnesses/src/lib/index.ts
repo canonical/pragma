@@ -19,8 +19,16 @@ export {
   type TargetGroup,
 } from "./configTargets.js";
 export { default as detectHarnesses } from "./detectHarnesses.js";
-export { default as editorClis, type EditorCliDefinition } from "./editors.js";
-export { executableCandidates } from "./executablePaths.js";
+export {
+  default as editorClis,
+  type EditorCliDefinition,
+  type VscodeProduct,
+  vscodeUserDir,
+} from "./editors.js";
+export {
+  appBundleCandidates,
+  executableCandidates,
+} from "./executablePaths.js";
 export { default as findHarnessById } from "./findHarnessById.js";
 export { default as harnesses } from "./harnesses.js";
 export {
@@ -41,6 +49,7 @@ export {
   userHome,
 } from "./platformPaths.js";
 export type { DetectContext } from "./signals.js";
+export { serializeTomlInlineEntry } from "./toml/index.js";
 export type {
   ConfigTarget,
   DetectedHarness,

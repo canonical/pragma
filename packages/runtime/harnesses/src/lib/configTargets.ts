@@ -11,6 +11,7 @@
 
 import { resolveConfigTarget } from "./config.js";
 import type { PlatformEnv } from "./platformPaths.js";
+import { isProjectRelativeSignal } from "./signals.js";
 import type {
   ConfigTarget,
   DetectedHarness,
@@ -69,13 +70,44 @@ export const isHarnessInBand = (
   return harnessScope === "global" || harnessScope === "both";
 };
 
+/**
+ * Whether a dual-scope harness has EARNED the global band on this machine.
+ *
+ * `isHarnessInBand` answers "can this row write here", which is a fact about
+ * the registry. This answers "should it", which is a fact about the evidence:
+ * a `both` row detected only by something inside the checkout has said nothing
+ * about the machine. A committed `.vscode/` directory is the case that forced
+ * the question — it travels with the repository, so on its own it would have
+ * created `<config>/Code/User/mcp.json` for every contributor who clones,
+ * whether or not they have VS Code. The project band is the right home for
+ * project evidence, and a `both` row always keeps it.
+ *
+ * A row whose EVERY declared signal is project-relative (`cursor`) has nothing
+ * to earn the band with, so the rule does not apply to it: it keeps the
+ * documented global location it has always written. The rule bites exactly
+ * where a row declares user-level probes and none of them matched.
+ *
+ * @param d - One detected harness, carrying the signals that matched.
+ * @returns Whether it belongs in the global band.
+ * @note Pure — reads the detection record and the row's own signals.
+ */
+const earnedGlobalBand = (d: DetectedHarness): boolean => {
+  if (d.harness.scope !== "both") return true;
+  if (d.harness.detect.every(isProjectRelativeSignal)) return true;
+  return d.matched.some((signal) => !isProjectRelativeSignal(signal));
+};
+
 /** The detected harnesses that participate in `band` under the `scope` selection. */
 export const listHarnessesForBand = (
   detected: readonly DetectedHarness[],
   scope: ScopeSelection,
   band: ScopeBand,
 ): DetectedHarness[] =>
-  detected.filter((d) => isHarnessInBand(d.harness.scope, scope, band));
+  detected.filter(
+    (d) =>
+      isHarnessInBand(d.harness.scope, scope, band) &&
+      (band === "project" || earnedGlobalBand(d)),
+  );
 
 /**
  * Group a band's detected harnesses into per-file {@link TargetGroup}s: one
@@ -102,6 +134,10 @@ export const groupConfigTargets = (
 
   for (const d of detected) {
     const target = resolveConfigTarget(d.harness, projectRoot, band, platform);
+    // No location in this band on THIS host (the VS Code rows under WSL, whose
+    // Linux-side per-user file no editor reads) — so no group, and a `both` row
+    // is reached by its project file alone.
+    if (target === undefined) continue;
     const group = byPath.get(target.path) ?? {
       names: new Set<string>(),
       keys: new Set<string>(),

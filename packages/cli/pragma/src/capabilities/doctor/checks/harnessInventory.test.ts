@@ -20,10 +20,15 @@ import {
   type WriteState,
 } from "./harnessInventory.js";
 
+// Roo Code is the `unscoped` example: it is `scope: "project"`, so it can
+// never hold a global entry. VS Code used to stand here and stopped being an
+// example of anything when its per-user `mcp.json` was added — it is
+// `scope: "both"` now, and a fixture claiming otherwise would pin a fact the
+// registry no longer holds.
 const REGISTRY: InventoryHarness[] = [
   { id: "claude-code", name: "Claude Code", inScope: true },
   { id: "cursor", name: "Cursor", inScope: true },
-  { id: "vscode", name: "VS Code", inScope: false },
+  { id: "roo-code", name: "Roo Code", inScope: false },
 ];
 
 /** One harness's share of a file — its OWN write's state, never the file's. */
@@ -50,7 +55,7 @@ describe("harnessInventory — the roll-up", () => {
       "cursor:detected",
       // Not detected AND has no location in this scope at all — the two are
       // different facts and the row says which one applies.
-      "vscode:unscoped",
+      "roo-code:unscoped",
     ]);
     expect(rows[0]?.locations).toEqual(["~/.claude.json"]);
     expect(rows[2]?.locations).toEqual([]);
@@ -58,12 +63,14 @@ describe("harnessInventory — the roll-up", () => {
 
   it("keeps 'undetected' and 'unscoped' apart", () => {
     // Same absence, two different reasons: Cursor could be here and is not,
-    // VS Code could never be here at all.
+    // Roo Code could never be here at all.
     const rows = roll([]);
     expect(rows.find((r) => r.harnessId === "cursor")?.state).toBe(
       "undetected",
     );
-    expect(rows.find((r) => r.harnessId === "vscode")?.state).toBe("unscoped");
+    expect(rows.find((r) => r.harnessId === "roo-code")?.state).toBe(
+      "unscoped",
+    );
   });
 
   it("reports a drifted group as drifted, not as registered", () => {
@@ -158,11 +165,11 @@ describe("harnessInventory — the listing", () => {
     expect(items.map((i) => i.label)).toEqual([
       "Claude Code",
       "Cursor",
-      "VS Code",
+      "Roo Code",
     ]);
     expect(items[1]?.detail).toBe("not detected");
     // Scope-aware, and it states the FACT rather than naming a partition:
-    // VS Code keeps its MCP config per project, so there is no global file for
+    // Roo Code keeps its MCP config per project, so there is no global file for
     // pragma to be in. `no Global band` named an internal word for that.
     expect(items[2]?.detail).toBe(
       "keeps no global config — it is per-project only",

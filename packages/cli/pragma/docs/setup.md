@@ -10,7 +10,7 @@ Reads work from the moment the package is installed — nothing on this page is 
 |---|---|---|
 | `config` | Your global config file, filled in with the defaults | global |
 | `completions` | The TAB-completion script for the shell you are running — zsh, bash, or fish | global |
-| `lsp` | The Terrazzo design-token extension, into your VS Code-family editors | global |
+| `lsp` | The Terrazzo design-token extension, into your VS Code-family editors — VS Code, VS Code Insiders, VSCodium, Cursor, Windsurf, Antigravity | global |
 | `mcp` | A pragma MCP server entry in each AI harness config file | global and local project |
 | `skills` | A symlink for each installed skill, into every harness that reads them | global and local project |
 
@@ -38,6 +38,10 @@ pragma setup --global
 ```
 
 `--local` configures this project only; `--global` configures your home directory.
+
+VS Code-family editors keep a **per-user** `mcp.json` beside their settings, so the default global run covers them — VS Code, VS Code Insiders and VSCodium each have their own. `--local` writes the project's `.vscode/mcp.json` instead, which all three read. Passing `--local` used to be the only way to reach VS Code at all; it is a choice about scope again, not a workaround.
+
+The per-user file has to be EARNED by something about the machine: one of the row's own user-level probes — its configuration directory, its extensions folder, or its CLI on `PATH` — has to have matched. A committed `.vscode/` directory travels with the repository, so on its own it writes the project file and nothing per-user; otherwise every contributor who cloned such a repo would get a VS Code config created for them, VS Code installed or not. Under WSL the VS Code family keeps no per-user file at all: the editor you drive there is the Windows one, which reads `%APPDATA%\Code\User\mcp.json` on the Windows side, so the project `.vscode/mcp.json` is the location that works.
 
 Scope narrows what the wizard offers, not only where it writes: completions and the editor extension are global only, so `--local` leaves them out and says so on their rows; project skills are per-project, so `--global` leaves those out; MCP works either way, so its config files are filtered to the scope you chose.
 
@@ -77,7 +81,7 @@ pragma setup skills
 pragma setup lsp
 ```
 
-**`setup mcp`** registers the pragma MCP server in every AI harness it detects — Claude Code, OpenCode, Gemini CLI, and others. Each write targets one config file; where two harnesses share a file, each one's entries are preserved. Detection classifies every target file up front — no pragma entry yet, already configured, or drifted — and on a terminal an already-configured file is deselected by default, so a re-run offers to fix drift rather than rewrite what is current. Every run opens by naming what it detected — detected targets only, or the whole table under `--verbose` — and where there is more than one config file it then asks which of them to configure, each listed with its own state (`add`, `update`, `unchanged`). Pressing enter keeps the defaults, which configure every file that needs it. `--scope`, `--global`, and `--local` apply here too:
+**`setup mcp`** registers the pragma MCP server in every AI harness it detects — Claude Code, OpenCode, Gemini CLI, VS Code, VS Code Insiders, VSCodium, and others. Each write targets one config file; where two harnesses share a file, each one's entries are preserved. Detection classifies every target file up front — no pragma entry yet, already configured, or drifted — and on a terminal an already-configured file is deselected by default, so a re-run offers to fix drift rather than rewrite what is current. Every run opens by naming what it detected — detected targets only, or the whole table under `--verbose` — and where there is more than one config file it then asks which of them to configure, each listed with its own state (`add`, `update`, `unchanged`). Pressing enter keeps the defaults, which configure every file that needs it. `--scope`, `--global`, and `--local` apply here too:
 
 ```bash
 pragma setup mcp --scope project
@@ -87,7 +91,48 @@ pragma setup mcp --scope project
 
 **`setup skills`** links each installed skill into each harness's skills folder (`.claude/skills/`, `.agents/skills/`, …), reporting every link as created, skipped, or replaced. With nothing to link it says so — and says where skills come from, so the row is not a dead end.
 
-**`setup lsp`** installs the Terrazzo design-token extension into your VS Code-family editors. On a machine with no such editor on `PATH` the row skips and says which CLIs it looked for, rather than offering a command for a binary you do not have.
+**`setup lsp`** installs the Terrazzo design-token extension into your VS Code-family editors. Each editor is found one of three ways, and every row says which: its CLI on `PATH`, its CLI inside its application bundle under `/Applications` or `~/Applications` (macOS installs put nothing on `PATH` until you run "Shell Command: Install '<cli>' command in PATH" from the command palette), or its per-user configuration directory. An editor found only by that directory has no launcher to install with, so its row is a named skip whose `next:` line is the palette command. With no such editor anywhere, the row skips and says which CLIs it looked for and where, rather than offering a command for a binary you do not have.
+
+An extensions folder that is Nix-managed or read-only is a named skip too, not a failure: the write is never attempted, and the `next:` line carries what does work there — the VSIX path and a home-manager declaration, or the folder to make writable. An editor whose extension is ALREADY installed reports `no change` even when its folder is managed: the copy is there and works, and the block only means this command cannot change it.
+
+## Nix / home-manager
+
+Setup decides by the **directory**, never by the OS. A writable path is written as usual; a path that resolves into `/nix/store` — or that refuses to be written — is a named skip with the remedy that works there, and the run still exits 0.
+
+**A managed extensions folder.** `~/.vscode/extensions` under home-manager is a symlink into the store, so `--install-extension` cannot add to it. There is no marketplace listing for the extension yet, so the remedy declares the bundled VSIX:
+
+```nix
+programs.vscode.profiles.default.extensions = [
+  (pkgs.vscode-utils.buildVscodeExtension {
+    name = "terrazzo-lsp-extension";
+    # The one attribute to fill in: the `version` of the package the fetch
+    # above put in the staging directory (read it from its `package.json`).
+    version = "<version>";
+    vscodeExtPublisher = "canonical";
+    vscodeExtName = "terrazzo-lsp-extension";
+    vscodeExtUniqueId = "canonical.terrazzo-lsp-extension";
+    # The VSIX the skip's `next:` line names, fetched with
+    # `bun add @canonical/terrazzo-lsp-extension@latest`. Quoted, through
+    # `builtins.path`: a bare Nix path literal cannot carry the `@` in
+    # `@canonical/…`.
+    src = builtins.path { path = "/path/to/terrazzo-lsp.vsix"; };
+  })
+];
+```
+
+**A managed MCP config.** A `mcp.json` that resolves into the store is skipped the same way, and the `next:` line prints the exact entry a write would have emitted — so pasting it into your own config leaves `pragma doctor` reporting the harness as registered rather than as drift:
+
+```json
+{ "servers": { "pragma": { "command": "pragma", "args": ["mcp", "serve"] } } }
+```
+
+A read-only path that is not in the store reports as read-only, and its remedy is about permissions instead: make the folder writable, then run the step again.
+
+Codex keeps its config in TOML, so a managed `config.toml` gets its entry in TOML rather than JSON — the dotted-key inline table, which is the same entry the writer's `[mcp_servers.pragma]` table holds:
+
+```toml
+mcp_servers.pragma = { command = "pragma", args = ["mcp", "serve"] }
+```
 
 ## `pragma doctor`
 
@@ -135,7 +180,7 @@ The report groups its findings under **Global** and **Local project**, matching 
 | store | The store boots; reports entity count and boot time | `pragma sources update` |
 | config | The global config file exists and parses | `pragma setup config` |
 | completions | The installed script exists, is current, and is wired into the shell | `pragma setup completions` |
-| lsp | The Terrazzo extension is present in the editors on your `PATH` | `pragma setup lsp` |
+| lsp | The Terrazzo extension is present in each editor found, and how each was found | `pragma setup lsp` |
 | mcp | Each config file carries a current pragma entry, and the command it names is on `PATH` | `pragma setup mcp` |
 | skills | Every skill is linked into each harness that reads them | `pragma setup skills` |
 | harnesses | A listing, not a verdict: which AI harnesses are on this machine, and whether pragma is registered in each | — (the `mcp` row owns the fix) |

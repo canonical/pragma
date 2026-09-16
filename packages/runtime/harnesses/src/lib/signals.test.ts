@@ -4,6 +4,7 @@ import type { PlatformEnv } from "./platformPaths.js";
 import {
   checkSignal,
   type DetectContext,
+  isProjectRelativeSignal,
   scoreConfidence,
   toSignalTier,
 } from "./signals.js";
@@ -86,6 +87,52 @@ describe("checkSignal — directory / file", () => {
     );
     expect(result).toBe(true);
     expect(seen).toContain("/home/tester/.config/opencode");
+  });
+
+  it("resolves a %APPDATA%/ path against the win32 config base", () => {
+    const seen: string[] = [];
+    const result = check(
+      { type: "directory", path: "%APPDATA%/Code/User" },
+      ctx({
+        platform: platform({
+          platform: "win32",
+          home: "C:/Users/tester",
+          env: { APPDATA: "D:/roaming" },
+        }),
+      }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path.replaceAll("\\", "/"));
+          return path.replaceAll("\\", "/") === "D:/roaming/Code/User";
+        }),
+      },
+    );
+    expect(result).toBe(true);
+    expect(seen).toContain("D:/roaming/Code/User");
+  });
+
+  it("falls back to ~/AppData/Roaming for a %APPDATA%/ path when the var is unset", () => {
+    // The two coincide by default; they diverge only for a user who has
+    // relocated %APPDATA% — exactly the user a `~/AppData/Roaming` literal
+    // loses, which is why the prefix exists at all.
+    const seen: string[] = [];
+    const result = check(
+      { type: "directory", path: "%APPDATA%/Code/User" },
+      ctx({
+        platform: platform({ platform: "win32", home: "C:/Users/tester" }),
+      }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path.replaceAll("\\", "/"));
+          return (
+            path.replaceAll("\\", "/") ===
+            "C:/Users/tester/AppData/Roaming/Code/User"
+          );
+        }),
+      },
+    );
+    expect(result).toBe(true);
+    expect(seen).toContain("C:/Users/tester/AppData/Roaming/Code/User");
   });
 
   it("resolves a ~/ path against the platform home", () => {
@@ -196,6 +243,7 @@ describe("checkSignal — extension", () => {
     // for the VS Code family (Antigravity included).
     expect(probed).toEqual([
       "/home/tester/.vscode/extensions",
+      "/home/tester/.vscode-insiders/extensions",
       "/home/tester/.vscode-oss/extensions",
       "/home/tester/.cursor/extensions",
       "/home/tester/.windsurf/extensions",
@@ -281,6 +329,73 @@ describe("checkSignal — process", () => {
     // The default set still covers the npm-shim suffixes.
     expect(seen).toContain("C:/bin/codex.CMD");
     expect(seen).toContain("C:/bin/codex.BAT");
+  });
+
+  it("finds an editor CLI inside its macOS app bundle with an EMPTY PATH", () => {
+    // The stock macOS machine: VS Code installed, and nothing on PATH because
+    // the palette's "Install 'code' command in PATH" is opt-in and usually
+    // never run. Before the bundle fallback this reported the editor absent —
+    // a clean skip on a machine that has it.
+    const bundleCli =
+      "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code";
+    const seen: string[] = [];
+    const result = check(
+      { type: "process", name: "code" },
+      ctx({
+        platform: platform({
+          platform: "darwin",
+          home: "/Users/tester",
+          env: {},
+        }),
+      }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path);
+          return path === bundleCli;
+        }),
+      },
+    );
+    expect(result).toBe(true);
+    expect(seen).toContain(bundleCli);
+    // The per-user base is probed too, resolved against the captured home.
+    expect(seen).toContain(
+      "/Users/tester/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
+    );
+  });
+
+  it("does NOT probe app bundles on linux — the same fs detects nothing", () => {
+    // The bundle arm is darwin-only: a `/Applications` path on linux would be
+    // a guess about a directory the platform does not have.
+    const bundleCli =
+      "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code";
+    expect(
+      check({ type: "process", name: "code" }, ctx(), {
+        Exists: existsAt((path) => path === bundleCli),
+      }),
+    ).toBe(false);
+  });
+
+  it("adds no bundle candidates for a binary that is not an editor CLI", () => {
+    // The bundle names come from the editor registry, matched by CLI name; a
+    // `process` signal for `claude` finds no row and contributes nothing.
+    const seen: string[] = [];
+    check(
+      { type: "process", name: "claude" },
+      ctx({
+        platform: platform({
+          platform: "darwin",
+          home: "/Users/tester",
+          env: { PATH: "/usr/bin" },
+        }),
+      }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path);
+          return false;
+        }),
+      },
+    );
+    expect(seen).toEqual(["/usr/bin/claude"]);
   });
 
   it("runs verify and matches stdout against the pattern", () => {
@@ -372,6 +487,44 @@ describe("checkSignal — env", () => {
         {},
       ),
     ).toBe(false);
+  });
+});
+
+/**
+ * The other half of the prefix grammar. `resolveFsPath` turns a spelling into
+ * a path; this turns the same spelling into "is this about the checkout or
+ * about the machine", which is what earns a dual-scope row the global band.
+ */
+describe("isProjectRelativeSignal", () => {
+  it("calls an unprefixed directory/file path project-relative", () => {
+    expect(
+      isProjectRelativeSignal({ type: "directory", path: ".vscode" }),
+    ).toBe(true);
+    expect(
+      isProjectRelativeSignal({ type: "file", path: ".vscode/mcp.json" }),
+    ).toBe(true);
+  });
+
+  it("calls every prefixed path user-level — the three `resolveFsPath` knows", () => {
+    for (const path of [
+      "$XDG_CONFIG_HOME/Code/User",
+      "%APPDATA%/Code/User",
+      "~/.vscode/extensions",
+    ]) {
+      expect(isProjectRelativeSignal({ type: "directory", path })).toBe(false);
+    }
+  });
+
+  it("calls process, extension and env signals user-level", () => {
+    // A binary on PATH, an installed extension and an environment variable are
+    // all facts about the machine — none of them travels with a checkout.
+    expect(isProjectRelativeSignal({ type: "process", name: "code" })).toBe(
+      false,
+    );
+    expect(isProjectRelativeSignal({ type: "extension", id: "a.b" })).toBe(
+      false,
+    );
+    expect(isProjectRelativeSignal({ type: "env", key: "A" })).toBe(false);
   });
 });
 

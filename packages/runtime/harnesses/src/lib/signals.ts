@@ -21,8 +21,16 @@ import {
   traverse,
 } from "@canonical/task";
 import editorClis from "./editors.js";
-import { executableCandidates } from "./executablePaths.js";
-import { type PlatformEnv, userHome, xdgConfigHome } from "./platformPaths.js";
+import {
+  appBundleCandidates,
+  executableCandidates,
+} from "./executablePaths.js";
+import {
+  type PlatformEnv,
+  userConfigBase,
+  userHome,
+  xdgConfigHome,
+} from "./platformPaths.js";
 import type { DetectionSignal } from "./types.js";
 
 /** The context threaded through every signal check: the project root + host. */
@@ -44,16 +52,32 @@ export const CONFIDENCE_RANK: Record<Confidence, number> = {
 /** The literal prefix marking a signal path as XDG-config-relative. */
 const XDG_CONFIG_PREFIX = "$XDG_CONFIG_HOME/";
 
+/** The literal prefix marking a signal path as `%APPDATA%`-relative. */
+const APPDATA_PREFIX = "%APPDATA%/";
+
 /**
  * Resolve a directory/file signal path: a `$XDG_CONFIG_HOME/…` path against the
- * XDG config base, a `~/…` path against the platform home, anything else
- * against the project root.
+ * XDG config base, a `%APPDATA%/…` path against the platform config base, a
+ * `~/…` path against the platform home, anything else against the project root.
  *
  * The XDG form is spelled out rather than written `~/.config/…` because the two
  * are NOT the same directory: a user who sets `$XDG_CONFIG_HOME` keeps nothing
  * under `~/.config`, and resolving against home would report the harness absent
  * and skip it. A tool documenting `~/.config/<tool>` is following the XDG
  * convention and should be declared in this form.
+ *
+ * `%APPDATA%/…` is the same argument for Windows, and it follows the same
+ * precedent rather than inventing a second mechanism: a `~/AppData/Roaming/…`
+ * literal silently misses a user whose `%APPDATA%` has been relocated, and the
+ * miss is a clean skip on a machine that HAS the tool. It resolves through
+ * {@link userConfigBase}, whose win32 arm is `%APPDATA% ?? ~/AppData/Roaming`.
+ * Off win32 the prefix is inert in the sense that matters — no Windows product
+ * directory exists there — though `userConfigBase` still resolves it (to
+ * `~/Library/Preferences/…` on darwin, and to the XDG base on linux, where a
+ * `$XDG_CONFIG_HOME/` sibling signal probes the same path anyway). A
+ * function-valued signal `path` was the alternative; it was rejected because it
+ * would break the documented one-string-per-signal ontology the whole registry
+ * is written in, for a case a third prefix covers.
  */
 const resolveFsPath = (path: string, ctx: DetectContext): string => {
   if (path.startsWith(XDG_CONFIG_PREFIX)) {
@@ -62,10 +86,37 @@ const resolveFsPath = (path: string, ctx: DetectContext): string => {
       path.slice(XDG_CONFIG_PREFIX.length),
     );
   }
+  if (path.startsWith(APPDATA_PREFIX)) {
+    return join(
+      userConfigBase(ctx.platform),
+      path.slice(APPDATA_PREFIX.length),
+    );
+  }
   return path.startsWith("~/")
     ? join(userHome(ctx.platform), path.slice(2))
     : join(ctx.projectRoot, path);
 };
+
+/**
+ * Whether a signal can only ever be matched by something INSIDE the project —
+ * a `directory`/`file` path with none of the prefixes {@link resolveFsPath}
+ * resolves against the user's own directories.
+ *
+ * It is the same prefix list, read the other way round, and it lives beside it
+ * for that reason: a fourth prefix must teach both or the two disagree about
+ * what a path means. Every other signal type is user-level by nature — a
+ * binary on PATH, an installed extension, an environment variable are all
+ * facts about the machine, not about the checkout.
+ *
+ * @param signal - The signal to classify.
+ * @returns Whether it resolves against the project root.
+ * @note Pure — it reads the signal's own spelling and nothing else.
+ */
+export const isProjectRelativeSignal = (signal: DetectionSignal): boolean =>
+  (signal.type === "directory" || signal.type === "file") &&
+  !signal.path.startsWith(XDG_CONFIG_PREFIX) &&
+  !signal.path.startsWith(APPDATA_PREFIX) &&
+  !signal.path.startsWith("~/");
 
 /**
  * Check a `process` signal: whether `name` resolves on the platform `PATH` (on
@@ -83,7 +134,23 @@ const checkProcess = (
 ): Task<boolean> => {
   // The PATH/PATHEXT rules live in one shared helper (`setup lsp`'s editor
   // probe resolves the same way) — see `executablePaths.ts` for why.
-  const candidates = executableCandidates(signal.name, ctx.platform);
+  //
+  // A VS Code-family editor gets its macOS app bundle probed too. Those
+  // editors install no CLI on PATH until the user runs the palette's
+  // "Shell Command: Install '<cli>' command in PATH", which is opt-in and
+  // usually never taken — so on a stock macOS machine the PATH list alone
+  // reported the editor absent and the harness was skipped. The bundle names
+  // come from the editor registry (`editors.ts`), matched by CLI name: a
+  // `process` signal for a non-editor binary finds no row and adds nothing.
+  const candidates = [
+    ...executableCandidates(signal.name, ctx.platform),
+    ...appBundleCandidates(
+      signal.name,
+      ctx.platform,
+      editorClis.find((editor) => editor.cli === signal.name)?.darwinBundles ??
+        [],
+    ),
+  ];
 
   return flatMap(
     traverse(candidates, (candidate) => exists(candidate)),

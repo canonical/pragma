@@ -1,10 +1,13 @@
+import { dirname } from "node:path";
+import { collectEffects } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import harnesses from "./harnesses.js";
 import { crushMcpEntry, opendesignMcpEntry } from "./mcpEntries.js";
+import { checkSignal } from "./signals.js";
 
 describe("harnesses registry", () => {
   it("contains all known harnesses", () => {
-    expect(harnesses).toHaveLength(14);
+    expect(harnesses).toHaveLength(16);
     const ids = harnesses.map((h) => h.id);
     expect(ids).toEqual([
       "claude-code",
@@ -18,6 +21,8 @@ describe("harnesses registry", () => {
       "copilot",
       "antigravity",
       "vscode",
+      "vscode-insiders",
+      "vscodium",
       "opendesign",
       "crush",
       "oh-my-pi",
@@ -212,12 +217,6 @@ describe("harnesses registry", () => {
     const codex = harnesses.find((h) => h.id === "codex");
     expect(codex?.configPath("/project")).toBe("/project/.codex/config.toml");
     expect(codex?.skillsPath("/project")).toBe("/project/.agents/skills");
-  });
-
-  it("vscode configPath is at .vscode/mcp.json", () => {
-    const vscode = harnesses.find((h) => h.id === "vscode");
-    expect(vscode?.configPath("/project")).toBe("/project/.vscode/mcp.json");
-    expect(vscode?.skillsPath("/project")).toBe("/project/.agents/skills");
   });
 
   it("opencode configPath and skillsPath", () => {
@@ -444,5 +443,203 @@ describe("harnesses registry", () => {
   it("windsurf skillsPath", () => {
     const windsurf = harnesses.find((h) => h.id === "windsurf");
     expect(windsurf?.skillsPath("/project")).toBe("/project/.windsurf/skills");
+  });
+
+  /**
+   * The VS Code family's per-user `mcp.json` — the location that turned
+   * `--local` from a workaround back into a choice.
+   *
+   * Every one of these resolves through `vscodeUserDir`, and so do the three
+   * user-directory DETECTION signals on each row. The last case in this block
+   * pins that agreement: a row that detects a directory it then declines to
+   * write into is a row that reports the editor and configures nothing.
+   */
+  describe("the VS Code family's per-user mcp.json", () => {
+    const FAMILY = [
+      ["vscode", "Code"],
+      ["vscode-insiders", "Code - Insiders"],
+      ["vscodium", "VSCodium"],
+    ] as const;
+
+    const rowOf = (id: string) => {
+      const row = harnesses.find((h) => h.id === id);
+      if (row === undefined) throw new Error(`missing harness row: ${id}`);
+      return row;
+    };
+
+    it.each(FAMILY)(
+      "%s is dual-scope, sharing .vscode/mcp.json under the `servers` key",
+      (id) => {
+        const row = rowOf(id);
+        expect(row.scope).toBe("both");
+        expect(row.configPath("/project")).toBe("/project/.vscode/mcp.json");
+        expect(row.mcpKey).toBe("servers");
+        expect(row.configFormat).toBe("json");
+        expect(row.skillsPath("/project")).toBe("/project/.agents/skills");
+      },
+    );
+
+    it.each(FAMILY)(
+      "%s keeps its home config under the XDG config base on linux",
+      (id, product) => {
+        expect(rowOf(id).homeConfigPath?.(PLATFORM)).toBe(
+          `/home/tester/.config/${product}/User/mcp.json`,
+        );
+        // A user who has moved their config base keeps NOTHING under
+        // `~/.config`, so a home-relative literal would write a file the
+        // editor never reads.
+        expect(
+          rowOf(id).homeConfigPath?.({
+            ...PLATFORM,
+            env: { XDG_CONFIG_HOME: "/xdg" },
+          }),
+        ).toBe(`/xdg/${product}/User/mcp.json`);
+      },
+    );
+
+    it.each(FAMILY)(
+      "%s keeps its home config under ~/Library/Application Support on darwin",
+      (id, product) => {
+        // env-paths' DATA base, not its CONFIG base (`~/Library/Preferences`)
+        // and not `~/.config` — `xdgConfigHome` resolves there on darwin BY
+        // DESIGN, so only this arm finds a macOS install.
+        expect(
+          rowOf(id).homeConfigPath?.({
+            ...PLATFORM,
+            platform: "darwin",
+            home: "/Users/tester",
+          }),
+        ).toBe(
+          `/Users/tester/Library/Application Support/${product}/User/mcp.json`,
+        );
+      },
+    );
+
+    it.each(FAMILY)(
+      "%s keeps its home config under %APPDATA% on win32, with the documented fallback",
+      (id, product) => {
+        const win32 = {
+          ...PLATFORM,
+          platform: "win32" as const,
+          home: "C:/Users/tester",
+        };
+        expect(rowOf(id).homeConfigPath?.(win32)).toBe(
+          `C:/Users/tester/AppData/Roaming/${product}/User/mcp.json`,
+        );
+        expect(
+          rowOf(id).homeConfigPath?.({
+            ...win32,
+            env: { APPDATA: "D:/roaming" },
+          }),
+        ).toBe(`D:/roaming/${product}/User/mcp.json`);
+      },
+    );
+
+    it.each(FAMILY)("%s declares NO home config under WSL", (id) => {
+      // The editor a WSL user drives is the WINDOWS one: it reads
+      // `%APPDATA%\Code\User\mcp.json` on the Windows side, and a remote
+      // window reads the workspace `.vscode/mcp.json`. Nothing reads the
+      // Linux-side file, and writing it would report `registered` for a file
+      // no editor opens. (AV-287 is reaching the Windows-side file.)
+      expect(rowOf(id).homeConfigPath?.({ ...PLATFORM, isWsl: true })).toBe(
+        undefined,
+      );
+      // Off WSL the same row resolves, so the row is not simply dead.
+      expect(rowOf(id).homeConfigPath?.(PLATFORM)).toContain("/User/mcp.json");
+    });
+
+    /**
+     * The agreement that keeps detection and the write honest. Each row
+     * declares three user-directory signals — one per platform prefix form —
+     * and on every platform exactly one of them must resolve to
+     * `dirname(homeConfigPath)`. `collectEffects` reads the resolved path
+     * straight off the signal's own `Exists` effect, so the assertion is
+     * against what detection would really probe, not against a re-derivation.
+     */
+    const PLATFORMS = [
+      ["linux", PLATFORM],
+      [
+        "linux with $XDG_CONFIG_HOME",
+        { ...PLATFORM, env: { XDG_CONFIG_HOME: "/xdg" } },
+      ],
+      [
+        "darwin",
+        { ...PLATFORM, platform: "darwin" as const, home: "/Users/tester" },
+      ],
+      [
+        "win32",
+        { ...PLATFORM, platform: "win32" as const, home: "C:/Users/tester" },
+      ],
+      [
+        "win32 with %APPDATA%",
+        {
+          ...PLATFORM,
+          platform: "win32" as const,
+          home: "C:/Users/tester",
+          env: { APPDATA: "D:/roaming" },
+        },
+      ],
+    ] as const;
+
+    it.each(PLATFORMS)(
+      "every family row's user-dir signals reach its own home config dir on %s",
+      (_label, platform) => {
+        for (const [id] of FAMILY) {
+          const row = rowOf(id);
+          const wanted = dirname(row.homeConfigPath?.(platform) ?? "");
+          const probed = row.detect.flatMap((signal) =>
+            collectEffects(
+              checkSignal(signal, { projectRoot: "/project", platform }),
+            ).flatMap((effect) =>
+              effect._tag === "Exists"
+                ? [effect.path.replaceAll("\\", "/")]
+                : [],
+            ),
+          );
+          expect(probed).toContain(wanted.replaceAll("\\", "/"));
+        }
+      },
+    );
+
+    it("neither Insiders nor VSCodium keys on ANYTHING inside .vscode/", () => {
+      // `.vscode/` belongs to VS Code itself, and a committed
+      // `.vscode/mcp.json` says nothing about which product is installed.
+      // Keying on either would co-detect all three in every VS Code project:
+      // the prompt would offer three editors where one exists, and doctor's
+      // inventory would count three. (The WRITE is unaffected either way —
+      // `groupConfigTargets` dedups by `(path, mcpKey)`.)
+      for (const id of ["vscode-insiders", "vscodium"]) {
+        const paths = rowOf(id).detect.flatMap((s) =>
+          "path" in s ? [s.path] : [],
+        );
+        expect(paths.some((path) => path.startsWith(".vscode"))).toBe(false);
+        // The project file is still the row's write target — reached whenever
+        // the row's OWN signals detect it.
+        expect(rowOf(id).configPath("/project")).toBe(
+          "/project/.vscode/mcp.json",
+        );
+      }
+      const vscode = rowOf("vscode").detect.flatMap((s) =>
+        "path" in s ? [s.path] : [],
+      );
+      expect(vscode).toContain(".vscode");
+      expect(vscode).toContain(".vscode/mcp.json");
+    });
+
+    it("each family row probes its OWN CLI and extensions directory", () => {
+      const expected = {
+        vscode: ["code", "~/.vscode/extensions"],
+        "vscode-insiders": ["code-insiders", "~/.vscode-insiders/extensions"],
+        vscodium: ["codium", "~/.vscode-oss/extensions"],
+      } as const;
+      for (const [id, [cli, extensions]] of Object.entries(expected)) {
+        const row = rowOf(id);
+        expect(row.detect).toContainEqual({ type: "process", name: cli });
+        expect(row.detect).toContainEqual({
+          type: "directory",
+          path: extensions,
+        });
+      }
+    });
   });
 });

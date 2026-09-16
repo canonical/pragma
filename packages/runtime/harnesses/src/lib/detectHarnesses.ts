@@ -12,7 +12,7 @@ import {
   type Task,
   traverse,
 } from "@canonical/task";
-import { defaultBandOf, resolveConfigTarget } from "./config.js";
+import { defaultBandOf, requireConfigTarget } from "./config.js";
 import harnesses from "./harnesses.js";
 import { type PlatformEnv, readPlatformEnv } from "./platformPaths.js";
 import {
@@ -42,10 +42,19 @@ const detectOne = (
       const confidence = scoreConfidence(results, harness.detect);
       if (!confidence) return pure(null);
 
+      // WHICH signals matched, not only how strong the strongest was. A
+      // project-relative directory and one in the user's home both score
+      // `high`, and the global band has to tell them apart — see
+      // `DetectedHarness.matched`.
+      const matched = harness.detect.filter(
+        (_signal, index) => results.at(index) === true,
+      );
       // Report the harness's DEFAULT-band file (the home config for a
       // global-only harness, the project file otherwise) so the recap and
-      // doctor point at the location the default `setup` would write.
-      const { path: configPath } = resolveConfigTarget(
+      // doctor point at the location the default `setup` would write. The
+      // default band always resolves: a `both`/`project` row's project file is
+      // unconditional, and a `global`-only row declares a home path.
+      const { path: configPath } = requireConfigTarget(
         harness,
         ctx.projectRoot,
         defaultBandOf(harness),
@@ -58,6 +67,7 @@ const detectOne = (
           confidence,
           configExists,
           configPath,
+          matched,
         }),
       );
     },

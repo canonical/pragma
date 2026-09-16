@@ -34,11 +34,16 @@ export default defineConfig({
         "**/bin.ts",
         "src/testing/**",
       ],
+      // Ratcheted to the measured floor, rounded down. The gate sat at 50
+      // while the suite really covered ~90, so forty points of headroom meant
+      // any amount of new code could arrive uncovered and CI would say
+      // nothing. These numbers move UP when a run beats them; they are not a
+      // target to code down to.
       thresholds: {
-        statements: 50,
-        branches: 50,
-        functions: 50,
-        lines: 50,
+        statements: 90,
+        branches: 81,
+        functions: 92,
+        lines: 91,
       },
     },
   },
