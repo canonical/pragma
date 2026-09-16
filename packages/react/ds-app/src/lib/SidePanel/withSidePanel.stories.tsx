@@ -2,7 +2,15 @@ import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { userEvent } from "storybook/test";
 import SidePanel from "./Provider.js";
+import type { WithSidePanelRender } from "./types.js";
 import withSidePanel from "./withSidePanel.js";
+
+/*
+ * The panel definitions and their wrapped triggers live at module scope, not
+ * in the story bodies: a `withSidePanel` call produces a component type, and
+ * a new type per render would remount the story every time it re-renders.
+ * Defined once, they are also the shape consumers should copy.
+ */
 
 /**
  * The trigger toggles the panel: first click opens, second closes. Escape and
@@ -12,20 +20,22 @@ import withSidePanel from "./withSidePanel.js";
  * The story's `play` clicks the trigger so the snapshot captures the panel
  * open; in the canvas you can click it yourself, both directions.
  */
-const TogglePanelButton = withSidePanel(Button, ({ ref }) => (
+const TogglePanel: WithSidePanelRender = ({ ref }) => (
   <SidePanel ref={ref}>
     <SidePanel.Header>Panel title</SidePanel.Header>
     <SidePanel.Content>
       <p>The application behind this panel is still usable.</p>
     </SidePanel.Content>
   </SidePanel>
-));
+);
+
+const TogglePanelButton = withSidePanel(Button, TogglePanel);
 
 /**
  * The factory receives `close` too — for content with its own exit routes, a
  * form's footer buttons say.
  */
-const FormPanelButton = withSidePanel(Button, ({ ref, close }) => (
+const FormPanel: WithSidePanelRender = ({ close, ref }) => (
   <SidePanel ref={ref}>
     <SidePanel.Header>Add machine</SidePanel.Header>
     <SidePanel.Content>
@@ -38,7 +48,9 @@ const FormPanelButton = withSidePanel(Button, ({ ref, close }) => (
       </Button>
     </SidePanel.Footer>
   </SidePanel>
-));
+);
+
+const FormPanelButton = withSidePanel(Button, FormPanel);
 
 const meta = {
   title: "Components/SidePanel/withSidePanel",
@@ -91,19 +103,22 @@ export const Toggle: Story = {
       source: {
         code: `
 import { Button } from "@canonical/react-ds-global";
-import { SidePanel, withSidePanel } from "@canonical/react-ds-app";
+import {
+  SidePanel,
+  withSidePanel,
+  type WithSidePanelRender,
+} from "@canonical/react-ds-app";
 
-const TogglePanelButton = withSidePanel(
-  Button,
-  ({ ref }) => (
-    <SidePanel ref={ref}>
-      <SidePanel.Header>Panel title</SidePanel.Header>
-      <SidePanel.Content>
-        <p>The application behind this panel is still usable.</p>
-      </SidePanel.Content>
-    </SidePanel>
-  ),
+const TogglePanel: WithSidePanelRender = ({ ref }) => (
+  <SidePanel ref={ref}>
+    <SidePanel.Header>Panel title</SidePanel.Header>
+    <SidePanel.Content>
+      <p>The application behind this panel is still usable.</p>
+    </SidePanel.Content>
+  </SidePanel>
 );
+
+const TogglePanelButton = withSidePanel(Button, TogglePanel);
 
 <TogglePanelButton>Toggle panel</TogglePanelButton>
         `,
@@ -127,28 +142,31 @@ export const CloseFromContent: Story = {
       source: {
         code: `
 import { Button } from "@canonical/react-ds-global";
-import { SidePanel, withSidePanel } from "@canonical/react-ds-app";
+import {
+  SidePanel,
+  withSidePanel,
+  type WithSidePanelRender,
+} from "@canonical/react-ds-app";
 
-const FormPanelButton = withSidePanel(
-  Button,
-  ({ ref, close }) => (
-    <SidePanel ref={ref}>
-      <SidePanel.Header>Add machine</SidePanel.Header>
-      <SidePanel.Content>
-        <MachineForm
-          onCancel={close}
-          onSubmit={(data) => { save(data); close(); }}
-        />
-      </SidePanel.Content>
-      <SidePanel.Footer>
-        <Button onClick={close}>Cancel</Button>
-        <Button importance="primary" anticipation="constructive" onClick={close}>
-          Save
-        </Button>
-      </SidePanel.Footer>
-    </SidePanel>
-  ),
+const FormPanel: WithSidePanelRender = ({ close, ref }) => (
+  <SidePanel ref={ref}>
+    <SidePanel.Header>Add machine</SidePanel.Header>
+    <SidePanel.Content>
+      <MachineForm
+        onCancel={close}
+        onSubmit={(data) => { save(data); close(); }}
+      />
+    </SidePanel.Content>
+    <SidePanel.Footer>
+      <Button onClick={close}>Cancel</Button>
+      <Button importance="primary" anticipation="constructive" onClick={close}>
+        Save
+      </Button>
+    </SidePanel.Footer>
+  </SidePanel>
 );
+
+const FormPanelButton = withSidePanel(Button, FormPanel);
 
 <FormPanelButton importance="primary">Add machine</FormPanelButton>
         `,
