@@ -24,13 +24,25 @@
     > .title {
       flex: 1 1 auto;
       /*
-        A panel title reads as a heading, not body text: heading-4 resolves a
-        step above `--typography-text-primary-font-size`, which is the same
-        size as heading-5/6 and read as body copy.
+        A panel title reads as a heading, not body text, so it consumes the
+        heading-2 scale exactly like the `h2` element rule does
+        (@canonical/styles-typography, elements.css)
       */
-      font-size: var(--typography-heading-4-font-size);
-      line-height: var(--typography-heading-4-line-height);
-      font-weight: var(--typography-heading-4-font-weight);
+      font-family: var(--typography-heading-2-font-family);
+      font-size: var(--typography-heading-2-font-size);
+      font-weight: var(--typography-heading-2-font-weight);
+      letter-spacing: var(--typography-heading-2-letter-spacing);
+      line-height: var(
+        --typography-heading-2-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-heading-2-font-size) *
+            var(--typography-heading-2-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
     }
   }
 }
