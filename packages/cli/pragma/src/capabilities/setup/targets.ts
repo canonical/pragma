@@ -41,29 +41,26 @@ import {
   detectConfigFile,
 } from "./operations/setupConfig.js";
 import {
-  blockedLspEditors,
   composeLsp,
   composeLspRemoval,
-  type DetectedEditor,
+  describeEditorSource,
   detectLsp,
-  editorFoundVia,
+  firstLspBlock,
+  installableEditors,
   LSP_SKIP_REMEDY,
   type LspDetection,
-  lspBlockHeadline,
   lspBlockReason,
-  lspBlockRemedy,
   lspEditorNames,
   lspSkipReason,
   ownedLspEditors,
 } from "./operations/setupLsp.js";
 import {
-  blockedMcpGroups,
   composeMcp,
   composeMcpRemoval,
   detectMcp,
+  firstMcpBlock,
   type McpDetection,
   mcpBlockReason,
-  mcpBlockRemedy,
   mcpGroupBlock,
   mcpGroupState,
   ownedMcpGroups,
@@ -79,6 +76,7 @@ import {
   skillsSkipRemedy,
   staleSkillLinks,
 } from "./operations/setupSkills.js";
+import type { FsProbe } from "./operations/writability.js";
 import {
   type PlanAction,
   type PlanChildRow,
@@ -99,11 +97,6 @@ export interface TargetDraft {
   readonly remedy?: string;
 }
 
-// The two named roots every draft's paths render against. Declared with the
-// plan (it is that structure's own field) and re-exported here, where every
-// row and every consumer of a row already looks.
-export type { Roots } from "./plan.js";
-
 /**
  * One row of the table, generic over its own detection type. Every consumer
  * treats the detection as opaque and hands it straight back to the same row,
@@ -114,8 +107,15 @@ export interface TargetDefinition<D> {
   /** Human title, used where a sentence needs one; the id is the row name. */
   readonly title: string;
   readonly scopes: readonly Scope[];
-  /** Real reads, up front, once per (target, scope) per invocation. */
-  detect(rt: PragmaRuntime, scope: Scope): Promise<D>;
+  /**
+   * Real reads, up front, once per (target, scope) per invocation.
+   *
+   * `probe` is the writability filesystem seam, threaded from `detectTargets`
+   * so a test can drive the two arms no CI host has — a `/nix/store` path, and
+   * (as root) a directory that refuses `W_OK` — through the SAME entry points
+   * production uses. Rows that write nothing ignore it.
+   */
+  detect(rt: PragmaRuntime, scope: Scope, probe?: FsProbe): Promise<D>;
   /** What a forward run would do. */
   plan(detection: D, scope: Scope, roots: Roots): TargetDraft;
   /** What a removal would do — composed from what detection says we own. */
@@ -231,7 +231,7 @@ const completionsTarget = defineTarget<CompletionsDetection>({
  * The named skip for a machine with no VS Code-family editor at all — the one
  * finding the forward plan and the removal share verbatim.
  */
-const lspNothingFound = (d: LspDetection): TargetDraft => ({
+const draftLspNothingFound = (d: LspDetection): TargetDraft => ({
   action: "skip",
   detail: lspSkipReason(d),
   reason: lspSkipReason(d),
@@ -245,48 +245,51 @@ const lspNothingFound = (d: LspDetection): TargetDraft => ({
  *
  * Each label carries HOW the editor was found, because that is the fact a user
  * whose run did nothing needs — whether pragma missed their editor or found it
- * and could not act. A blocked editor is a child `skip` with its own reason,
- * so the row names it instead of silently offering it.
+ * and could not act.
+ *
+ * An INSTALLED editor is `unchanged` even when its folder is blocked: the copy
+ * really is there, and a child reading `skip — make the folder writable` told
+ * a user to chmod and reinstall an extension they already have. A block only
+ * decides the child when there is nothing installed for it to be about.
  */
 const lspChildren = (d: LspDetection, roots: Roots): PlanChildRow[] =>
   d.editors.map((e): PlanChildRow => {
-    const label = `${e.editor.cli} — ${e.editor.name} · ${editorFoundVia(e, roots)}`;
+    const label = `${e.editor.cli} — ${e.editor.name} · ${describeEditorSource(e, roots)}`;
+    if (e.installed) {
+      return { key: e.editor.cli, label, action: "unchanged" };
+    }
     const reason = lspBlockReason(e);
     if (reason !== undefined) {
       return { key: e.editor.cli, label, action: "skip", reason };
     }
-    return {
-      key: e.editor.cli,
-      label,
-      action: e.installed ? "unchanged" : "add",
-    };
+    return { key: e.editor.cli, label, action: "add" };
   });
 
 /**
- * The row-level skip for a machine where every editor is blocked — `undefined`
- * when there is still work the row can do.
+ * The row-level skip for a machine where nothing can be done at all —
+ * `undefined` when there is still something the row can say for itself.
  *
  * `actionable` is the row's own count of editors it could act on (pending
- * installs going forward, owned copies on a removal). Zero of those AND at
- * least one block means the row's whole answer is the block, so it carries the
- * FIRST one's reason and the remedy that matches it: a Nix declaration, a
- * `chmod`, or the palette command, never one sentence standing for all three.
+ * installs going forward, owned copies on a removal) PLUS the ones already
+ * installed: a machine that is fully installed everywhere it can be is a `no
+ * change` row, not a permanent skip telling its owner to fix a folder whose
+ * extension is in place. Zero of those AND at least one block means the row's
+ * whole answer is the block, so it carries the FIRST one's reason and the
+ * remedy that matches it: a Nix declaration, a `chmod`, or the palette
+ * command, never one sentence standing for all three.
  */
-const lspRowBlock = (
+const draftLspRowBlock = (
   d: LspDetection,
   actionable: number,
 ): TargetDraft | undefined => {
   if (actionable > 0) return undefined;
-  const first: DetectedEditor | undefined = blockedLspEditors(d).at(0);
-  if (first === undefined) return undefined;
-  // The row headline names the editor; the CHILD's own reason does not, because
-  // its label already has.
-  const reason = lspBlockHeadline(first) as string;
+  const block = firstLspBlock(d);
+  if (block === undefined) return undefined;
   return {
     action: "skip",
-    detail: reason,
-    reason,
-    remedy: lspBlockRemedy(d, first) as string,
+    detail: block.headline,
+    reason: block.headline,
+    remedy: block.remedy,
   };
 };
 
@@ -294,16 +297,15 @@ const lspTarget = defineTarget<LspDetection>({
   id: "lsp",
   title: "Terrazzo LSP extension",
   scopes: ["global"],
-  detect: (rt) => detectLsp(rt.cwd),
+  detect: (rt, _scope, probe) => detectLsp(rt.cwd, undefined, probe),
   plan: (d, _scope, roots) => {
-    if (d.state === "unknown") return lspNothingFound(d);
+    if (d.state === "unknown") return draftLspNothingFound(d);
     const children = lspChildren(d, roots);
     // The editors an install could actually act on: missing the extension AND
     // not blocked. A blocked editor is not a candidate the user declined.
-    const installable = d.editors.filter(
-      (e) => !e.installed && e.block === undefined,
-    );
-    const blocked = lspRowBlock(d, installable.length);
+    const installable = installableEditors(d);
+    const installed = d.editors.filter((e) => e.installed);
+    const blocked = draftLspRowBlock(d, installable.length + installed.length);
     if (blocked !== undefined) return { ...blocked, children };
     // The detail names WHAT is being placed and WHERE — never the row's own
     // state, which the action column already carries. `installed (VSCodium)`
@@ -327,7 +329,7 @@ const lspTarget = defineTarget<LspDetection>({
   removalPlan: (d, _scope, roots) => {
     // No editor found at all is the SAME named skip the forward plan reports:
     // there is nothing on this machine to run an uninstall with.
-    if (d.state === "unknown") return lspNothingFound(d);
+    if (d.state === "unknown") return draftLspNothingFound(d);
     // Removal is composed from what detection says we OWN — a copy that is
     // present, whatever its version. The forward plan's version gate would let
     // a dead pre-0.8.3 copy this command installed survive its own `--undo`.
@@ -335,7 +337,7 @@ const lspTarget = defineTarget<LspDetection>({
     // Nothing owned AND something blocked is the same skip the forward row
     // reports, for the same reason: the uninstall would need a CLI this
     // machine has not got, or a write pragma must not make.
-    const blocked = lspRowBlock(d, owned.length);
+    const blocked = draftLspRowBlock(d, owned.length);
     if (blocked !== undefined) {
       return { ...blocked, children: lspChildren(d, roots) };
     }
@@ -400,7 +402,7 @@ const mcpTarget = defineTarget<McpDetection>({
   id: "mcp",
   title: "MCP server registration",
   scopes: ["global", "project"],
-  detect: (rt, scope) => detectMcp(rt, scope),
+  detect: (rt, scope, probe) => detectMcp(rt, scope, probe),
   plan: (d, scope, roots) => {
     if (d.groups.length === 0) {
       return {
@@ -415,14 +417,13 @@ const mcpTarget = defineTarget<McpDetection>({
     const writable = d.groups.filter(
       (group) => mcpGroupBlock(d, group.path) === undefined,
     );
-    if (writable.length === 0) {
-      const first = blockedMcpGroups(d)[0] as McpDetection["groups"][number];
-      const reason = mcpBlockReason(d, first, roots) as string;
+    const block = writable.length === 0 ? firstMcpBlock(d, roots) : undefined;
+    if (block !== undefined) {
       return {
         action: "skip",
-        detail: reason,
-        reason,
-        remedy: mcpBlockRemedy(d, first) as string,
+        detail: block.reason,
+        reason: block.reason,
+        remedy: block.remedy,
         children,
       };
     }

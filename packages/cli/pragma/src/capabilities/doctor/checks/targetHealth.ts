@@ -38,20 +38,19 @@ import type {
   ConfigDetection,
 } from "../../setup/operations/index.js";
 import {
-  blockedLspEditors,
   blockedMcpGroups,
-  editorFoundVia,
+  describeEditorSource,
+  type FsProbe,
+  firstLspBlock,
+  firstMcpBlock,
+  installableEditors,
   LSP_SKIP_REMEDY,
   type LspDetection,
-  lspBlockHeadline,
   lspBlockReason,
-  lspBlockRemedy,
   lspEditorNames,
   lspSkipReason,
   type McpDetection,
   mcpBlockReason,
-  mcpBlockRemedy,
-  mcpGroupBlock,
   mcpGroupState,
   mcpWriteState,
   type SkillsDetection,
@@ -71,7 +70,7 @@ import {
 import { commandResolves } from "./mcpCommand.js";
 
 /** What a row reports before its name, scope and `fix:` line are attached. */
-export interface Health {
+interface Health {
   readonly status: CheckResult["status"];
   readonly detail: string;
   readonly items?: readonly CheckItem[];
@@ -110,19 +109,18 @@ const configHealth = (
  *
  * The row's own status keeps the report's invariant that every `available` row
  * has a remedy: any editor that CAN be installed into makes the row
- * `available`, whose derived fix is `pragma setup lsp`. A row where every
- * editor is blocked is a `skip` carrying the first block's own remedy — a
- * Nix declaration, a `chmod`, or the palette command — never the derived
- * command, which would only reproduce the skip.
+ * `available`, whose derived fix is `pragma setup lsp`. A row where NOTHING is
+ * installed and nothing is installable is a `skip` carrying the first block's
+ * own remedy — a Nix declaration, a `chmod`, or the palette command — never
+ * the derived command, which would only reproduce the skip.
  *
- * EXPORTED for its tests, alongside {@link mcpHealth}. Two of its arms are
- * about filesystems no CI host has — a `/nix/store` path, and (as root) a
- * directory that refuses `W_OK` — and the detection those arms read is
- * produced over `detectLsp`'s probe seam. `scopedChecks` drives the target
- * table, which takes no probe, so the row body is what a test can hand a
- * fixture to. Nothing else imports either one.
+ * An INSTALLED editor is a `pass` even when its extensions folder is blocked.
+ * The copy is there and works; the block only says this command cannot CHANGE
+ * it. Reporting a skip instead told the owner of a site-managed folder that
+ * already held the extension to chmod it and install again, and made a machine
+ * that is installed everywhere it can be a permanent `○ lsp`.
  */
-export const lspHealth = (d: LspDetection, roots: Roots): Health => {
+const lspHealth = (d: LspDetection, roots: Roots): Health => {
   if (d.state === "unknown") {
     return {
       status: "skip",
@@ -131,18 +129,19 @@ export const lspHealth = (d: LspDetection, roots: Roots): Health => {
     };
   }
   const items: CheckItem[] = d.editors.map((e): CheckItem => {
-    const reason = lspBlockReason(e);
+    const reason = e.installed ? undefined : lspBlockReason(e);
     const state = reason ?? (e.installed ? "installed" : "not installed");
     return {
       label: e.editor.name,
-      status:
-        reason !== undefined ? "skip" : e.installed ? "pass" : "available",
-      detail: `${editorFoundVia(e, roots)} · ${state}`,
+      status: e.installed
+        ? "pass"
+        : reason !== undefined
+          ? "skip"
+          : "available",
+      detail: `${describeEditorSource(e, roots)} · ${state}`,
     };
   });
-  const installable = d.editors.filter(
-    (e) => !e.installed && e.block === undefined,
-  );
+  const installable = installableEditors(d);
   if (installable.length > 0) {
     return {
       status: "available",
@@ -150,16 +149,19 @@ export const lspHealth = (d: LspDetection, roots: Roots): Health => {
       items,
     };
   }
-  const blocked = blockedLspEditors(d);
-  const first = blocked.at(0);
-  if (first !== undefined) {
+  // Nothing installable. The row is the block's only when nothing is installed
+  // either — otherwise the honest headline is what IS in place.
+  const block = d.editors.some((e) => e.installed)
+    ? undefined
+    : firstLspBlock(d);
+  if (block !== undefined) {
     return {
       status: "skip",
       // The headline names the editor; the item's own detail does not, because
       // its label already has.
-      detail: lspBlockHeadline(first) as string,
+      detail: block.headline,
       items,
-      remedy: lspBlockRemedy(d, first) as string,
+      remedy: block.remedy,
     };
   }
   return {
@@ -174,10 +176,8 @@ export const lspHealth = (d: LspDetection, roots: Roots): Health => {
  * present, current, and bootable. Two separate checks used to report this —
  * one for presence, one for command resolution — and the second judged every
  * server in the file, so a foreign server's dead command failed this CLI's row.
- *
- * Exported for its tests, for the reason {@link lspHealth} spells out.
  */
-export async function mcpHealth(
+async function mcpHealth(
   d: McpDetection,
   scope: Scope,
   cwd: string,
@@ -214,13 +214,16 @@ export async function mcpHealth(
   // carries the first one's remedy — the entry to declare by hand — rather than
   // the derived `pragma setup mcp`, which would only reproduce the skip.
   const blockedGroups = blockedMcpGroups(d);
-  if (blockedGroups.length === d.groups.length) {
-    const first = blockedGroups[0] as (typeof blockedGroups)[number];
+  const block =
+    blockedGroups.length === d.groups.length
+      ? firstMcpBlock(d, roots)
+      : undefined;
+  if (block !== undefined) {
     return {
       status: "skip",
-      detail: mcpBlockReason(d, first, roots) as string,
+      detail: block.reason,
       items,
-      remedy: mcpBlockRemedy(d, first) as string,
+      remedy: block.remedy,
     };
   }
   const configured = items.filter((item) => item.status === "pass").length;
@@ -498,15 +501,21 @@ export const fixCommandFor = (id: string, scope: Scope, bin: string): string =>
  *
  * @param rt - The per-invocation runtime.
  * @param bin - The binary name the `fix:` lines are derived from.
+ * @param probe - The writability filesystem seam, threaded to every row's
+ *   detection. Defaults to the real one; a test injects a fixture to reach the
+ *   blocked arms — a `/nix/store` path, a directory that refuses `W_OK` —
+ *   through THIS entry point, rather than opening the row bodies up as exports
+ *   nothing in production would call.
  * @returns One {@link CheckResult} per (target, scope), plus one per scope.
  * @note Impure — every target's detection reads the real filesystem.
  */
 export async function scopedChecks(
   rt: PragmaRuntime,
   bin: string,
+  probe?: FsProbe,
 ): Promise<CheckResult[]> {
   const roots = await resolveRoots(rt);
-  const detected = await detectTargets(rt, [...TARGET_IDS], "both");
+  const detected = await detectTargets(rt, [...TARGET_IDS], "both", probe);
   const [targetRows, inventoryRows] = await Promise.all([
     Promise.all(
       detected.map(async (row): Promise<CheckResult> => {
