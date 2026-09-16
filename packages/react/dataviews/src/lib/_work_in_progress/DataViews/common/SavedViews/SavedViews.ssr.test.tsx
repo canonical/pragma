@@ -37,8 +37,10 @@ describe("DataViews.SavedViews SSR", () => {
         <SavedViews />
       </DataViews>,
     );
+    // The notice, then the root's announcer region, empty, which is the
+    // root's and says nothing on a server.
     expect(html).toBe(
-      '<div role="group" aria-label="Saved views" class="ds data-views-saved-views"><noscript><p class="unavailable">Saved views need JavaScript. A link to a query still works.</p></noscript></div>',
+      '<div role="group" aria-label="Saved views" class="ds data-views-saved-views"><noscript><p class="unavailable">Saved views need JavaScript. A link to a query still works.</p></noscript></div><div class="ds data-views-announcer" aria-live="polite" aria-relevant="additions"></div>',
     );
     expect(list).not.toHaveBeenCalled();
     expect(subscribe).not.toHaveBeenCalled();

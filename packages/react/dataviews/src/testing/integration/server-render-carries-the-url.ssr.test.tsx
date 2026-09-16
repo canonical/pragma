@@ -79,7 +79,7 @@ describe("a server render of the connected composition", () => {
       /<option(?=[^>]*value="50")(?=[^>]*selected)[^>]*>/,
     );
     expect(pagination).toContain("of 2 pages");
-    expect(pagination).toContain("Showing 51–87 out of 87 items");
+    expect(pagination).toContain("Showing 51–87 out of 87 rows");
     expect(pagination).not.toMatch(
       /<input(?=[^>]*type="hidden")(?=[^>]*name="page")[^>]*>/,
     );

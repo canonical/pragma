@@ -511,9 +511,20 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
     await page.keyboard.press("Enter");
     await expect(host).toHaveAttribute("aria-sort", "ascending");
     await expect(hostSort).toBeFocused();
+    // The ordering has no place on screen to be read from: the root's
+    // announcer says it, one node per moment.
+    // Read by the latest announcement, never by a count: an announcement
+    // leaves the region a few seconds after it is spoken, so a slow run would
+    // count one fewer. That each is a new node, which a live region of
+    // additions reads, is pinned in the announcer's own tests.
+    const announcements = page.locator(".ds.data-views-announcer > *");
+    await expect(announcements.last()).toHaveText("Sorted by Host, ascending.");
     await page.keyboard.press("Space");
     await expect(host).toHaveAttribute("aria-sort", "descending");
     await expect(hostSort).toBeFocused();
+    await expect(announcements.last()).toHaveText(
+      "Sorted by Host, descending.",
+    );
 
     // Shift adds Status as the second term; Host keeps the sort's claim.
     await tabTo(page, statusSort);
@@ -657,9 +668,9 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
     await expect(
       page.getByRole("columnheader", { name: "Host", exact: true }),
     ).toHaveCount(0);
-    await expect(page.locator(".ds.data-table-announcement")).toHaveText(
-      "Host hidden",
-    );
+    await expect(
+      page.locator(".ds.data-views-announcer > *").last(),
+    ).toHaveText("Host hidden");
     // The hidden column's controls are gone: focus stays in the header row.
     await expect(
       page.locator("[role='columnheader'] button:focus"),
@@ -693,9 +704,9 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
     await expect(
       page.getByRole("columnheader", { name: "Status", exact: true }),
     ).toHaveCount(0);
-    await expect(page.locator(".ds.data-table-announcement")).toHaveText(
-      "Status hidden",
-    );
+    await expect(
+      page.locator(".ds.data-views-announcer > *").last(),
+    ).toHaveText("Status hidden");
     await expect(trigger).toBeFocused();
   });
 
@@ -751,18 +762,18 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
       .getByRole("navigation", { name: "Pagination" })
       .getByRole("status");
     // The story's own play function has already kept the failed machines.
-    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 rows");
     const host = page.getByRole("textbox", { name: "Host contains" });
     await tabTo(page, host);
     // Characters, not a shortcut: the input's own text is the query.
     await page.keyboard.type("fir");
-    await expect(summary).toHaveText("Showing item 1 out of 1");
+    await expect(summary).toHaveText("Showing row 1 out of 1");
     await expect(host).toBeFocused();
     await page.keyboard.press("Tab");
     const clear = page.getByRole("button", { name: "Clear Host contains" });
     await expect(clear).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 rows");
     await expect(host).toHaveValue("");
     // The clear control leaves with the text; focus moves to the input.
     await expect(clear).toHaveCount(0);
@@ -777,11 +788,11 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
       .getByRole("navigation", { name: "Pagination" })
       .getByRole("status");
     // The story's own play function has already moved failed to none-of.
-    await expect(summary).toHaveText("Showing 1–5 out of 9 items");
+    await expect(summary).toHaveText("Showing 1–5 out of 9 rows");
     const excluded = page.getByRole("group", { name: "Status is none of" });
     await tabTo(page, excluded.getByRole("checkbox", { name: "failed" }));
     await page.keyboard.press("Space");
-    await expect(summary).toHaveText("Showing 1–5 out of 12 items");
+    await expect(summary).toHaveText("Showing 1–5 out of 12 rows");
     // The none-of group leaves with its last option; focus is the filters'.
     await expect(excluded).toHaveCount(0);
     await expect(page.getByRole("group", { name: "Filters" })).toBeFocused();
@@ -789,13 +800,13 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
     const failed = included.getByRole("checkbox", { name: "failed" });
     await tabTo(page, failed);
     await page.keyboard.press("Space");
-    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 rows");
     const move = page.getByRole("button", {
       name: "Match none of these instead",
     });
     await tabTo(page, move);
     await page.keyboard.press("Enter");
-    await expect(summary).toHaveText("Showing 1–5 out of 9 items");
+    await expect(summary).toHaveText("Showing 1–5 out of 9 rows");
     await expect(page.getByRole("group", { name: "Filters" })).toBeFocused();
   });
 
@@ -806,11 +817,11 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
     const summary = page
       .getByRole("navigation", { name: "Pagination" })
       .getByRole("status");
-    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 rows");
     const host = page.getByRole("textbox", { name: "Host starts with" });
     await tabTo(page, host);
     await page.keyboard.type("b");
-    await expect(summary).toHaveText("Showing item 1 out of 1");
+    await expect(summary).toHaveText("Showing row 1 out of 1");
     await expect(host).toBeFocused();
     await page.keyboard.press("Tab");
     const clear = page.getByRole("button", {
@@ -818,7 +829,7 @@ test.describe("DataTable, sort panel, filters, settings and server-backed storie
     });
     await expect(clear).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(summary).toHaveText("Showing 1–3 out of 3 items");
+    await expect(summary).toHaveText("Showing 1–3 out of 3 rows");
     await expect(host).toBeFocused();
   });
 

@@ -18,6 +18,7 @@ import {
   declareMachineOrdering,
   machine,
 } from "../../../testing/machines.js";
+import readAnnouncements from "../../../testing/readAnnouncements.js";
 import { DataViews } from "../../lib/_work_in_progress/DataViews/index.js";
 
 describe("regression 0050 — reset stayed enabled under an open view", () => {
@@ -60,8 +61,6 @@ describe("regression 0050 — reset stayed enabled under an open view", () => {
     });
     expect(reset).toHaveClass("disabled");
     fireEvent.click(reset);
-    expect(
-      document.querySelector(".ds.data-table-announcement"),
-    ).toBeEmptyDOMElement();
+    expect(await readAnnouncements()).toEqual([]);
   });
 });

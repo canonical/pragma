@@ -8,11 +8,13 @@ import {
   readProviderHost,
 } from "@canonical/dataviews-core/bindings";
 import { useEffect, useMemo } from "react";
+import { useAnnouncer, useMessages } from "../../../hooks/index.js";
 import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
 /**
  * The state of one DataViews root: it observes the provider for as long
- * as the root is mounted, and owns the root's filter records.
+ * as the root is mounted, owns the root's filter records, resolves the
+ * words its parts speak, and holds the one announcer they speak through.
  *
  * Observing is ref-counted on the provider, so the standalone parts inside
  * the root observing it too costs nothing, and a rehearsal mount and
@@ -24,7 +26,10 @@ import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 export default function useProviderState<
   TFields extends readonly SchemaFieldDefinition[],
   TRow extends object = RowRecord,
->({ provider }: UseProviderStateProps<TFields, TRow>): UseProviderStateResult {
+>({
+  provider,
+  messages,
+}: UseProviderStateProps<TFields, TRow>): UseProviderStateResult {
   if (!isDataViewsProvider(provider)) {
     throw new Error(
       "DataViews requires a provider created by createDataViewsProvider",
@@ -32,15 +37,23 @@ export default function useProviderState<
   }
   // The context stores the widest provider shape, schema and record type
   // alike; the hooks narrow it back after checking the collection.
-  const widest = provider as UseProviderStateResult["provider"];
+  const widest = provider as UseProviderStateResult["value"]["provider"];
   const inputs = useMemo(
     () => createFilterInputs({ host: readProviderHost(widest) }),
     [widest],
   );
+  const words = useMessages(messages);
+  const { ref, announce } = useAnnouncer();
   useEffect(() => provider.observe(), [provider]);
   useEffect(() => inputs.observe(), [inputs]);
-  return useMemo(
-    () => ({ provider: widest, filters: inputs.handles }),
-    [widest, inputs],
+  const value = useMemo(
+    () => ({
+      provider: widest,
+      filters: inputs.handles,
+      messages: words,
+      announce,
+    }),
+    [widest, inputs, words, announce],
   );
+  return { value, announcer: ref };
 }

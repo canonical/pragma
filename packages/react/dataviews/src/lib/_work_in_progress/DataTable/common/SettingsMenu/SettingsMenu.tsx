@@ -1,3 +1,4 @@
+import type { DataViewsMessages } from "@canonical/dataviews-core";
 import {
   ContextualMenu,
   Icon,
@@ -9,10 +10,13 @@ import {
   type ReactElement,
   type ReactNode,
   useCallback,
+  useContext,
   useLayoutEffect,
   useMemo,
   useRef,
 } from "react";
+import { MessagesContext } from "../../../../common/index.js";
+import { composeMessage } from "../../../../utils/index.js";
 import { useMenuPhase } from "../hooks/index.js";
 import type { ColumnChange, ColumnSetting } from "../types.js";
 import { spellDestinationKey } from "../utils/index.js";
@@ -32,17 +36,13 @@ const triggerCssClassName = "ds contextual-menu data-table-settings-menu";
 /** The class the design system's menu takes beside its own. */
 const menuClassName = "data-table-settings-menu";
 
-/** The words the menu shows, collected so they can be localised in one place. */
-const MESSAGES = {
-  trigger: "Table settings",
-  hide: "Hide",
-  show: "Show",
-  move: "Move",
-  left: "left",
-  right: "right",
-  alwaysShown: "is always shown",
-  reset: "Reset table settings",
-} as const;
+/** The message naming each change to a column. */
+const CHANGE_MESSAGES = {
+  hide: "hideNamedColumn",
+  show: "showNamedColumn",
+  "move-left": "moveNamedColumnLeft",
+  "move-right": "moveNamedColumnRight",
+} as const satisfies Readonly<Record<ColumnChange, keyof DataViewsMessages>>;
 
 /** The menu's items, what choosing each does and what each says, by key. */
 type ListedItems = {
@@ -62,35 +62,20 @@ const NO_ITEMS: ListedItems = {
 const describeChange = (
   setting: ColumnSetting,
   change: ColumnChange,
-): ReactNode => {
-  const { header } = setting.column;
-  switch (change) {
-    case "hide":
-      return (
-        <>
-          {MESSAGES.hide} {header}
-        </>
-      );
-    case "show":
-      return (
-        <>
-          {MESSAGES.show} {header}
-        </>
-      );
-    case "move-left":
-      return (
-        <>
-          {MESSAGES.move} {header} {MESSAGES.left}
-        </>
-      );
-    case "move-right":
-      return (
-        <>
-          {MESSAGES.move} {header} {MESSAGES.right}
-        </>
-      );
-  }
-};
+  messages: DataViewsMessages,
+): ReactNode =>
+  composeMessage((place) =>
+    messages[CHANGE_MESSAGES[change]](place(setting.column.header)),
+  );
+
+/** What a column that cannot be hidden says in place of its toggle. */
+const describeAlwaysShown = (
+  setting: ColumnSetting,
+  messages: DataViewsMessages,
+): ReactNode =>
+  composeMessage((place) =>
+    messages.columnAlwaysShown(place(setting.column.header)),
+  );
 
 /** The changes a column is listed with, in the order they are listed. */
 const listChanges = (setting: ColumnSetting): readonly ColumnChange[] => [
@@ -100,17 +85,20 @@ const listChanges = (setting: ColumnSetting): readonly ColumnChange[] => [
 ];
 
 /** The menu's items, with what choosing and showing each one does, by its key. */
-const listItems = ({
-  settings,
-  resettable,
-  onChange,
-  onReset,
-}: Pick<
-  SettingsMenuProps,
-  "settings" | "resettable" | "onChange" | "onReset"
->): ListedItems => {
+const listItems = (
+  {
+    settings,
+    resettable,
+    onChange,
+    onReset,
+  }: Pick<
+    SettingsMenuProps,
+    "settings" | "resettable" | "onChange" | "onReset"
+  >,
+  messages: DataViewsMessages,
+): ListedItems => {
   const actions = new Map<string, () => void>([["reset", onReset]]);
-  const labels = new Map<string, ReactNode>([["reset", MESSAGES.reset]]);
+  const labels = new Map<string, ReactNode>();
   /** An item rendered by the shared label, its content kept by key. */
   const buildItem = (
     key: string,
@@ -121,7 +109,7 @@ const listItems = ({
     return { key, disabled, displayItemsType: "custom", Component: ItemLabel };
   };
   const items: MenuEntry[] = settings.flatMap((setting): MenuEntry[] => {
-    const { id, header, hideable } = setting.column;
+    const { id, hideable } = setting.column;
     const entries = listChanges(setting).map((change) => {
       const key = spellDestinationKey(id, change);
       actions.set(key, () => {
@@ -131,22 +119,16 @@ const listItems = ({
       // and choosing it says so again, so a reader who cannot see a greyed
       // item still hears why.
       return hideable === false && change === "hide"
-        ? buildItem(
-            key,
-            <>
-              {header} {MESSAGES.alwaysShown}
-            </>,
-            false,
-          )
+        ? buildItem(key, describeAlwaysShown(setting, messages), false)
         : buildItem(
             key,
-            describeChange(setting, change),
+            describeChange(setting, change, messages),
             !setting.offers[change],
           );
     });
     return [...entries, { type: "separator", key: `separator:${id}` }];
   });
-  items.push(buildItem("reset", MESSAGES.reset, !resettable));
+  items.push(buildItem("reset", messages.resetTableSettings, !resettable));
   return { items, actions, labels };
 };
 
@@ -169,7 +151,8 @@ const listItems = ({
  * table settings returns every column's width, place and visibility to the
  * arrangement beneath the viewer's own changes. Choosing an item closes the
  * menu and returns focus to its button; the table announces what changed.
- * The items are listed only while the menu is open.
+ * The items are listed only while the menu is open. Every word is the
+ * table's messages'.
  *
  * Before scripts take over it is a disclosure of real links, each to the
  * same query carrying the arrangement its change leaves, where the provider
@@ -187,14 +170,15 @@ function SettingsMenu(props: SettingsMenuProps): ReactElement | null {
     onReset,
     listDestinations,
   } = props;
+  const messages = useContext(MessagesContext);
   const { phase, placeholder, menuRoot, openMenu, closeMenu } = useMenuPhase();
   const closed = phase === "closed";
   const { items, actions, labels } = useMemo(
     () =>
       closed
         ? NO_ITEMS
-        : listItems({ settings, resettable, onChange, onReset }),
-    [closed, settings, resettable, onChange, onReset],
+        : listItems({ settings, resettable, onChange, onReset }, messages),
+    [closed, settings, resettable, onChange, onReset, messages],
   );
   const choose = useCallback(
     (item: MenuItem) => {
@@ -224,7 +208,7 @@ function SettingsMenu(props: SettingsMenuProps): ReactElement | null {
   const trigger = (
     <>
       <Icon icon="settings" />
-      <span className="label">{MESSAGES.trigger}</span>
+      <span className="label">{messages.tableSettings}</span>
     </>
   );
   if (!hydrated) {
@@ -240,9 +224,7 @@ function SettingsMenu(props: SettingsMenuProps): ReactElement | null {
           {settings.map((setting) => (
             <li key={setting.column.id}>
               {setting.column.hideable === false ? (
-                <span>
-                  {setting.column.header} {MESSAGES.alwaysShown}
-                </span>
+                <span>{describeAlwaysShown(setting, messages)}</span>
               ) : null}
               {listChanges(setting).map((change) => {
                 const destination = destinations.changes.get(
@@ -250,7 +232,7 @@ function SettingsMenu(props: SettingsMenuProps): ReactElement | null {
                 );
                 return destination === undefined ? null : (
                   <a key={change} href={destination}>
-                    {describeChange(setting, change)}
+                    {describeChange(setting, change, messages)}
                   </a>
                 );
               })}
@@ -258,7 +240,7 @@ function SettingsMenu(props: SettingsMenuProps): ReactElement | null {
           ))}
           {resettable ? (
             <li>
-              <a href={destinations.reset}>{MESSAGES.reset}</a>
+              <a href={destinations.reset}>{messages.resetTableSettings}</a>
             </li>
           ) : null}
         </ul>
@@ -290,7 +272,7 @@ function SettingsMenu(props: SettingsMenuProps): ReactElement | null {
         className={menuClassName}
         trigger={trigger}
         items={items}
-        label={MESSAGES.trigger}
+        label={messages.tableSettings}
         open={phase === "open"}
         onOpenChange={closeMenu}
         onSelect={choose}

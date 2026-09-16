@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import type { UseStableValueResult } from "./types.js";
 
 /**
  * Hold a value rebuilt every render at one stable reference.
@@ -12,7 +13,7 @@ import { useRef } from "react";
 export default function useStableValue<TValue>(
   value: TValue,
   equals: (held: TValue, next: TValue) => boolean,
-): TValue {
+): UseStableValueResult<TValue> {
   // Written during render: the write is idempotent for one value, so a
   // render React discards leaves the ref as the committed one would.
   const held = useRef(value);

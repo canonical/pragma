@@ -146,6 +146,7 @@ describe("public surface", () => {
       "resolveColumns",
       "resolveDisplayStatus",
       "resolveEffectiveOrdering",
+      "resolveMessages",
       "resolvePagination",
       "showColumn",
       "spellColumnArrangement",
@@ -155,6 +156,7 @@ describe("public surface", () => {
       expect(dataviews).not.toHaveProperty(name);
     }
     expect(bindings.isDataViewsProvider(undefined)).toBe(false);
+    expect(bindings.resolveMessages({ search: "Find" }).search).toBe("Find");
     expect(
       bindings.buildColumnTemplate(
         [{ id: "a", sizing: { kind: "fixed", px: 8 } }],

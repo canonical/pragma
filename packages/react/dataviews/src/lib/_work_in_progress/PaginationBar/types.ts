@@ -1,4 +1,5 @@
 import type {
+  DataViewsMessages,
   DataViewsProvider,
   RowRecord,
   SchemaFieldDefinition,
@@ -12,7 +13,13 @@ type OwnProps<
 > = {
   /** The provider created by `createDataViewsProvider` whose window the bar pages. */
   readonly provider: DataViewsProvider<TFields, TRow>;
-  /** The navigation's accessible name. Defaults to "Pagination". */
+  /**
+   * The words the bar renders, over the English record: a standalone bar is
+   * its own root. The connected bar takes its root's instead. Define a
+   * worded message once: a new function on every render re-renders the bar.
+   */
+  readonly messages?: Partial<DataViewsMessages>;
+  /** The navigation's accessible name. Defaults to the messages' `pagination`. */
   readonly label?: string;
   /**
    * The page sizes offered; 50, 75 and 100 by default. The applied size is

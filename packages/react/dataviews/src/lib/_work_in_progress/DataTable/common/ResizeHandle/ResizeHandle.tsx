@@ -1,4 +1,11 @@
-import { type ReactElement, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  type ReactElement,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
+import { MessagesContext } from "../../../../common/index.js";
 import type { ResizeHandleProps } from "./types.js";
 
 const componentCssClassName = "ds data-table-resize-handle";
@@ -48,6 +55,7 @@ export default function ResizeHandle({
   // The live drag's teardown, held across the re-renders its own previews
   // cause: listeners registered by one render must be removed by the same
   // closure, not by whatever identity the next render produces.
+  const messages = useContext(MessagesContext);
   const teardown = useRef<(() => void) | null>(null);
   // The control whose edge just moved, until the render showing the move has
   // brought it into view. A drag in progress keeps it set.
@@ -151,7 +159,7 @@ export default function ResizeHandle({
       aria-valuenow={Math.round(width)}
       aria-valuemin={min}
       aria-valuemax={Number.isFinite(max) ? max : undefined}
-      aria-valuetext={`${Math.round(width)} pixels`}
+      aria-valuetext={messages.columnWidth(Math.round(width))}
       onPointerDown={(event) => {
         beginDrag(event.currentTarget, event.clientX);
       }}

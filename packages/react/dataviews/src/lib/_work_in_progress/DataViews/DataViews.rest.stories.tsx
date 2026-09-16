@@ -169,13 +169,13 @@ export const Answered: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     await userEvent.click(canvas.getByRole("checkbox", { name: "failed" }));
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–3 out of 3 items",
+        "Showing 1–3 out of 3 rows",
       ),
     );
   },
@@ -230,7 +230,7 @@ export const FailedOverKeptRows: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     await userEvent.click(canvas.getByRole("button", { name: "Next page" }));
@@ -261,7 +261,7 @@ export const SortLimitedToOneTerm: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     // One user holds Shift through the click, as a person would: separate
@@ -297,7 +297,7 @@ export const TextApplied: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     const host = canvas.getByRole("textbox", { name: "Host contains" });
@@ -308,7 +308,7 @@ export const TextApplied: Story = {
     await userEvent.type(host, "ELM");
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing item 1 out of 1",
+        "Showing row 1 out of 1",
       ),
     );
     await expect(
@@ -334,7 +334,7 @@ export const CountsAndNoneOf: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     const status = canvas.getByRole("group", { name: "Status is any of" });
@@ -348,7 +348,7 @@ export const CountsAndNoneOf: Story = {
     );
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–3 out of 3 items",
+        "Showing 1–3 out of 3 rows",
       ),
     );
     await expect(
@@ -359,7 +359,7 @@ export const CountsAndNoneOf: Story = {
     );
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 out of 9 items",
+        "Showing 1–5 out of 9 rows",
       ),
     );
     const excluded = canvas.getByRole("group", { name: "Status is none of" });
@@ -382,7 +382,7 @@ export const StartsWithApplied: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     const host = canvas.getByRole("textbox", { name: "Host starts with" });
@@ -393,7 +393,7 @@ export const StartsWithApplied: Story = {
     await userEvent.type(host, "B");
     await waitFor(() =>
       expect(readPaginationSummary(canvas)).toHaveTextContent(
-        "Showing item 1 out of 1",
+        "Showing row 1 out of 1",
       ),
     );
     await expect(

@@ -50,7 +50,7 @@ describe("DataViews.Pagination", () => {
     const nav = screen.getByRole("navigation", { name: "Machines pagination" });
     expect(nav).toHaveClass("ds", "data-table-pagination-bar", "footer");
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Showing 1–2 out of 5 items",
+      "Showing 1–2 out of 5 rows",
     );
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     expect(provider.state.get().window).toEqual({
@@ -60,5 +60,37 @@ describe("DataViews.Pagination", () => {
     // The bar inside the root observes too; one run answers both.
     expect(source.latest().request.window).toEqual({ ...firstOfTwo, page: 2 });
     expect(source.calls).toHaveLength(2);
+  });
+
+  it("speaks its root's words, which a bar given none would not", () => {
+    const { provider, source } = createMachineProvider({
+      snapshot: { query: "page=1&size=2", presentation: {} },
+    });
+    render(
+      <DataViews
+        provider={provider}
+        messages={{ goToNextPage: "Suivante", rowsShown: () => "Deux lignes" }}
+      >
+        <Pagination />
+      </DataViews>,
+    );
+    act(() => {
+      source.latest().deliver({
+        status: "succeeded",
+        page: createPage({
+          rows: [machine("m1", "alpha"), machine("m2", "beta")],
+          matched: 5,
+          total: 5,
+        }),
+      });
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Deux lignes");
+    expect(
+      screen.getByRole("button", { name: "Suivante" }),
+    ).toBeInTheDocument();
+    // What the root leaves out stays English.
+    expect(
+      screen.getByRole("navigation", { name: "Pagination" }),
+    ).toBeInTheDocument();
   });
 });

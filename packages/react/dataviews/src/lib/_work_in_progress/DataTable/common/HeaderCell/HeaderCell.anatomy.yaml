@@ -18,7 +18,9 @@
 #                                         and precedence the sort control is
 #                                         described by
 #   reason          design none yet       DOM `span.sort-reason`, why the last
-#                                         activation changed nothing
+#                                         activation changed nothing, shown
+#                                         and not live: the table's announcer
+#                                         says it once
 #   header menu     design none yet       DOM `ds contextual-menu menu`, the
 #                                         design system's ContextualMenu
 #   menu trigger    design none yet       DOM `button.trigger`
@@ -62,9 +64,11 @@
 #
 # The sort control is described by its direction and precedence, as
 # "descending, 2nd of 3", from a hidden element; a refused activation's
-# reason is shown below the heading and read politely, once scripts run,
-# while focus is in the heading or its own menu, and goes once focus leaves
-# both, the ordering changes, or the column leaves the arrangement.
+# reason is shown below the heading once scripts run, while focus is in the
+# heading or its own menu, and goes once focus leaves both, the ordering
+# changes, or the column leaves the arrangement. The reason is no live
+# region: the table's announcer says it once, when it happens, as it says
+# every accepted ordering. Every word comes from the messages record.
 #
 # Accessibility: "Sort/header menu/resize" (2.1.1, 2.5.2, 2.5.7-2.5.8, 4.1.2),
 # with 1.4.1 — the ordering is `aria-sort` and the description, never only

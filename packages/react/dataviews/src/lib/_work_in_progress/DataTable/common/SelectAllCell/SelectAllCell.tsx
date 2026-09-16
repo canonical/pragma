@@ -1,5 +1,6 @@
 import { CheckboxInput } from "@canonical/react-ds-global-form";
-import { type ReactElement, useMemo } from "react";
+import { type ReactElement, useContext, useMemo } from "react";
+import { MessagesContext } from "../../../../common/index.js";
 import { useDataViewsValue } from "../../../../hooks/index.js";
 import type { SelectAllCellProps } from "./types.js";
 
@@ -15,6 +16,7 @@ export default function SelectAllCell({
   ids: displayed,
   reserve,
 }: SelectAllCellProps): ReactElement {
+  const messages = useContext(MessagesContext);
   const state = useDataViewsValue(selection.state);
   const ids = useDataViewsValue(displayed);
   // Counted, not filtered: this runs on every render of the header, and
@@ -37,7 +39,7 @@ export default function SelectAllCell({
     <div role="columnheader" className={componentCssClassName} ref={reserve}>
       <CheckboxInput
         checked={all}
-        aria-label="Select all displayed rows"
+        aria-label={messages.selectAllRows}
         ref={(node) => {
           if (node !== null) {
             node.indeterminate = some;

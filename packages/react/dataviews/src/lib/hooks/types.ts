@@ -1,13 +1,18 @@
 /**
  * Hook domain types for the hooks every part shares: the value hook that
  * observes one channel, the cell hook a column's own renderer reads, whether
- * scripts have taken over, and the focus a server's link hands to the button
- * replacing it. Each hook declares its result type, and its props type where
- * it takes a config object, here.
+ * scripts have taken over, the focus a server's link hands to the button
+ * replacing it, and the words a root speaks. Each hook declares its result
+ * type, and its props type where it takes a config object, here.
  */
 
-import type { ReadonlyChannel, RowRecord } from "@canonical/dataviews-core";
-import type { RefObject } from "react";
+import type {
+  DataViewsMessages,
+  ReadonlyChannel,
+  RowRecord,
+} from "@canonical/dataviews-core";
+import type { ReactNode, RefObject } from "react";
+import type { AnnouncerHandle, AnnouncerTopic } from "../common/index.js";
 
 /** What `useDataViewsValue` returns: the channel's current value, or the part `select` picks. */
 export type UseDataViewsValueResult<T> = T;
@@ -52,3 +57,30 @@ export type UseHydrationFocusHandoffResult = {
  * false on the server and while hydrating, true after.
  */
 export type UseIsHydratedResult = boolean;
+
+/**
+ * What `useMessages` returns: every message a root speaks, the application's
+ * over the English record.
+ */
+export type UseMessagesResult = DataViewsMessages;
+
+/** What `useStableValue` returns: the held value, while it equals the one given. */
+export type UseStableValueResult<TValue> = TValue;
+
+/** What `useStableCallback` returns: the latest callback behind one identity. */
+export type UseStableCallbackResult<
+  TArgs extends readonly unknown[],
+  TResult,
+> = (...args: TArgs) => TResult;
+
+/** What `useAnnouncer` returns: a root's announcer, as the root renders and speaks through it. */
+export type UseAnnouncerResult = {
+  /** The ref the root renders its announcer's region with. */
+  readonly ref: RefObject<AnnouncerHandle | null>;
+  /**
+   * Say an outcome that has no place on screen, through the region, under a
+   * topic where the outcome has one latest answer; one identity for as long
+   * as the root is mounted.
+   */
+  readonly announce: (message: ReactNode, topic?: AnnouncerTopic) => void;
+};

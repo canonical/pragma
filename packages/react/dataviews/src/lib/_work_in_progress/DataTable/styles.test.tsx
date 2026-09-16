@@ -381,13 +381,6 @@ describe("DataTable stylesheet", () => {
     ).toMatch(/--data-table-settings-track:\s*var\(--dimension-400\);/);
   });
 
-  it("hides the announcement by clipping, taking no room", () => {
-    const announcement = rule(/\.ds\.data-table-announcement/);
-    expect(announcement).toMatch(/position:\s*absolute;/);
-    expect(announcement).toMatch(/clip-path:\s*inset\(50%\);/);
-    expect(announcement).toMatch(/overflow:\s*hidden;/);
-  });
-
   it("spans the status row across the table, however many tracks it has", () => {
     // A block, so even a selectable table with no columns gives its message
     // the full width rather than the selection track alone.

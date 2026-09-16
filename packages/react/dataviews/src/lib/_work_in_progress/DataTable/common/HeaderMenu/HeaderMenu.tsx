@@ -1,10 +1,19 @@
+import type { DataViewsMessages } from "@canonical/dataviews-core";
 import {
   ContextualMenu,
   Icon,
   type MenuEntry,
   type MenuItem,
 } from "@canonical/react-ds-global";
-import { memo, type ReactElement, useCallback, useMemo } from "react";
+import {
+  memo,
+  type ReactElement,
+  useCallback,
+  useContext,
+  useMemo,
+} from "react";
+import { MessagesContext } from "../../../../common/index.js";
+import { composeMessage } from "../../../../utils/index.js";
 import { useMenuPhase } from "../hooks/index.js";
 import type { HeaderMenuProps } from "./types.js";
 
@@ -14,54 +23,43 @@ import type { HeaderMenuProps } from "./types.js";
  */
 const triggerCssClassName = "ds contextual-menu menu";
 
-/** The words the menu shows, collected so they can be localised in one place. */
-const MESSAGES = {
-  ascending: "Sort ascending",
-  descending: "Sort descending",
-  removeFromSort: "Remove from sort",
-  hide: "Hide column",
-  moveLeft: "Move column left",
-  moveRight: "Move column right",
-  triggerFor: "Column options for",
-} as const;
-
 /**
  * The menu's items: the column's sort where it offers one, with remove
- * where it applies, then its visibility and its place.
+ * where it applies, then its visibility and its place, in the table's words.
  */
-const listItems = ({
-  sortable,
-  removable,
-  hideable,
-  offers,
-}: Pick<
-  HeaderMenuProps,
-  "sortable" | "removable" | "hideable" | "offers"
->): MenuEntry[] => {
+const listItems = (
+  {
+    sortable,
+    removable,
+    hideable,
+    offers,
+  }: Pick<HeaderMenuProps, "sortable" | "removable" | "hideable" | "offers">,
+  messages: DataViewsMessages,
+): MenuEntry[] => {
   const sort: MenuEntry[] = sortable
     ? [
-        { key: "asc", label: MESSAGES.ascending },
-        { key: "desc", label: MESSAGES.descending },
+        { key: "asc", label: messages.sortAscending },
+        { key: "desc", label: messages.sortDescending },
         ...(removable
-          ? [{ key: "remove", label: MESSAGES.removeFromSort }]
+          ? [{ key: "remove", label: messages.removeFromSort }]
           : []),
         { type: "separator", key: "separator" },
       ]
     : [];
   const hide: MenuEntry[] = hideable
-    ? [{ key: "hide", label: MESSAGES.hide, disabled: !offers.hide }]
+    ? [{ key: "hide", label: messages.hideColumn, disabled: !offers.hide }]
     : [];
   return [
     ...sort,
     ...hide,
     {
       key: "move-left",
-      label: MESSAGES.moveLeft,
+      label: messages.moveColumnLeft,
       disabled: !offers["move-left"],
     },
     {
       key: "move-right",
-      label: MESSAGES.moveRight,
+      label: messages.moveColumnRight,
       disabled: !offers["move-right"],
     },
   ];
@@ -83,7 +81,7 @@ const listItems = ({
  * it, disabled at either end. Choosing an item closes the menu and returns
  * focus to its button — or, when the column is hidden and its button with
  * it, to the header now standing where it stood — and the table announces
- * what changed.
+ * what changed. Every word is the table's messages'.
  *
  * The menu itself mounts only while it is open: before and after, the
  * header holds only its button, drawn as the menu's own, so a wide table
@@ -108,9 +106,10 @@ function HeaderMenu({
   onRemoveFromSort,
   onChangeColumn,
 }: HeaderMenuProps): ReactElement {
+  const messages = useContext(MessagesContext);
   const items = useMemo(
-    () => listItems({ sortable, removable, hideable, offers }),
-    [sortable, removable, hideable, offers],
+    () => listItems({ sortable, removable, hideable, offers }, messages),
+    [sortable, removable, hideable, offers, messages],
   );
   const { phase, placeholder, menuRoot, openMenu, closeMenu } = useMenuPhase();
   // One identity while the column holds, so the menu's own context holds.
@@ -137,7 +136,7 @@ function HeaderMenu({
     <>
       <Icon icon="menu-contextual" />
       <span className="menu-label">
-        {MESSAGES.triggerFor} {header}
+        {composeMessage((place) => messages.columnOptions(place(header)))}
       </span>
     </>
   );

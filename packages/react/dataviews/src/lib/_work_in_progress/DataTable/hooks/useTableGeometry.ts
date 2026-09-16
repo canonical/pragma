@@ -7,10 +7,9 @@ import {
   resolveColumns,
 } from "@canonical/dataviews-core/bindings";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useDataViewsValue } from "../../../hooks/index.js";
+import { useDataViewsValue, useStableValue } from "../../../hooks/index.js";
 import { areTracksEqual } from "../common/utils/index.js";
 import type { UseTableGeometryResult } from "./types.js";
-import useStableValue from "./useStableValue.js";
 
 /**
  * Give the last column whatever width the others leave, even past its own

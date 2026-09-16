@@ -16,10 +16,13 @@ import {
   spellColumnArrangement,
 } from "@canonical/dataviews-core/bindings";
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
-import { useDataViewsValue } from "../../../hooks/index.js";
+import {
+  useDataViewsValue,
+  useStableCallback,
+  useStableValue,
+} from "../../../hooks/index.js";
+import { composeMessage } from "../../../utils/index.js";
 import type {
-  AnnouncementHandle,
-  ColumnAnnouncement,
   ColumnChange,
   ColumnSetting,
   SettingsDestinations,
@@ -35,8 +38,6 @@ import type {
   UseColumnManagementProps,
   UseColumnManagementResult,
 } from "./types.js";
-import useStableCallback from "./useStableCallback.js";
-import useStableValue from "./useStableValue.js";
 
 /** What each change writes to an arrangement, or null where it changes nothing. */
 const CHANGES = {
@@ -82,8 +83,8 @@ const listShownIds = (
 /**
  * The table's column management: each declared column with the changes it
  * takes now, whether a reset would change anything, the commands that hide,
- * show, move and reset columns, the announcement they speak through, and
- * where each change leads without scripting.
+ * show, move and reset columns, each saying what it did through the table's
+ * announcer, and where each change leads without scripting.
  *
  * Every change is presentation: it is written to the provider's
  * presentation and asks the source for nothing, so it moves no query, no
@@ -109,6 +110,8 @@ export default function useColumnManagement<
   provider,
   columns,
   headerRow,
+  messages,
+  announce,
 }: UseColumnManagementProps<TFields, TRow>): UseColumnManagementResult {
   const { presentation } = provider;
   const declared = useStableValue(columns, areColumnsEqual);
@@ -153,13 +156,6 @@ export default function useColumnManagement<
     () => Object.keys(resetColumnArrangement({ presentation: own })).length > 0,
     [own],
   );
-
-  // The table's announcement, which holds what it says itself: saying
-  // something renders the region and nothing of the table.
-  const announcer = useRef<AnnouncementHandle>(null);
-  const announce = (subject: ColumnAnnouncement): void => {
-    announcer.current?.announce(subject);
-  };
 
   // Where a hidden column stood among the shown ones, until the render that
   // removed it has recovered the focus it may have taken. Run after every
@@ -217,7 +213,14 @@ export default function useColumnManagement<
       });
       if (patch === null) {
         if (change === "hide" && column.hideable === false) {
-          announce({ kind: "always-shown", column });
+          // Under no topic: each column is its own subject, so two
+          // columns refused in one moment are both read rather than the
+          // second standing for the first.
+          announce(
+            composeMessage((place) =>
+              messages.columnAlwaysShown(place(column.header)),
+            ),
+          );
         }
         return;
       }
@@ -225,19 +228,25 @@ export default function useColumnManagement<
       presentation.arrange(patch);
       if (change === "hide") {
         recoverAt.current = before;
-        announce({ kind: "hidden", column });
+        announce(
+          composeMessage((place) =>
+            messages.columnHidden(place(column.header)),
+          ),
+        );
         return;
       }
       const shown = listShownIds(
         columns,
         presentation.state.get().presentation,
       );
-      announce({
-        kind: change === "show" ? "shown" : "moved",
-        column,
-        position: shown.indexOf(columnId) + 1,
-        count: shown.length,
-      });
+      const position = shown.indexOf(columnId) + 1;
+      const word =
+        change === "show" ? messages.columnShown : messages.columnMoved;
+      announce(
+        composeMessage((place) =>
+          word(place(column.header), position, shown.length),
+        ),
+      );
     },
   );
 
@@ -249,7 +258,7 @@ export default function useColumnManagement<
       return;
     }
     presentation.arrange(patch);
-    announce({ kind: "reset" });
+    announce(messages.tableSettingsReset);
   });
 
   const { spellQuery } = readProviderHost(provider);
@@ -292,7 +301,6 @@ export default function useColumnManagement<
     settings,
     readOffers,
     resettable,
-    announcer,
     changeColumn,
     resetColumns,
     listDestinations,

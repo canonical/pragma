@@ -79,7 +79,7 @@ export const InAComposition: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 1–5 out of 12 items",
+        "Showing 1–5 out of 12 rows",
       ),
     );
     await expect(canvas.getByText("of 3 pages")).toBeInTheDocument();
@@ -104,7 +104,7 @@ export const AFilteredTotal: Story = {
   play: async ({ canvas }) => {
     await waitFor(() =>
       expect(canvas.getByRole("status")).toHaveTextContent(
-        "Showing 1–3 out of 3 items",
+        "Showing 1–3 out of 3 rows",
       ),
     );
     await expect(canvas.getByText("of 1 page")).toBeInTheDocument();

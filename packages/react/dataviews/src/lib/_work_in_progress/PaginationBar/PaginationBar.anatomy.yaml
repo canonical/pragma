@@ -1,5 +1,5 @@
 ---
-# PaginationBar — the bar beneath a collection's rows: how many items are on
+# PaginationBar — the bar beneath a collection's rows: how many rows are on
 # screen, how many a page holds, and the way to every other page.
 #
 # Anatomy DSL 0.3.0. No validator runs on this file yet: it is checked in
@@ -115,10 +115,15 @@
 #   - The top border is `dimension/stroke/thickness/medium` (1px). The design
 #     draws 2px; the package has no 2px stroke.
 #   - The result summary names the range on screen ("Showing 6–10 out of 12
-#     items"; one row as "Showing item 6 out of 12") where the design
+#     rows"; one row as "Showing row 6 out of 12") where the design
 #     writes the count ("Showing 50 out of 942 items"). The count reads the
 #     same on every full page, so a page move would change nothing a screen
-#     reader hears.
+#     reader hears. It counts rows, as the table does, where the design
+#     says items.
+#   - The page size is labelled "Rows per page", without the design's
+#     colon: the label is the select's accessible name, and a colon read
+#     into a name is noise. Every word the bar shows comes from the
+#     messages record, English unless the application replaces it.
 #   - The result summary is empty while the rows on screen do not answer the
 #     current query: a pending replacement, or a failed one that left an
 #     earlier query's rows in view. Conditional display is deferred in the

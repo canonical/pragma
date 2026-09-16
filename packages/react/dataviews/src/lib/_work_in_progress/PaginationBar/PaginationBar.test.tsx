@@ -94,7 +94,7 @@ const mount = (
 
 const summary = () => screen.getByRole("status");
 const pageSelect = () => screen.getByRole("combobox", { name: "Page" });
-const sizeSelect = () => screen.getByLabelText("Items per page:");
+const sizeSelect = () => screen.getByLabelText("Rows per page");
 const button = (name: string) => screen.getByRole("button", { name });
 const first = () => button("First page");
 const previous = () => button("Previous page");
@@ -186,7 +186,7 @@ describe("PaginationBar", () => {
     const { provider, source } = makeProvider();
     mount(provider);
     load(source, machines(2), 5);
-    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 5 items$/);
+    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 5 rows$/);
     expect(values(pageSelect())).toEqual(["1", "2", "3"]);
     // The total describes the select it sits beside.
     const total = screen.getByText("of 3 pages");
@@ -201,7 +201,7 @@ describe("PaginationBar", () => {
     const { provider, source } = makeProvider();
     mount(provider);
     load(source, machines(1), 1);
-    expect(summary()).toHaveTextContent(/^Showing item 1 out of 1$/);
+    expect(summary()).toHaveTextContent(/^Showing row 1 out of 1$/);
     expect(screen.getByText("of 1 page")).toBeInTheDocument();
   });
 
@@ -209,7 +209,7 @@ describe("PaginationBar", () => {
     const { provider, source } = makeProvider();
     mount(provider);
     load(source, machines(2), null);
-    expect(summary()).toHaveTextContent(/^Showing 1–2 items$/);
+    expect(summary()).toHaveTextContent(/^Showing 1–2 rows$/);
     expect(screen.queryByText(/^of /)).toBeNull();
     expect(last()).toBeDisabled();
     // A full page is evidence there may be another; a short one is not.
@@ -217,7 +217,7 @@ describe("PaginationBar", () => {
     fireEvent.click(next());
     load(source, machines(1), null);
     expect(next()).toBeDisabled();
-    expect(summary()).toHaveTextContent(/^Showing item 3$/);
+    expect(summary()).toHaveTextContent(/^Showing row 3$/);
     // Every page before this one is reachable from the select.
     expect(values(pageSelect())).toEqual(["1", "2"]);
     expect(pageSelect()).toHaveValue("2");
@@ -304,7 +304,7 @@ describe("PaginationBar", () => {
     const { provider, source } = makeProvider();
     mount(provider);
     load(source, [], 0);
-    expect(summary()).toHaveTextContent(/^Showing 0 out of 0 items$/);
+    expect(summary()).toHaveTextContent(/^Showing 0 out of 0 rows$/);
     expect(screen.getByText("of 1 page")).toBeInTheDocument();
     expect(next()).toBeDisabled();
   });
@@ -323,7 +323,7 @@ describe("PaginationBar", () => {
     expect(screen.getByText(/^of /)).toHaveTextContent("of 3 pages");
     expect(next()).toBeEnabled();
     load(source, machines(2), 5);
-    expect(summary()).toHaveTextContent(/^Showing 3–4 out of 5 items$/);
+    expect(summary()).toHaveTextContent(/^Showing 3–4 out of 5 rows$/);
     expect(next()).toBeEnabled();
   });
 
@@ -331,9 +331,7 @@ describe("PaginationBar", () => {
     const { provider, source } = makeProvider();
     mount(provider);
     load(source, machines(2), { kind: "at-least", value: 7 });
-    expect(summary()).toHaveTextContent(
-      /^Showing 1–2 out of at least 7 items$/,
-    );
+    expect(summary()).toHaveTextContent(/^Showing 1–2 out of at least 7 rows$/);
     expect(screen.queryByText(/^of /)).toBeNull();
     expect(last()).toBeDisabled();
     // Seven at least, two to a page: a second page is proven.
@@ -342,7 +340,7 @@ describe("PaginationBar", () => {
     // One row, and a bound the rows already exceed: said as the source
     // said it, and Next now rests on the page's own word, which is none.
     load(source, machines(1), { kind: "at-least", value: 1 });
-    expect(summary()).toHaveTextContent(/^Showing item 3 out of at least 1$/);
+    expect(summary()).toHaveTextContent(/^Showing row 3 out of at least 1$/);
     expect(next()).toBeDisabled();
   });
 
@@ -359,7 +357,7 @@ describe("PaginationBar", () => {
     expect(screen.queryByText(/^of /)).toBeNull();
     expect(next()).toBeDisabled();
     load(source, machines(2), 3);
-    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 3 items$/);
+    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 3 rows$/);
     expect(next()).toBeEnabled();
   });
 
@@ -370,10 +368,10 @@ describe("PaginationBar", () => {
     fireEvent.click(next());
     load(source, machines(2), 5);
     // The same count on another page: the range is what changes.
-    expect(summary()).toHaveTextContent(/^Showing 3–4 out of 5 items$/);
+    expect(summary()).toHaveTextContent(/^Showing 3–4 out of 5 rows$/);
     fireEvent.click(last());
     load(source, machines(1), 5);
-    expect(summary()).toHaveTextContent(/^Showing item 5 out of 5$/);
+    expect(summary()).toHaveTextContent(/^Showing row 5 out of 5$/);
   });
 
   it("lists the pages the core counts, through a page move and not past a new query", () => {
@@ -480,7 +478,7 @@ describe("PaginationBar", () => {
     expect(source.callAt(0).releases).toBe(1);
     expect(source.latest().releases).toBe(0);
     load(source, machines(2), 5);
-    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 5 items$/);
+    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 5 rows$/);
     fireEvent.click(next());
     expect(windowOf(provider)).toEqual(at(2, 2));
     load(source, machines(2), 5);
@@ -519,7 +517,7 @@ describe("PaginationBar", () => {
         },
       });
     });
-    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 6 items$/);
+    expect(summary()).toHaveTextContent(/^Showing 1–2 out of 6 rows$/);
     expect(screen.queryByText(/of \d+ pages?/)).toBe(null);
     expect(values(pageSelect())).toEqual(["1"]);
     expect(last()).toBeDisabled();
@@ -739,5 +737,49 @@ describe("PaginationBar", () => {
     const nav = screen.getByRole("navigation", { name: "Pagination" });
     expect(nav).toHaveClass("ds", "data-table-pagination-bar", "footer");
     expect(nav).toHaveAttribute("id", "machines-pages");
+  });
+
+  it("speaks the words it is given, keeping English only where none are given", () => {
+    const { provider, source } = makeProvider();
+    mount(provider, {
+      messages: {
+        pagination: "Pages",
+        rowsPerPage: "Lignes par page",
+        page: "Feuille",
+        pageCount: (pages) => `sur ${pages}`,
+        rowsShown: (first, shown) => `${first} + ${shown}`,
+        goToFirstPage: "Première",
+        goToPreviousPage: "Précédente",
+        goToNextPage: "Suivante",
+        goToLastPage: "Dernière",
+      },
+    });
+    load(source, machines(2), 5);
+    expect(
+      screen.getByRole("navigation", { name: "Pages" }),
+    ).toBeInTheDocument();
+    // The size select is named by its label alone, with no colon read into it.
+    expect(screen.getByLabelText("Lignes par page")).toHaveAttribute(
+      "name",
+      "size",
+    );
+    expect(screen.getByRole("combobox", { name: "Feuille" })).toHaveValue("1");
+    expect(screen.getByText("sur 3")).toBeInTheDocument();
+    expect(summary()).toHaveTextContent(/^1 \+ 2$/);
+    for (const name of ["Première", "Précédente", "Suivante", "Dernière"]) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+    // A message left out is still English.
+    expect(button("Apply page size")).toHaveAttribute("type", "submit");
+  });
+
+  it("takes a label over the messages' name for the navigation", () => {
+    mount(makeProvider().provider, {
+      label: "Machine pages",
+      messages: { pagination: "Pages" },
+    });
+    expect(
+      screen.getByRole("navigation", { name: "Machine pages" }),
+    ).toBeInTheDocument();
   });
 });
