@@ -1,7 +1,10 @@
 export { default as applyRef } from "./applyRef.js";
+export { default as areDisplayFieldsEqual } from "./areDisplayFieldsEqual.js";
 export { default as areSortTermsEqual } from "./areSortTermsEqual.js";
 export { default as composeMessage } from "./composeMessage.js";
 export { default as describeOrdering } from "./describeOrdering.js";
 export { default as interceptSubmit } from "./interceptSubmit.js";
 export { default as listHiddenFields } from "./listHiddenFields.js";
+export { default as readFieldName } from "./readFieldName.js";
+export { default as spellPrimitiveValue } from "./spellPrimitiveValue.js";
 export { default as subscribeToDestinationInputs } from "./subscribeToDestinationInputs.js";

@@ -2,8 +2,8 @@ import {
   areListsEqual,
   areSizingsEqual,
 } from "@canonical/dataviews-core/bindings";
+import { readFieldName } from "../../../../utils/index.js";
 import type { DataTableColumn } from "../../types.js";
-import readFieldName from "./readFieldName.js";
 import readSizing from "./readSizing.js";
 
 /**

@@ -18,9 +18,9 @@ import {
   areSortTermsEqual,
   composeMessage,
   describeOrdering,
+  readFieldName,
 } from "../../../utils/index.js";
 import type { SortPrecedence } from "../common/index.js";
-import { readFieldName } from "../common/utils/index.js";
 import type { UseHeaderSortProps, UseHeaderSortResult } from "./types.js";
 
 /** The last activation a source refused, and the header it came from. */

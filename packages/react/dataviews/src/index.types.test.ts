@@ -16,7 +16,6 @@ import type {
 import type { ReactElement } from "react";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type {
-  DataTableCellProps,
   DataTableColumn,
   DataTableProps,
   DataTableVirtualization,
@@ -28,6 +27,8 @@ import type {
   DataViewsSavedViewsProps,
   DataViewsSearchProps,
   DataViewsSortPanelProps,
+  DisplayField,
+  DisplayFieldCellProps,
   PaginationBarProps,
   UseDataViewsCellResult,
   UseDataViewsFilterResult,
@@ -43,7 +44,8 @@ type Fields = readonly SchemaFieldDefinition[];
 type EveryPublicType = [
   DataViewsActionsProps,
   DataViewsDataTableProps,
-  DataTableCellProps,
+  DisplayField,
+  DisplayFieldCellProps,
   DataTableColumn,
   DataTableProps<Fields>,
   DataTableVirtualization,

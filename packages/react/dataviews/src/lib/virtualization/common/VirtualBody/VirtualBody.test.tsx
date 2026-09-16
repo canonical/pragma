@@ -25,10 +25,10 @@ import {
 import type { ManualSource } from "../../../../../testing/types.js";
 import {
   DataTable,
-  type DataTableCellProps,
   type DataTableColumn,
   type DataTableProps,
 } from "../../../_work_in_progress/DataTable/index.js";
+import type { DisplayFieldCellProps } from "../../../common/index.js";
 import virtualizeRows from "../../virtualizeRows.js";
 
 type Provider = DataViewsProvider<MachineFields, Machine>;
@@ -326,7 +326,7 @@ describe("virtualized DataTable", () => {
 
   it("renders nothing for a scroll that keeps the same rows mounted", () => {
     let renders = 0;
-    const Counted = ({ value }: DataTableCellProps) => {
+    const Counted = ({ value }: DisplayFieldCellProps) => {
       renders += 1;
       return <>{String(value)}</>;
     };

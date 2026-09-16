@@ -10,7 +10,9 @@ import type {
   DataViewsMessages,
   ReadonlyChannel,
   RowRecord,
+  Selection,
 } from "@canonical/dataviews-core";
+import type { RowScopes } from "@canonical/dataviews-core/bindings";
 import type { ReactNode, RefObject } from "react";
 import type { AnnouncerHandle, AnnouncerTopic } from "../common/index.js";
 
@@ -34,6 +36,27 @@ export type UseDataViewsCellResult<TRow extends object = RowRecord> = {
   readonly fields: Readonly<Record<string, ReadonlyChannel<unknown>>>;
   /** Whether the row is in the collection's selection. */
   readonly selected: ReadonlyChannel<boolean>;
+};
+
+/** What `useSelectAllOnPage` takes: the selection, and the page it acts on. */
+export type UseSelectAllOnPageProps = {
+  readonly selection: Selection;
+  /** The identities on the page — the scope the control acts on. */
+  readonly ids: readonly string[];
+};
+
+/**
+ * What `useSelectAllOnPage` returns: whether every record on the page is
+ * selected, whether only some are, and the toggle that selects or clears them
+ * all.
+ */
+export type UseSelectAllOnPageResult = {
+  /** Every identity on the page is selected, and the page has at least one. */
+  readonly checked: boolean;
+  /** Some identities on the page are selected, but not all. */
+  readonly mixed: boolean;
+  /** Clear the page's identities when checked, otherwise add them all. */
+  readonly toggle: () => void;
 };
 
 /** What `useHydrationFocusHandoff` takes: whether scripts have taken over. */
@@ -64,10 +87,18 @@ export type UseIsHydratedResult = boolean;
  */
 export type UseMessagesResult = DataViewsMessages;
 
-/** What `useStableValue` returns: the held value, while it equals the one given. */
-export type UseStableValueResult<TValue> = TValue;
+/**
+ * The row-scope registry `useRowScopes` mints for one renderer. Its inputs
+ * are positional — a provider and the field names it observes — so it
+ * declares no props type of its own.
+ */
+export type UseRowScopesResult<TRow extends object = RowRecord> =
+  RowScopes<TRow>;
 
-/** What `useStableCallback` returns: the latest callback behind one identity. */
+/**
+ * What `useStableCallback` answers: the caller's function behind one
+ * identity. Positional, so it declares no props type of its own.
+ */
 export type UseStableCallbackResult<
   TArgs extends readonly unknown[],
   TResult,
@@ -84,3 +115,9 @@ export type UseAnnouncerResult = {
    */
   readonly announce: (message: ReactNode, topic?: AnnouncerTopic) => void;
 };
+
+/**
+ * What `useStableValue` answers: the value held at one reference while it
+ * says the same. Positional, so it declares no props type of its own.
+ */
+export type UseStableValueResult<TValue> = TValue;

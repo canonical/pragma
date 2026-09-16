@@ -1,4 +1,5 @@
 import { areListsEqual } from "@canonical/dataviews-core/bindings";
+import { areDisplayFieldsEqual } from "../../../../utils/index.js";
 import type { DataTableColumn } from "../../types.js";
 import areColumnModelsEqual from "./areColumnModelsEqual.js";
 
@@ -16,14 +17,13 @@ export default function areColumnsEqual(
 ): boolean {
   return (
     areColumnModelsEqual(a, b) &&
+    areDisplayFieldsEqual(a, b) &&
     areListsEqual(
       a,
       b,
       (column, other) =>
         column.sortable === other.sortable &&
-        column.resizable === other.resizable &&
-        column.header === other.header &&
-        column.cell === other.cell,
+        column.resizable === other.resizable,
     )
   );
 }

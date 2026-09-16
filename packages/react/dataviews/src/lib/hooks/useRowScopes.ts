@@ -2,20 +2,18 @@ import type {
   DataViewsProvider,
   SchemaFieldDefinition,
 } from "@canonical/dataviews-core";
-import {
-  createRowScopes,
-  type RowScopes,
-} from "@canonical/dataviews-core/bindings";
+import { createRowScopes } from "@canonical/dataviews-core/bindings";
 import { useEffect, useMemo } from "react";
+import type { UseRowScopesResult } from "./types.js";
 
 /**
- * The row-scope registry of one mounted table.
+ * The row-scope registry of one mounted renderer.
  *
  * The registry is minted per provider and observed field list. The caller
  * holds that list at a stable reference — a caller who rebuilds its column
  * array on every render must not re-mint one scope, one channel or one
  * subscription. Scopes live for as long as their row is modelled and the
- * registry dies with the table.
+ * registry dies with the renderer.
  */
 export default function useRowScopes<
   TFields extends readonly SchemaFieldDefinition[],
@@ -23,7 +21,7 @@ export default function useRowScopes<
 >(
   provider: DataViewsProvider<TFields, TRow>,
   fields: readonly string[],
-): RowScopes<TRow> {
+): UseRowScopesResult<TRow> {
   const scopes = useMemo(
     () =>
       createRowScopes<TRow>({

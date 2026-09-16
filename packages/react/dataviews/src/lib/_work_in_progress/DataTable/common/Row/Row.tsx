@@ -1,8 +1,8 @@
 import { memo, type ReactElement } from "react";
 import { useDataViewsValue } from "../../../../hooks/index.js";
+import { readFieldName } from "../../../../utils/index.js";
 import { BodyCell } from "../BodyCell/index.js";
 import { SelectionCell } from "../SelectionCell/index.js";
-import { readFieldName } from "../utils/index.js";
 import type { RowProps } from "./types.js";
 
 const componentCssClassName = "ds data-table-row";
