@@ -6,13 +6,19 @@
  * `lookup` both compile from the declared story, so parity is asserted directly
  * against the graph. Two halves:
  *
- * - `block list` — the UNFILTERED list. Every block in the store, whatever the
- *   tier or channel, including the UNTIERED subcomponent the old hand-written
- *   query's required `ds:tier` join dropped (A2, formerly reachable only under
- *   `--all-tiers`). The row shape the hand-written verb built in TypeScript —
- *   the name fallback, the lowercased type, the tier's local name — is now
- *   derived IN SPARQL by `BIND`/`COALESCE`, and this file is what holds those
- *   BINDs to the shapes the old `blockList.verb.ts` produced.
+ * - `block list` — the TIER-SCOPED list. Every block the scope admits,
+ *   whatever its channel, including the UNTIERED subcomponent the old
+ *   hand-written query's required `ds:tier` join dropped (A2, formerly
+ *   reachable only under `--all-tiers`) — an entity the scope cannot place is
+ *   not one it may hide, so no scope drops it either. This fixture declares one
+ *   tier, `global`, so the scope admits everything in it and the row-shape
+ *   cases below read what they always read; what the scope decides is asserted
+ *   in `kernel/packs/tierScope.test.ts` and, over the shipped pack's fifteen
+ *   tiers, in `block.tierRank.exec.test.ts`. The row shape the hand-written
+ *   verb built in TypeScript — the name fallback, the lowercased type, the
+ *   tier's local name — is now derived IN SPARQL by `BIND`/`COALESCE`, and this
+ *   file is what holds those BINDs to the shapes the old `blockList.verb.ts`
+ *   produced.
  * - `block lookup` — unchanged GraphQL content parity, moved here from the
  *   deleted `capabilities/block/parity.test.ts`. Button and Modal resolve with
  *   the same content a direct SPARQL oracle returns (summary, guidance,
@@ -66,7 +72,7 @@ async function lookup(name: string): Promise<Record<string, unknown>> {
   return out.results.at(0) as Record<string, unknown>;
 }
 
-describe("block list parity — the declared, unfiltered list", () => {
+describe("block list parity — the declared, tier-scoped list", () => {
   it("lists EVERY block, including the untiered subcomponent (A2)", async () => {
     // `ds:button.icon` is a `ds:Subcomponent` with NO `ds:tier`. The
     // hand-written query inner-joined `?c ds:tier ?t` in its default view and
@@ -106,23 +112,66 @@ describe("block list parity — the declared, unfiltered list", () => {
     expect(icon?.uri).toBe(`${DS}button.icon`);
   });
 
-  it("is CONFIG-INDEPENDENT: a configured tier and channel change nothing", async () => {
-    // The signed-off consequence of L-OPEN-9, pinned at the verb: the run body
-    // never reads `loadConfig()`, so the same rows come back under any scope.
-    const scoped = {
+  it("READS the configured tier as its scope, and the channel not at all", async () => {
+    // The `tier` key used to scope nothing: this suite pinned the list as
+    // CONFIG-INDEPENDENT, which was the signed-off consequence of the
+    // hand-written filtering's removal. The tier scope reverses exactly that
+    // half and only that half — `tier` decides which tiers a read answers
+    // from, `channel` still decides nothing (it selects an npm dist-tag).
+    //
+    // This fixture declares ONE tier (`global`, the base), so the scope it
+    // resolves to is the same set by either route; what this holds is that the
+    // config is READ and REPORTED. Narrowing down a real chain is asserted
+    // where a chain exists — `tierScope.test.ts` over a nested fixture, and
+    // `block.tierRank.exec.test.ts` over the shipped pack's fifteen tiers.
+    const withConfig = (tier: string, channel: "normal" | "experimental") =>
+      ({
+        ...rt,
+        loadConfig: async () => ({
+          ...(await rt.loadConfig()),
+          config: { ...(await rt.loadConfig()).config, tier, channel },
+        }),
+      }) as PragmaRuntime;
+
+    const scoped = (await verb("list").run(
+      {},
+      withConfig("global", "experimental"),
+    )) as PackPage;
+    expect(scoped.scope).toEqual({ tiers: ["global"] });
+    expect(scoped.rows.map((row) => row.name)).toEqual([
+      "Button",
+      "Button Icon",
+      "Modal",
+    ]);
+
+    // `all` turns the scope off, and the page then reports none — the shape
+    // every unscoped story's page has always had.
+    const all = (await verb("list").run(
+      {},
+      withConfig("all", "normal"),
+    )) as PackPage;
+    expect(all.scope).toBeUndefined();
+    expect(all.rows).toEqual(
+      ((await verb("list").run({}, rt)) as PackPage).rows,
+    );
+  });
+
+  it("refuses a configured tier no tier answers to, naming the ones that do", async () => {
+    // A `tier` nothing in the pack carries used to be inert — accepted by the
+    // validator and read by nobody. Now it decides a scope, so a value that
+    // names no tier is a misconfiguration worth saying out loud rather than
+    // silently answering from a scope the reader did not ask for.
+    const stale = {
       ...rt,
       loadConfig: async () => ({
         ...(await rt.loadConfig()),
-        config: {
-          ...(await rt.loadConfig()).config,
-          tier: "apps/lxd",
-          channel: "experimental" as const,
-        },
+        config: { ...(await rt.loadConfig()).config, tier: "apps/lxd" },
       }),
     } as PragmaRuntime;
-    const scopedRows = ((await verb("list").run({}, scoped)) as PackPage).rows;
-    const plainRows = ((await verb("list").run({}, rt)) as PackPage).rows;
-    expect(scopedRows).toEqual(plainRows);
+    await expect(verb("list").run({}, stale)).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+      validOptions: ["all", "global"],
+    });
   });
 
   it("zero rows is a calm empty list, not an error (the declared-family semantics)", async () => {

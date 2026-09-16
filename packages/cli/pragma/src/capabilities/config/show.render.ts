@@ -7,6 +7,7 @@
  */
 
 import type { ConfigOrigin } from "../../kernel/config/types.js";
+import { EVERY_TIER } from "../../kernel/packs/types.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/index.js";
 import type { ConfigShowData } from "./types.js";
@@ -14,6 +15,29 @@ import type { ConfigShowData } from "./types.js";
 /** A `[layer]` marker for values a config file supplied (blank for defaults). */
 function originMarker(origin: ConfigOrigin): string {
   return origin === "default" ? "" : ` [${origin}]`;
+}
+
+/**
+ * The `tier` value with the SCOPE it puts every tiered read under.
+ *
+ * The value alone is not the answer to "what am I reading". `tier` used to be
+ * accepted and read by nothing, and `config show` reported it as a setting in
+ * force while `block list` answered from all fifteen tiers; now it decides a
+ * scope, so this line has to say which. The three cases are the whole rule:
+ * unset is the top-level tiers, a tier is that tier and its ancestors, and
+ * `all` turns the scope off.
+ *
+ * It names the RULE and not the tiers, deliberately: `config show` is storeless
+ * (`capability.needsStore: false`) and naming the five top-level tiers means
+ * booting the pack to read them. The tiers themselves are one command away
+ * (`tier list`), and every scoped answer states its own scope in its heading —
+ * so the reading a store could add here is already available where it matters.
+ */
+function tierScope(tier: string | undefined): string {
+  if (tier === undefined) return "the top-level tiers";
+  return tier.trim().toLowerCase() === EVERY_TIER
+    ? "every tier"
+    : `${tier} and its ancestors`;
 }
 
 /** Summarize a list of named entries as a comma-separated set of names. */
@@ -31,7 +55,11 @@ type ConfigRow = readonly [label: string, value: string, marker: string];
 function configRows(data: ConfigShowData): readonly ConfigRow[] {
   const { config, origins } = data;
   return [
-    ["tier", config.tier ?? "(none)", originMarker(origins.tier)],
+    [
+      "tier",
+      `${config.tier ?? "(none)"} — ${tierScope(config.tier)}`,
+      originMarker(origins.tier),
+    ],
     ["channel", config.channel, originMarker(origins.channel)],
     ["detail", config.detail ?? "standard", originMarker(origins.detail)],
     ["packs", entryNames(config.packs ?? []), originMarker(origins.packs)],
@@ -84,7 +112,7 @@ export const configShowFormatters: Formatters<ConfigShowData> = {
     const lines = [
       "## Configuration",
       "",
-      `- **Tier:** ${config.tier ?? "none"}${originMarker(origins.tier)}`,
+      `- **Tier:** ${config.tier ?? "none"} — ${tierScope(config.tier)}${originMarker(origins.tier)}`,
       `- **Channel:** ${config.channel}${originMarker(origins.channel)}`,
       `- **Detail:** ${config.detail ?? "standard"}${originMarker(origins.detail)}`,
       `- **Packs:** ${entryNames(config.packs ?? [])}${originMarker(origins.packs)}`,

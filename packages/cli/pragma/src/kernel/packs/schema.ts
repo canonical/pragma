@@ -27,10 +27,11 @@
 import { z } from "zod";
 import { DETAIL_LEVELS, RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { PragmaError } from "../error/index.js";
-import { listShapeIssues } from "./storyRules.js";
+import { listShapeIssues, tierScopeIssues } from "./storyRules.js";
 import {
   type PackDefinition,
   type PackList,
+  type PackTierScope,
   RESERVED_STORY_PARAMS,
 } from "./types.js";
 
@@ -294,6 +295,24 @@ const scopeWeightSchema = z
   })
   .strict();
 
+/**
+ * The declared tier hierarchy (`PackTierScope`) that SCOPES a noun's reads.
+ *
+ * Four terms, no options: the class whose instances are the tiers, the edge
+ * from an entity to its tier, the tier property whose `/`-separated name IS the
+ * hierarchy, and the base tier every scope keeps. Everything else about the
+ * scope — the default, the ancestors, the escape — is the kernel's rule, not a
+ * knob, so a pack cannot declare a noun that scopes differently from the rest.
+ */
+const tierScopeSchema = z
+  .object({
+    type: term,
+    via: term,
+    by: term,
+    base: term.optional(),
+  })
+  .strict();
+
 const lookupSchema = z
   .object({
     source: z.enum(["sparql", "graphql"]).optional(),
@@ -324,6 +343,7 @@ const definitionSchema = z
     verbs: z.array(verbSchema).min(1).optional(),
     lookup: lookupSchema.optional(),
     colophon: z.string().optional(),
+    tierScope: tierScopeSchema.optional(),
   })
   .strict()
   .superRefine((def, ctx) => {
@@ -340,10 +360,12 @@ const definitionSchema = z
     if (def.list) {
       refineFilterParams(def.list.filters, ["list"], ctx);
       refineListShape(def.list, ["list"], ctx);
+      refineTierScope(def.tierScope, def.list, ["list"], ctx);
     }
     for (const [index, verb] of (def.verbs ?? []).entries()) {
       refineFilterParams(verb.filters, ["verbs", index], ctx);
       refineListShape(verb, ["verbs", index], ctx);
+      refineTierScope(def.tierScope, verb, ["verbs", index], ctx);
     }
     if (def.lookup) refineLookup(def.lookup, ctx);
   });
@@ -431,6 +453,28 @@ function refineListShape(
   ctx: z.RefinementCtx,
 ): void {
   for (const issue of listShapeIssues(shape, path)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: issue.message,
+      path: [...issue.path],
+    });
+  }
+}
+
+/**
+ * The tier-scope rules, stated by the same reader the compiler uses.
+ *
+ * Delegated for the reason every other compilability rule is: a third-party
+ * author must be refused where they declare, and the distribution's own stories
+ * — which never see zod — must be held to the same rule at compile time.
+ */
+function refineTierScope(
+  tierScope: PackTierScope | undefined,
+  shape: PackList,
+  path: readonly (string | number)[],
+  ctx: z.RefinementCtx,
+): void {
+  for (const issue of tierScopeIssues(tierScope, shape, path)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: issue.message,

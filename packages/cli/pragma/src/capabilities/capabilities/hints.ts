@@ -173,7 +173,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   tier_list: {
     category: "read",
-    use_when: "Understanding the tier hierarchy before setting a tier filter",
+    use_when: "Picking the tier to scope a read to (the `tier` parameter)",
   },
   tier_lookup: {
     category: "read",

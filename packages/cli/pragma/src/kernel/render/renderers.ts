@@ -199,19 +199,29 @@ function renderHeaderRow<T>(
  * row (`packs/runBodies.ts`), never with a second COUNT over the whole filtered
  * population, so "more exist" is the strongest honest claim.
  *
+ * The SCOPE is in the heading for the same reason, and it is the more serious
+ * of the two omissions: a truncated page at least ends where it ends, while a
+ * scoped read looks exactly like a complete one. `## Block (175, tier scope:
+ * global, apps, documentation, sites, stores)` says which part of the design
+ * system the 175 are, in the words `--tier` accepts.
+ *
  * @param items - The rows on this page.
  * @param options - Columns and empty-state copy.
- * @param page - What the page knows about itself (`more`: further rows exist).
+ * @param page - What the page knows about itself (`more`: further rows exist;
+ *   `scope`: the tiers it answered from, when it answered from some of them).
  * @returns The formatted Markdown list.
  */
 export function renderListLlm<T>(
   items: readonly T[],
   options: RenderListOptions<T>,
-  page: { readonly more?: boolean } = {},
+  page: { readonly more?: boolean; readonly scope?: string } = {},
 ): string {
   const prefixes = options.prefixes ?? DEFAULT_PREFIX_MAP;
-  const count =
-    page.more === true ? `${items.length}, more exist` : `${items.length}`;
+  const count = [
+    `${items.length}`,
+    ...(page.more === true ? ["more exist"] : []),
+    ...(page.scope === undefined ? [] : [`tier scope: ${page.scope}`]),
+  ].join(", ");
   const lines = [`## ${options.heading} (${count})`, ""];
 
   if (items.length === 0) {

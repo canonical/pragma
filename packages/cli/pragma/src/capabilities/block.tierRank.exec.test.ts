@@ -81,11 +81,23 @@ async function rows(query: string): Promise<Record<string, string>[]> {
     : [];
 }
 
-/** One `block lookup <name>`: the IRI it answered with, and the ones it did not. */
+/**
+ * One `block lookup <name>`: the IRI it answered with, and the ones it did not.
+ *
+ * ASKED FOR EVERY TIER, and that is load-bearing for this whole file. The claim
+ * under test is about RANKING — every block a shared name reaches comes back,
+ * best first — and the ranking orders a population the TIER SCOPE would
+ * otherwise cut: `block lookup button` answers with the global Button alone
+ * now, because the Launchpad one is out of the default scope. Both rules are
+ * about the same 25 collisions and they are not the same rule, so this suite
+ * widens the read to the population whose order it is judging. That the scope
+ * NARROWS it by default is asserted where that is the claim
+ * (`tierScope.test.ts`, and the shipped-pack cases below).
+ */
 async function lookup(
   name: string,
 ): Promise<{ chosen: string; others: string[] }> {
-  const out = (await lookupVerb.run({ name: [name] }, rt)) as {
+  const out = (await lookupVerb.run({ name: [name], tier: "all" }, rt)) as {
     results: { uri?: string }[];
   };
   // Every entity the name reached, best first. `chosen` is simply the head —
@@ -235,9 +247,14 @@ describe("a shared block name reaches every block that carries it (PROTECTED)", 
 });
 
 describe("`block list` orders its ties totally (PROTECTED)", () => {
-  /** The entity IRIs of one `block list` run, in the order it printed them. */
+  /**
+   * The entity IRIs of one `block list` run, in the order it printed them —
+   * over EVERY tier, like the lookup cases above. A total order over the whole
+   * 252-block population is the property; the default scope's 173 rows are a
+   * subsequence of it, so judging the order on the wider read judges both.
+   */
   async function listOrder(): Promise<string[]> {
-    const data = ((await listVerb.run({}, rt)) as PackPage).rows;
+    const data = ((await listVerb.run({ tier: "all" }, rt)) as PackPage).rows;
     return data.map((row) => String(row.uri));
   }
 

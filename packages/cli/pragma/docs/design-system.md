@@ -40,11 +40,11 @@ A **block** is one reusable piece of UI, at any of four grains:
 - **pattern** — a composition of components serving one purpose (`ActionBar`)
 - **layout** — a page- or view-level arrangement (`ApplicationLayout`)
 
-This distribution's graph carries **251** blocks. List them:
+This distribution's graph carries **252** blocks across fifteen tiers. `block list` shows the **173** in the five top-level tiers — the shared vocabulary — and says so in its heading:
 
 ```console
 $ pragma block list
-## Block (251)
+## Block (173, tier scope: global, apps, documentation, sites, stores)
 
 - `ds:global.component.accordion` — **Accordion** component | global
 - `ds:global.subcomponent.accordion-item` — **Accordion.Item** subcomponent | global
@@ -55,6 +55,8 @@ $ pragma block list
 ```
 
 Each row is the block's IRI (prefixed with `ds:`), its name, its grain, its tier, and — where it declares any — its modifier families.
+
+To read a product tier, name it: `--tier apps_lxd` answers with LXD's blocks **and** the `apps` and `global` ones they build on, which is the chain a tier inherits (see [Tiers](#tiers)). `--tier all` answers from all fifteen tiers, and `pragma config set tier apps_lxd` makes one chain the default for every read. The same scope decides which block a shared name means: 25 block names are carried by two or three tiers, and `block lookup button` answers with the one in scope.
 
 `lookup` returns the full spec. It takes one or more names, or a glob when you know roughly what something is called:
 
@@ -145,7 +147,7 @@ So Button's tree says, in one screen: a horizontal stack holding a required cont
 
 ## Tiers
 
-A **tier** is a scope in the design system: `Global` holds what every product shares, and narrower tiers hold what one product family or product adds. The hierarchy is written in the tier's slash-separated name — `Global`, `Apps`, `Apps/LXD` — and a lower tier inherits from its ancestors: working at `Apps/LXD` you have LXD's own blocks, plus everything `Apps` and `Global` provide. Where the same block name appears at two tiers, the nearer tier's spec is the one that governs — that is what "inherits and overrides" means here, and why the graph carries both a `global` Badge and an `apps_launchpad` Badge without contradiction.
+A **tier** is a scope in the design system: `Global` holds what every product shares, and narrower tiers hold what one product family or product adds. The hierarchy is written in the tier's slash-separated name — `Global`, `Apps`, `Apps/LXD` — and a lower tier inherits from its ancestors: working at `Apps/LXD` you have LXD's own blocks, plus everything `Apps` and `Global` provide. That chain is what `--tier apps_lxd` (and `config set tier apps_lxd`) reads, and `tier list` below is never scoped — it is where the names come from. Where the same block name appears at two tiers, the nearer tier's spec is the one that governs — that is what "inherits and overrides" means here, and why the graph carries both a `global` Badge and an `apps_launchpad` Badge without contradiction.
 
 This distribution's graph has **15** tiers:
 

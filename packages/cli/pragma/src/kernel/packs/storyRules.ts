@@ -24,9 +24,12 @@
 
 import { readAuthorQuery } from "./sparql/authorQuery.js";
 import {
+  ENTITY_VARIABLE,
   type PackDefinition,
   type PackList,
+  type PackTierScope,
   RESERVED_VARIABLE_PREFIX,
+  TIER_PARAM,
 } from "./types.js";
 
 /** The message a filter declaring neither `values` nor a `vocabulary` gets. */
@@ -115,9 +118,63 @@ export function storyIssues(definition: PackDefinition): StoryIssue[] {
   const issues: StoryIssue[] = [];
   if (definition.list) {
     issues.push(...listShapeIssues(definition.list, ["list"]));
+    issues.push(
+      ...tierScopeIssues(definition.tierScope, definition.list, ["list"]),
+    );
   }
   for (const [index, verb] of (definition.verbs ?? []).entries()) {
     issues.push(...listShapeIssues(verb, ["verbs", index]));
+    issues.push(
+      ...tierScopeIssues(definition.tierScope, verb, ["verbs", index]),
+    );
+  }
+  return issues;
+}
+
+/**
+ * The two rules a TIER-SCOPED noun's list-shaped body must satisfy.
+ *
+ * Both are the same kind of fault — a declaration that would compile and then
+ * scope nothing, silently:
+ *
+ * - It must PROJECT its entity variable. The scope clause constrains that
+ *   variable through the noun's declared `via` edge, so a body that publishes
+ *   rows without it (`standard categories` projects a name and a count) is a
+ *   body the scope cannot narrow. Refusing it here is the difference between a
+ *   declaration error an author reads once and a list that quietly answers
+ *   from every tier while its heading claims a scope.
+ * - Its own filters may not claim the `tier` param, which the kernel puts on
+ *   every tiered noun's reads. A story filter of that name would collide with
+ *   the flag Commander has already registered — the failure mode
+ *   {@link RESERVED_STORY_PARAMS} exists to prevent, conditional here because
+ *   an UNSCOPED noun's `tier` filter is legitimate (`variable list --tier`
+ *   filters the token graph's own `dt:tier`, which this scope does not touch).
+ */
+export function tierScopeIssues(
+  tierScope: PackTierScope | undefined,
+  shape: PackList,
+  path: readonly (string | number)[],
+): StoryIssue[] {
+  if (!tierScope) return [];
+  const issues: StoryIssue[] = [];
+  for (const [index, filter] of (shape.filters ?? []).entries()) {
+    if (filter.param === TIER_PARAM) {
+      issues.push({
+        path: [...path, "filters", index],
+        message: `a tier-scoped story may not declare a "${TIER_PARAM}" filter — the kernel puts that parameter on every tiered noun's reads, and the two would collide`,
+      });
+    }
+  }
+  const read = readAuthorQuery(shape.query);
+  // An unreadable query is already reported by `listShapeIssues`, and the
+  // projection cannot be judged against a query nobody could read.
+  if (!read.ok) return issues;
+  const projection = read.query.projection;
+  if (projection !== undefined && !projection.includes(ENTITY_VARIABLE)) {
+    issues.push({
+      path: [...path, "query"],
+      message: `a tier-scoped story must project ?${ENTITY_VARIABLE} — the tier scope is compiled in as a constraint on that variable (it selects ${projection.join(", ")}).`,
+    });
   }
   return issues;
 }

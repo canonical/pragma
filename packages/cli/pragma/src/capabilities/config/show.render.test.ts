@@ -40,7 +40,9 @@ describe("renderConfigShowPlain", () => {
   it("is byte-identical to the plain form when the styler is disabled", () => {
     expect(renderConfigShowPlain(DATA, styleFor(false))).toBe(
       [
-        "tier: apps/lxd [project]",
+        // The value AND the scope it puts every tiered read under: `tier`
+        // decides a scope now, so the line that reports it says which.
+        "tier: apps/lxd — apps/lxd and its ancestors [project]",
         "channel: normal",
         "detail: standard",
         "packs: @canonical/ds [global]",
@@ -55,7 +57,7 @@ describe("renderConfigShowPlain", () => {
     const keyWidth = "project config:".length;
     // Dim, padded key; cyan value; dim `[layer]` marker.
     expect(out).toContain(
-      `<d>${"tier:".padEnd(keyWidth)}</d> <c>apps/lxd</c><d> [project]</d>`,
+      `<d>${"tier:".padEnd(keyWidth)}</d> <c>apps/lxd — apps/lxd and its ancestors</c><d> [project]</d>`,
     );
     // A default-origin value carries no marker.
     expect(out).toContain(
@@ -82,7 +84,8 @@ describe("renderConfigShowPlain", () => {
 
     const out = renderConfigShowPlain(bare, styleFor(false));
 
-    expect(out).toContain("tier: (none)");
+    // Unset is not "no scope": it is the default scope, and the line says so.
+    expect(out).toContain("tier: (none) — the top-level tiers");
     expect(out).toContain("packs: (none)");
     expect(out).toContain("project config: (not found)");
   });
@@ -92,7 +95,9 @@ describe("configShowFormatters.llm", () => {
   it("renders the layered rows with origin markers", () => {
     const out = configShowFormatters.llm(DATA);
 
-    expect(out).toContain("- **Tier:** apps/lxd [project]");
+    expect(out).toContain(
+      "- **Tier:** apps/lxd — apps/lxd and its ancestors [project]",
+    );
     expect(out).toContain("- **Packs:** @canonical/ds [global]");
   });
 

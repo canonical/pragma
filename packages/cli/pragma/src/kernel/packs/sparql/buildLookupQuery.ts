@@ -53,6 +53,41 @@ import type { PackExpand, PackLookup } from "../types.js";
 import { escapeSparqlString, formatTerm } from "./escape.js";
 
 /**
+ * The variable a scoped name resolve reports each match's tier in.
+ *
+ * Under the reserved prefix because it is the kernel's, not the story's: it
+ * exists so the resolver can tell an in-scope match from an out-of-scope one,
+ * and it is stripped before an entity is handed to a formatter
+ * ({@link ../resolveEntity}) so no answer grows a field a caller did not ask
+ * for.
+ */
+export const SCOPE_TIER_VARIABLE = "__pragmaTier";
+
+/**
+ * Report each match's tier, for a name resolve over a SCOPED noun.
+ *
+ * A name resolve RANKS and returns everything the name reaches, so the scope
+ * does not need to be a filter here — the resolver prefers the in-scope matches
+ * and falls back to the rest, which is what lets `block lookup button` answer
+ * the global Button while still being able to answer at all for a name that
+ * lives only in one product's tier. All it needs from the query is WHICH tier
+ * each match belongs to.
+ *
+ * `OPTIONAL`, so an entity with no tier is still reached: not being in any tier
+ * is not a reason to be unaddressable by name.
+ */
+function scopeTierProjection(via: string | undefined): {
+  variable: string;
+  optional: string;
+} {
+  if (via === undefined) return { variable: "", optional: "" };
+  return {
+    variable: ` ?${SCOPE_TIER_VARIABLE}`,
+    optional: `  OPTIONAL { ?uri ${formatTerm(via)} ?${SCOPE_TIER_VARIABLE} . }`,
+  };
+}
+
+/**
  * The class-constraint clause for a lookup: a single `a` triple for `type`, a
  * VALUES-constrained type triple for `types`, or nothing. All terms are
  * validated pack terms, never user input.
@@ -361,15 +396,18 @@ export function buildLookupQuery(
   lookup: PackLookup,
   name: string,
   level?: string,
+  scopeVia?: string,
 ): string {
   const { header, constraint, optionals } = lookupProjection(lookup, level);
   const ranking = rankingClause(lookup);
+  const scope = scopeTierProjection(scopeVia);
   return [
-    header,
+    header.replace(" WHERE {", `${scope.variable} WHERE {`),
     constraint,
     nameBinding(lookup),
     ranking.binds,
     optionals,
+    scope.optional,
     `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
     "}",
     ranking.orderBy,
@@ -425,13 +463,16 @@ export function buildLookupByIriQuery(
 export function buildNameResolveQuery(
   lookup: PackLookup,
   name: string,
+  scopeVia?: string,
 ): string {
   const ranking = rankingClause(lookup);
+  const scope = scopeTierProjection(scopeVia);
   return [
-    "SELECT ?uri ?name WHERE {",
+    `SELECT ?uri ?name${scope.variable} WHERE {`,
     buildTypeConstraint(lookup).trimEnd(),
     nameBinding(lookup),
     ranking.binds,
+    scope.optional,
     `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
     "}",
     ranking.orderBy,

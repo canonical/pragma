@@ -90,8 +90,8 @@ pragma config set detail detailed
 pragma config unset tier
 ```
 
-- `tier` is a free string. Clearing it is its own command, `config unset tier` — `none`, `default` and `-` are refused as values, because a string that doubles as a remove-marker cannot say "set the tier to the literal none".
+- `tier` is a free string, and it is the DEFAULT TIER SCOPE every read of a tiered entity (blocks, modifier families, concepts) answers under: that tier and its ancestors, so `apps/lxd` reads `global`, `apps` and `apps/lxd`. Unset, those reads answer from the top-level tiers; set to `all`, from every tier. A per-call `--tier <name>` replaces it for one call, and every scoped answer states the scope it used. The value is written verbatim (the setter is storeless, so it cannot check the graph); a tier the pack does not carry is refused at the first tiered read, naming the ones it does. Clearing it is its own command, `config unset tier` — `none`, `default` and `-` are refused as values, because a string that doubles as a remove-marker cannot say "set the tier to the literal none".
 - `channel` and `detail` are closed enums; `config unset` clears them too, so the built-in default (`normal` / `standard`) applies again.
 - `config set <key> <value>` is the one-command form of the per-field setters — `key` is one of `tier`, `channel`, or `detail`, and `config unset <key>` is how any of the three is cleared.
 
-See [getting-started.md](./getting-started.md) for how the tier and channel scope the read commands, the [configuration reference](./reference/config.md) for every field, and the [command reference](./reference/commands.md) for each setter's full signature.
+See [getting-started.md](./getting-started.md) for the tier scope in use (the channel scopes no read — it selects the npm dist-tag `upgrade` and `info` check), the [configuration reference](./reference/config.md) for every field, and the [command reference](./reference/commands.md) for each setter's full signature.
