@@ -18,7 +18,7 @@ const meta: Meta<typeof Component> = {
   title: "Components/SidePanel/Header",
   component: Component,
   args: {
-    children: "Panel title",
+    children: "Ubuntu Pro",
   },
   parameters: {
     docs: {
@@ -62,7 +62,7 @@ export const Default: Story = {
       source: {
         code: `
 <SidePanel${openOnMount}>
-  <SidePanel.Header>Panel title</SidePanel.Header>
+  <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
 </SidePanel>
         `,
       },
@@ -80,47 +80,7 @@ export const NotDismissible: Story = {
       source: {
         code: `
 <SidePanel${openOnMount}>
-  <SidePanel.Header undismissible>Panel title</SidePanel.Header>
-</SidePanel>
-        `,
-      },
-    },
-  },
-};
-
-/** The close button's accessible name follows the panel's subject. */
-export const CustomDismissLabel: Story = {
-  args: {
-    children: "Filters",
-    dismissLabel: "Dismiss filters",
-  },
-  parameters: {
-    docs: {
-      source: {
-        code: `
-<SidePanel${openOnMount}>
-  <SidePanel.Header dismissLabel="Dismiss filters">Filters</SidePanel.Header>
-</SidePanel>
-        `,
-      },
-    },
-  },
-};
-
-/** A long title wraps rather than pushing the close button out of reach. */
-export const LongTitle: Story = {
-  args: {
-    children:
-      "A panel title long enough to need more than one line of the panel's width",
-  },
-  parameters: {
-    docs: {
-      source: {
-        code: `
-<SidePanel${openOnMount}>
-  <SidePanel.Header>
-    A panel title long enough to need more than one line of the panel's width
-  </SidePanel.Header>
+  <SidePanel.Header undismissible>Ubuntu Pro</SidePanel.Header>
 </SidePanel>
         `,
       },

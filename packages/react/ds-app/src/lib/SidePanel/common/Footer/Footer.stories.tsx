@@ -33,7 +33,7 @@ const meta: Meta<typeof Component> = {
   // panel's gutter. Header-less, so the panel is named with `aria-label`.
   render: (args) => (
     <SidePanel
-      aria-label="Panel footer"
+      aria-label="Ubuntu Pro subscription"
       ref={(handle: SidePanelHandle | null) => {
         handle?.open();
       }}
@@ -57,7 +57,7 @@ export const Default: Story = {
       <>
         <Button onClick={fn()}>Cancel</Button>
         <Button importance="primary" anticipation="constructive" onClick={fn()}>
-          Save
+          Subscribe
         </Button>
       </>
     ),
@@ -67,12 +67,12 @@ export const Default: Story = {
       source: {
         code: `
 <SidePanel
-  aria-label="Panel footer"${openOnMount}
+  aria-label="Ubuntu Pro subscription"${openOnMount}
 >
   <SidePanel.Footer>
     <Button>Cancel</Button>
     <Button importance="primary" anticipation="constructive">
-      Save
+      Subscribe
     </Button>
   </SidePanel.Footer>
 </SidePanel>
@@ -92,7 +92,7 @@ export const SingleAction: Story = {
       source: {
         code: `
 <SidePanel
-  aria-label="Panel footer"${openOnMount}
+  aria-label="Ubuntu Pro subscription"${openOnMount}
 >
   <SidePanel.Footer>
     <Button>Close</Button>
@@ -123,7 +123,7 @@ export const Wrapping: Story = {
       source: {
         code: `
 <SidePanel
-  aria-label="Panel footer"${openOnMount}
+  aria-label="Ubuntu Pro subscription"${openOnMount}
 >
   <SidePanel.Footer>
     <Button>Reset to defaults</Button>

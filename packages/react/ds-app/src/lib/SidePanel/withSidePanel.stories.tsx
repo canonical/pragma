@@ -22,9 +22,13 @@ import withSidePanel from "./withSidePanel.js";
  */
 const TogglePanel: WithSidePanelRender = ({ ref }) => (
   <Component ref={ref}>
-    <Component.Header>Panel title</Component.Header>
+    <Component.Header>Ubuntu Pro</Component.Header>
     <Component.Content>
-      <p>The application behind this panel is still usable.</p>
+      <p>
+        Ubuntu Pro is Canonical&apos;s security and compliance subscription,
+        covering every open source in Ubuntu for up to 15 years. The application
+        behind this panel is still usable.
+      </p>
     </Component.Content>
   </Component>
 );
@@ -120,9 +124,12 @@ import {
 
 const TogglePanel: WithSidePanelRender = ({ ref }) => (
   <SidePanel ref={ref}>
-    <SidePanel.Header>Panel title</SidePanel.Header>
+    <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
     <SidePanel.Content>
-      <p>The application behind this panel is still usable.</p>
+      <p>
+        Ubuntu Pro is Canonical's security and compliance subscription,
+        covering every open source in Ubuntu for up to 15 years.
+      </p>
     </SidePanel.Content>
   </SidePanel>
 );

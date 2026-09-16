@@ -3,6 +3,19 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Provider.js";
 import type { SidePanelHandle } from "./types.js";
 
+/*
+  Real copy from ubuntu.com/about, used as filler wherever a story needs the
+  content pane to overflow.
+*/
+const ubuntuStory = [
+  "Ubuntu is an ancient African word meaning 'humanity to others'. It is often described as reminding us that 'I am what I am because of who we all are'. We bring the spirit of Ubuntu to the world of computers and software.",
+  "Linux was already established in 2004, but it was fragmented into proprietary and unsupported community editions, and free software was not a part of everyday life for most computer users. That's when Mark Shuttleworth gathered a small team of Debian developers who together founded Canonical and set out to create an easy-to-use Linux desktop called Ubuntu.",
+  "Ubuntu was the first operating system to commit to scheduled releases on a predictable cadence, every six months, starting in October 2004. In 2006 we decided that every fourth release, made every two years, would receive long-term support for large-scale deployments. This is the origin of the term LTS for stable, maintained releases.",
+  "Canonical is the publisher of Ubuntu. Members of the Canonical team lead aspects of Ubuntu such as the kernel, default desktop, foundations, security, OpenStack, and Kubernetes.",
+  "The first official Ubuntu release – Version 4.10, codenamed the 'Warty Warthog' – was launched in October 2004, and sparked dramatic global interest as thousands of free software enthusiasts and experts joined the Ubuntu community.",
+  "Ubuntu Desktop is by far the world's most widely used Linux workstation platform, powering the work of engineers across the globe. Ubuntu Core sets the standard for tiny, transactional operating systems for highly secure connected devices. Ubuntu Server is the reference operating system for the OpenStack project, and a hugely popular guest OS on AWS, Azure and Google Cloud.",
+];
+
 const meta: Meta<typeof Component> = {
   title: "Components/SidePanel",
   component: Component,
@@ -33,7 +46,10 @@ type Story = StoryObj<typeof Component>;
   panel.
 */
 
-/** The open panel — the visual baseline. */
+/**
+ * The open panel — the visual baseline, showing its primary use case: static
+ * details of a selected entity, with the application behind it still usable.
+ */
 export const Open: Story = {
   render: () => (
     <Component
@@ -41,9 +57,26 @@ export const Open: Story = {
         handle?.open();
       }}
     >
-      <Component.Header>Panel title</Component.Header>
+      <Component.Header>Preview</Component.Header>
       <Component.Content>
-        <p>The application behind this panel is still usable.</p>
+        <p>
+          <strong>Name:</strong> noble-vm-01
+        </p>
+        <p>
+          <strong>Status:</strong> Running
+        </p>
+        <p>
+          <strong>Image:</strong> Ubuntu 24.04 LTS (Noble Numbat)
+        </p>
+        <p>
+          <strong>CPU:</strong> 2 vCPUs
+        </p>
+        <p>
+          <strong>Memory:</strong> 4 GiB
+        </p>
+        <p>
+          <strong>Storage:</strong> 20 GiB
+        </p>
       </Component.Content>
       <Component.Footer>
         {/*
@@ -54,7 +87,7 @@ export const Open: Story = {
         */}
         <Button>Cancel</Button>
         <Button importance="primary" anticipation="constructive">
-          Save
+          Launch
         </Button>
       </Component.Footer>
     </Component>
@@ -68,73 +101,19 @@ export const Open: Story = {
     handle?.open();
   }}
 >
-  <SidePanel.Header>Panel title</SidePanel.Header>
+  <SidePanel.Header>Preview</SidePanel.Header>
   <SidePanel.Content>
-    <p>The application behind this panel is still usable.</p>
+    <p><strong>Name:</strong> noble-vm-01</p>
+    <p><strong>Status:</strong> Running</p>
+    <p><strong>Image:</strong> Ubuntu 24.04 LTS (Noble Numbat)</p>
+    <p><strong>CPU:</strong> 2 vCPUs</p>
+    <p><strong>Memory:</strong> 4 GiB</p>
+    <p><strong>Storage:</strong> 20 GiB</p>
   </SidePanel.Content>
   <SidePanel.Footer>
     <Button>Cancel</Button>
     <Button importance="primary" anticipation="constructive">
-      Save
-    </Button>
-  </SidePanel.Footer>
-</SidePanel>
-        `,
-      },
-    },
-  },
-};
-
-/**
- * The claim this component makes about layout: however tall the content, the
- * header and footer stay visible and only the middle scrolls.
- */
-export const OverflowingContent: Story = {
-  render: () => (
-    <Component
-      ref={(handle: SidePanelHandle | null) => {
-        handle?.open();
-      }}
-    >
-      <Component.Header>Panel title</Component.Header>
-      <Component.Content>
-        <p>Scroll this pane. The header and footer must not move.</p>
-        {Array.from({ length: 40 }, (_, index) => `paragraph-${index + 1}`).map(
-          (key, index) => (
-            <p key={key}>
-              Paragraph {index + 1} of filler content, here to make the content
-              pane overflow.
-            </p>
-          ),
-        )}
-        <p>End of the content.</p>
-      </Component.Content>
-      <Component.Footer>
-        <Button>Cancel</Button>
-        <Button importance="primary" anticipation="constructive">
-          Save
-        </Button>
-      </Component.Footer>
-    </Component>
-  ),
-  parameters: {
-    docs: {
-      source: {
-        code: `
-<SidePanel
-  ref={(handle: SidePanelHandle | null) => {
-    handle?.open();
-  }}
->
-  <SidePanel.Header>Panel title</SidePanel.Header>
-  <SidePanel.Content>
-    {/* However tall this gets, only the panel scrolls. */}
-    {longContent}
-  </SidePanel.Content>
-  <SidePanel.Footer>
-    <Button>Cancel</Button>
-    <Button importance="primary" anticipation="constructive">
-      Save
+      Launch
     </Button>
   </SidePanel.Footer>
 </SidePanel>
@@ -204,7 +183,7 @@ export const OverflowingTooltip: Story = {
             handle?.open();
           }}
         >
-          <Component.Header>Panel title</Component.Header>
+          <Component.Header>The story of Ubuntu</Component.Header>
           <Component.Content>
             <p>
               The tooltip below is wider than the panel, and the panel still
@@ -212,14 +191,8 @@ export const OverflowingTooltip: Story = {
               scroll container has nothing of it to clip.
             </p>
             <TooltippedButton>Anchor with a wide tooltip</TooltippedButton>
-            {Array.from(
-              { length: 40 },
-              (_, index) => `paragraph-${index + 1}`,
-            ).map((key, index) => (
-              <p key={key}>
-                Paragraph {index + 1} of filler content, here to make the panel
-                overflow vertically.
-              </p>
+            {Array.from({ length: 24 }, (_, index) => index).map((index) => (
+              <p key={index}>{ubuntuStory[index % ubuntuStory.length]}</p>
             ))}
             <p>End of the content.</p>
           </Component.Content>
@@ -262,21 +235,28 @@ const TooltippedButton = withTooltip(
 };
 
 /**
- * Both parts are optional; the layout must not collapse without them. Note
- * the `aria-label`: without a `SidePanel.Header` there is no title to name
- * the panel, so the label is required instead.
+ * No header means no title to name the panel, so the `aria-label` is required
+ * instead — and no close button either, so the footer's action is the visible
+ * way out.
  */
-export const WithoutHeaderOrFooter: Story = {
+export const WithoutHeader: Story = {
   render: () => (
     <Component
-      aria-label="Panel without a header"
+      aria-label="The Ubuntu mission"
       ref={(handle: SidePanelHandle | null) => {
         handle?.open();
       }}
     >
       <Component.Content>
-        <p>The application behind this panel is still usable.</p>
+        <p>
+          We deliver the world&apos;s free software, freely, to everybody on the
+          same terms. Whether you are a student in India or a global bank, you
+          can download and use Ubuntu free of charge.
+        </p>
       </Component.Content>
+      <Component.Footer>
+        <Button importance="primary">Got it</Button>
+      </Component.Footer>
     </Component>
   ),
   parameters: {
@@ -286,17 +266,25 @@ export const WithoutHeaderOrFooter: Story = {
 {/* No SidePanel.Header means no title to name the panel,
     so it must be named with aria-label instead. */}
 <SidePanel
-  aria-label="Panel without a header"
+  aria-label="The Ubuntu mission"
   ref={(handle: SidePanelHandle | null) => {
     handle?.open();
   }}
 >
   <SidePanel.Content>
-    <p>The application behind this panel is still usable.</p>
+    <p>
+      We deliver the world's free software, freely, to everybody on the same
+      terms. Whether you are a student in India or a global bank, you can
+      download and use Ubuntu free of charge.
+    </p>
   </SidePanel.Content>
+  <SidePanel.Footer>
+    <Button importance="primary">Got it</Button>
+  </SidePanel.Footer>
 </SidePanel>
         `,
       },
     },
   },
 };
+WithoutHeader.storyName = "Without a header";
