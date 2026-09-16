@@ -8,7 +8,6 @@ import type {
   DataViewsProvider,
   DataViewsState,
   EmptyOr,
-  Facet,
   FilterFeedback,
   FilterHandles,
   PredicateOperand,
@@ -73,26 +72,6 @@ export type UseRestrictedFieldsProps = {
  * the same.
  */
 export type UseRestrictedFieldsResult = ReadonlyMap<string, number>;
-
-/** What the facets hook takes: the provider whose result's facets it reads. */
-export type UseFacetsProps = {
-  readonly provider: DataViewsProvider<readonly SchemaFieldDefinition[]>;
-};
-
-/** What the facets hook returns, each keyed by field. */
-export type UseFacetsResult = {
-  /**
-   * The facets of the result answering the applied query, or null while no
-   * result answers it: what counts and ranges are read from.
-   */
-  readonly answered: Readonly<Record<string, Facet>> | null;
-  /**
-   * The facets the latest result answered, whichever query it answered, or
-   * null before any: what the server's options are listed from, so they stay
-   * until a newer result lands.
-   */
-  readonly latest: Readonly<Record<string, Facet>> | null;
-};
 
 /**
  * What the More filters pin takes: the marks a pin is placed under, and the

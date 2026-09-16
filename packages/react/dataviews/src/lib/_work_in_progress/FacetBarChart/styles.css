@@ -1,0 +1,67 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * FacetBarChart styles
+   *
+   * A work-in-progress prototype: no chart exists in the design system, so it
+   * binds the text, border and foreground tokens the other parts bind. The
+   * bar's fill borrows the primary foreground, since there is no chart
+   * palette token; that missing token is a finding, recorded in the recipe,
+   * not a value invented here.
+   */
+  .ds.facet-bar-chart {
+    --facet-bar-chart-gap: var(--dimension-100);
+    --facet-bar-chart-status-padding-block: var(--dimension-050);
+    --facet-bar-chart-cell-padding-block: var(--dimension-050);
+    --facet-bar-chart-cell-padding-inline-end: var(--dimension-200);
+    --facet-bar-chart-stroke-width: var(--dimension-stroke-thickness-medium);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--facet-bar-chart-gap);
+    margin: 0;
+    color: var(--color-text);
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+
+    & > .status {
+      padding-block: var(--facet-bar-chart-status-padding-block);
+    }
+
+    & > .chart {
+      inline-size: 100%;
+      block-size: auto;
+    }
+
+    & .grid-line {
+      stroke: var(--color-border-muted);
+      stroke-width: var(--facet-bar-chart-stroke-width);
+      vector-effect: non-scaling-stroke;
+    }
+
+    & .bar {
+      fill: var(--color-foreground-primary);
+    }
+
+    & :is(.label, .value) {
+      fill: var(--color-text);
+    }
+
+    & .tick {
+      fill: var(--color-text-muted);
+    }
+
+    & > .data {
+      border-collapse: collapse;
+      text-align: start;
+    }
+
+    & > .data :is(th, td) {
+      padding-block: var(--facet-bar-chart-cell-padding-block);
+      padding-inline-end: var(--facet-bar-chart-cell-padding-inline-end);
+      text-align: start;
+    }
+  }
+}

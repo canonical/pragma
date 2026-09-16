@@ -216,5 +216,19 @@ export const DEFAULT_MESSAGES: DataViewsMessages = Object.freeze({
   deselectRows: (count) =>
     `Deselect ${formatCount(count)} ${choosePlural(count, "row", "rows")}`,
 
+  facetCountsAbsent: "The source answered no counts for this field.",
+  facetRangeAbsent: "The source answered no range for this field.",
+  facetValuesNone: "No matching record holds a value.",
+  barChartSummary: (label) =>
+    `${label}: a bar chart of how many records hold each value`,
+  rangeChartSummary: (label, min, max) =>
+    `${label}: a range chart from ${min} to ${max}`,
+  chartTable: (label) => `${label}, as a table`,
+  chartValue: "Value",
+  chartCount: "Count",
+  countUnknown: "Not counted",
+  chartLowest: "Lowest",
+  chartHighest: "Highest",
+
   renderer: "Show as",
 });

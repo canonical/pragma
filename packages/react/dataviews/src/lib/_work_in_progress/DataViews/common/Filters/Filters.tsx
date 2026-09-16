@@ -13,11 +13,10 @@ import {
 } from "@canonical/dataviews-core/bindings";
 import { Button } from "@canonical/react-ds-global";
 import { Fragment, type ReactElement, useRef } from "react";
+import { type UseFacetsResult, useFacets } from "../../../../hooks/index.js";
 import { interceptSubmit } from "../../../../utils/index.js";
 import {
-  type UseFacetsResult,
   useDataViewsRoot,
-  useFacets,
   useMoreFiltersPin,
   useRestrictedFields,
 } from "../../hooks/index.js";

@@ -1,0 +1,72 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * FacetRangeChart styles
+   *
+   * A work-in-progress prototype: no chart exists in the design system, so it
+   * binds the text, border, surface and foreground tokens the other parts
+   * bind. The band borrows the primary foreground, since there is no chart
+   * palette token; that missing token is a finding, recorded in the recipe.
+   * Each marker carries a ring in the surface colour, so it stays legible
+   * where it meets the band.
+   */
+  .ds.facet-range-chart {
+    --facet-range-chart-gap: var(--dimension-100);
+    --facet-range-chart-status-padding-block: var(--dimension-050);
+    --facet-range-chart-cell-padding-block: var(--dimension-050);
+    --facet-range-chart-cell-padding-inline-end: var(--dimension-200);
+    --facet-range-chart-stroke-width: var(--dimension-stroke-thickness-medium);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--facet-range-chart-gap);
+    margin: 0;
+    color: var(--color-text);
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+
+    & > .status {
+      padding-block: var(--facet-range-chart-status-padding-block);
+    }
+
+    & > .chart {
+      inline-size: 100%;
+      block-size: auto;
+    }
+
+    & .axis {
+      stroke: var(--color-border-muted);
+      stroke-width: var(--facet-range-chart-stroke-width);
+      vector-effect: non-scaling-stroke;
+    }
+
+    & :is(.band, .marker) {
+      fill: var(--color-foreground-primary);
+    }
+
+    & .marker {
+      stroke: var(--color-background);
+      stroke-width: var(--facet-range-chart-stroke-width);
+    }
+
+    & .value {
+      fill: var(--color-text);
+    }
+
+    & .tick {
+      fill: var(--color-text-muted);
+    }
+
+    & > .data {
+      border-collapse: collapse;
+    }
+
+    & > .data :is(th, td) {
+      padding-block: var(--facet-range-chart-cell-padding-block);
+      padding-inline-end: var(--facet-range-chart-cell-padding-inline-end);
+      text-align: start;
+    }
+  }
+}

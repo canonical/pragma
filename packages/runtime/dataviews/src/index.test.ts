@@ -126,6 +126,7 @@ describe("public surface", () => {
       "DISPLAY_STATUS_PHASES",
       "applyQueryCommand",
       "areDisplayStatusesEqual",
+      "areFieldFacetsEqual",
       "areListsEqual",
       "areSizingsEqual",
       "buildColumnTemplate",

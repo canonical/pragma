@@ -319,6 +319,34 @@ export type DataViewsMessages = {
   /** The button clearing the selection, by how many rows it clears. */
   readonly deselectRows: (count: number) => string;
 
+  // The facet charts.
+  /** The source answered a result, but counted nothing for the field drawn. */
+  readonly facetCountsAbsent: string;
+  /** The source answered a result, but measured no range for the field drawn. */
+  readonly facetRangeAbsent: string;
+  /** The field is counted or measured, and no matching record holds a value. */
+  readonly facetValuesNone: string;
+  /** What a bar chart is named as, by the caption it is drawn under. */
+  readonly barChartSummary: (label: string) => string;
+  /** What a range chart is named as: its caption, and the ends it spans. */
+  readonly rangeChartSummary: (
+    label: string,
+    min: number,
+    max: number,
+  ) => string;
+  /** The caption of the table carrying a drawing's own numbers. */
+  readonly chartTable: (label: string) => string;
+  /** The heading of a bar table's value column. */
+  readonly chartValue: string;
+  /** The heading of a bar table's count column. */
+  readonly chartCount: string;
+  /** Stands where a value's count is, where the source counted nothing. */
+  readonly countUnknown: string;
+  /** The heading of a range table's lower end. */
+  readonly chartLowest: string;
+  /** The heading of a range table's upper end. */
+  readonly chartHighest: string;
+
   // The renderer switch.
   /**
    * The switch's name, which also labels the choice it offers. The renderers

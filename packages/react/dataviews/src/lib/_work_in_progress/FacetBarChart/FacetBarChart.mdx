@@ -1,0 +1,76 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./FacetBarChart.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# FacetBarChart recipes
+
+`FacetBarChart` is a prototype: a bar per value of one field, as long as the number of records holding it. It exists to find out what a chart over DataViews needs, not to be one. It is not exported from the package root, and its shape may change or it may be withdrawn.
+
+## Counts from the source
+
+The chart reads the field's facet: counts the source computes over every record matching the query, never over the rows on screen. So the field must be one the source facets as values — a `choices` or presence field — and the provider must ask for it through its `facets`. The chart throws for a field the source cannot facet, and for one whose facet the provider did not ask for.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+} from "@canonical/dataviews-core";
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
+// A work-in-progress prototype: not yet exported from the package root.
+import { FacetBarChart } from "./FacetBarChart.js";
+
+export function Machines() {
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      collection: machineCollection,
+      source: createArraySource({ rows: machines, collection: machineCollection }),
+      facets: ["status"],
+    }),
+  );
+  return (
+    <FacetBarChart provider={provider} field="status" label="Machines by status" />
+  );
+}
+```
+
+<Canvas of={Stories.StatusCounts} sourceState="none" />
+
+A count the source gives as a lower bound is said as "at least"; one it did not count draws no bar and says so. While no result answers the query — before the first, while another is pending, after one failed — the core's status is shown in place of the bars, never bars counted for another query.
+
+## Beside the filters
+
+Placed in a root beside `DataViews.Filters`, the chart redraws as the query narrows. A facet lifts its own field's filter, so keeping only the failed machines narrows the table while the chart still shows how many machines hold every status.
+
+<Canvas of={Stories.BesideFilters} sourceState="none" />
+
+## Without scripting
+
+The server draws the chart from the facets of the page it renders: the drawing and its table are in the markup, so nothing about it needs a script.
+
+## What the prototypes found
+
+These two prototypes, this bar chart and `FacetRangeChart`, were built to see what a chart system over DataViews would need. They draw plain SVG with no chart library. What they found:
+
+- **Numerical mapping.** Each prototype maps values to positions with a line of arithmetic of its own. A real system needs scales as their own values — linear from zero for lengths, linear over a domain for positions, and later time and logarithmic scales — with their domain rules stated: a length starts at zero, and a position widens to the field's declared bounds.
+- **Ticks.** A small shared helper picks round steps of one, two or five. The prototypes ask it for a fixed number of ticks; a real system chooses the count from the length the axis has, and thins labels that would collide.
+- **Formatting.** Numbers are drawn as `String` gives them, so the server and the browser draw the same text. A real system needs locale-aware number and date formatting that renders identically on both, compact units for large numbers, and exactness ("at least") and sentences ("from 3 to 12") as messages with their own word order, not concatenated fragments.
+- **Responsive sizing.** The drawing is a fixed coordinate space scaled to the width it is given, so text shrinks and grows with the chart. A real system lays out in the page's own units, sized from its container, keeping text on the type scale and moving labels that would overlap — the range's two end labels collide when its ends are close. Nothing here measures text either: a count's label is kept inside the drawing by estimating its width from its characters, which a real system would measure.
+- **Colour tokens.** The design tokens have no chart palette. The bars borrow the primary foreground; a real system needs categorical, sequential and status chart tokens, checked for colour-vision separation and contrast in light and dark.
+- **Text the drawing cannot measure.** The drawings set their own text size in the coordinate space and estimate a label's width from its characters, which is what keeps a long count inside the chart. A real chart system measures text, or lays it out in the page's units where the browser measures it for them.
+- **A bound on what is drawn.** Nothing limits how many bars a chart draws: a `choices` field whose options the server owns is counted value by value, so a field of high cardinality gives an arbitrarily tall drawing and an arbitrarily long table. A real chart system draws the largest few and gathers the rest, or refuses the field.
+- **Interaction.** Nothing here is interactive. Hover and focus details, and filtering by pressing a bar, need their own keyboard contract and announcements.
+- **Data.** Counts and ranges are what facets give today. A histogram needs bucketed counts the query grammar does not have; sums and means wait for aggregation; date fields need a date scale.
+- **Accessibility.** An image named for what it shows, followed by a native table of its numbers, carries everything without the drawing. Whether the table shows by default, and how a chart describes a trend, is design work.
+
+No chart library is needed for these two drawings. Whether one is needed at all depends on how many of the needs above a real chart takes on.
+
+## Provisional coverage
+
+These notes are provisional, recorded for a prototype.
+
+| Surface | Principal criteria | Behaviour today |
+|---|---|---|
+| Facet bar chart | 1.1.1, 1.3.1, 1.4.1, 4.1.2 | A figure captioned by its label; the drawing an image named with what it shows; every value and count in a native table with column and row headings; no value carried by colour alone; counts from the source over the matching set, a lower bound said as "at least", an uncounted value said as such |
+| Facet bar chart status | 1.3.1, 4.1.3 | The core's status in place of the bars while no result answers the query, a settled outcome announced once, politely; never bars counted for another query |

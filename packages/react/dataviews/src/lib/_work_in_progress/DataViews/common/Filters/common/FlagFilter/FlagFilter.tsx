@@ -1,7 +1,7 @@
 import { spellWireKey } from "@canonical/dataviews-core/bindings";
 import { type ReactElement, useId } from "react";
+import { spellCount } from "../../../../../../utils/index.js";
 import { useDataViewsRoot, useFilterHandle } from "../../../../hooks/index.js";
-import { spellCount } from "../utils/index.js";
 import type { FlagFilterProps } from "./types.js";
 
 const componentCssClassName = "ds data-views-filters-flag";

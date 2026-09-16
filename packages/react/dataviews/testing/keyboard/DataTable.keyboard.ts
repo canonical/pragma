@@ -42,6 +42,12 @@ const SETTINGS = "_work_in_progress/DataViews/Settings";
 /** The cards' stories, a collection's records as the design system's cards. */
 const CARDS = "_work_in_progress/Cards";
 
+/** The bar chart prototype's stories, a field's counts beside the filters. */
+const FACET_BAR_CHART = "_work_in_progress/FacetBarChart";
+
+/** The range chart prototype's stories, a number field's range beside the filters. */
+const FACET_RANGE_CHART = "_work_in_progress/FacetRangeChart";
+
 /** The renderer switch's stories, one collection shown through a chosen renderer. */
 const RENDERER_SWITCH = "_work_in_progress/RendererSwitch";
 
@@ -53,8 +59,8 @@ const GRAPHQL_API = "_work_in_progress/DataViews/GraphQL API";
 
 /**
  * The stories this pass walks: the table's own, the sort panel's, the
- * filters', the table settings', the cards', the renderer switch's, and
- * the whole composition over each mock endpoint.
+ * filters', the table settings', the cards', the chart prototypes', the
+ * renderer switch's, and the whole composition over each mock endpoint.
  */
 const TITLES: readonly string[] = [
   TABLE,
@@ -62,6 +68,8 @@ const TITLES: readonly string[] = [
   FILTERS,
   SETTINGS,
   CARDS,
+  FACET_BAR_CHART,
+  FACET_RANGE_CHART,
   RENDERER_SWITCH,
   REST_API,
   GRAPHQL_API,
@@ -449,7 +457,7 @@ const tabTo = async (page: Page, control: Locator): Promise<void> => {
   }
 };
 
-test.describe("DataTable, sort panel, filters, settings, cards, renderer switch and server-backed stories, keyboard only", () => {
+test.describe("DataTable, sort panel, filters, settings, cards, chart prototypes, renderer switch and server-backed stories, keyboard only", () => {
   for (const story of stories) {
     test(`${story.title} ${story.name}: every control is reached both ways, focus visible`, async ({
       page,
@@ -751,6 +759,35 @@ test.describe("DataTable, sort panel, filters, settings, cards, renderer switch 
     await expect(
       page.getByRole("checkbox", { name: "Select larch.example.com" }),
     ).toBeChecked();
+  });
+
+  test("FacetBarChart BesideFilters: Space on a status filter narrows the table, and the chart keeps every status's count", async ({
+    page,
+  }) => {
+    await openStory(page, findStory(FACET_BAR_CHART, "Beside Filters").id);
+    const summary = page
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("status");
+    const chart = page.getByRole("table", { name: "Machines by status" });
+    const running = chart
+      .getByRole("row")
+      .filter({ has: page.getByRole("rowheader", { name: "running" }) });
+    // Whatever the story's play function left applied, the keyboard puts the
+    // filter where this journey wants it before asserting anything of it.
+    const failed = page.getByRole("checkbox", { name: /^failed/ });
+    await tabTo(page, failed);
+    if (await failed.isChecked()) {
+      await page.keyboard.press("Space");
+    }
+    await expect(failed).not.toBeChecked();
+    await expect(summary).toHaveText("Showing 1–5 out of 12 rows");
+    // Space keeps only the failed machines, and the focus where it was.
+    await page.keyboard.press("Space");
+    await expect(failed).toBeChecked();
+    await expect(failed).toBeFocused();
+    await expect(summary).toHaveText("Showing 1–3 out of 3 rows");
+    // The chart still counts every machine, filtered or not.
+    await expect(running).toContainText("6");
   });
 
   test("RendererSwitch TableOrSummary: the select's own arrow keys choose a renderer, focus stays on the choice", async ({

@@ -1,0 +1,61 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./FacetRangeChart.stories";
+
+<Meta of={Stories} name="Recipes" />
+
+# FacetRangeChart recipes
+
+`FacetRangeChart` is a prototype: one number field's lowest and highest values, drawn as a band on a labelled axis. It exists, with `FacetBarChart`, to find out what a chart over DataViews needs; the findings of both are recorded in the FacetBarChart recipes. It is not exported from the package root, and its shape may change or it may be withdrawn.
+
+## A range from the source
+
+The chart reads the field's facet: the least and greatest value the source measures over every record matching the query, never over the rows on screen. The field must be a number field the source facets, and the provider must ask for it through its `facets`; the chart throws otherwise. The axis starts and ends on round numbers, and reaches the field's declared `min` and `max` where the schema gives them.
+
+```tsx
+import {
+  createArraySource,
+  createDataViewsProvider,
+} from "@canonical/dataviews-core";
+import { useState } from "react";
+import { machineCollection, machines } from "./machines.js";
+// A work-in-progress prototype: not yet exported from the package root.
+import { FacetRangeChart } from "./FacetRangeChart.js";
+
+export function Machines() {
+  const [provider] = useState(() =>
+    createDataViewsProvider({
+      collection: machineCollection,
+      source: createArraySource({ rows: machines, collection: machineCollection }),
+      facets: ["cores"],
+    }),
+  );
+  return <FacetRangeChart provider={provider} field="cores" label="Cores" />;
+}
+```
+
+<Canvas of={Stories.CoresRange} sourceState="none" />
+
+When no matching record holds a value, the chart says so rather than drawing an empty axis. While no result answers the query, the core's status is shown in place of the range.
+
+## Beside the filters
+
+In a root beside `DataViews.Filters`, the range narrows with the query: keeping only the failed machines draws the cores those machines hold.
+
+<Canvas of={Stories.BesideFilters} sourceState="none" />
+
+## Without scripting
+
+The server draws the range from the facets of the page it renders, with its table beside it, so nothing about it needs a script.
+
+## What this prototype adds to the findings
+
+A range is where the numerical mapping stops being trivial: the axis needs a domain that is not the data's own, ticks that start and end past it, and positions rather than lengths. Its two end labels collide when the range is narrow, and its values are drawn unformatted. Each of these is a need of a real chart system, listed in full in the FacetBarChart recipes.
+
+## Provisional coverage
+
+These notes are provisional, recorded for a prototype.
+
+| Surface | Principal criteria | Behaviour today |
+|---|---|---|
+| Facet range chart | 1.1.1, 1.3.1, 1.4.1, 4.1.2 | A figure captioned by its label; the drawing an image named with its range; the lowest and highest values in a native table with row headings; the range from the source over the matching set; "no matching record holds a value" said, not drawn as an empty axis |
+| Facet range chart status | 1.3.1, 4.1.3 | The core's status in place of the range while no result answers the query, a settled outcome announced once, politely |

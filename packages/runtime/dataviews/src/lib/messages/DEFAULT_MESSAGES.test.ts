@@ -340,6 +340,30 @@ describe("DEFAULT_MESSAGES", () => {
     expect(m.viewFailed("save", "quota")).toBe("Not saved: quota.");
   });
 
+  it("words the facet charts, naming each drawing by its caption", () => {
+    expect(m.facetCountsAbsent).toBe(
+      "The source answered no counts for this field.",
+    );
+    expect(m.facetRangeAbsent).toBe(
+      "The source answered no range for this field.",
+    );
+    expect(m.facetValuesNone).toBe("No matching record holds a value.");
+    expect(m.barChartSummary("Machines by status")).toBe(
+      "Machines by status: a bar chart of how many records hold each value",
+    );
+    expect(m.rangeChartSummary("Cores", 3, 12)).toBe(
+      "Cores: a range chart from 3 to 12",
+    );
+    expect(m.chartTable("Cores")).toBe("Cores, as a table");
+    expect([
+      m.chartValue,
+      m.chartCount,
+      m.countUnknown,
+      m.chartLowest,
+      m.chartHighest,
+    ]).toEqual(["Value", "Count", "Not counted", "Lowest", "Highest"]);
+  });
+
   it("words the renderer switch", () => {
     expect(m.renderer).toBe("Show as");
   });
