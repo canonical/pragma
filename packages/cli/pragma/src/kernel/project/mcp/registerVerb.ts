@@ -25,6 +25,7 @@ import type { InteractionRuntime, PragmaRuntime } from "../../runtime/types.js";
 import { describeTool } from "../../spec/guidance.js";
 import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/index.js";
 import { toolName } from "../../spec/index.js";
+import { type WireItem, wireType } from "../../spec/wireType.js";
 import { toolError, toolSuccess } from "./envelope.js";
 
 /**
@@ -58,9 +59,9 @@ function resolveEffectiveCwd(rawCwd: unknown, fallback: string): string {
   return rawCwd;
 }
 
-/** The base zod type for a param, before `.describe()`/`.optional()`. */
-function zodForParam(param: ParamSpec): z.ZodTypeAny {
-  switch (param.kind) {
+/** The zod type of ONE value of a param. */
+function zodForItem(item: WireItem): z.ZodTypeAny {
+  switch (item.kind) {
     case "string":
       return z.string();
     case "number":
@@ -68,10 +69,31 @@ function zodForParam(param: ParamSpec): z.ZodTypeAny {
     case "boolean":
       return z.boolean();
     case "enum":
-      return z.enum(param.values as unknown as [string, ...string[]]);
-    case "string[]":
-      return z.array(z.string());
+      return z.enum(item.values as unknown as [string, ...string[]]);
   }
+}
+
+/**
+ * The base zod type for a param, before `.describe()`/`.optional()`, built
+ * from the param's {@link wireType} — the statement the reference prints too.
+ *
+ * A list is ADVERTISED as a plain array and a bare value is COERCED into one
+ * before validation. A preprocess rather than a `string | string[]` union on
+ * purpose: the emitted JSON Schema stays `type: "array"`, where a union emits
+ * `anyOf`, which the weaker models that most need this read badly. The run
+ * bodies already take one value or many, so nothing downstream changes.
+ */
+function zodForParam(param: ParamSpec): z.ZodTypeAny {
+  const wire = wireType(param);
+  const item = zodForItem(wire.item);
+  if (!wire.list) return item;
+  return z.preprocess(
+    (value) =>
+      value === undefined || value === null || Array.isArray(value)
+        ? value
+        : [value],
+    z.array(item),
+  );
 }
 
 /**

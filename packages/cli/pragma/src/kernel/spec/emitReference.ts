@@ -32,6 +32,7 @@ import type {
   ReferenceCliSyntax,
   VerbSpec,
 } from "./types.js";
+import { formatWireType, wireType } from "./wireType.js";
 
 /** The reference doc set: relative path under `docs/reference/` → file content. */
 export type ReferenceDocs = ReadonlyMap<string, string>;
@@ -123,19 +124,11 @@ function formatFlagValue(param: ParamSpec): string {
 }
 
 /**
- * The tool-schema type label a param projects to (mirrors `buildZodSchema`).
- * Enum values are comma-joined (never pipe-joined) so the label is safe inside
- * a Markdown table cell without escaping.
+ * The tool-schema type label a param projects to: the SAME {@link wireType}
+ * `buildZodSchema` validates against, printed — never a mirror of it.
  */
 function formatParamType(param: ParamSpec): string {
-  switch (param.kind) {
-    case "enum":
-      return `enum(${param.values.join(", ")})`;
-    case "string[]":
-      return "string[]";
-    default:
-      return param.kind;
-  }
+  return formatWireType(wireType(param));
 }
 
 /** Render a default value for prose (strings verbatim, everything else stringified). */

@@ -136,8 +136,8 @@ export type ParamSpec =
        * A repeatable flag ACCUMULATES: `--category css --category git` is
        * the union, never last-wins (repetition is the sanctioned multi-value
        * form, and silently dropping all but the last value is data loss).
-       * CLI-side only: the MCP arg schema keeps its scalar shape, and the
-       * run body accepts one value or many.
+       * Over MCP the same param is an ARRAY that also takes one bare value
+       * (`spec/wireType.ts`); the run body accepts one value or many.
        */
       repeatable?: true;
     }

@@ -59,17 +59,18 @@ export function resolveFilterPredicates(
   for (const filter of filters ?? []) {
     const provided = params[filter.param];
     if (provided === undefined) continue;
-    // A repeated CLI flag accumulates into an array; MCP args stay scalar.
-    // Several values for ONE filter are a union (a row matches any of them);
+    // A repeated CLI flag accumulates into an array, and the MCP schema hands
+    // over the same array (one bare value coerced into it). Several values for ONE filter are a union (a row matches any of them);
     // several filters still combine conjunctively.
     const occurrences = Array.isArray(provided) ? provided : [provided];
     if (occurrences.length === 0) continue;
     const values = filter.values;
-    const terms = occurrences.map((occurrence) =>
+    const terms =
       values === undefined
-        ? requireStringValue(occurrence, filter)
-        : canonicalizeFilterValue(occurrence, filter, values),
-    );
+        ? occurrences.map((occurrence) =>
+            requireStringValue(occurrence, filter),
+          )
+        : canonicalizeFilterValues(occurrences, filter, values);
     if (values === undefined) {
       rejectUnknownValue(
         requireVocabulary(filter, vocabularies, label),
@@ -135,18 +136,38 @@ function rejectUnknownValue(
     if (!admissible.has(key)) admissible.set(key, value.normalize("NFC"));
   }
   if (admissible.size === 0) return;
-  const index = terms.findIndex((term) => !admissible.has(term.toLowerCase()));
-  if (index === -1) return;
-  const validOptions = [...admissible.values()].sort();
+  const refused = occurrences.filter(
+    (_, index) => !admissible.has((terms.at(index) ?? "").toLowerCase()),
+  );
+  if (refused.length === 0) return;
   // The VALUES ride `validOptions`, which every renderer already prints (and
   // truncates, and counts). Repeating them in the recovery printed the same
   // 40-name, 1.4KB list twice on one error — see `error/validOptions.ts`.
-  throw PragmaError.invalidInput(filter.param, String(occurrences[index]), {
-    validOptions,
-    recovery: {
-      message: `Pick one of the ${validOptions.length} values --${filter.param} accepts.`,
+  throw refuseValues(filter, refused, [...admissible.values()].sort());
+}
+
+/**
+ * The refusal for values a filter does not admit — EVERY one of them.
+ *
+ * A filter takes several values, so a caller who sent twenty and mistyped three
+ * is told about all three at once: naming only the first would cost a round
+ * trip per typo, which is the cost taking several values exists to remove.
+ */
+function refuseValues(
+  filter: PackFilter,
+  refused: readonly unknown[],
+  validOptions: string[],
+): PragmaError {
+  return PragmaError.invalidInput(
+    filter.param,
+    refused.map(String).join('", "'),
+    {
+      validOptions,
+      recovery: {
+        message: `Every --${filter.param} value must be one of the ${validOptions.length} it accepts.`,
+      },
     },
-  });
+  );
 }
 
 /** @throws PragmaError INVALID_INPUT when a value-free filter value is not a string. */
@@ -159,24 +180,22 @@ function requireStringValue(provided: unknown, filter: PackFilter): string {
   return provided.trim().normalize("NFC");
 }
 
-/** @throws PragmaError INVALID_INPUT when the value is not in the declared set. */
-function canonicalizeFilterValue(
-  provided: unknown,
+/** @throws PragmaError INVALID_INPUT when a value is not in the declared set. */
+function canonicalizeFilterValues(
+  provided: readonly unknown[],
   filter: PackFilter,
   values: readonly string[],
-): string {
-  if (typeof provided === "string") {
-    const normalized = provided.trim().normalize("NFC");
-    const match = values.find(
-      (value) =>
-        value.normalize("NFC").toLowerCase() === normalized.toLowerCase(),
-    );
-    if (match !== undefined) return match.normalize("NFC");
-  }
-  throw PragmaError.invalidInput(filter.param, String(provided), {
-    validOptions: [...values],
-    recovery: {
-      message: `Pick one of the ${values.length} values --${filter.param} accepts.`,
-    },
+): string[] {
+  const matches = provided.map((occurrence) => {
+    if (typeof occurrence !== "string") return undefined;
+    const normalized = occurrence.trim().normalize("NFC").toLowerCase();
+    return values
+      .find((value) => value.normalize("NFC").toLowerCase() === normalized)
+      ?.normalize("NFC");
   });
+  const refused = provided.filter(
+    (_, index) => matches.at(index) === undefined,
+  );
+  if (refused.length > 0) throw refuseValues(filter, refused, [...values]);
+  return matches.filter((match): match is string => match !== undefined);
 }

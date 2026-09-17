@@ -72,7 +72,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `type` | string | no | Filter by concept type (e.g. Explanation, How-to guide). |
+| `type` | string[] | no | Filter by concept type (e.g. Explanation, How-to guide). |
 | `search` | string | no | Search in name and summary. |
 | `tier` | string | no | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
@@ -275,8 +275,8 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `platform` | string | no | Filter by platform (e.g. react, svelte, typescript). |
-| `library` | string | no | Filter by implementation library name. |
+| `platform` | string[] | no | Filter by platform (e.g. react, svelte, typescript). |
+| `library` | string[] | no | Filter by implementation library name. |
 | `search` | string | no | Search in block and library name. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
@@ -474,7 +474,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `category` | string | no | Filter by category slug. A parent category answers for its whole branch. |
+| `category` | string[] | no | Filter by category slug. A parent category answers for its whole branch. |
 | `search` | string | no | Search in name and description. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
@@ -539,10 +539,10 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `symbol` | string | no | Filter to one symbol. |
-| `variable` | string | no | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
-| `key` | string | no | Filter to one style key. |
-| `state` | string | no | Filter to one interaction state. |
+| `symbol` | string[] | no | Filter to one symbol. |
+| `variable` | string[] | no | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
+| `key` | string[] | no | Filter to one style key. |
+| `state` | string[] | no | Filter to one interaction state. |
 | `search` | string | no | Search block, via, symbol, key, state and node. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
@@ -557,8 +557,8 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `type` | string | no | Filter by type. |
-| `channelOf` | string | no | Filter to one symbol's channels. |
+| `type` | string[] | no | Filter by type. |
+| `channelOf` | string[] | no | Filter to one symbol's channels. |
 | `search` | string | no | Search name and description. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
@@ -595,8 +595,8 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `symbol` | string | no | Filter to one symbol. |
-| `position` | string | no | Filter to one position. |
+| `symbol` | string[] | no | Filter to one symbol. |
+| `position` | string[] | no | Filter to one position. |
 | `search` | string | no | Search symbol, value, derivation. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
@@ -624,8 +624,8 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `variable` | string | no | Filter to one variable. |
-| `symbol` | string | no | Filter to one symbol. |
+| `variable` | string[] | no | Filter to one variable. |
+| `symbol` | string[] | no | Filter to one symbol. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
 
@@ -639,11 +639,11 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `platform` | string | no | Filter by platform. |
-| `symbol` | string | no | Filter to one symbol. |
-| `tier` | string | no | Filter by tier. |
-| `visibility` | string | no | Filter by visibility. |
-| `coordinate` | string | no | Filter to one coordinate. |
+| `platform` | string[] | no | Filter by platform. |
+| `symbol` | string[] | no | Filter to one symbol. |
+| `tier` | string[] | no | Filter by tier. |
+| `visibility` | string[] | no | Filter by visibility. |
+| `coordinate` | string[] | no | Filter to one coordinate. |
 | `search` | string | no | Search name and symbol. |
 | `limit` | number | no | Maximum rows to return, 1 to 40000 (default 300). |
 | `after` | string | no | Continue from a previous page: the cursor that page reported. |
