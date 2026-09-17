@@ -110,8 +110,13 @@ export interface LookupOutput {
   readonly outOfScope?: OutOfScopeAnswer[];
   /** Set when the patterns matched more entities than {@link GLOB_EXPANSION_CAP}. */
   readonly truncated?: true;
-  /** How many entities the patterns matched, present only when truncated. */
+  /**
+   * The matched entities the cut was made in: the in-scope ones when they alone
+   * exceed the cap, else every match. Present only when truncated.
+   */
   readonly total?: number;
+  /** Out-of-scope matches not counted in `total`, when there are any. */
+  readonly elsewhere?: number;
   /** The level the cut answer was built at, present only when truncated. */
   readonly detail?: string;
 }
@@ -196,7 +201,12 @@ export async function resolveLookup(
         answered.add(uri);
         results.push(entity);
       }
-      if (outcome.value.outOfScope) outOfScope.push(outcome.value.outOfScope);
+      const fallback = outcome.value.outOfScope;
+      const key = (answer: OutOfScopeAnswer): string =>
+        `${answer.query.toLowerCase()}|${answer.tiers.join()}`;
+      if (fallback && !outOfScope.some((a) => key(a) === key(fallback))) {
+        outOfScope.push(fallback);
+      }
       continue;
     }
     const error = outcome.reason;
@@ -226,6 +236,7 @@ export async function resolveLookup(
       : {
           truncated: true as const,
           total: expanded.total,
+          ...(expanded.elsewhere ? { elsewhere: expanded.elsewhere } : {}),
           ...(level ? { detail: level } : {}),
         }),
   };
@@ -250,6 +261,7 @@ async function expandQueries(
   globErrors: LookupError[];
   outOfScope: OutOfScopeAnswer[];
   total?: number;
+  elsewhere?: number;
 }> {
   const literals = [...new Set(queries.filter((q) => !isGlobPattern(q)))];
   const globs = queries.filter(isGlobPattern);
@@ -298,6 +310,7 @@ async function expandQueries(
         a.uri.localeCompare(b.uri),
     );
   const kept = ordered.slice(0, GLOB_EXPANSION_CAP);
+  const within = ordered.filter(inScope).length;
   return {
     names: [...literals, ...kept.map((entity) => entity.compact)],
     globErrors,
@@ -308,7 +321,11 @@ async function expandQueries(
         tiers: [scopeTierName(entity.tier ?? "")],
         scope: scope?.label ?? "",
       })),
-    ...(ordered.length > kept.length ? { total: ordered.length } : {}),
+    ...(ordered.length <= kept.length
+      ? {}
+      : within > kept.length
+        ? { total: within, elsewhere: ordered.length - within }
+        : { total: ordered.length }),
   };
 }
 

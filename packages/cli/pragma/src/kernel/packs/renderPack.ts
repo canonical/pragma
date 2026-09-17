@@ -349,8 +349,11 @@ function truncationNotice(
     output.detail === "summary"
       ? ""
       : `, or pass ${quoteArgument("detail", "summary", surface)} for smaller entries`;
+  const elsewhere = output.elsewhere
+    ? `, and ${output.elsewhere} more in other tiers: pass ${quoteArgument(TIER_PARAM, EVERY_TIER, surface)}`
+    : "";
   return (
-    `${output.results.length} of ${output.total} matches shown. ` +
+    `${output.results.length} of ${output.total} matches shown${elsewhere}. ` +
     `Narrow the pattern to reach the rest${advice}.`
   );
 }
