@@ -1287,7 +1287,7 @@ pragma tier lookup <name>
 
 List which blocks consume which token symbol, at which style key, state and rank.
 
-List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings.
+List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable); narrow to the components a name reaches, or to one by IRI, with block. Answers empty until the packs record bindings.
 
 Use when asked which components use a token, or what changing one affects.
 
@@ -1299,6 +1299,7 @@ pragma token consumers [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
+| `--block` | `<string>` | Filter to the blocks a name reaches (every tier), or to one block by IRI. |
 | `--symbol` | `<string>` | Filter to one symbol. |
 | `--variable` | `<string>` | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
 | `--key` | `<string>` | Filter to one style key. |

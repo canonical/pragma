@@ -42,7 +42,6 @@ import { runSelect } from "./sparql/runSelect.js";
 import { localName } from "./tierScope.js";
 import {
   expandIsSparql,
-  type PackChildRow,
   type PackEntity,
   type PackLookup,
   type PackRow,
@@ -240,6 +239,67 @@ export async function resolveLookup(
           ...(level ? { detail: level } : {}),
         }),
   };
+}
+
+/**
+ * The IRIs of every entity the given lookup arguments reach — the resolve
+ * alone, with nothing fetched. Each is read as {@link resolveLookup} reads a
+ * literal argument (a name, a prefixed IRI, an absolute IRI; never a pattern),
+ * under no tier scope: a name reaches its entity in every tier.
+ *
+ * @returns The distinct IRIs; none when the store holds no entity of the noun.
+ * @throws PragmaError INVALID_INPUT naming every argument that reaches nothing,
+ *   with the suggestions a lookup miss offers; when an argument is empty; or
+ *   when an IRI-shaped argument cannot be embedded in a query.
+ */
+export async function resolveEntityIris(
+  rt: LookupRuntime,
+  lookup: PackLookup,
+  noun: string,
+  queries: readonly string[],
+  source: StorySource,
+  prefixes: Readonly<Record<string, string>>,
+): Promise<string[]> {
+  const blank = queries.find((query) => query.trim() === "");
+  if (blank !== undefined) {
+    throw PragmaError.invalidInput(noun, "(empty)", {
+      recovery: { message: `Give a ${noun} name or IRI.` },
+    });
+  }
+  const iris = new Set<string>();
+  const missed: string[] = [];
+  // The graphql-sourced resolve is the bare `?uri ?name` pair: no field read.
+  const bare: PackLookup = { ...lookup, source: "graphql" };
+  for (const query of queries) {
+    const rows = await runSelect(
+      rt,
+      buildResolveQuery(bare, query, prefixes, undefined),
+      source,
+    );
+    if (rows.length === 0) missed.push(query);
+    for (const row of firstRowPerEntity(rows)) iris.add(String(row.uri));
+  }
+  if (missed.length === 0) return [...iris];
+  const pool = listAddressable(rt, lookup, source, prefixes, undefined);
+  if ((await pool).length === 0) return [];
+  const suggestions = await Promise.all(
+    missed.map((query) => suggestForMiss(() => pool, query)),
+  );
+  throw new PragmaError({
+    code: "INVALID_INPUT",
+    message: `No ${noun} is named "${missed.join('", "')}".`,
+    // Interleaved, so every miss gets a share of the slots.
+    suggestions: [
+      ...new Set(
+        suggestions
+          .flatMap((list, miss) =>
+            list.map((name, rank) => ({ name, rank, miss })),
+          )
+          .sort((a, b) => a.rank - b.rank || a.miss - b.miss)
+          .map((entry) => entry.name),
+      ),
+    ].slice(0, MAX_SUGGESTIONS),
+  });
 }
 
 /**
@@ -533,7 +593,10 @@ async function addSparqlExpands(
 ): Promise<PackEntity> {
   for (const expand of activeExpands(lookup, level)) {
     if (!expandIsSparql(lookup, expand)) continue;
-    entity[expand.name] = (await runSelect(
+    const many = expand.select.flatMap((field) =>
+      "many" in field && field.many ? [field.name] : [],
+    );
+    const rows = (await runSelect(
       rt,
       buildExpandQuery(expand, String(entity.uri), lookup),
       source,
@@ -544,7 +607,16 @@ async function addSparqlExpands(
       // without that pack does not bind, and every other section of that
       // block is still perfectly answerable.
       { degradeOnUnboundPrefix: true },
-    )) as readonly PackChildRow[];
+    )) as PackRow[];
+    // An aggregate has no order of its own; a `many` cell is sorted here.
+    entity[expand.name] = rows.map((row) => ({
+      ...row,
+      ...Object.fromEntries(
+        many
+          .filter((name) => row[name] !== undefined)
+          .map((name) => [name, (row[name] ?? "").split(" ").sort().join(" ")]),
+      ),
+    }));
   }
   return entity;
 }

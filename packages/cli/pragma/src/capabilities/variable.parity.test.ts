@@ -34,7 +34,7 @@ import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
 import type { VerbSpec } from "../kernel/spec/types.js";
 import { buildFixtureRuntime } from "../testing/helpers/packRuntime.js";
-import { declaredStories } from "./distribution.js";
+import { declaredLookups, declaredStories } from "./distribution.js";
 
 const variablePack = declaredStories.get("variable");
 if (!variablePack) {
@@ -183,6 +183,7 @@ const verbs = () =>
     variablePack,
     distributionSource("pragma.conf.ts"),
     DEFAULT_PREFIX_MAP,
+    declaredLookups,
   );
 const verb = (label: string) =>
   verbs().find((v) => verbKey(v.path) === `variable ${label}`) as VerbSpec;

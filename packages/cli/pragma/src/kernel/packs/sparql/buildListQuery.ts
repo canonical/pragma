@@ -93,13 +93,20 @@ import { escapeSparqlString, formatTerm } from "./escape.js";
 export interface ListPredicate {
   /** SELECT variable the filter constrains (without `?`). */
   readonly variable: string;
-  /** Whole-cell comparison, or membership of a whitespace-separated set. */
-  readonly match: "exact" | "set";
+  /**
+   * Whole-cell comparison, membership of a whitespace-separated set, or — for
+   * `"iri"` — identity with one of the entity IRIs in {@link terms}.
+   */
+  readonly match: "exact" | "set" | "iri";
   /**
    * The admitted values, in the graph's own display spelling. Several are a
    * union (the row matches any of them); several FILTERS are a conjunction.
+   * For `"iri"` they are absolute IRIs the store itself returned, and none
+   * at all matches no row.
    */
   readonly terms: readonly string[];
+  /** `"iri"` only: the path from the variable to the entity {@link terms} name. */
+  readonly via?: string;
 }
 
 /** A declared search, with the term a caller actually supplied. */
@@ -152,6 +159,8 @@ export interface ListQueryInput {
   readonly search?: ListSearch;
   /** The tier scope this read answers under, absent when it answers from all. */
   readonly scope?: ListTierScope;
+  /** Projected variables the page leaves out of its rows. */
+  readonly omit?: readonly string[];
   /** The page to return. */
   readonly window: ListWindow;
   /** The story's label, for a configuration diagnosis. */
@@ -172,9 +181,10 @@ export interface ListQueryInput {
  */
 export function buildListQuery(input: ListQueryInput): string {
   const { prologue, projection, body, clauses } = readWrapped(input);
+  const shown = projection?.filter((name) => !input.omit?.includes(name));
   return [
     ...(prologue === "" ? [] : [prologue]),
-    `SELECT ${projection ? projection.map((variable) => `?${variable}`).join(" ") : "*"}`,
+    `SELECT ${shown ? shown.map((variable) => `?${variable}`).join(" ") : "*"}`,
     "WHERE {",
     "  {",
     body,
@@ -303,6 +313,7 @@ function modifier(window: ListWindow): string {
  * `set` cell carrying two of them would be returned twice.
  */
 function filterClause(predicate: ListPredicate, bound: string): string {
+  if (predicate.match === "iri") return entityClause(predicate, bound);
   const values = predicate.terms
     .map((term) => `"${escapeSparqlString(term)}"`)
     .join(" ");
@@ -312,6 +323,21 @@ function filterClause(predicate: ListPredicate, bound: string): string {
       ? setMembership(cell, bound)
       : `STR(${cell}) != "" && LCASE(STR(${cell})) = LCASE(?${bound})`;
   return `FILTER EXISTS { VALUES ?${bound} { ${values} } FILTER(${comparison}) }`;
+}
+
+/**
+ * A row's entity is one of the named ones, or reaches one along `via`.
+ *
+ * The IRIs are the store's own, returned by the named noun's resolve — a
+ * caller's text never reaches this clause.
+ */
+function entityClause(predicate: ListPredicate, bound: string): string {
+  const values = predicate.terms.map((iri) => `<${iri}>`).join(" ");
+  const entity = `?${predicate.variable}`;
+  const test = predicate.via
+    ? `${entity} ${formatTerm(predicate.via)} ?${bound}`
+    : `FILTER(${entity} = ?${bound})`;
+  return `FILTER EXISTS { VALUES ?${bound} { ${values} } ${test} }`;
 }
 
 /**

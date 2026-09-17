@@ -21,12 +21,14 @@ import {
   type LookupScope,
   listEntityNames,
   listRecovery,
+  resolveEntityIris,
   resolveLookup,
 } from "./resolveEntity.js";
 import { parseSampleCount, pickRandom } from "./sample.js";
 import {
   buildListQuery,
   buildTierCountQuery,
+  type ListPredicate,
   type ListTierScope,
 } from "./sparql/buildListQuery.js";
 import {
@@ -44,6 +46,7 @@ import {
 } from "./tierScope.js";
 import {
   ENTITY_VARIABLE,
+  type NounLookups,
   type PackAppliedFilter,
   type PackFilter,
   type PackList,
@@ -67,6 +70,10 @@ export interface ListRunMeta {
    * are. Absent leaves the read exactly as it was.
    */
   readonly tierScope?: PackTierScope;
+  /** The prefix map a prefixed IRI handed to a noun filter expands against. */
+  readonly prefixes: Readonly<Record<string, string>>;
+  /** The other stories' lookups, for a filter that names a noun. */
+  readonly nouns?: NounLookups;
 }
 
 /**
@@ -96,12 +103,20 @@ export function makeListRun(
       params,
       meta.source,
     );
-    const predicates = resolveFilterPredicates(
-      shape.filters,
-      params,
-      vocabularies,
-      meta.source.label,
-    );
+    const predicates = [
+      ...resolveFilterPredicates(
+        shape.filters?.filter((filter) => filter.noun === undefined),
+        params,
+        vocabularies,
+        meta.source.label,
+      ),
+      ...(await resolveNounPredicates(rt, shape.filters, params, meta)),
+    ];
+    // Left out of the rows: over the shipped pack the IRIs a noun filter
+    // constrains took the largest list past its payload budget (108 KB).
+    const omit = (shape.filters ?? [])
+      .flatMap((filter) => (filter.entity ? [filter.entity] : []))
+      .filter((name) => !shape.columns.some((column) => column.field === name));
     const search = readSearchTerm(shape.search, params);
     const scope = await resolveReadScope(
       rt,
@@ -145,6 +160,7 @@ export function makeListRun(
       buildListQuery({
         ...read,
         ...(listScope ? { scope: listScope } : {}),
+        omit,
         window: { limit: limit + 1, offset },
       }),
       meta.source,
@@ -293,6 +309,52 @@ async function readFilterVocabularies(
     );
   }
   return resolved;
+}
+
+/**
+ * Turn the values a caller supplied for each NOUN filter into a constraint on
+ * the entities they name.
+ *
+ * @returns One `"iri"` predicate per noun filter the caller used, over the
+ *   IRIs its values reached. Against a store holding none of that noun's
+ *   entities the predicate names no IRI and the list answers empty.
+ * @throws PragmaError INVALID_INPUT when a value reaches no entity of the noun;
+ *   CONFIG_ERROR when no story known to this one declares a lookup for it.
+ */
+async function resolveNounPredicates(
+  rt: PragmaRuntime,
+  filters: readonly PackFilter[] | undefined,
+  params: Record<string, unknown>,
+  meta: ListRunMeta,
+): Promise<ListPredicate[]> {
+  const predicates: ListPredicate[] = [];
+  for (const filter of filters ?? []) {
+    const provided = params[filter.param];
+    if (!filter.noun || !filter.entity || provided === undefined) continue;
+    const occurrences = Array.isArray(provided) ? provided : [provided];
+    if (occurrences.length === 0) continue;
+    const lookup = meta.nouns?.(filter.noun);
+    if (!lookup) {
+      throw PragmaError.configError(
+        `Filter "--${filter.param}" in ${meta.source.label} names the noun "${filter.noun}", and no story declares a lookup for it.`,
+      );
+    }
+    const terms = await resolveEntityIris(
+      rt,
+      lookup,
+      filter.noun,
+      occurrences.map((value) => String(value).trim().normalize("NFC")),
+      meta.source,
+      meta.prefixes,
+    );
+    predicates.push({
+      variable: filter.entity,
+      match: "iri",
+      terms,
+      ...(filter.via ? { via: filter.via } : {}),
+    });
+  }
+  return predicates;
 }
 
 /**

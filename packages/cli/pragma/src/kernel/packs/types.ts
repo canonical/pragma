@@ -93,8 +93,22 @@ export const TIER_PARAM = "tier";
  */
 export const ENTITY_VARIABLE = "uri";
 
+/**
+ * What a cell may say about the values it prints, on a list column, a lookup
+ * field or an expand field alike.
+ */
+export interface PackCellLink {
+  /**
+   * The noun whose entities this cell NAMES: every value it prints is a name
+   * that noun's lookup resolves, so a reader can take the cell to
+   * `<noun> lookup` verbatim. On a list column it also promises a filter of
+   * the same `noun` over that column.
+   */
+  readonly noun?: string;
+}
+
 /** A list column: a SELECT variable to display. */
-export interface PackColumn {
+export interface PackColumn extends PackCellLink {
   /** SELECT variable name (without `?`). */
   readonly field: string;
   /** Column heading (defaults to the field name). */
@@ -102,7 +116,7 @@ export interface PackColumn {
 }
 
 /** A looked-up value: an output name bound to a property of the entity. */
-export interface PackField {
+export interface PackField extends PackCellLink {
   /** Output field name on the looked-up entity. */
   readonly name: string;
   /** Property to read — a prefixed name (`ds:tier`) or absolute IRI. */
@@ -141,7 +155,7 @@ export interface PackSection extends PackField {
 }
 
 /** A field read from each child node of a {@link PackExpand}. */
-export interface PackExpandField {
+export interface PackExpandField extends PackCellLink {
   /** Output field name on the child record. */
   readonly name: string;
   /** Property to read on the child node — prefixed name, IRI, or path. */
@@ -166,6 +180,15 @@ export interface PackExpandField {
    * and filter against it, and a GraphQL document cannot.
    */
   readonly blankWhenSelf?: true;
+  /**
+   * The property reaches SEVERAL values per child, and the cell is all of them:
+   * distinct, sorted, space-separated, one row per child. Without it each value is a
+   * row of its own, repeating every other cell.
+   *
+   * SPARQL lane only. Not combinable with {@link blankWhenSelf}, and not a
+   * name an expand may order by — a set has no order to sort on.
+   */
+  readonly many?: true;
 }
 
 /**
@@ -365,6 +388,23 @@ export interface PackFilter {
    * names neither is refused where it is declared.
    */
   readonly vocabulary?: PackFilterVocabulary;
+  /**
+   * In place of {@link values} or a {@link vocabulary}: a value is a literal
+   * name or IRI of that noun (never a pattern), resolved as `<noun> lookup`
+   * resolves one, and rows are kept by the IRIs it reaches, matched against
+   * {@link entity}.
+   */
+  readonly noun?: string;
+  /**
+   * The projected SELECT variable holding the IRI a {@link noun} filter
+   * constrains. Left out of the rows unless a column displays it.
+   */
+  readonly entity?: string;
+  /**
+   * The path from {@link entity} to the named entity when they are different
+   * nodes (`^ex:madeBy` from a row's maker to its widgets); absent, they are one.
+   */
+  readonly via?: string;
   /** Help text (defaults to a generated description). */
   readonly description?: string;
 }
@@ -628,6 +668,14 @@ export interface PackLookup extends PackGuidance {
   /** Autocomplete override for the `<name>` positional (derive-by-default). */
   readonly completion?: PackCompletion;
 }
+
+/**
+ * The lookup another story's noun declares, by noun — how a {@link PackFilter}
+ * naming a `noun` reaches that noun's resolver. A story is compiled alone, so
+ * whoever compiles it supplies this over the stories it knows. It may throw a
+ * CONFIG_ERROR of its own when it knows why a noun has no lookup.
+ */
+export type NounLookups = (noun: string) => PackLookup | undefined;
 
 /** A pack list row / flat lookup base: variable name → string value. */
 export type PackRow = Record<string, string>;

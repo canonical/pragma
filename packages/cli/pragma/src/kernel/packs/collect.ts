@@ -28,9 +28,10 @@ import type { ConfigLayers } from "../config/index.js";
 import { PragmaError } from "../error/index.js";
 import type { PackStoryRecord } from "../runtime/graphpack/stories.js";
 import type { CapabilityModule } from "../spec/index.js";
-import { compileStoryModule } from "./compile.js";
+import { compileStoryModule, storyOf } from "./compile.js";
 import { parsePackDefinition } from "./schema.js";
-import type { PackDefinition, PackEntry } from "./types.js";
+import { nounsNamed } from "./storyRules.js";
+import type { NounLookups, PackDefinition, PackEntry } from "./types.js";
 import { VERB_PATH_PATTERN } from "./types.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
 
@@ -201,8 +202,8 @@ function projectStoryTiers(layers: ConfigLayers): readonly unknown[][] {
  *   carries (see {@link validateStories}); weaker than either config tier.
  * @returns The effective modules, uniqueness-checked.
  * @throws PragmaError CONFIG_ERROR on an invalid CONFIG story, a config story
- *   claiming an authored non-story noun, or a duplicate noun within one config
- *   tier. Package stories were already screened and never throw here.
+ *   claiming an authored non-story noun, a duplicate noun within one config
+ *   tier, or a config or shipped story naming a noun no story declares. Package stories were already screened and never throw here.
  */
 export function assembleEffectiveModules(
   staticModules: readonly CapabilityModule[],
@@ -225,6 +226,19 @@ export function assembleEffectiveModules(
   // Keyed by noun so the stronger tier REPLACES the weaker one — declaring a
   // story both on its pack and at the top level is a refinement, not an error.
   const dynamic = new Map<string, CapabilityModule>();
+  // The EFFECTIVE lookup of a noun, for shipped and project stories alike.
+  // Read at run time, so it sees every tier whatever order they compile in.
+  const nouns: NounLookups = (noun) => {
+    const module =
+      dynamic.get(noun) ?? staticModules.find((m) => m.name === noun);
+    const story = module && storyOf(module);
+    if (story && !story.definition.lookup) {
+      throw PragmaError.configError(
+        `The "${noun}" story in ${story.source.label} declares no lookup, so a filter that takes a ${noun} cannot resolve its value. Add a lookup to that story.`,
+      );
+    }
+    return story?.definition.lookup;
+  };
   for (const entry of packageStories) {
     dynamic.set(
       entry.definition.noun,
@@ -232,6 +246,7 @@ export function assembleEffectiveModules(
         entry.definition,
         { label: entry.source, origin: "package" },
         prefixes,
+        nouns,
       ),
     );
   }
@@ -259,6 +274,7 @@ export function assembleEffectiveModules(
           definition,
           { label: "config", origin: "config" },
           prefixes,
+          nouns,
         ),
       );
     }
@@ -266,10 +282,77 @@ export function assembleEffectiveModules(
 
   // Drop the static module for any noun a config story overrides, then append
   // the dynamic modules.
-  const kept = staticModules.filter((module) => !dynamic.has(module.name));
+  const kept = staticModules
+    .filter((module) => !dynamic.has(module.name))
+    // Recompiled so a shipped filter naming an overridden noun resolves
+    // through the project's lookup, as the project's own stories do.
+    .map((module) => {
+      const story = storyOf(module);
+      return story
+        ? compileStoryModule(
+            story.definition,
+            story.source,
+            story.prefixes,
+            nouns,
+          )
+        : module;
+    });
   const effective = [...kept, ...dynamic.values()];
+  // A noun some story declares without a lookup is refused when a filter on it
+  // is used, not here: only a noun NO story declares is a declaration error.
+  // Package stories never throw; {@link screenPackageStories} drops them.
+  for (const module of effective) {
+    const story = storyOf(module);
+    const unknown =
+      story && story.source.origin !== "package"
+        ? undeclaredNoun(story.definition, effective)
+        : undefined;
+    if (story && unknown) {
+      throw PragmaError.configError(
+        `Invalid story in ${story.source.label}: "${module.name}" names the noun "${unknown}", and no story declares it.`,
+      );
+    }
+  }
   assertUniqueVerbs(effective.flatMap((module) => [...module.verbs]));
   return effective;
+}
+
+/** The first noun a story names that no effective story declares. */
+function undeclaredNoun(
+  definition: PackDefinition,
+  effective: readonly CapabilityModule[],
+): string | undefined {
+  return nounsNamed(definition).find(
+    (noun) => !effective.some((m) => m.name === noun && storyOf(m)),
+  );
+}
+
+/**
+ * Drop each PACKAGE story naming a noun no effective story declares, reporting
+ * it — judged over the assembled set, so the order of declaration is nothing.
+ *
+ * @param effective - The assembled modules.
+ * @returns The modules kept, and one problem per story dropped.
+ */
+export function screenPackageStories(effective: readonly CapabilityModule[]): {
+  readonly modules: readonly CapabilityModule[];
+  readonly problems: readonly StoryProblem[];
+} {
+  const problems: StoryProblem[] = [];
+  const modules = effective.filter((module) => {
+    const story = storyOf(module);
+    const unknown =
+      story?.source.origin === "package"
+        ? undeclaredNoun(story.definition, effective)
+        : undefined;
+    if (!story || unknown === undefined) return true;
+    problems.push({
+      source: story.source.label,
+      message: `it names the noun "${unknown}", and no story declares it.`,
+    });
+    return false;
+  });
+  return { modules: problems.length === 0 ? effective : modules, problems };
 }
 
 /**
@@ -306,8 +389,11 @@ export async function loadEffectiveModules(
     activeStories(resolveSources(layers, cwd)),
     staticModules,
   );
+  const screened = screenPackageStories(
+    assembleEffectiveModules(staticModules, layers, entries),
+  );
   return {
-    modules: assembleEffectiveModules(staticModules, layers, entries),
-    problems,
+    modules: screened.modules,
+    problems: [...problems, ...screened.problems],
   };
 }
