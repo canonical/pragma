@@ -6,7 +6,6 @@ import type { ContextSwitcherItem, ContextSwitcherProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds side-navigation-context-switcher";
-const surfaceCssClassName = "ds side-navigation-context-switcher-surface";
 
 /**
  * A context or "create context" entry under construction —
@@ -134,8 +133,8 @@ const ContextSwitcher = ({
     <>
       {title != null && <GroupHeader>{title}</GroupHeader>}
       <ContextualMenu
+        maxWidth={"calc(var(--sidenav-rail-inline-size) - 2 * var(--sidenav-inset-inline))"}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
-        surfaceClassName={surfaceCssClassName}
         trigger={
           <span className="row">
             <span className="label">{currentContext.name}</span>

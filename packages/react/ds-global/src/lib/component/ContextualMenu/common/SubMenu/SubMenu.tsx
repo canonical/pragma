@@ -153,7 +153,6 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
         "ds",
         "contextual-menu__surface",
         "submenu",
-        "modal",
         bestPosition?.positionName,
       ]
         .filter(Boolean)

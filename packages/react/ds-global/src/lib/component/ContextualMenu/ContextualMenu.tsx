@@ -29,7 +29,6 @@ const ContextualMenu = ({
   items,
   label,
   className,
-  surfaceClassName,
   preferredDirections,
   distance,
   gutter,
@@ -143,9 +142,7 @@ const ContextualMenu = ({
         // constant keeping its "ds " prefix. SubMenu.tsx does the same.
         "ds",
         "contextual-menu__surface",
-        "modal",
         bestPosition?.positionName,
-        surfaceClassName,
       ]
         .filter(Boolean)
         .join(" ")}
