@@ -20,7 +20,7 @@ Read-only.
 
 ### block_lookup
 
-Use when asked about one component, pattern or layout by name — its anatomy, properties, variants, or when to use it. Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. `detail: "summary"` trims to the base view. Example: block_lookup { name: ["Button"] }.
+Use when asked about one component, pattern or layout by name — its anatomy, properties, variants, or when to use it. Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. `detail: "summary"` trims to the base view. Example: block_lookup { name: ["Button","Accordion"] }.
 
 Read-only.
 
@@ -64,7 +64,7 @@ _No input parameters._
 
 ### concept_list
 
-Use when asked for design guidance that is not about one component — foundations, how-to guides, decision guides. List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: "Explanation" }.
+Use when asked for design guidance that is not about one component — foundations, how-to guides, decision guides. List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: ["Explanation","How to guide"] }.
 
 Read-only.
 
@@ -80,7 +80,7 @@ Read-only.
 
 ### concept_lookup
 
-Use when asked to read one guide or foundation in full. Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Grid"] }.
+Use when asked to read one guide or foundation in full. Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Spacing","Foundations: Surfaces"] }.
 
 Read-only.
 
@@ -267,7 +267,7 @@ Read-only.
 
 ### implementation_list
 
-Use when asked whether a component is implemented in React, Svelte or another library, or where its source code lives. List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.
+Use when asked whether a component is implemented in React, Svelte or another library, or where its source code lives. List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: ["react","svelte"] }.
 
 Read-only.
 
@@ -307,7 +307,7 @@ Read-only.
 
 ### modifier_lookup
 
-Use when asked which values one option allows, such as the levels of importance. Get values and usage details for one or more modifier families by name. Example: modifier_lookup { name: ["importance"] }.
+Use when asked which values one option allows, such as the levels of importance. Get values and usage details for one or more modifier families by name. Example: modifier_lookup { name: ["Importance","Density"] }.
 
 Read-only.
 
@@ -467,7 +467,7 @@ Read-only.
 
 ### standard_list
 
-Use when asked which coding rules or conventions apply — for React, CSS, testing, documentation and so on. List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term. Example: standard_list { category: "react" }.
+Use when asked which coding rules or conventions apply — for React, CSS, testing, documentation and so on. List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term. Example: standard_list { category: ["react","css"] }.
 
 Read-only.
 
@@ -482,7 +482,7 @@ Read-only.
 
 ### standard_lookup
 
-Use when asked how code should be written under one rule. Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.
+Use when asked how code should be written under one rule. Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["cs:react.component.tsdoc","cs:react.component.props"], detail: "detailed" }.
 
 Read-only.
 
@@ -520,7 +520,7 @@ Read-only.
 
 ### tier_lookup
 
-Use when asked which components belong to one tier or product. Get one or more tiers by name, with the blocks scoped directly to each. Example: tier_lookup { name: ["apps/lxd"] }.
+Use when asked which components belong to one tier or product. Get one or more tiers by name, with the blocks scoped directly to each. Example: tier_lookup { name: ["apps/lxd","global"] }.
 
 Read-only.
 
@@ -533,7 +533,7 @@ Read-only.
 
 ### token_consumers
 
-Use when asked which components use a token, or what changing one affects. List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable); narrow to the components a name reaches, or to one by IRI, with block. Answers empty until the packs record bindings. Example: token_consumers { symbol: "color.text" }.
+Use when asked which components use a token, or what changing one affects. List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable); narrow to the components a name reaches, or to one by IRI, with block. Answers empty until the packs record bindings. Example: token_consumers { symbol: ["color.text","color.border"] }.
 
 Read-only.
 
@@ -552,7 +552,7 @@ Read-only.
 
 ### token_list
 
-Use when asked which design tokens exist — colours, spacing, typography — or to find a token's exact name. List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
+Use when asked which design tokens exist — colours, spacing, typography — or to find a token's exact name. List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: ["color","dimension"] }.
 
 Read-only.
 
@@ -568,7 +568,7 @@ Read-only.
 
 ### token_lookup
 
-Use when asked everything about one token by name: where it is defined, what can change it, and its values. Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
+Use when asked everything about one token by name: where it is defined, what can change it, and its values. Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text","color.border"] }.
 
 Read-only.
 
@@ -591,7 +591,7 @@ _No input parameters._
 
 ### token_values
 
-Use when asked what value a token has, in light, dark or any other mode. List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.
+Use when asked what value a token has, in light, dark or any other mode. List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: ["color.text","color.border"] }.
 
 Read-only.
 
@@ -620,7 +620,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### variable_chain
 
-Use when asked which tokens a CSS variable ends up referring to. List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
+Use when asked which tokens a CSS variable ends up referring to. List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: ["modifier-color-text","modifier-color-border"] }.
 
 Read-only.
 
@@ -635,7 +635,7 @@ Read-only.
 
 ### variable_list
 
-Use when asked which CSS custom properties (variables) exist, or which CSS variable stands for a token. List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
+Use when asked which CSS custom properties (variables) exist, or which CSS variable stands for a token. List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: ["color.text","color.border"] }.
 
 Read-only.
 
@@ -654,7 +654,7 @@ Read-only.
 
 ### variable_lookup
 
-Use when asked about one CSS variable by name: what it stands for and everywhere it is declared. Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.
+Use when asked about one CSS variable by name: what it stands for and everywhere it is declared. Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text","color-border"] }.
 
 Read-only.
 

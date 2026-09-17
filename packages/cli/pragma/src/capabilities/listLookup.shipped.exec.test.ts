@@ -386,6 +386,34 @@ describe("an IRI's local name is one step from an address (shipped pack)", () =>
   }, 60_000);
 });
 
+describe("every story example answers from the shipped pack", () => {
+  // An example is copied verbatim by the agents it is shown to, so a name the
+  // graph has since renamed is a miss handed out in advance.
+  const examples = [...storyModules.values()].flatMap((module) =>
+    module.verbs
+      .filter((verb) => verb.example !== undefined)
+      .map((verb) => [verbKey(verb.path), verb] as const),
+  );
+
+  it.each(examples)(
+    "%s",
+    async (_label, verb) => {
+      const answer = (await verb.run({ ...verb.example }, rt)) as {
+        rows?: unknown[];
+        results?: unknown[];
+        errors?: unknown[];
+      };
+      expect(answer.errors ?? []).toEqual([]);
+      const named = verb.example?.name;
+      if (Array.isArray(named)) {
+        expect(answer.results?.length).toBeGreaterThanOrEqual(named.length);
+      }
+      if (answer.rows) expect(answer.rows.length).toBeGreaterThan(0);
+    },
+    60_000,
+  );
+});
+
 describe("negative control: the pre-#1047 shape fails these assertions", () => {
   // The exact divergence that shipped: a list that COALESCEs an OPTIONAL
   // display name with an IRI-derived one, over a lookup that requires the

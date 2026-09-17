@@ -25,6 +25,7 @@ import { executeVerb } from "../project/cli/dispatch.js";
 import type { GlobalFlags, PragmaRuntime } from "../runtime/types.js";
 import type { VerbSpec } from "../spec/types.js";
 import { compilePack } from "./compile.js";
+import { lookupFormatters } from "./renderPack.js";
 import { GLOB_EXPANSION_CAP, type LookupOutput } from "./resolveEntity.js";
 import { buildTierHierarchy, resolveTierScope } from "./tierScope.js";
 import {
@@ -506,7 +507,13 @@ describe("a lookup prefers the scope and falls back rather than refusing", () =>
     });
     try {
       const out = await lookup("*.*", {}, crowded);
-      expect(out.total).toBe(60);
+      // Cut inside the scope: the total is the scope's, the rest is named.
+      expect(out).toMatchObject({ total: 55, elsewhere: 5 });
+      expect(
+        lookupFormatters({ by: "ex:name" }, PREFIXES).notice?.(out, "mcp"),
+      ).toContain(
+        '50 of 55 matches shown, and 5 more in other tiers: pass `tier: "all"`.',
+      );
       expect(out.results).toHaveLength(GLOB_EXPANSION_CAP);
       expect(out.results.every((e) => String(e.name).startsWith("w."))).toBe(
         true,
@@ -524,6 +531,12 @@ describe("a lookup prefers the scope and falls back rather than refusing", () =>
     const out = await lookup("Met*");
     expect(out.results.map((e) => e.name)).toEqual(["Meter"]);
     expect(out.outOfScope?.at(0)).toMatchObject({ tiers: ["apps_lxd"] });
+    // The same redirect reached by a pattern AND by name is said once.
+    const both = (await verbFor(KIT, "lookup").run(
+      { name: ["Met*", "Meter"] },
+      rt,
+    )) as LookupOutput;
+    expect(both.outOfScope).toHaveLength(1);
   });
 
   it("answers a shared name with the in-scope one alone", async () => {
