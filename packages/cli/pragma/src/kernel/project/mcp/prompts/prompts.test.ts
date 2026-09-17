@@ -86,7 +86,7 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
       ],
     };
     const text = buildInstructions([...capabilities, added]);
-    expect(text).toContain("weather_today — if it rains");
+    expect(text).toMatch(/^weather_today — if it rains$/m);
     expect(text).toMatch(/plan-first[^\n]*weather_seed/);
     expect(buildInstructions([added])).toBe(""); // no module declares an orientation
   });
@@ -95,9 +95,57 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
     // Unlike the catalogue budget this is not raised on measurement: text past
     // about 2 KB is text no agent reads. Tighten a sentence instead.
     expect(INSTRUCTIONS_MAX_CHARS).toBe(2000);
-    expect(buildInstructions(capabilities).length).toBeLessThanOrEqual(
-      INSTRUCTIONS_MAX_CHARS,
+    const dropped: number[] = [];
+    const text = buildInstructions(capabilities, (count) =>
+      dropped.push(count),
     );
+    expect(text.length).toBeLessThanOrEqual(INSTRUCTIONS_MAX_CHARS);
+    // Fitting is the safety net for a project's packs, not for the
+    // distribution: its own registry must fit WHOLE.
+    expect(
+      dropped,
+      "the distribution's own index no longer fits — tighten a useWhen sentence; the 2,000 ceiling is what clients keep",
+    ).toEqual([]);
+  });
+
+  it("when a project's packs overflow it, drops index lines from the end and says so", () => {
+    const base = capabilities.find((m) => m.name === "info")
+      ?.verbs[0] as VerbSpec;
+    const crowd: CapabilityModule = {
+      name: "crowd",
+      verbs: Array.from({ length: 12 }, (_, n) => ({
+        ...base,
+        path: ["crowd", `probe${n}`] as [string, string],
+        category: undefined,
+        useWhen: `when asked a long question number ${n} about the crowd`,
+      })),
+    };
+    const dropped: number[] = [];
+    const text = buildInstructions([...capabilities, crowd], (count) =>
+      dropped.push(count),
+    );
+    expect(text.length).toBeLessThanOrEqual(INSTRUCTIONS_MAX_CHARS);
+    expect(dropped).toHaveLength(1);
+    expect(text.endsWith(`… and ${dropped[0]} more: call capabilities.`)).toBe(
+      true,
+    );
+    // What is one line whatever the registry holds is never what gets cut …
+    expect(text).toContain(BLOCKS_SENTENCE);
+    expect(text).toMatch(/plan-first/);
+    expect(text).toMatch(/<noun>_list/);
+    // … and the verbs that read the store lead the index, so they survive.
+    expect(text).toMatch(/^token_consumers — /m);
+  });
+
+  it("emits no heading for an empty group, and skips a verb declaring no useWhen", () => {
+    const base = capabilities.find((m) => m.name === "capabilities");
+    const { useWhen: _useWhen, ...silent } = base?.verbs[0] as VerbSpec;
+    const text = buildInstructions([
+      { ...(base as CapabilityModule), verbs: [silent as VerbSpec] },
+    ]);
+    expect(text).not.toContain("When asked:");
+    expect(text).not.toContain("Also:");
+    expect(text).not.toContain("undefined");
   });
 
   it("opens with the shared catalog's conventions, verbatim and once", () => {
@@ -139,16 +187,16 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
     expect(text).toContain("confirm: true");
   });
 
-  it("orients a cold agent to check/build the store before any store read", () => {
-    // Store-blind guard: the handshake must point a cold agent at the store
-    // pre-check (sources_status → sources_update) BEFORE the sample/query steps,
-    // or it walks straight into STORE_UNAVAILABLE.
+  it("tells an agent which tool explains empty or stale answers, and which rebuilds", () => {
+    // This case used to pin POSITION (`sources_status` before any `_sample`),
+    // from when a cold store failed every read and the text was a numbered
+    // sequence. A fresh install now answers from the shipped snapshot, and the
+    // text is an index whose fixed lines come first so an overflow can only
+    // cut the index. What must still hold: the store check is indexed by the
+    // situation that calls for it, and the rebuild is among the writes.
     const text = buildInstructions(capabilities);
-    const storeCheck = text.indexOf("sources_status");
-    const sample = text.indexOf("_sample");
-    expect(storeCheck).toBeGreaterThanOrEqual(0);
-    expect(text).toContain("sources_update");
-    expect(storeCheck).toBeLessThan(sample);
+    expect(text).toMatch(/^sources_status — when results look empty or stale/m);
+    expect(text).toMatch(/plan-first[^\n]*sources_update/);
   });
 });
 

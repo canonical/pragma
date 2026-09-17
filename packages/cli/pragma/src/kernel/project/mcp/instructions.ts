@@ -33,7 +33,7 @@ export const INSTRUCTIONS_MAX_CHARS = 2000;
 const TRIO = ["list", "lookup", "sample"] as const;
 
 /** How most `useWhen` clauses open; the index says it once. */
-const ASKED = "when asked ";
+const ASKED = /^when asked /;
 
 /** Which of the trio a verb is, or nothing for a verb that stands alone. */
 function trioVerbOf(verb: VerbSpec): (typeof TRIO)[number] | undefined {
@@ -43,13 +43,21 @@ function trioVerbOf(verb: VerbSpec): (typeof TRIO)[number] | undefined {
 /**
  * Build the handshake orientation string from the live capability modules.
  *
+ * The registry is not fixed — a project's packs add verbs at runtime — so the
+ * text is FITTED, not merely measured: everything that is one line whatever the
+ * registry holds comes first, the index comes last, and index lines are dropped
+ * from the end until the whole fits, the last line saying how many were dropped
+ * and where the full list is. A client would otherwise cut the tail silently.
+ *
  * @param modules - The capability modules; the one declaring `mcpOrientation`
  *   supplies the conventions, the registry everything else.
+ * @param onTruncate - Told how many index lines did not fit, when any did not.
  * @returns The orientation (≤ {@link INSTRUCTIONS_MAX_CHARS}); empty when no
  *   module declares one.
  */
 export function buildInstructions(
   modules: readonly CapabilityModule[],
+  onTruncate?: (dropped: number) => void,
 ): string {
   const orientation = modules.find(
     (module) => module.mcpOrientation,
@@ -59,14 +67,6 @@ export function buildInstructions(
     .flatMap((module) => module.verbs)
     .filter((verb) => !verb.hidden && verb.capability.mcp.expose);
   const reads = tools.filter((verb) => !verb.capability.mutates);
-
-  // Most clauses open "when asked …"; saying that once, as a heading, is what
-  // lets every question fit under the ceiling.
-  const standalone = reads.filter((verb) => !trioVerbOf(verb) && verb.useWhen);
-  const lineFor = (verb: VerbSpec): string =>
-    `${toolName(verb.path)} — ${verb.useWhen?.replace(ASKED, "")}`;
-  const asked = standalone.filter((verb) => verb.useWhen?.startsWith(ASKED));
-  const other = standalone.filter((verb) => !verb.useWhen?.startsWith(ASKED));
 
   // The trio, once: every noun that has any of the three, marked for what it
   // has beyond `list` — a noun is never promised a verb it lacks.
@@ -87,17 +87,55 @@ export function buildInstructions(
   const templates = emitSurface(modules)
     .mcpSurface.resources.map((template) => `\`${template}\``)
     .join(", ");
-
-  return [
+  const fixed = [
     orientation.conventions.join(" "),
-    "",
-    "When asked:",
-    ...asked.map(lineFor),
-    "Also:",
-    ...other.map(lineFor),
     "",
     `Per noun, <noun>_list finds entries and <noun>_lookup reads them by name († has no lookup); * also has <noun>_sample, which shows real data shapes: ${nouns.join(", ")}.`,
     `Writes are plan-first — the first call returns a plan; repeat it with confirm: true to apply: ${writes}.`,
     `Entity detail: read ${templates} resources.`,
-  ].join("\n");
+    "",
+  ];
+
+  // The index. Verbs that read the store come first — they are the ones that
+  // answer questions about the data — so what an overflow drops is the
+  // administrative tail. A verb declaring no `useWhen` has no line to give.
+  const standalone = reads
+    .filter((verb) => !trioVerbOf(verb) && verb.useWhen)
+    .sort(
+      (a, b) =>
+        Number(b.capability.needsStore) - Number(a.capability.needsStore),
+    );
+  // Most clauses open "when asked …"; saying that once, as a heading, is what
+  // lets every question fit under the ceiling.
+  const lineFor = (verb: VerbSpec): string =>
+    `${toolName(verb.path)} — ${verb.useWhen?.replace(ASKED, "")}`;
+  const group = (heading: string, verbs: readonly VerbSpec[]): string[] =>
+    verbs.length > 0 ? [heading, ...verbs.map(lineFor)] : [];
+  const index = [
+    ...group(
+      "When asked:",
+      standalone.filter((verb) => ASKED.test(verb.useWhen ?? "")),
+    ),
+    ...group(
+      "Also:",
+      standalone.filter((verb) => !ASKED.test(verb.useWhen ?? "")),
+    ),
+  ];
+
+  // Where the full list lives: the distribution's own orientation tool.
+  const catalogue = tools.find((verb) => verb.category === "orientation");
+  const render = (kept: number): string => {
+    const dropped = index.length - kept;
+    const more =
+      dropped === 0
+        ? []
+        : [
+            `… and ${dropped} more${catalogue ? `: call ${toolName(catalogue.path)}` : ""}.`,
+          ];
+    return [...fixed, ...index.slice(0, kept), ...more].join("\n");
+  };
+  let kept = index.length;
+  while (kept > 0 && render(kept).length > INSTRUCTIONS_MAX_CHARS) kept--;
+  if (kept < index.length) onTruncate?.(index.length - kept);
+  return render(kept);
 }

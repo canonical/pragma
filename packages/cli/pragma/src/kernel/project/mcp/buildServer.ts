@@ -20,7 +20,7 @@ import type { GlobalFlags } from "../../runtime/index.js";
 import { bootRuntime } from "../../runtime/index.js";
 import { declareVerbs } from "../../spec/call.js";
 import type { CapabilityModule } from "../../spec/index.js";
-import { buildInstructions } from "./instructions.js";
+import { buildInstructions, INSTRUCTIONS_MAX_CHARS } from "./instructions.js";
 import { registerVerb } from "./registerVerb.js";
 
 /**
@@ -54,9 +54,17 @@ export async function buildServer(
 ): Promise<McpServer> {
   const server = new McpServer(
     { name: MCP_SERVER_NAME, version: VERSION },
-    // Handshake orientation (sent once at initialize), derived from the SAME
-    // conventions/discovery as the `capabilities` tool so the two never diverge.
-    { instructions: buildInstructions(modules) },
+    // Handshake orientation (sent once at initialize): the distribution's
+    // conventions plus a question → tool index generated from the registry. It
+    // is FITTED to the length clients keep; when a project's packs push it over,
+    // the dropped index lines are noted on stderr (stdout is the JSON-RPC frame).
+    {
+      instructions: buildInstructions(modules, (dropped) =>
+        process.stderr.write(
+          `MCP instructions: ${dropped} index line(s) did not fit ${INSTRUCTIONS_MAX_CHARS} characters and were left to the capabilities catalogue.\n`,
+        ),
+      ),
+    },
   );
   const runtime = bootRuntime(MCP_FLAGS, cwd);
   // Tells the call renderer which verbs exist (see `spec/call.ts`).
