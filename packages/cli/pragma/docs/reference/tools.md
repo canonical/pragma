@@ -54,7 +54,7 @@ _No input parameters._
 
 ### colophon
 
-Use when asked which packs the data comes from and how it was put together. Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
+Use when asked which packs the data comes from. Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
 Read-only.
 
@@ -94,7 +94,7 @@ Read-only.
 
 ### config_get
 
-Use when asked for the current value of one setting, such as the default tier. Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell. Example: config_get { key: "tier" }.
+Use when asked for the value of one setting. Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell. Example: config_get { key: "tier" }.
 
 Read-only.
 
@@ -121,7 +121,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### config_show
 
-Use when asked how the tool is configured right now — tier, channel, detail level — and which file set each value. Merges built-in defaults, the global XDG config, and the nearest pragma.config.ts, marking which layer supplied each value.
+Use when asked how the tool is configured and which file set each value. Merges built-in defaults, the global XDG config, and the nearest pragma.config.ts, marking which layer supplied each value.
 
 Read-only.
 
@@ -204,7 +204,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### doctor
 
-Use when something is not working — setup, completions, the MCP connection, the data store — and you need to know what is wrong. Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.
+Use when something is not working, to find out what. Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.
 
 Read-only.
 
@@ -214,7 +214,7 @@ _No input parameters._
 
 ### graph_connect
 
-Use when asked whether and how two things are related — a component and a token, say — without knowing the link in advance. Finds every shortest path of RELATION edges between two entities, and says which kind of nothing it found when there is no path. An edge counts as a relation only where it does not fan out into a roster — membership of a class, a tier or a family is answered by that noun's list verb, not by a path — so most pairs are correctly reported as unconnected. Address each endpoint by prefixed name (ds:global.component.button) or absolute IRI. Every answer states the hop limit, the fan-in threshold, and the packs searched. Example: graph_connect { a: "ds:global.component.button", b: "dt:color.text" }.
+Use when asked whether and how two things are related. Finds every shortest path of RELATION edges between two entities, and says which kind of nothing it found when there is no path. An edge counts as a relation only where it does not fan out into a roster — membership of a class, a tier or a family is answered by that noun's list verb, not by a path — so most pairs are correctly reported as unconnected. Address each endpoint by prefixed name (ds:global.component.button) or absolute IRI. Every answer states the hop limit, the fan-in threshold, and the packs searched. Example: graph_connect { a: "ds:global.component.button", b: "dt:color.text" }.
 
 Read-only.
 
@@ -229,7 +229,7 @@ Read-only.
 
 ### graph_inspect
 
-Use when asked for everything recorded about one thing whose identifier you have, or when a specific tool's answer leaves something out. Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI. Example: graph_inspect { uri: "ds:global.component.button" }.
+Use when asked for everything recorded about one identifier. Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI. Example: graph_inspect { uri: "ds:global.component.button" }.
 
 Read-only.
 
@@ -242,7 +242,7 @@ Read-only.
 
 ### graph_query
 
-Use only when no other tool answers the question, for joins or counts across all the data. Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes. Example: graph_query { sparql: "SELECT ?s WHERE { ?s a ds:Component } LIMIT 5" }.
+Use only when no other tool answers: SPARQL joins or counts. Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes. Example: graph_query { sparql: "SELECT ?s WHERE { ?s a ds:Component } LIMIT 5" }.
 
 Read-only.
 
@@ -254,7 +254,7 @@ Read-only.
 
 ### implementation_libraries
 
-Use when asked which component libraries exist and how much of the design system each covers. List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements.
+Use when asked which component libraries exist and what each covers. List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements.
 
 Read-only.
 
@@ -283,7 +283,7 @@ Read-only.
 
 ### info
 
-Use when asked which version is installed, how it is configured, or whether an update is available. Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available.
+Use when asked which version is installed or whether an update exists. Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available.
 
 Read-only.
 
@@ -429,7 +429,7 @@ Mutation — plan-first (set `confirm: true` to apply). Marked destructive.
 
 ### sources_status
 
-Use when asked where answers come from — which data pack is loaded and how fresh it is — or when results look empty or out of date. Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.
+Use when results look empty or stale, to see which data pack is answering. Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.
 
 Read-only.
 
@@ -453,7 +453,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### standard_categories
 
-Use when asked which areas the code standards cover, or before filtering standards by category. List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering.
+Use when asked which areas the code standards cover. List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering.
 
 Read-only.
 
@@ -531,7 +531,7 @@ Read-only.
 
 ### token_consumers
 
-Use when asked which components use a colour, spacing or other token, or what changing a token would affect. List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { symbol: "color.text" }.
+Use when asked which components use a token, or what changing one affects. List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { symbol: "color.text" }.
 
 Read-only.
 
@@ -587,7 +587,7 @@ _No input parameters._
 
 ### token_values
 
-Use when asked what value a token has — the actual colour or size — in light mode, dark mode or any other setting. List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.
+Use when asked what value a token has, in light, dark or any other mode. List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.
 
 Read-only.
 
@@ -616,7 +616,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### variable_chain
 
-Use when asked what a CSS variable ultimately refers to — the tokens it reaches through other variables. List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
+Use when asked which tokens a CSS variable ends up referring to. List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
 
 Read-only.
 

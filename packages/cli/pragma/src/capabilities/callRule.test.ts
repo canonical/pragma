@@ -77,7 +77,7 @@ describe("every call names a registered verb and params its schema accepts", () 
       (call) => [`story empty → ${call.verb}`, call] as const,
     ),
     ["default empty", DEFAULT_EMPTY_RECOVERY.call as Call],
-    ["empty query → inspect", EMPTY_QUERY_CALLS.inspect],
+    ["empty query → catalogue", EMPTY_QUERY_CALLS.catalogue],
     ["empty query → namespaces", EMPTY_QUERY_CALLS.namespaces],
     ["build the store", BUILD_STORE_CALL],
     ["build the store, verbosely", VERBOSE_BUILD_CALL],

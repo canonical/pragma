@@ -25,8 +25,7 @@ const inspectVerb: VerbSpec<Record<string, unknown>, InspectResult> = {
   summary:
     "Show every triple where a URI is the subject, grouped by predicate.",
   doc: "Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.",
-  useWhen:
-    "when asked for everything recorded about one thing whose identifier you have, or when a specific tool's answer leaves something out",
+  useWhen: "when asked for everything recorded about one identifier",
   example: { uri: "ds:global.component.button" },
   params: [
     {

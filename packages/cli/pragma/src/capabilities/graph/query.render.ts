@@ -9,12 +9,12 @@
  * - json: the serialized {@link QueryResult}.
  */
 
-import { renderCall } from "../../kernel/spec/call.js";
+import { quoteCall } from "../../kernel/spec/call.js";
 import type { Call, Formatters, Surface } from "../../kernel/spec/index.js";
 
 // Inline `import("…")` type (no `from`) — keeps the ke types off the static
 // import graph the lazy-dispatch probe walks (see query.verb.ts).
-type QueryResult = import("@canonical/ke").QueryResult;
+type QueryAnswer = import("./runQuery.js").QueryAnswer;
 
 /**
  * Render CONSTRUCT triples as readable `subject\tpredicate\tobject` lines,
@@ -37,32 +37,45 @@ function formatTriples(
 }
 
 /**
- * Where an empty SELECT points: the entity the caller expected to match, and
- * the namespaces its query named. The `uri` is a placeholder by necessity — the
- * query knows what it asked for, not which entity the caller had in mind.
+ * Where an empty SELECT points. Deliberately no domain tool: which one answers
+ * the caller's question is the catalogue's to say, so the pointer is to the
+ * catalogue — and to the namespaces that exist, since an invented prefix parses
+ * and matches nothing.
  */
 export const EMPTY_QUERY_CALLS = {
-  inspect: { verb: "graph inspect", params: { uri: "<prefix:name>" } },
+  catalogue: { verb: "capabilities" },
   namespaces: { verb: "ontology list" },
 } as const satisfies Record<string, Call>;
 
 /**
  * What zero rows says for itself. "No results." read as a failed tool to an
- * agent with nowhere to go next; the query RAN, and the likeliest causes are a
- * term the graph spells differently or a prefix it does not bind.
+ * agent with nowhere to go next. The query RAN; when its own text declares a
+ * prefix this graph does not have, that is the reason and it is said exactly.
  */
-function describeEmptySelect(surface: Surface): string {
-  const { inspect, namespaces } = EMPTY_QUERY_CALLS;
-  return `No results: the query ran and nothing matched. Look at an entity you expected to match with \`${renderCall(inspect, surface)}\`, and check the namespaces the query names with \`${renderCall(namespaces, surface)}\`.`;
+function describeEmptySelect(result: QueryAnswer, surface: Surface): string {
+  const { catalogue, namespaces } = EMPTY_QUERY_CALLS;
+  const invented = (result.unknownPrefixes ?? [])
+    .map(
+      ({ prefix, iri }) =>
+        `Prefix \`${prefix}:\` <${iri}> is not a namespace of this graph, so nothing under it can match.`,
+    )
+    .join(" ");
+  return [
+    "No results: the query ran and matched nothing.",
+    invented,
+    `The namespaces that exist are listed by ${quoteCall(namespaces, surface)} (an invented prefix matches nothing). A domain tool may answer this without SPARQL: ${quoteCall(catalogue, surface)} lists the tools by the question each answers.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
-export const queryFormatters: Formatters<QueryResult> = {
+export const queryFormatters: Formatters<QueryAnswer> = {
   // Zero rows/triples: plain stdout stays empty — the notice is
   // `notice`, routed to stderr (exit 0) by the dispatcher so a pipe
   // reads no prose. ASK always has a result and never goes empty.
   notice(result, surface = "cli") {
     if (result.type === "select" && result.bindings.length === 0) {
-      return describeEmptySelect(surface);
+      return describeEmptySelect(result, surface);
     }
     if (result.type === "construct" && result.triples.length === 0) {
       return "No triples.";
@@ -86,7 +99,9 @@ export const queryFormatters: Formatters<QueryResult> = {
 
   llm(result) {
     if (result.type === "select") {
-      if (result.bindings.length === 0) return describeEmptySelect("cli");
+      if (result.bindings.length === 0) {
+        return describeEmptySelect(result, "cli");
+      }
       const cols = Object.keys(result.bindings[0] ?? {});
       const header = `| ${cols.join(" | ")} |`;
       const divider = `| ${cols.map(() => "---").join(" | ")} |`;
@@ -105,6 +120,8 @@ export const queryFormatters: Formatters<QueryResult> = {
   },
 
   json(result) {
-    return JSON.stringify(result);
+    // The payload is the engine's own shape; the prefix finding is the notice's.
+    const { unknownPrefixes: _unknownPrefixes, ...data } = result;
+    return JSON.stringify(data);
   },
 };

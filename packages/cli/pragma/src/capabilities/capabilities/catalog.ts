@@ -21,12 +21,16 @@ import { renderCall } from "../../kernel/spec/call.js";
 import { exampleCall, verbCategory } from "../../kernel/spec/guidance.js";
 import type {
   CapabilityModule,
-  DiscoveryStage,
   McpOrientation,
   VerbSpec,
 } from "../../kernel/spec/index.js";
 import { emitSurface, toolName } from "../../kernel/spec/index.js";
-import type { CapabilitiesData, CatalogTool, ToolCounts } from "./types.js";
+import type {
+  CapabilitiesData,
+  CatalogTool,
+  DiscoveryStage,
+  ToolCounts,
+} from "./types.js";
 
 /**
  * The four orientation conventions — the single source both the `capabilities`
@@ -42,9 +46,9 @@ export const CONVENTIONS = {
   // otherwise reads "recipe graph.. A CLI and MCP server…".
   system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION} (a CLI and MCP server over a knowledge graph).`,
   model:
-    'The tier hierarchy (global > apps > apps_lxd) SCOPES every read of a tiered entity: lists answer from the top-level tiers, lookups prefer them. Pass tier: "<name>" for a tier plus its ancestors, or tier: "all" for every tier; each answer states its scope. Channels scope nothing.',
+    'Reads of tiered entities are SCOPED to the top-level tiers (global > apps > apps_lxd): pass tier: "<name>" for that tier plus its ancestors, or tier: "all". Each answer states its scope; channels scope nothing.',
   querying:
-    "All queries run against an RDF triple store. Prefixed IRIs (e.g. prefix:name) identify entities. Use ontology_list to discover the active namespaces.",
+    "The data is an RDF graph; prefixed IRIs (prefix:name) identify entities, and ontology_list names the prefixes that exist.",
   mutations:
     "Mutating tools are plan-first: call once WITHOUT confirm to get a plan (meta.planOnly, no writes), then repeat the call with confirm: true to execute.",
 } as const;
@@ -95,18 +99,13 @@ export function buildDiscoverySequence(
   ];
 }
 
-/** What the handshake instructions are built from (see `kernel/project/mcp/instructions.ts`). */
+/**
+ * What the handshake instructions open with (see
+ * `kernel/project/mcp/instructions.ts`, which adds the generated question →
+ * tool index and states the plan-first rule beside the write tools it lists).
+ */
 export const ORIENTATION: McpOrientation = {
-  conventions: [
-    CONVENTIONS.system,
-    CONVENTIONS.model,
-    BLOCKS_SENTENCE,
-    CONVENTIONS.querying,
-    CONVENTIONS.mutations,
-  ],
-  discovery: buildDiscoverySequence,
-  closing:
-    "Call the `capabilities` tool for the full annotated tool catalog; for entity detail use `graph_inspect`, or read the resources",
+  conventions: [CONVENTIONS.system, CONVENTIONS.model, BLOCKS_SENTENCE],
 };
 
 /** The output modes v2 renders (dropped "text" → "plain"; condensed retired). */

@@ -93,15 +93,16 @@ export const assemblyEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "content-instructions-present-and-mentions-discovery",
+    id: "content-instructions-present-and-index-tools-by-question",
     kind: "content",
     input:
-      "the server sends handshake instructions that mention `capabilities` and the discovery flow.",
+      "the server sends handshake instructions that mention `capabilities` and index tools by the question each answers (the index replaced the prose discovery sequence).",
     async expect({ mcp }) {
       const instructions = mcp.instructions();
       assert.ok(instructions, "expected server instructions at initialize");
       assert.match(String(instructions), /capabilities/);
-      assert.match(String(instructions).toLowerCase(), /discovery/);
+      assert.match(String(instructions), /^When asked:$/m);
+      assert.match(String(instructions), /^token_consumers — /m);
     },
   },
   {

@@ -593,7 +593,7 @@ const designSystemStories: readonly PackDefinition[] = [
         toolDescription:
           "List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell.",
         useWhen:
-          "when asked what value a token has — the actual colour or size — in light mode, dark mode or any other setting",
+          "when asked what value a token has, in light, dark or any other mode",
         example: { symbol: "color.text" },
         // The resolved-value shape admits exactly one of a chain or a
         // derivation, so BOTH are selected wherever a value is projected. A
@@ -696,7 +696,7 @@ const designSystemStories: readonly PackDefinition[] = [
         toolDescription:
           "List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings.",
         useWhen:
-          "when asked which components use a colour, spacing or other token, or what changing a token would affect",
+          "when asked which components use a token, or what changing one affects",
         example: { symbol: "color.text" },
         // Seven identity columns, and not one of them is decoration: a binding
         // is identified by the whole tuple, so dropping `rank` or `node` would
@@ -1183,8 +1183,7 @@ const designSystemStories: readonly PackDefinition[] = [
           "List the walk from a variable to every symbol it reaches, through every variable in between.",
         toolDescription:
           "List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs.",
-        useWhen:
-          "when asked what a CSS variable ultimately refers to — the tokens it reaches through other variables",
+        useWhen: "when asked which tokens a CSS variable ends up referring to",
         example: { variable: "modifier-color-text" },
         // ONE property path carries the whole walk, which is why this is a
         // query and not a traversal in code. `dt:references` is an rdf:List of
@@ -1646,7 +1645,7 @@ const implementationStory: PackDefinition = {
       toolDescription:
         "List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements.",
       useWhen:
-        "when asked which component libraries exist and how much of the design system each covers",
+        "when asked which component libraries exist and what each covers",
       // `ds:implementationCount` is asserted by the aggregate index on the SAME
       // subject the per-library file describes, so the two merge in the store
       // and the count needs no aggregation here.
@@ -1790,8 +1789,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
           "List all standard categories with counts (a parent counts its whole branch).",
         toolDescription:
           "List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering.",
-        useWhen:
-          "when asked which areas the code standards cover, or before filtering standards by category",
+        useWhen: "when asked which areas the code standards cover",
         query: [
           // The same reflexive roll-up `list` filters with — written the other
           // way round (every category whose broader-chain reaches ?cat), so the

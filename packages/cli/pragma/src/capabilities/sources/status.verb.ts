@@ -22,7 +22,7 @@ export const statusVerb: VerbSpec<
   summary: "Report which pack answers reads, and the packs it was built from.",
   doc: "Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.",
   useWhen:
-    "when asked where answers come from — which data pack is loaded and how fresh it is — or when results look empty or out of date",
+    "when results look empty or stale, to see which data pack is answering",
   params: [],
   output: { formatters: statusFormatters },
   examples: [

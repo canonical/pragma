@@ -103,8 +103,7 @@ const connectVerb: VerbSpec<Record<string, unknown>, ConnectResult> = {
   path: ["graph", "connect"],
   summary: "Show the shortest relation paths between two entities.",
   doc: "Finds every shortest path of RELATION edges between two entities, and says which kind of nothing it found when there is no path. An edge counts as a relation only where it does not fan out into a roster — membership of a class, a tier or a family is answered by that noun's list verb, not by a path — so most pairs are correctly reported as unconnected. Address each endpoint by prefixed name (ds:global.component.button) or absolute IRI. Every answer states the hop limit, the fan-in threshold, and the packs searched.",
-  useWhen:
-    "when asked whether and how two things are related — a component and a token, say — without knowing the link in advance",
+  useWhen: "when asked whether and how two things are related",
   example: { a: "ds:global.component.button", b: "dt:color.text" },
   params: [
     {

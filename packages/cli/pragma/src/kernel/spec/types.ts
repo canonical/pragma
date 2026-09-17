@@ -550,25 +550,14 @@ export interface CliProjection {
   ) => ReferenceCliSyntax | undefined;
 }
 
-/** A single stage in the discovery flow an agent follows at session start. */
-export interface DiscoveryStage {
-  readonly stage: number;
-  readonly tool: string;
-  readonly purpose: string;
-}
-
 /**
- * What a distribution tells an agent at the MCP handshake, as DATA. The kernel
- * lays it out and holds it to a length ceiling; it writes none of the words,
- * because they name the distribution's own tools and tiers.
+ * What a distribution tells an agent at the MCP handshake, as DATA: the words
+ * that name its own tiers and nouns. The kernel adds the generated question →
+ * tool index and holds the whole to a hard length ceiling.
  */
 export interface McpOrientation {
   /** The sentences the instructions open with, in order. */
   readonly conventions: readonly string[];
-  /** The discovery sequence, given the live tool names. */
-  readonly discovery: (tools: readonly string[]) => readonly DiscoveryStage[];
-  /** The closing pointer; the kernel appends the advertised resource templates. */
-  readonly closing: string;
 }
 
 /** A capability module: a named bundle of verbs with optional boot/resources/prompts hooks. */

@@ -48,7 +48,7 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "content-instructions-present-and-mentions-discovery",
+    "id": "content-instructions-present-and-index-tools-by-question",
     "kind": "content",
     "passed": true,
   },

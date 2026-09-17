@@ -11,8 +11,8 @@ import { capabilities } from "../../../../capabilities/index.js";
 import type { McpHarness } from "../../../../testing/helpers/projectMcp.js";
 import { projectMcp } from "../../../../testing/helpers/projectMcp.js";
 import type { PragmaRuntime } from "../../../runtime/types.js";
-import { emitSurface } from "../../../spec/emitSurface.js";
-import type { CapabilityModule } from "../../../spec/types.js";
+import { emitSurface, toolName } from "../../../spec/emitSurface.js";
+import type { CapabilityModule, VerbSpec } from "../../../spec/types.js";
 import { buildInstructions, INSTRUCTIONS_MAX_CHARS } from "../instructions.js";
 import { fillTemplate, promptProvider } from "./provider.js";
 import { readPrompts } from "./source.js";
@@ -34,14 +34,67 @@ afterEach(async () => {
 });
 
 describe("instructions — handshake orientation (PROTECTED)", () => {
-  it("is present, non-empty, mentions capabilities + the discovery flow", () => {
+  // A client may defer tools: the agent sees tool NAMES and this text, and a
+  // description it never loads cannot steer it. So the text carries a question →
+  // tool index GENERATED from each verb's `useWhen` (it replaced the prose
+  // "discovery sequence" this case used to look for).
+  const reads = capabilities
+    .flatMap((module) => module.verbs)
+    .filter(
+      (verb) =>
+        !verb.hidden && verb.capability.mcp.expose && !verb.capability.mutates,
+    );
+  const isTrio = (verb: VerbSpec): boolean =>
+    ["list", "lookup", "sample"].includes(verb.path[1] ?? "");
+
+  it("indexes every read tool outside a list/lookup/sample trio by the question it answers", () => {
     const text = buildInstructions(capabilities);
-    expect(text.length).toBeGreaterThan(0);
-    expect(text).toContain("capabilities");
-    expect(text.toLowerCase()).toContain("discovery sequence");
+    const standalone = reads.filter((verb) => !isTrio(verb));
+    expect(standalone.length).toBeGreaterThan(10);
+    for (const verb of standalone) {
+      const clause = (verb.useWhen as string).replace(/^when asked /, "");
+      expect(text).toContain(`${toolName(verb.path)} — ${clause}`);
+    }
+    // The story that failed: asked which components use a token.
+    expect(text).toMatch(/token_consumers — which components use a token/);
   });
 
-  it("stays under the length ceiling (cannot bloat)", () => {
+  it("explains the trio once, promising no noun a verb it lacks", () => {
+    const text = buildInstructions(capabilities);
+    expect(text.match(/<noun>_list/g)).toHaveLength(1);
+    expect(text).toMatch(/block\*/); // has a sample
+    expect(text).toMatch(/\btier,/); // list + lookup, no sample
+    expect(text).toMatch(/implementation†/); // list only
+  });
+
+  it("is generated: a new read verb adds its own line, a new write joins the plan-first list", () => {
+    const base = capabilities.find((m) => m.name === "info")
+      ?.verbs[0] as VerbSpec;
+    const added: CapabilityModule = {
+      name: "weather",
+      verbs: [
+        {
+          ...base,
+          path: ["weather", "today"],
+          useWhen: "when asked if it rains",
+        },
+        {
+          ...base,
+          path: ["weather", "seed"],
+          capability: { ...base.capability, mutates: true },
+        },
+      ],
+    };
+    const text = buildInstructions([...capabilities, added]);
+    expect(text).toContain("weather_today — if it rains");
+    expect(text).toMatch(/plan-first[^\n]*weather_seed/);
+    expect(buildInstructions([added])).toBe(""); // no module declares an orientation
+  });
+
+  it("fits the HARD ceiling clients cut server instructions at", () => {
+    // Unlike the catalogue budget this is not raised on measurement: text past
+    // about 2 KB is text no agent reads. Tighten a sentence instead.
+    expect(INSTRUCTIONS_MAX_CHARS).toBe(2000);
     expect(buildInstructions(capabilities).length).toBeLessThanOrEqual(
       INSTRUCTIONS_MAX_CHARS,
     );

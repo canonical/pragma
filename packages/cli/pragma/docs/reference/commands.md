@@ -123,7 +123,7 @@ Narrate how the active domain is made.
 
 Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
-Use when asked which packs the data comes from and how it was put together.
+Use when asked which packs the data comes from.
 
 ```
 pragma colophon
@@ -215,7 +215,7 @@ Print one resolved config value.
 
 Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell.
 
-Use when asked for the current value of one setting, such as the default tier.
+Use when asked for the value of one setting.
 
 ```
 pragma config get <key>
@@ -274,7 +274,7 @@ Show the resolved config and per-field provenance.
 
 Merges built-in defaults, the global XDG config, and the nearest pragma.config.ts, marking which layer supplied each value.
 
-Use when asked how the tool is configured right now — tier, channel, detail level — and which file set each value.
+Use when asked how the tool is configured and which file set each value.
 
 ```
 pragma config show
@@ -440,7 +440,7 @@ Check your environment and every setup target, globally and in this project.
 
 Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.
 
-Use when something is not working — setup, completions, the MCP connection, the data store — and you need to know what is wrong.
+Use when something is not working, to find out what.
 
 ```
 pragma doctor
@@ -464,7 +464,7 @@ Show the shortest relation paths between two entities.
 
 Finds every shortest path of RELATION edges between two entities, and says which kind of nothing it found when there is no path. An edge counts as a relation only where it does not fan out into a roster — membership of a class, a tier or a family is answered by that noun's list verb, not by a path — so most pairs are correctly reported as unconnected. Address each endpoint by prefixed name (ds:global.component.button) or absolute IRI. Every answer states the hop limit, the fan-in threshold, and the packs searched.
 
-Use when asked whether and how two things are related — a component and a token, say — without knowing the link in advance.
+Use when asked whether and how two things are related.
 
 ```
 pragma graph connect <a> <b> [options]
@@ -500,7 +500,7 @@ Show every triple where a URI is the subject, grouped by predicate.
 
 Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.
 
-Use when asked for everything recorded about one thing whose identifier you have, or when a specific tool's answer leaves something out.
+Use when asked for everything recorded about one identifier.
 
 ```
 pragma graph inspect <uri>
@@ -528,7 +528,7 @@ Run a raw SPARQL query against the loaded graph.
 
 Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes.
 
-Use only when no other tool answers the question, for joins or counts across all the data.
+Use only when no other tool answers: SPARQL joins or counts.
 
 ```
 pragma graph query <sparql>
@@ -558,7 +558,7 @@ List the implementation libraries.
 
 List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements.
 
-Use when asked which component libraries exist and how much of the design system each covers.
+Use when asked which component libraries exist and what each covers.
 
 ```
 pragma implementation libraries [options]
@@ -621,7 +621,7 @@ Show version, resolved config, provenance, and update status.
 
 Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available.
 
-Use when asked which version is installed, how it is configured, or whether an update is available.
+Use when asked which version is installed or whether an update exists.
 
 ```
 pragma info
@@ -1061,7 +1061,7 @@ Report which pack answers reads, and the packs it was built from.
 
 Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.
 
-Use when asked where answers come from — which data pack is loaded and how fresh it is — or when results look empty or out of date.
+Use when results look empty or stale, to see which data pack is answering.
 
 ```
 pragma sources status
@@ -1114,7 +1114,7 @@ List all standard categories with counts (a parent counts its whole branch).
 
 List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering.
 
-Use when asked which areas the code standards cover, or before filtering standards by category.
+Use when asked which areas the code standards cover.
 
 ```
 pragma standard categories [options]
@@ -1289,7 +1289,7 @@ List which blocks consume which token symbol, at which style key, state and rank
 
 List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings.
 
-Use when asked which components use a colour, spacing or other token, or what changing a token would affect.
+Use when asked which components use a token, or what changing one affects.
 
 ```
 pragma token consumers [options]
@@ -1403,7 +1403,7 @@ List the value each symbol resolves to at each position, with its chain or its d
 
 List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell.
 
-Use when asked what value a token has — the actual colour or size — in light mode, dark mode or any other setting.
+Use when asked what value a token has, in light, dark or any other mode.
 
 ```
 pragma token values [options]
@@ -1462,7 +1462,7 @@ List the walk from a variable to every symbol it reaches, through every variable
 
 List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs.
 
-Use when asked what a CSS variable ultimately refers to — the tokens it reaches through other variables.
+Use when asked which tokens a CSS variable ends up referring to.
 
 ```
 pragma variable chain [options]

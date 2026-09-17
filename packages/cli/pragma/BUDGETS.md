@@ -52,7 +52,7 @@ sample, because the user pays it.
 | warm store-backed verb       | < 300 ms        |
 | MCP p95 (warm)               | < 100 ms        |
 | `resources/list` payload     | < 60 KB         |
-| condensed SDL (tool catalog) | ≤ 9700 tokens   |
+| condensed SDL (tool catalog) | ≤ 9600 tokens   |
 
 The `resources/list` ceiling is a SIZE budget, not a latency one, and it is
 enforced where the payload is built rather than by the perf pass:
@@ -1017,7 +1017,7 @@ description costs catalogue tokens, measured the same way as above:
 | When             | Tools | ≈ Tokens | Ceiling | % of ceiling |
 | ---------------- | ----- | -------- | ------- | ------------ |
 | Before this work | 50    | 7 774    | 8 000   | 97%          |
-| After this work  | 50    | 8 866    | 9 700   | 91%          |
+| After this work  | 50    | 8 710    | 9 600   | 91%          |
 
 Three general rules keep the cost down (a first cut measured 9 146): a verb
 callable with no arguments shows no example, the one-line summary is not
@@ -1026,10 +1026,18 @@ catalogue's `use_when` field does not say "Use when" twice. The ceiling is ONE
 exported constant (`kernel/spec/emitSurface.ts#CONDENSED_SDL_TOKEN_BUDGET`) read
 by the emitted surface and the eval case that enforces it.
 
-The handshake instructions gained one sentence — components, patterns, layouts
-and subcomponents are all read through the block tools — and went from 1 491
-characters under a 1 500 ceiling to 1 642 under 1 800.
-
-Both ceilings are set from the new measurement plus about a tenth. They are
-guards against unnoticed growth, not targets: the next raise should come with
+The catalogue ceiling is set from the new measurement plus about a tenth. It is
+a guard against unnoticed growth, not a target: the next raise should come with
 its own measurement, as this one does.
+
+**The handshake instructions are different: their ceiling is HARD, at 2 000
+characters.** A client may defer tools, so an agent sees tool names and the
+instructions and nothing else until it searches for a tool — a description it
+never loads cannot steer it. The instructions therefore carry a generated
+question → tool index (one line per read tool outside a list/lookup/sample
+trio, the trio explained once, the writes on one plan-first line), which
+replaced the prose discovery sequence. They went from 1 491 characters under a
+1 500 ceiling to **1 932 under 2 000**. Clients cut server instructions at about
+2 KB, so text past that is text no agent reads: this ceiling is never raised on
+measurement. A new verb that does not fit is made to fit by tightening a
+sentence.

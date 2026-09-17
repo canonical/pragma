@@ -22,7 +22,7 @@ export function kebabCase(name: string): string {
  * states it, the covenant freezes it, and the eval case enforces it. Set from
  * measurement plus about a tenth — `BUDGETS.md` records each raise.
  */
-export const CONDENSED_SDL_TOKEN_BUDGET = 9700;
+export const CONDENSED_SDL_TOKEN_BUDGET = 9600;
 
 /** The MCP tool name for a verb path (`["config","show"]` -> `config_show`). */
 export function toolName(path: readonly [string, string?]): string {

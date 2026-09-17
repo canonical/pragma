@@ -19,7 +19,21 @@
 import type { QueryResult } from "@canonical/ke";
 import { callRecovery, PragmaError } from "../../kernel/error/index.js";
 import type { PragmaRuntime } from "../../kernel/runtime/index.js";
-import { expandPrefixedNames, trimQueryError } from "./queryText.js";
+import {
+  expandPrefixedNames,
+  findUnknownPrefixes,
+  trimQueryError,
+  type UnknownPrefix,
+} from "./queryText.js";
+
+/**
+ * A query's result, plus — on an EMPTY select only — the prefixes the caller
+ * declared that are not namespaces of this graph. It rides beside the result
+ * for the notice to explain; the JSON payload stays the engine's own shape.
+ */
+export type QueryAnswer = QueryResult & {
+  readonly unknownPrefixes?: readonly UnknownPrefix[];
+};
 
 /**
  * Execute a raw SPARQL query against the booted store.
@@ -32,14 +46,17 @@ import { expandPrefixedNames, trimQueryError } from "./queryText.js";
 export async function runQuery(
   rt: PragmaRuntime,
   sparql: string,
-): Promise<QueryResult> {
+): Promise<QueryAnswer> {
   // The store's own prefix map: what the facade prepends to the query (one
   // PREFIX line each, which is the offset a reported line number carries), and
   // what a prefixed name in the caller's text will be resolved against.
   const { prefixes } = await rt.store.get();
   const query = expandPrefixedNames(sparql, prefixes);
   try {
-    return await rt.query.sparql(query.text);
+    const result = await rt.query.sparql(query.text);
+    if (result.type !== "select" || result.bindings.length > 0) return result;
+    const unknownPrefixes = findUnknownPrefixes(sparql, prefixes);
+    return unknownPrefixes.length > 0 ? { ...result, unknownPrefixes } : result;
   } catch (error) {
     if (error instanceof PragmaError) throw error;
     // Keep the parser's own message — the WHY (bad token, an unknown prefix) —

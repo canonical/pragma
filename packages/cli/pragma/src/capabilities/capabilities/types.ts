@@ -8,9 +8,16 @@
  * derivation.
  */
 
-import type { DiscoveryStage, ToolCategory } from "../../kernel/spec/index.js";
+import type { ToolCategory } from "../../kernel/spec/index.js";
 
-export type { DiscoveryStage, ToolCategory };
+export type { ToolCategory };
+
+/** A single stage in the discovery flow the `capabilities` answer lays out. */
+export interface DiscoveryStage {
+  readonly stage: number;
+  readonly tool: string;
+  readonly purpose: string;
+}
 
 /** One tool as it appears in the catalog — its live name plus its verb's guidance. */
 export interface CatalogTool {

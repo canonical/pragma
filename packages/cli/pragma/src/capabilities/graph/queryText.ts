@@ -238,3 +238,32 @@ function cut(text: string): string {
     ? text
     : `${text.slice(0, MAX_PARSER_DETAIL - 1).trimEnd()}…`;
 }
+
+/** A `PREFIX` the caller declared whose IRI is none of the store's namespaces. */
+export interface UnknownPrefix {
+  readonly prefix: string;
+  readonly iri: string;
+}
+
+/**
+ * Find the `PREFIX` declarations in a query that bind an IRI the store does not
+ * know as a namespace.
+ *
+ * A declared prefix always parses, so an invented one fails silently: every
+ * pattern under it simply matches nothing, and the caller reads "no results"
+ * as "no such data". Checked against the store's own prefix map, this is the
+ * one emptiness the query's text can explain.
+ *
+ * @param sparql - The query text as the caller wrote it.
+ * @param prefixes - The store's prefix map (prefix → namespace IRI).
+ * @returns The declarations whose IRI is not a known namespace, in order.
+ */
+export function findUnknownPrefixes(
+  sparql: string,
+  prefixes: Readonly<Record<string, string>>,
+): UnknownPrefix[] {
+  const known = new Set(Object.values(prefixes));
+  return [...sparql.matchAll(/\bPREFIX\s+([A-Za-z][\w.-]*)?:\s*<([^>]*)>/gi)]
+    .map((match) => ({ prefix: match[1] ?? "", iri: match[2] ?? "" }))
+    .filter(({ iri }) => !known.has(iri));
+}

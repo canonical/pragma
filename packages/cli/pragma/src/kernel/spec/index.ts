@@ -27,7 +27,6 @@ export type {
   Capability,
   CapabilityModule,
   DisclosureSpec,
-  DiscoveryStage,
   Example,
   Formatters,
   McpAnnotations,
