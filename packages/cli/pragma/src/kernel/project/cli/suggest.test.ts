@@ -118,4 +118,68 @@ describe("suggestNames", () => {
       "Timeline ",
     ]);
   });
+
+  describe("a candidate that is a whole-segment part of the query", () => {
+    it("is offered for a name with a segment too many", () => {
+      // Recorded: `token lookup color.text.primary` suggested NOTHING although
+      // `color.text` exists — it is no prefix of the query's, and eight extra
+      // characters is past any edit-distance threshold.
+      expect(
+        suggestNames("color.text.primary", ["color.text", "color.border"]),
+      ).toEqual(["color.text"]);
+    });
+
+    it("is offered for the last segment of a pasted local name", () => {
+      expect(
+        suggestNames("apps_lxd.component.meter", ["Meter", "Metric"]),
+      ).toEqual(["Meter"]);
+    });
+
+    it("ranks first, longest run first, ahead of a candidate the query prefixes", () => {
+      expect(
+        suggestNames("color.text.muted", [
+          "color.text.muted.hover",
+          "color",
+          "color.text",
+          "text.muted",
+        ]),
+      ).toEqual([
+        "color.text",
+        "text.muted",
+        "color",
+        "color.text.muted.hover",
+      ]);
+    });
+
+    it("cuts at segment boundaries only", () => {
+      expect(
+        suggestNames("color.text.primary", ["color.te", "lor.text"]),
+      ).toEqual([]);
+    });
+
+    it("reads a slash-separated path the same way", () => {
+      expect(
+        suggestNames("react/component/tsdoc/extra", ["react/component/tsdoc"]),
+      ).toEqual(["react/component/tsdoc"]);
+    });
+
+    it("keeps the five-result cap", () => {
+      const parts = ["a1", "b2", "c3", "d4", "e5", "f6", "g7"];
+      expect(suggestNames(parts.join("."), parts)).toHaveLength(5);
+    });
+
+    it("stays cheap against a pool the size of the shipped pack", () => {
+      // The length prefilter exists because ranking 4,380 names once cost
+      // 1.2 s; this branch is a map lookup per candidate and must not undo
+      // it. The pool is names the prefilter rejects on length, so what is
+      // timed is the branch and the prefilter, not the edit distances.
+      const pool = Array.from(
+        { length: 5000 },
+        (_, i) => `color.group${i}.tone.on.a.path.far.longer.than.the.query.is`,
+      );
+      const started = performance.now();
+      expect(suggestNames("apps_lxd.component.meter", pool)).toEqual([]);
+      expect(performance.now() - started).toBeLessThan(100);
+    });
+  });
 });

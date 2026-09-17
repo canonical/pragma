@@ -4,7 +4,43 @@
  * Ported near-verbatim from the v1 suggester: prefix matches first, then
  * Damerau-Levenshtein edit-distance matches under a normalized threshold. Used
  * by the unknown-command suggester to turn a typo into "Did you mean: …?".
+ *
+ * One branch was added ahead of both: a candidate that is a whole-segment PART
+ * of the query. Names here are paths (`color.text.primary`,
+ * `react/component/tsdoc`), and the commonest wrong one is a real name with a
+ * segment too many — which is neither a prefix of anything nor, once the extra
+ * segment is long, within edit distance of what was meant.
  */
+
+/** What separates the segments of a path-shaped name. */
+const SEGMENT_SEPARATOR = /[./]/;
+
+/**
+ * Every contiguous run of whole segments of `query`, shorter than the query
+ * itself, mapped to how many segments it spans.
+ *
+ * Built ONCE per query so the test per candidate is a map lookup: a query of
+ * `n` segments has `n(n+1)/2 - 1` runs, which for a real name is a handful,
+ * against a candidate pool in the thousands. Cut at segment boundaries from the
+ * query's own text, so `color.te` is not a run of `color.text.primary` and a
+ * query of one segment has no runs at all.
+ */
+function segmentRuns(query: string): ReadonlyMap<string, number> {
+  const starts = [0];
+  for (const [index, char] of [...query].entries()) {
+    if (SEGMENT_SEPARATOR.test(char)) starts.push(index + 1);
+  }
+  const ends = [...starts.slice(1).map((start) => start - 1), query.length];
+  const runs = new Map<string, number>();
+  for (const [from, start] of starts.entries()) {
+    for (const [to, end] of ends.entries()) {
+      const run = query.slice(start, end);
+      if (to < from || run === "" || run === query) continue;
+      runs.set(run, to - from + 1);
+    }
+  }
+  return runs;
+}
 
 /**
  * Return up to {@link maxResults} candidates most similar to `query`.
@@ -18,6 +54,12 @@
  * the word it just printed. Restating the query is never a useful suggestion —
  * if a candidate really is the query, the miss is the bug and the suggestion
  * would only hide it.
+ *
+ * RANKING, best first: a candidate that is a run of the query's whole segments
+ * (`color.text` for `color.text.primary`, `Meter` for
+ * `apps_lxd.component.meter`), longest run first; then a candidate the query is
+ * a prefix of; then edit distance. The first is ahead of the others because it
+ * is the only one of the three that names something the caller TYPED in full.
  *
  * Scoring reads the same trimmed forms, so padding costs a candidate no edit
  * distance either; what is RETURNED is the candidate verbatim, padding and
@@ -44,11 +86,20 @@ export function suggestNames(
 
   type Scored = { name: string; score: number };
   const scored: Scored[] = [];
+  const runs = segmentRuns(queryLower);
 
   for (const candidate of candidates) {
     const candidateLower = candidate.trim().toLowerCase();
 
     if (candidateLower === queryLower) continue;
+
+    // Below zero, so every run outranks every prefix match, and the run
+    // spanning the most segments outranks the rest.
+    const spanned = runs.get(candidateLower);
+    if (spanned !== undefined) {
+      scored.push({ name: candidate, score: -spanned });
+      continue;
+    }
 
     if (candidateLower.startsWith(queryLower)) {
       scored.push({ name: candidate, score: 0 });
