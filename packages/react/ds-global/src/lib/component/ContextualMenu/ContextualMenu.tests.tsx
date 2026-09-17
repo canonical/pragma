@@ -11,7 +11,11 @@ const items: MenuEntry[] = [
 ];
 
 const renderMenu = (props = {}) =>
-  render(<ContextualMenu trigger="Actions" items={items} {...props} />);
+  render(
+    <ContextualMenu items={items} {...props}>
+      Actions
+    </ContextualMenu>,
+  );
 
 describe("ContextualMenu", () => {
   it("renders a trigger with menu semantics", () => {
@@ -68,7 +72,7 @@ describe("ContextualMenu", () => {
     const withSlot: MenuEntry[] = [
       { key: "save", label: "Save", url: "#save", slot: "⌘S" },
     ];
-    render(<ContextualMenu trigger="File" items={withSlot} />);
+    render(<ContextualMenu items={withSlot}>File</ContextualMenu>);
     expect(screen.getByText("⌘S")).toHaveClass("slot");
   });
 
@@ -81,7 +85,7 @@ describe("ContextualMenu", () => {
         Component: () => <span data-testid="custom-render">Custom!</span>,
       },
     ];
-    render(<ContextualMenu trigger="More" items={custom} />);
+    render(<ContextualMenu items={custom}>More</ContextualMenu>);
     expect(screen.getByTestId("custom-render")).toBeInTheDocument();
   });
 
@@ -128,7 +132,7 @@ describe("ContextualMenu", () => {
     ];
 
     const openSubmenuMenu = () => {
-      render(<ContextualMenu trigger="Actions" items={submenuItems} />);
+      render(<ContextualMenu items={submenuItems}>Actions</ContextualMenu>);
       fireEvent.click(screen.getByRole("button", { name: "Actions" }));
       return {
         menu: screen.getByRole("menu"),
@@ -192,11 +196,9 @@ describe("ContextualMenu", () => {
 
     const openMenu = (onSelect?: (item: MenuItem) => void) => {
       render(
-        <ContextualMenu
-          trigger="Actions"
-          items={parentItems}
-          onSelect={onSelect}
-        />,
+        <ContextualMenu items={parentItems} onSelect={onSelect}>
+          Actions
+        </ContextualMenu>,
       );
       fireEvent.click(screen.getByRole("button", { name: "Actions" }));
     };
@@ -338,7 +340,11 @@ describe("ContextualMenu", () => {
         { key: "beta", label: "Beta", url: "#beta" },
         { type: "separator", key: "trailing" },
       ];
-      render(<ContextualMenu trigger="Actions" items={edged} wrap={false} />);
+      render(
+        <ContextualMenu items={edged} wrap={false}>
+          Actions
+        </ContextualMenu>,
+      );
       const menu = openMenu();
       // Open lands past the leading separator, on the first real item.
       expect(rovingTarget()).toHaveTextContent("Alpha");
@@ -363,7 +369,7 @@ describe("ContextualMenu", () => {
         { key: "beta", label: "Beta", url: "#beta" },
         { type: "separator", key: "trailing" },
       ];
-      render(<ContextualMenu trigger="Actions" items={edged} />);
+      render(<ContextualMenu items={edged}>Actions</ContextualMenu>);
       const menu = openMenu();
       fireEvent.keyDown(menu, { key: "End" });
       expect(rovingTarget()).toHaveTextContent("Beta");
@@ -390,7 +396,7 @@ describe("ContextualMenu", () => {
           ],
         },
       ];
-      render(<ContextualMenu trigger="Actions" items={nested} />);
+      render(<ContextualMenu items={nested}>Actions</ContextualMenu>);
       const menu = openMenu();
       // ArrowRight descends into the submenu, landing on its first entry.
       fireEvent.keyDown(menu, { key: "ArrowRight" });

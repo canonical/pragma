@@ -133,18 +133,19 @@ const ContextSwitcher = ({
     <>
       {title != null && <GroupHeader>{title}</GroupHeader>}
       <ContextualMenu
-        maxWidth={"calc(var(--sidenav-rail-inline-size) - 2 * var(--sidenav-inset-inline))"}
-        className={[componentCssClassName, className].filter(Boolean).join(" ")}
-        trigger={
-          <span className="row">
-            <span className="label">{currentContext.name}</span>
-            <Icon icon="chevron-down" className="end caret" />
-          </span>
+        maxWidth={
+          "calc(var(--sidenav-rail-inline-size) - 2 * var(--sidenav-inset-inline))"
         }
+        className={[componentCssClassName, className].filter(Boolean).join(" ")}
         items={items}
         onSelect={handleSelect}
         {...props}
-      />
+      >
+        <span className="row">
+          <span className="label">{currentContext.name}</span>
+          <Icon icon="chevron-down" className="end caret" />
+        </span>
+      </ContextualMenu>
     </>
   );
 };
