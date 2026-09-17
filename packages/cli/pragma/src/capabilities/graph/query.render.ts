@@ -9,6 +9,7 @@
  * - json: the serialized {@link QueryResult}.
  */
 
+import { type Call, renderCall, type Surface } from "../../kernel/spec/call.js";
 import type { Formatters } from "../../kernel/spec/index.js";
 
 // Inline `import("…")` type (no `from`) — keeps the ke types off the static
@@ -35,13 +36,33 @@ function formatTriples(
     .join("\n");
 }
 
+/**
+ * Where an empty SELECT points: the entity the caller expected to match, and
+ * the namespaces its query named. The `uri` is a placeholder by necessity — the
+ * query knows what it asked for, not which entity the caller had in mind.
+ */
+export const EMPTY_QUERY_CALLS = {
+  inspect: { verb: "graph inspect", params: { uri: "<prefix:name>" } },
+  namespaces: { verb: "ontology list" },
+} as const satisfies Record<string, Call>;
+
+/**
+ * What zero rows says for itself. "No results." read as a failed tool to an
+ * agent with nowhere to go next; the query RAN, and the likeliest causes are a
+ * term the graph spells differently or a prefix it does not bind.
+ */
+function describeEmptySelect(surface: Surface): string {
+  const { inspect, namespaces } = EMPTY_QUERY_CALLS;
+  return `No results: the query ran and nothing matched. Look at an entity you expected to match with \`${renderCall(inspect, surface)}\`, and check the namespaces the query names with \`${renderCall(namespaces, surface)}\`.`;
+}
+
 export const queryFormatters: Formatters<QueryResult> = {
   // Zero rows/triples: plain stdout stays empty — the notice is
   // `notice`, routed to stderr (exit 0) by the dispatcher so a pipe
   // reads no prose. ASK always has a result and never goes empty.
-  notice(result) {
+  notice(result, surface = "cli") {
     if (result.type === "select" && result.bindings.length === 0) {
-      return "No results.";
+      return describeEmptySelect(surface);
     }
     if (result.type === "construct" && result.triples.length === 0) {
       return "No triples.";
@@ -65,7 +86,7 @@ export const queryFormatters: Formatters<QueryResult> = {
 
   llm(result) {
     if (result.type === "select") {
-      if (result.bindings.length === 0) return "_No results._";
+      if (result.bindings.length === 0) return describeEmptySelect("cli");
       const cols = Object.keys(result.bindings[0] ?? {});
       const header = `| ${cols.join(" | ")} |`;
       const divider = `| ${cols.map(() => "---").join(" | ")} |`;

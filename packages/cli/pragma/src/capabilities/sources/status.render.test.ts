@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type RenderStyle, styleFor } from "../../kernel/render/style.js";
-import { renderSourcesStatusPlain } from "./status.render.js";
+import { renderSourcesStatusPlain, statusFormatters } from "./status.render.js";
 import type { SourcesStatusData } from "./types.js";
 
 /** A project reading from its own built pack, with two configured sources. */
@@ -114,5 +114,27 @@ describe("renderSourcesStatusPlain", () => {
       styleFor(false),
     );
     expect(out).toContain("  (none configured)");
+  });
+});
+
+describe("sources status — the condensed form keeps the next step", () => {
+  it("says what to run when the store is not built, and nothing extra when it is", () => {
+    const unavailable: SourcesStatusData = {
+      ...BUILT,
+      store: "unavailable",
+      contentHash: null,
+      sourceRef: null,
+      builtAt: null,
+      entityCount: null,
+    };
+    expect(statusFormatters.llm(unavailable)).toContain(
+      "- Store: not built (run `pragma sources update`)",
+    );
+    expect(
+      statusFormatters.llm({ ...unavailable, store: "embedded" }),
+    ).toContain(
+      "- Store: embedded snapshot (run `pragma sources update` to build from the configured packs)",
+    );
+    expect(statusFormatters.llm(BUILT)).toContain("- Store: ready");
   });
 });

@@ -2,9 +2,9 @@
  * Formatters for `pragma sources status` — plain, llm, json.
  */
 
-import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import { describeIgnoredPack } from "../../kernel/runtime/resolveSources.js";
+import { type Call, renderCall } from "../../kernel/spec/call.js";
 import type { Formatters } from "../../kernel/spec/index.js";
 import type { SourcesStatusData } from "./types.js";
 
@@ -13,11 +13,16 @@ import type { SourcesStatusData } from "./types.js";
  * explicitly: the distribution's snapshot answers reads, but it is a snapshot,
  * so reporting it as "up to date" would be a lie.
  */
-const STORE_HEADLINE: Record<SourcesStatusData["store"], string> = {
-  built: "ready",
-  embedded: `embedded snapshot (run \`${BIN_NAME} sources update\` to build from the configured packs)`,
-  unavailable: `not built (run \`${BIN_NAME} sources update\`)`,
-};
+function storeHeadline(store: SourcesStatusData["store"]): string {
+  const update = `run \`${renderCall(STATUS_NEXT_CALL, "cli")}\``;
+  if (store === "built") return "ready";
+  return store === "embedded"
+    ? `embedded snapshot (${update} to build from the configured packs)`
+    : `not built (${update})`;
+}
+
+/** The call a status that is not `built` points at. */
+export const STATUS_NEXT_CALL: Call = { verb: "sources update" };
 
 /**
  * Render `sources status` as plain text.
@@ -33,7 +38,7 @@ export function renderSourcesStatusPlain(
   data: SourcesStatusData,
   style: RenderStyle = defaultStyle(),
 ): string {
-  const lines = [`Store: ${STORE_HEADLINE[data.store]}`];
+  const lines = [`Store: ${storeHeadline(data.store)}`];
   if (data.contentHash !== null) {
     lines.push(
       `  pack: ${data.contentHash.slice(0, 12)} — ${data.entityCount ?? "?"} entities, built ${data.builtAt ?? "?"}`,
@@ -72,7 +77,9 @@ export const statusFormatters: Formatters<SourcesStatusData> = {
   },
 
   llm(data) {
-    const lines = [`# sources`, `- Store: ${data.store}`];
+    // The next step rides the condensed form too: an agent reading `embedded`
+    // or `unavailable` bare was told a state and not what to do about it.
+    const lines = [`# sources`, `- Store: ${storeHeadline(data.store)}`];
     if (data.ignoredPack !== null)
       lines.push(`- Ignored: ${describeIgnoredPack(data.ignoredPack)}`);
     if (data.sourceRef !== null) lines.push(`- From: ${data.sourceRef}`);
