@@ -435,7 +435,7 @@ describe("a glob says what it did", () => {
 
   it("says so in each surface's own spelling, and in the condensed body", async () => {
     const out = await lookup("swatch.*");
-    const counted = `${GLOB_EXPANSION_CAP} of ${FAMILY} matching entries shown.`;
+    const counted = `${GLOB_EXPANSION_CAP} of ${FAMILY} matches shown.`;
     expect(formatters.notice?.(out, "cli")).toContain(counted);
     expect(formatters.notice?.(out, "cli")).toContain("`--detail summary`");
     expect(formatters.notice?.(out, "mcp")).toContain('`detail: "summary"`');

@@ -14,7 +14,7 @@
  * facade).
  */
 
-import { BIN_NAME } from "../../constants.js";
+import { BIN_NAME, DETAIL_LEVELS } from "../../constants.js";
 import { PragmaError } from "../error/index.js";
 import { compactUri, DEFAULT_PREFIX_MAP } from "../render/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
@@ -120,20 +120,14 @@ export function compilePack(
   }
 
   if (definition.lookup) {
+    // Normalised ONCE, here, so the lookup verb, its run body, both fetch lanes
+    // and the sample all read the same declaration.
+    const lookup = withDisclosure(definition.lookup);
     verbs.push(
-      compileLookupVerb(
-        definition.lookup,
-        noun,
-        source,
-        prefixes,
-        hasList,
-        tierScope,
-      ),
+      compileLookupVerb(lookup, noun, source, prefixes, hasList, tierScope),
     );
-    if (definition.lookup.sample) {
-      verbs.push(
-        compileSampleVerb(definition.lookup, noun, source, prefixes, hasList),
-      );
+    if (lookup.sample) {
+      verbs.push(compileSampleVerb(lookup, noun, source, prefixes, hasList));
     }
   }
 
@@ -357,9 +351,7 @@ function compileLookupVerb(
           ]
         : []),
     ],
-    ...(lookup.disclosure
-      ? { disclosure: disclosureSpec(lookup.disclosure) }
-      : {}),
+    disclosure: disclosureSpec(lookup.disclosure),
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
       runBodies().then((m) =>
@@ -451,6 +443,50 @@ function compileSampleVerb(
   };
   return asVerb(verb);
 }
+
+/**
+ * Give a lookup that declares no disclosure the canonical one, so EVERY lookup
+ * can be asked for less.
+ *
+ * A lookup without levels answered with everything it had, and offered no
+ * `detail` to say otherwise — which made the size of an answer a property of
+ * which noun was asked rather than of what the caller wanted. The imputed
+ * ladder is chosen so that declaring nothing still MEANS what it meant:
+ *
+ * - the default is the HIGHEST level, so the default answer is byte for byte
+ *   the one the lookup gave before;
+ * - an untagged expand is tagged `standard`. Expands are where an answer's
+ *   bulk lives (a token's values at every position, a tier's every block), so
+ *   `summary` is the fields alone and `standard` already has everything.
+ *
+ * The gating rule itself ({@link ./disclosure.isActiveAtLevel}) is untouched:
+ * this writes the tags that rule already reads. A lookup that declares its own
+ * disclosure is returned as it is — its author decided.
+ *
+ * One consequence is accepted rather than avoided: a user whose config sets
+ * `detail` now sees these lookups follow it, as every declared one always did.
+ */
+function withDisclosure(lookup: PackLookup): PackLookup {
+  if (lookup.disclosure) return lookup;
+  return {
+    ...lookup,
+    disclosure: { levels: [...DETAIL_LEVELS], default: IMPUTED_DEFAULT_LEVEL },
+    ...(lookup.expand
+      ? {
+          expand: lookup.expand.map((expand) => ({
+            ...expand,
+            level: expand.level ?? IMPUTED_EXPAND_LEVEL,
+          })),
+        }
+      : {}),
+  };
+}
+
+/** The level an imputed disclosure answers at when none is asked for: all of it. */
+const IMPUTED_DEFAULT_LEVEL = "detailed";
+
+/** The level from which an imputed disclosure shows an untagged expand. */
+const IMPUTED_EXPAND_LEVEL = "standard";
 
 /** Normalize a pack disclosure into a {@link DisclosureSpec} (default → base). */
 function disclosureSpec(disclosure: PackLookup["disclosure"]): DisclosureSpec {

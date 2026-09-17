@@ -341,7 +341,7 @@ function truncationNotice(
   if (!output.truncated) return undefined;
   const { shown, total } = output.truncated;
   return (
-    `${shown} of ${total} matching entries shown. Narrow the pattern to reach ` +
+    `${shown} of ${total} matches shown. Narrow the pattern to reach ` +
     `the rest, or pass ${quoteArgument("detail", "summary", surface)} for smaller entries.`
   );
 }

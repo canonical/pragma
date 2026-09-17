@@ -317,6 +317,7 @@ Read-only.
 | --- | --- | --- | --- |
 | `name` | string[] | yes | Modifier names, prefixed names/IRIs, or glob patterns. |
 | `tier` | string | no | Read this tier and its ancestors (default: the top-level tiers; "all" for every tier). |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default detailed). |
 
 ### modifier_sample
 
@@ -528,6 +529,7 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | string[] | yes | Tier names, prefixed names/IRIs, or glob patterns. |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default detailed). |
 
 ### token_consumers
 
@@ -574,6 +576,7 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | string[] | yes | Token names, prefixed names/IRIs, or glob patterns. |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default detailed). |
 
 ### token_sample
 
@@ -659,6 +662,7 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | string[] | yes | Variable names, prefixed names/IRIs, or glob patterns. |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default detailed). |
 
 ### variable_sample
 
