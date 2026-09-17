@@ -62,7 +62,9 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     await mcp.cleanup();
     expect(desc).toContain("Get one design-token symbol in full");
     // The declared example reaches MCP, rendered as a tool call.
-    expect(desc).toContain('Example: token_lookup { name: ["color.text"] }.');
+    expect(desc).toContain(
+      'Example: token_lookup { name: ["color.text","color.border"] }.',
+    );
   });
 
   it("routes the definition-level toolDescription to the MCP list tool", async () => {
@@ -75,7 +77,9 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     // reached the tool), behind the question it answers and before its example.
     expect(desc).toMatch(/^Use when asked which design tokens exist/);
     expect(desc).toContain("List the design-token SYMBOLS");
-    expect(desc).toContain('Example: token_list { type: "color" }.');
+    expect(desc).toContain(
+      'Example: token_list { type: ["color","dimension"] }.',
+    );
   });
 
   it("routes an extra-verb toolDescription to its MCP tool", async () => {

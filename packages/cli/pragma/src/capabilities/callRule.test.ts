@@ -20,6 +20,7 @@ import { DEFAULT_EMPTY_RECOVERY } from "../kernel/packs/renderPack.js";
 import { renderCall } from "../kernel/spec/call.js";
 import { exampleCall } from "../kernel/spec/guidance.js";
 import type { Call, VerbSpec } from "../kernel/spec/index.js";
+import { wireType } from "../kernel/spec/wireType.js";
 import { findCallProblem } from "../testing/helpers/callSchema.js";
 import { declaredStories } from "./distribution.js";
 import { EMPTY_QUERY_CALLS } from "./graph/query.render.js";
@@ -64,6 +65,23 @@ describe("every tool states the question it answers", () => {
         )
         .map(label),
     ).toEqual([]);
+  });
+});
+
+describe("an example teaches batching", () => {
+  it("shows every list-accepting param as an array of at least two distinct values", () => {
+    // Recorded: a model that knew `symbol` was a list still made twenty calls
+    // of one symbol each — the example it had been shown held a single string.
+    const single = verbs.flatMap((verb) =>
+      verb.params
+        .filter((param) => wireType(param).list && verb.example?.[param.name])
+        .filter((param) => {
+          const value = verb.example?.[param.name];
+          return !Array.isArray(value) || new Set(value).size < 2;
+        })
+        .map((param) => `${label(verb)} { ${param.name} }`),
+    );
+    expect(single).toEqual([]);
   });
 });
 
