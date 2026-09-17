@@ -400,27 +400,19 @@ export interface PackFilter {
    */
   readonly vocabulary?: PackFilterVocabulary;
   /**
-   * The noun whose entities this filter's values NAME, in place of
-   * {@link values} or a {@link vocabulary}. A value is resolved the way
-   * `<noun> lookup` resolves its argument — a name, a prefixed IRI or an
-   * absolute IRI, and a name several entities share means all of them — and
-   * the rows are constrained by the IRIs it reached, through {@link entity}.
-   * A value that reaches nothing is refused with that noun's names.
-   *
-   * {@link variable} still names the COLUMN the filter is about. Requires
-   * {@link entity}.
+   * In place of {@link values} or a {@link vocabulary}: a value is whatever
+   * `<noun> lookup` accepts as an argument, and rows are kept by the IRIs it
+   * reaches, matched against {@link entity}.
    */
   readonly noun?: string;
   /**
-   * The SELECT variable carrying an entity IRI for a {@link noun} filter to
-   * constrain (without `?`). The query must project it; the page leaves it
-   * out of its rows unless a column displays it.
+   * The projected SELECT variable holding the IRI a {@link noun} filter
+   * constrains. Left out of the rows unless a column displays it.
    */
   readonly entity?: string;
   /**
-   * The path from {@link entity} to the entity the filter's values name, when
-   * they are not the same node — `^dt:ofSymbol` from a row's symbol to the
-   * variables standing for it. Absent means {@link entity} IS the named one.
+   * The path from {@link entity} to the named entity when they are different
+   * nodes (`^ex:madeBy` from a row's maker to its widgets); absent, they are one.
    */
   readonly via?: string;
   /** Help text (defaults to a generated description). */

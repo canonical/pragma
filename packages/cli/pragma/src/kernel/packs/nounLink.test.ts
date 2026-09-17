@@ -5,9 +5,11 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
+import type { ConfigLayers } from "../config/index.js";
 import type { PragmaRuntime } from "../runtime/types.js";
-import type { VerbSpec } from "../spec/types.js";
-import { compilePack } from "./compile.js";
+import type { CapabilityModule, VerbSpec } from "../spec/types.js";
+import { assembleEffectiveModules } from "./collect.js";
+import { compilePack, compileStoryModule } from "./compile.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import { parsePackDefinition } from "./schema.js";
 import {
@@ -29,7 +31,7 @@ const TTL = `
 ex:Maker a owl:Class .
 ex:Widget a owl:Class .
 
-ex:acme a ex:Maker ; ex:name "Acme" .
+ex:acme a ex:Maker ; ex:name "Acme" ; ex:code "A1" .
 ex:acme2 a ex:Maker ; ex:name "Acme" .
 ex:bolt a ex:Maker ; ex:name "Bolt" .
 ex:idle a ex:Maker ; ex:name "Idle" .
@@ -154,10 +156,11 @@ describe("a filter that names a noun", () => {
     expect(await widgetsBy("Idle")).toEqual([]);
   });
 
-  it("refuses a value the noun's lookup cannot resolve, with that noun's names", async () => {
-    await expect(widgetsBy(["Bolt", "Nobody"])).rejects.toMatchObject({
+  it("refuses a value the noun's lookup cannot resolve, offering what a lookup miss offers", async () => {
+    await expect(widgetsBy(["Bolt", "Bolts"])).rejects.toMatchObject({
       code: "INVALID_INPUT",
-      validOptions: ["Acme", "Bolt", "Idle"],
+      message: 'No maker is named "Bolts".',
+      suggestions: ["Bolt"],
     });
   });
 
@@ -170,6 +173,57 @@ describe("a filter that names a noun", () => {
     await expect(orphan.run({ maker: "Acme" }, rt)).rejects.toMatchObject({
       code: "CONFIG_ERROR",
     });
+  });
+});
+
+describe("a noun filter across the shipped and the project's stories", () => {
+  const shipped = (...stories: PackDefinition[]): CapabilityModule[] =>
+    stories.map((story) =>
+      compileStoryModule(
+        story,
+        distributionSource("test:shipped"),
+        PREFIXES,
+        (noun) => STORIES.get(noun)?.lookup,
+      ),
+    );
+  const project = (stories: unknown[]): ConfigLayers =>
+    ({
+      config: { stories, prefixes: PREFIXES },
+      origins: { packs: "default", stories: "project" },
+    }) as unknown as ConfigLayers;
+  const makerFilter = (modules: readonly CapabilityModule[], maker: string) =>
+    (
+      modules
+        .flatMap((module) => module.verbs)
+        .find((v) => verbKey(v.path) === "widget list") as VerbSpec
+    ).run({ maker: [maker] }, rt) as Promise<PackPage>;
+
+  it("a project story resolves its filter through a shipped noun", async () => {
+    const modules = assembleEffectiveModules(shipped(MAKER), project([WIDGET]));
+    const page = await makerFilter(modules, "Bolt");
+    expect(page.rows.map((row) => row.name)).toEqual(["Slider"]);
+  });
+
+  it("a shipped filter resolves through the project's override of the noun it names", async () => {
+    const byCode = {
+      noun: "maker",
+      lookup: { by: "ex:code", type: "ex:Maker" },
+    };
+    const modules = assembleEffectiveModules(
+      shipped(MAKER, WIDGET),
+      project([byCode]),
+    );
+    const page = await makerFilter(modules, "A1");
+    expect(page.rows.map((row) => row.name)).toEqual(["Button"]);
+    await expect(makerFilter(modules, "Acme")).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+    });
+  });
+
+  it("refuses a story naming a noun nothing looks up, where it is assembled", () => {
+    expect(() => assembleEffectiveModules([], project([WIDGET]))).toThrow(
+      /"widget" names the noun "maker"/,
+    );
   });
 });
 

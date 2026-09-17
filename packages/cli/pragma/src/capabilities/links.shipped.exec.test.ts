@@ -1,31 +1,14 @@
 /**
- * An answer that names another kind of thing is one call from it, both ways
- * (PROTECTED).
- *
  * A cell may declare the noun its values name (`noun: "token"`). Two promises
- * follow from that declaration, and this file holds the distribution's own
- * stories to both:
+ * follow, held over the distribution's own stories (PROTECTED):
  *
- * - DECLARED, storeless, over `declaredStories`. When a cell of noun A names
- *   noun B, the way back exists: a cell of B names A, or a table of A's can be
- *   filtered by B — A's own list, or any list with a column naming A. And a
- *   list column that names a noun carries a filter of that noun over itself,
- *   so a table listing blocks can be asked for one block.
- * - SHIPPED, over the embedded pack. Every value printed in such a cell is a
- *   name the named noun's lookup resolves — read from the pool that lookup
- *   resolves against, over the whole corpus.
+ * - DECLARED (storeless): when a cell of noun A names noun B, a cell of B names
+ *   A, or a table of A's can be filtered by B; and a list column naming a noun
+ *   carries a filter of that noun over itself.
+ * - SHIPPED (embedded pack, whole corpus): every value such a cell prints
+ *   resolves through the resolver a noun filter uses.
  *
- * THE LIMIT: a cell that declares no `noun` is not seen. A story that prints a
- * token's name in an unannotated column breaks neither promise here; the
- * annotation is what makes a cell a link.
- *
- * And this is a promise about what THIS distribution's stories show. It says
- * nothing about which edges of a graph may be walked — `graph connect` decides
- * that per edge from fan-in and names no vocabulary (`graph/relationIndex.ts`),
- * and nothing here lists a relation.
- *
- * Each half ends in a negative control: the same check over a fixture that
- * breaks the promise, shown to fail.
+ * A cell that declares no `noun` is unseen. Each half has a negative control.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -34,7 +17,9 @@ import { MAX_LIST_WINDOW } from "../kernel/packs/paging.js";
 import {
   type LookupOutput,
   listEntityNames,
+  resolveEntityIris,
 } from "../kernel/packs/resolveEntity.js";
+import { nounsNamed } from "../kernel/packs/storyRules.js";
 import {
   distributionSource,
   isNestedExpand,
@@ -165,7 +150,12 @@ function linkViolations(stories: Stories): string[] {
           `${body.noun} ${body.verb} lists a ${column.noun} in "${column.field}" it cannot be filtered by`,
       ),
   );
-  return [...oneWay, ...unfilterable];
+  const unknown = [...stories].flatMap(([noun, story]) =>
+    nounsNamed(story)
+      .filter((named) => !stories.get(named)?.lookup)
+      .map((named) => `${noun} names a ${named}, which has no lookup`),
+  );
+  return [...oneWay, ...unfilterable, ...unknown];
 }
 
 /** A value a `noun` cell printed, and where. */
@@ -249,41 +239,54 @@ async function printedNames(
 }
 
 /**
- * The printed values the named noun's lookup cannot resolve. A cell is one
- * name, or a space-separated set of names (a `many` cell).
+ * The printed values the named noun cannot resolve, through the resolver a
+ * noun filter uses. A cell is one name, or a space-separated set of names (a
+ * `many` cell).
  */
 async function unresolved(
   rt: PragmaRuntime,
   stories: Stories,
   printed: readonly Printed[],
 ): Promise<string[]> {
-  const pools = new Map<string, Set<string>>();
-  for (const noun of new Set(printed.map((cell) => cell.names))) {
+  const answers = new Map<string, Promise<boolean>>();
+  const resolves = (noun: string, value: string): Promise<boolean> => {
+    const key = `${noun}\n${value}`;
     const lookup = stories.get(noun)?.lookup;
-    const names = lookup ? await listEntityNames(rt, lookup, SOURCE) : [];
-    pools.set(noun, new Set(names.map((name) => name.trim().toLowerCase())));
+    const answer =
+      answers.get(key) ??
+      (lookup
+        ? resolveEntityIris(rt, lookup, noun, [value], SOURCE, {}).then(
+            (iris) => iris.length > 0,
+            () => false,
+          )
+        : Promise.resolve(false));
+    answers.set(key, answer);
+    return answer;
+  };
+  const missing: string[] = [];
+  for (const cell of printed) {
+    const members = cell.value.split(/\s+/);
+    const found =
+      (await resolves(cell.names, cell.value)) ||
+      (members.length > 1 &&
+        (await Promise.all(members.map((m) => resolves(cell.names, m)))).every(
+          Boolean,
+        ));
+    if (!found) missing.push(`${cell.at}: "${cell.value}" is no ${cell.names}`);
   }
-  const known = (noun: string, value: string): boolean =>
-    pools.get(noun)?.has(value.trim().toLowerCase()) ?? false;
-  return printed
-    .filter(
-      (cell) =>
-        !known(cell.names, cell.value) &&
-        !cell.value.split(/\s+/).every((member) => known(cell.names, member)),
-    )
-    .map((cell) => `${cell.at}: "${cell.value}" is no ${cell.names}`);
+  return missing;
 }
 
 describe("a declared link has a way back (PROTECTED)", () => {
   it("derives links from the config", () => {
     // A guard, not a no-op: no annotated cell would make the rule vacuous.
     const nouns = new Set(lookupCellsOf(declaredStories).map((c) => c.names));
-    expect([...nouns].sort()).toEqual(["modifier", "token", "variable"]);
-    expect(
-      bodiesOf(declaredStories).some((body) =>
-        body.shape.columns.some((column) => column.noun === "block"),
-      ),
-    ).toBe(true);
+    expect([...nouns].sort()).toEqual([
+      "block",
+      "modifier",
+      "token",
+      "variable",
+    ]);
   });
 
   it("every cell naming another noun can be followed back, and every such column filtered", () => {

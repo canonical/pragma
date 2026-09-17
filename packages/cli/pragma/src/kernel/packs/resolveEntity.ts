@@ -243,28 +243,48 @@ export async function resolveLookup(
 }
 
 /**
- * The IRIs of every entity ONE lookup argument reaches — the resolve alone,
- * with nothing fetched. The argument is read as {@link resolveLookup} reads a
- * literal one (a name, a prefixed IRI, an absolute IRI; never a pattern), and
+ * The IRIs of every entity the given lookup arguments reach — the resolve
+ * alone, with nothing fetched. Each is read as {@link resolveLookup} reads a
+ * literal argument (a name, a prefixed IRI, an absolute IRI; never a pattern),
  * under no tier scope: a name reaches its entity in every tier.
  *
- * @returns The IRIs, best-ranked first; empty when the argument reaches none.
- * @throws PragmaError INVALID_INPUT when an IRI-shaped argument cannot be
- *   embedded in a query.
+ * @returns The distinct IRIs; none when the store holds no entity of the noun.
+ * @throws PragmaError INVALID_INPUT naming every argument that reaches nothing,
+ *   with the suggestions a lookup miss offers; or when an IRI-shaped argument
+ *   cannot be embedded in a query.
  */
 export async function resolveEntityIris(
   rt: LookupRuntime,
   lookup: PackLookup,
-  query: string,
+  noun: string,
+  queries: readonly string[],
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
 ): Promise<string[]> {
-  const rows = await runSelect(
-    rt,
-    buildResolveQuery(lookup, query, prefixes, undefined, undefined, true),
-    source,
+  const iris = new Set<string>();
+  const missed: string[] = [];
+  // The graphql-sourced resolve is the bare `?uri ?name` pair: no field read.
+  const bare: PackLookup = { ...lookup, source: "graphql" };
+  for (const query of queries) {
+    const rows = await runSelect(
+      rt,
+      buildResolveQuery(bare, query, prefixes, undefined),
+      source,
+    );
+    if (rows.length === 0) missed.push(query);
+    for (const row of firstRowPerEntity(rows)) iris.add(String(row.uri));
+  }
+  if (missed.length === 0) return [...iris];
+  const pool = listAddressable(rt, lookup, source, prefixes, undefined);
+  if ((await pool).length === 0) return [];
+  const suggestions = await Promise.all(
+    missed.map((query) => suggestForMiss(() => pool, query)),
   );
-  return firstRowPerEntity(rows).map((row) => String(row.uri));
+  throw new PragmaError({
+    code: "INVALID_INPUT",
+    message: `No ${noun} is named "${missed.join('", "')}".`,
+    suggestions: [...new Set(suggestions.flat())].slice(0, MAX_SUGGESTIONS),
+  });
 }
 
 /**
@@ -593,7 +613,7 @@ function firstRowPerEntity(rows: readonly PackRow[]): PackRow[] {
  * resolves to an IRI and fetches everything else through its document, so both
  * of its queries are the minimal `?uri ?name` pair; a sparql-sourced pack reads
  * its fields in the same SELECT, so both of its queries carry the level-gated
- * projection. `minimal` asks for the `?uri ?name` pair whatever the source.
+ * projection.
  */
 function buildResolveQuery(
   lookup: PackLookup,
@@ -601,9 +621,8 @@ function buildResolveQuery(
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
   scope?: LookupScope,
-  minimal = false,
 ): string {
-  const graphqlSourced = minimal || lookup.source === "graphql";
+  const graphqlSourced = lookup.source === "graphql";
   if (!looksLikeIri(query)) {
     return graphqlSourced
       ? buildNameResolveQuery(lookup, query, scope?.via)

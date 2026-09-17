@@ -363,13 +363,21 @@ describe("a refusal and a calm empty answer stay distinguishable (PROTECTED)", (
     "%s: a value the vocabulary does not admit is INVALID_INPUT, naming the ones it does",
     async (_label, body) => {
       for (const filter of body.shape.filters ?? []) {
-        const admissible = await vocabulary(filter);
-        await expect(
-          page(body, { [filter.param]: "zzz-definitely-not-a-value" }),
-        ).rejects.toMatchObject({
-          code: "INVALID_INPUT",
-          validOptions: [...admissible].sort(),
+        const refusal = page(body, {
+          [filter.param]: "zzz-definitely-not-a-value",
         });
+        // A noun has too many names to list: its miss says so by name.
+        await expect(refusal).rejects.toMatchObject(
+          filter.noun
+            ? {
+                code: "INVALID_INPUT",
+                message: `No ${filter.noun} is named "zzz-definitely-not-a-value".`,
+              }
+            : {
+                code: "INVALID_INPUT",
+                validOptions: [...(await vocabulary(filter))].sort(),
+              },
+        );
       }
     },
     60_000,

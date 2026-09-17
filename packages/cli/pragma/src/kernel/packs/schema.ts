@@ -143,9 +143,6 @@ const filterSchema = z
   .refine((f) => !RESERVED_PARAMS.has(f.param), {
     message: "filter param is a reserved name",
   })
-  // A noun filter's values are names another story resolves, and the rows are
-  // constrained by IRI — so there is no value set, vocabulary or cell
-  // comparison left for it to declare, and nothing else may claim its terms.
   .refine((f) => !(f.noun && (f.values || f.vocabulary || f.match)), {
     message:
       '"noun" is mutually exclusive with "values", "vocabulary" and "match" — the named noun admits the values and the rows are matched by IRI',

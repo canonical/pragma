@@ -625,7 +625,7 @@ describe("token consumers — the binding tuple, either spelling (PROTECTED)", (
       answered as never,
     );
     expect(notice).toContain("matches `--variable button-color-background`.");
-    expect(notice).toContain("Either no component uses this token");
+    expect(notice).toContain("stands for no token");
   });
 
   it("--key and --state narrow to one tuple each", async () => {

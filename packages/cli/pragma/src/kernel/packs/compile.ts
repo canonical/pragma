@@ -227,14 +227,35 @@ export function compileStoryModule(
     );
   }
   const listable = compileListable(definition);
-  return {
+  const module: CapabilityModule = {
     name: definition.noun,
     story: true,
     verbs: compilePack(definition, source, prefixes, nouns),
     colophon: definition.colophon,
-    ...(definition.lookup ? { storyLookup: definition.lookup } : {}),
     ...(listable ? { mcpListable: listable } : {}),
   };
+  compiledFrom.set(module, { definition, source, prefixes });
+  return module;
+}
+
+/** What each story module was compiled from. */
+const compiledFrom = new WeakMap<
+  CapabilityModule,
+  {
+    readonly definition: PackDefinition;
+    readonly source: StorySource;
+    readonly prefixes: Readonly<Record<string, string>>;
+  }
+>();
+
+/**
+ * The story a module was compiled from by {@link compileStoryModule}, with the
+ * source and prefixes it was compiled under; `undefined` for any other module.
+ */
+export function storyOf(
+  module: CapabilityModule,
+): ReturnType<(typeof compiledFrom)["get"]> {
+  return compiledFrom.get(module);
 }
 
 /** Carry a story half's declared guidance onto its verb, omitting what is absent. */

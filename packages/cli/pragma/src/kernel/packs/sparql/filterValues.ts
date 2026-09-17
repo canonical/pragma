@@ -153,7 +153,7 @@ function rejectUnknownValue(
  * is told about all three at once: naming only the first would cost a round
  * trip per typo, which is the cost taking several values exists to remove.
  */
-export function refuseValues(
+function refuseValues(
   filter: PackFilter,
   refused: readonly unknown[],
   validOptions: string[],

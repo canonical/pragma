@@ -33,7 +33,6 @@ import {
 } from "./sparql/buildListQuery.js";
 import {
   type FilterVocabularies,
-  refuseValues,
   resolveFilterPredicates,
 } from "./sparql/filterValues.js";
 import { runSelect } from "./sparql/runSelect.js";
@@ -113,6 +112,8 @@ export function makeListRun(
       ),
       ...(await resolveNounPredicates(rt, shape.filters, params, meta)),
     ];
+    // Left out of the rows: over the shipped pack the IRIs a noun filter
+    // constrains took the largest list past its payload budget (108 KB).
     const omit = (shape.filters ?? [])
       .flatMap((filter) => (filter.entity ? [filter.entity] : []))
       .filter((name) => !shape.columns.some((column) => column.field === name));
@@ -317,9 +318,8 @@ async function readFilterVocabularies(
  * @returns One `"iri"` predicate per noun filter the caller used, over the
  *   IRIs its values reached. Against a store holding none of that noun's
  *   entities the predicate names no IRI and the list answers empty.
- * @throws PragmaError INVALID_INPUT when a value reaches no entity of the noun,
- *   carrying that noun's names as `validOptions`; CONFIG_ERROR when no story
- *   known to this one declares a lookup for the noun.
+ * @throws PragmaError INVALID_INPUT when a value reaches no entity of the noun;
+ *   CONFIG_ERROR when no story known to this one declares a lookup for it.
  */
 async function resolveNounPredicates(
   rt: PragmaRuntime,
@@ -339,30 +339,18 @@ async function resolveNounPredicates(
         `Filter "--${filter.param}" in ${meta.source.label} names the noun "${filter.noun}", and no story declares a lookup for it.`,
       );
     }
-    const iris = new Set<string>();
-    const refused: unknown[] = [];
-    for (const occurrence of occurrences) {
-      const reached =
-        typeof occurrence === "string" && occurrence.trim() !== ""
-          ? await resolveEntityIris(
-              rt,
-              lookup,
-              occurrence.trim().normalize("NFC"),
-              meta.source,
-              meta.prefixes,
-            )
-          : [];
-      if (reached.length === 0) refused.push(occurrence);
-      for (const iri of reached) iris.add(iri);
-    }
-    if (refused.length > 0) {
-      const names = await listEntityNames(rt, lookup, meta.source);
-      if (names.length > 0) throw refuseValues(filter, refused, names.sort());
-    }
+    const terms = await resolveEntityIris(
+      rt,
+      lookup,
+      filter.noun,
+      occurrences.map((value) => String(value).trim().normalize("NFC")),
+      meta.source,
+      meta.prefixes,
+    );
     predicates.push({
       variable: filter.entity,
       match: "iri",
-      terms: [...iris],
+      terms,
       ...(filter.via ? { via: filter.via } : {}),
     });
   }

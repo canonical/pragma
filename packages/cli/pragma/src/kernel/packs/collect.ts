@@ -28,8 +28,9 @@ import type { ConfigLayers } from "../config/index.js";
 import { PragmaError } from "../error/index.js";
 import type { PackStoryRecord } from "../runtime/graphpack/stories.js";
 import type { CapabilityModule } from "../spec/index.js";
-import { compileStoryModule } from "./compile.js";
+import { compileStoryModule, storyOf } from "./compile.js";
 import { parsePackDefinition } from "./schema.js";
+import { nounsNamed } from "./storyRules.js";
 import type { NounLookups, PackDefinition, PackEntry } from "./types.js";
 import { VERB_PATH_PATTERN } from "./types.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
@@ -113,6 +114,24 @@ export function validateStories(
         message: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+  // A package story naming a noun nothing looks up is dropped like any other
+  // unusable one: its filter could only ever fail.
+  const known = (noun: string): boolean =>
+    byNoun.get(noun)?.definition.lookup !== undefined ||
+    staticModules.some(
+      (module) =>
+        module.name === noun &&
+        storyOf(module)?.definition.lookup !== undefined,
+    );
+  for (const [noun, entry] of byNoun) {
+    const unknown = nounsNamed(entry.definition).find((named) => !known(named));
+    if (unknown === undefined) continue;
+    byNoun.delete(noun);
+    problems.push({
+      source: entry.source,
+      message: `it names the noun "${unknown}", and no story declares a lookup for it.`,
+    });
   }
   return { entries: [...byNoun.values()], problems };
 }
@@ -201,8 +220,8 @@ function projectStoryTiers(layers: ConfigLayers): readonly unknown[][] {
  *   carries (see {@link validateStories}); weaker than either config tier.
  * @returns The effective modules, uniqueness-checked.
  * @throws PragmaError CONFIG_ERROR on an invalid CONFIG story, a config story
- *   claiming an authored non-story noun, or a duplicate noun within one config
- *   tier. Package stories were already screened and never throw here.
+ *   claiming an authored non-story noun, a duplicate noun within one config
+ *   tier, or a cell or filter naming a noun no effective story looks up. Package stories were already screened and never throw here.
  */
 export function assembleEffectiveModules(
   staticModules: readonly CapabilityModule[],
@@ -225,11 +244,13 @@ export function assembleEffectiveModules(
   // Keyed by noun so the stronger tier REPLACES the weaker one — declaring a
   // story both on its pack and at the top level is a refinement, not an error.
   const dynamic = new Map<string, CapabilityModule>();
-  // Read at run time, so a story may name a noun a stronger tier declares
-  // after it; a noun no project story declares is the shipped one.
-  const nouns: NounLookups = (noun) =>
-    (dynamic.get(noun) ?? staticModules.find((module) => module.name === noun))
-      ?.storyLookup;
+  // The EFFECTIVE lookup of a noun, for shipped and project stories alike.
+  // Read at run time, so it sees every tier whatever order they compile in.
+  const nouns: NounLookups = (noun) => {
+    const module =
+      dynamic.get(noun) ?? staticModules.find((m) => m.name === noun);
+    return module && storyOf(module)?.definition.lookup;
+  };
   for (const entry of packageStories) {
     dynamic.set(
       entry.definition.noun,
@@ -273,8 +294,35 @@ export function assembleEffectiveModules(
 
   // Drop the static module for any noun a config story overrides, then append
   // the dynamic modules.
-  const kept = staticModules.filter((module) => !dynamic.has(module.name));
+  const kept = staticModules
+    .filter((module) => !dynamic.has(module.name))
+    // Recompiled so a shipped filter naming an overridden noun resolves
+    // through the project's lookup, as the project's own stories do.
+    .map((module) => {
+      const story = storyOf(module);
+      return story
+        ? compileStoryModule(
+            story.definition,
+            story.source,
+            story.prefixes,
+            nouns,
+          )
+        : module;
+    });
   const effective = [...kept, ...dynamic.values()];
+  for (const module of effective) {
+    const story = storyOf(module);
+    // Package stories were screened by validateStories and never throw here.
+    const unknown =
+      story && story.source.origin !== "package"
+        ? nounsNamed(story.definition).find((noun) => !nouns(noun))
+        : undefined;
+    if (story && unknown) {
+      throw PragmaError.configError(
+        `Invalid story in ${story.source.label}: "${module.name}" names the noun "${unknown}", and no story declares a lookup for it.`,
+      );
+    }
+  }
   assertUniqueVerbs(effective.flatMap((module) => [...module.verbs]));
   return effective;
 }

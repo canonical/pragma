@@ -73,6 +73,19 @@ by \`sources update\` and addressed by content hash, so the domain you query is
 exactly the domain that was published.`;
 
 /**
+ * Keeps the kebab-case CSS variable of a symbol and drops its camelCase twin.
+ *
+ * A DATA WORKAROUND, to delete with every use of it. 204 of the 745 symbols
+ * carry two variables that differ only in spelling (`color-focus-ring` and the
+ * older `color-focusRing`), and nothing in the graph marks either. The kebab
+ * one is the name to write, so it is the one every answer prints; measured on
+ * the shipped pack, no upper-case letter occurs in any other variable of a
+ * symbol, and every symbol with a variable keeps exactly one. When
+ * design-tokens stops emitting the twins this matches everything and goes.
+ */
+const KEBAB_VARIABLE = "^[^A-Z]*$";
+
+/**
  * The read stories the design-system pack supplies — `block`, `token`,
  * `variable`, `modifier` and `tier` as declared data rather than code.
  *
@@ -91,19 +104,6 @@ exactly the domain that was published.`;
  * `PackSource.stories` is deliberately `readonly unknown[]`, because the config
  * layer does not know the pack grammar (`parsePackDefinition` does).
  */
-/**
- * Keeps the kebab-case CSS variable of a symbol and drops its camelCase twin.
- *
- * A DATA WORKAROUND, to delete with every use of it. 204 of the 745 symbols
- * carry two variables that differ only in spelling (`color-focus-ring` and the
- * older `color-focusRing`), and nothing in the graph marks either. The kebab
- * one is the name to write, so it is the one every answer prints; measured on
- * the shipped pack, no upper-case letter occurs in any other variable of a
- * symbol, and every symbol with a variable keeps exactly one. When
- * design-tokens stops emitting the twins this matches everything and goes.
- */
-const KEBAB_VARIABLE = "^[^A-Z]*$";
-
 const designSystemStories: readonly PackDefinition[] = [
   // `block list` is declared content: one SELECT over the four UIBlock
   // classes, listing every block the TIER SCOPE admits — experimental and
@@ -372,7 +372,7 @@ const designSystemStories: readonly PackDefinition[] = [
           relation: "ds:hasSubcomponent",
           level: "detailed",
           select: [
-            { name: "name", property: "ds:name" },
+            { name: "name", property: "ds:name", noun: "block" },
             { name: "uri", property: "ds:name", graphqlField: "uri" },
           ],
         },
@@ -812,32 +812,10 @@ const designSystemStories: readonly PackDefinition[] = [
           {
             param: "variable",
             variable: "variable",
-            // The SAME constraint as `--symbol`, named by the other spelling.
-            // A web implementer holds a CSS custom-property name, not a dotted
-            // symbol, so answering "what breaks if I change --color-text" used
-            // to take two calls and a spelling the caller did not start with.
-            // The join is in the query instead.
-            //
-            // Constrains the SYMBOL, through the variables standing for it —
-            // so either spelling of a twinned variable finds the same rows.
+            // Constrains the SYMBOL, through any variable standing for it.
             noun: "variable",
             entity: "symbolUri",
             via: "^dt:ofSymbol",
-            // Two things a caller will otherwise assume, both wrong.
-            //
-            // A CHANNEL variable and its semantic sibling are DIFFERENT
-            // constraints: `--variable modifier-color-text` finds the blocks
-            // that bind the channel, `--variable color-text` those that bind
-            // the symbol, and neither includes the other. Whether a block's
-            // resolution eventually reaches the other through a fallback is a
-            // question about the consumed list, not about this single-symbol
-            // join, and blurring them here would answer a question nobody
-            // asked with rows nobody can check.
-            //
-            // And a variable standing for NO symbol has no answer down this
-            // path at all — 236 of them do — which is an empty answer for a
-            // reason the recovery below names, not evidence that nothing
-            // consumes it.
             description:
               "A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ.",
           },
@@ -891,19 +869,9 @@ const designSystemStories: readonly PackDefinition[] = [
           variables: ["block", "via", "symbol", "key", "state", "node"],
           description: "Search block, via, symbol, key, state and node.",
         },
-        // Deliberately `sources update`: unlike `standard list`, this story's
-        // data does NOT ride the embedded snapshot — the binding records are
-        // written by the design-system packs, so an empty answer here can be a
-        // store that predates them.
-        //
-        // CAN be, not is — which is why the message opens on the two cases
-        // rather than asserting one. This text prints under a filtered miss too
-        // (`--symbol color.text`), where "nothing is recorded at all" would be a
-        // claim the answer cannot support, so it names both readings and hands
-        // the reader the one command that separates them.
         emptyRecovery: {
           message:
-            "Either no component uses this token, or no component is recorded as using any token yet — which components use which tokens comes from the component anatomies in the design-system document, and a copy of the graph built before any anatomy named its tokens is empty for every token. Ask again without the symbol filter to tell the two apart: an empty unfiltered answer means the graph predates the anatomies and fills in once they are written and the graph is rebuilt. If you asked about a CSS variable rather than a token: some variables are computed from others (the `--hover--…` and `--disabled--…` ones, for example) and stand for no token, so nothing is ever recorded as using them; follow that variable's chain (the variable chain read) to see what it ends up as. To rebuild the graph:",
+            "Which components use which tokens is recorded from the component anatomies, and not every component's anatomy names its tokens yet, so a component with no rows may simply not be recorded. A CSS variable computed from others (the `--hover--…` and `--disabled--…` ones, for example) stands for no token and is never recorded as used; the variable chain read shows what it ends up as.",
           call: { verb: "sources update" },
         },
       },
@@ -1192,8 +1160,7 @@ const designSystemStories: readonly PackDefinition[] = [
       },
       emptyRecovery: {
         message:
-          "Platform variables come from the @canonical/token-ontology pack, and a variable is only addressable once that pack publishes its name literals — a store built without that pack carries none.",
-        call: { verb: "sources update" },
+          "29 tokens, the composite typography ones such as `typography.heading.1`, have no CSS variable of their own; the token values read shows their value.",
       },
     },
     verbs: [

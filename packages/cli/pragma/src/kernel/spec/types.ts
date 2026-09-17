@@ -12,7 +12,6 @@
  */
 
 import type { Effect, Task } from "@canonical/task";
-import type { PackLookup } from "../packs/types.js";
 import type { InteractionRuntime, PragmaRuntime } from "../runtime/types.js";
 
 /** Where text is about to be printed — the projector driving the run. */
@@ -582,11 +581,6 @@ export interface CapabilityModule {
    * by `kernel/packs/collect.assembleEffectiveModules`.
    */
   readonly story?: true;
-  /**
-   * The lookup the story this module was compiled from declares, so a story
-   * compiled later can resolve a filter's values through this noun.
-   */
-  readonly storyLookup?: PackLookup;
   readonly boot?: (rt: PragmaRuntime) => void;
   /** The handshake orientation (a module hook; one module declares it). */
   readonly mcpOrientation?: McpOrientation;

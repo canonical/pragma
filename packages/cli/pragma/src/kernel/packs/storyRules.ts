@@ -121,6 +121,26 @@ export function listShapeIssues(
 }
 
 /**
+ * Every noun a story's cells and filters name, once each.
+ *
+ * @param definition - The story to read.
+ * @returns The named nouns, in declaration order.
+ */
+export function nounsNamed(definition: PackDefinition): string[] {
+  const lookup = definition.lookup;
+  const named = [
+    ...[
+      ...(definition.list ? [definition.list] : []),
+      ...(definition.verbs ?? []),
+    ].flatMap((shape) => [...shape.columns, ...(shape.filters ?? [])]),
+    ...(lookup?.fields ?? []),
+    ...(lookup?.sections ?? []),
+    ...(lookup?.expand ?? []).flatMap((expand) => expand.select),
+  ].flatMap((cell) => ("noun" in cell && cell.noun ? [cell.noun] : []));
+  return [...new Set(named)];
+}
+
+/**
  * Every compilability rule a whole definition breaks, `list` and extra verbs
  * alike.
  *
