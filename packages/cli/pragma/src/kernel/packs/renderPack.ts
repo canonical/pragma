@@ -71,6 +71,10 @@ export const DEFAULT_EMPTY_RECOVERY: PackEmptyRecovery = {
   call: BUILD_STORE_CALL,
 };
 
+/** What a filtered empty page says first: the store is fine, the filter missed. */
+const FILTERED_EMPTY_HINT =
+  "The store answered and nothing carries that — drop the argument, or loosen it, to widen the read.";
+
 /**
  * Build the list formatters for a list-shaped verb (list or an extra verb).
  *
@@ -108,6 +112,20 @@ export function listFormatters(
   const { message, call } = shape.emptyRecovery ?? DEFAULT_EMPTY_RECOVERY;
   const hintFor = (surface: Surface): string =>
     call ? `${message} ${renderNextStep(call, surface)}` : message;
+  // A FILTERED empty page is a miss, not an empty store: it says how to widen,
+  // keeps the story's own account of the emptiness, and drops the rebuild call
+  // (any other next step a story declares — listing the values — still helps).
+  const declared = shape.emptyRecovery;
+  const filteredHintFor = (surface: Surface): string =>
+    [
+      FILTERED_EMPTY_HINT,
+      declared?.message,
+      declared?.call && declared.call.verb !== BUILD_STORE_CALL.verb
+        ? renderNextStep(declared.call, surface)
+        : undefined,
+    ]
+      .filter(Boolean)
+      .join(" ");
   const optionsFor = (surface: Surface): RenderListOptions<PackRow> => ({
     heading: meta.heading,
     columns,
@@ -121,7 +139,7 @@ export function listFormatters(
     llm: (page) => {
       const body = renderListLlm(
         page.rows,
-        emptyCopy(page, meta, optionsFor("cli"), "cli"),
+        emptyCopy(page, meta, optionsFor("cli"), "cli", filteredHintFor("cli")),
         {
           more: page.nextAfter !== undefined,
           ...(scopeText(page) === undefined
@@ -139,7 +157,13 @@ export function listFormatters(
       page.rows.length === 0
         ? joinNotices([
             renderListEmptyNotice(
-              emptyCopy(page, meta, optionsFor(surface), surface),
+              emptyCopy(
+                page,
+                meta,
+                optionsFor(surface),
+                surface,
+                filteredHintFor(surface),
+              ),
             ),
             scopeNotice(page, surface),
           ])
@@ -210,40 +234,30 @@ function joinNotices(
 /**
  * The empty-state copy this page deserves.
  *
- * Two facts can empty a list and zero rows cannot tell them apart: nothing was
- * there, or a filter missed what was. Both are worth saying and they are not
- * exclusive, so a filtered empty page says both — the kernel's own sentence
- * names the arguments the caller typed, and the story's `emptyRecovery` follows
- * it on the next line, exactly as it does on an unfiltered page.
- *
- * It did not, briefly: a filtered empty page reported only the narrowing,
- * because the recoveries of the day asserted an empty store ("No token symbols
- * in the store … run `pragma sources update`") and so told a reader with 745
- * symbols in it to rebuild for nothing. That is a WORDING defect, and it is
- * fixed where it lives — a story's recovery is now written to hold whether the
- * population is empty or a filter missed a populated one, or the story declares
- * none. Suppressing it here cost more than it saved: `token consumers --symbol
- * color.text` narrows a table that records no bindings at all, and "No token
- * matches `--symbol color.text`." on its own read as a mistyped symbol while
- * withholding the one account of the emptiness that verb has.
+ * Two facts can empty a list: nothing was there, or a filter missed what was.
+ * An unfiltered empty page gets the story's `emptyRecovery` whole. A filtered
+ * one names the arguments the caller typed and takes `filteredHint` instead —
+ * see {@link listFormatters} for what that keeps and drops.
  *
  * @param page - The rendered page (its rows and the filters that cut them).
  * @param meta - The noun, for the sentence.
  * @param base - The story's own empty copy.
- * @returns `base` unchanged, or `base` with the filter-shaped message — the
- *   story's own hint is kept either way.
+ * @param filteredHint - The hint a filtered empty page carries.
+ * @returns `base` unchanged, or `base` with the filter-shaped message and hint.
  */
 function emptyCopy(
   page: PackPage,
   meta: RenderMeta,
   base: RenderListOptions<PackRow>,
   surface: Surface,
+  filteredHint: string,
 ): RenderListOptions<PackRow> {
   const applied = page.filters ?? [];
   if (page.rows.length > 0 || applied.length === 0) return base;
   return {
     ...base,
     emptyMessage: `No ${meta.noun} matches ${listFilters(applied, surface)}.`,
+    emptyHint: filteredHint,
   };
 }
 
