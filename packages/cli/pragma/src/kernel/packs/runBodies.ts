@@ -21,16 +21,19 @@ import {
   type LookupScope,
   listEntityNames,
   listRecovery,
+  resolveEntityIris,
   resolveLookup,
 } from "./resolveEntity.js";
 import { parseSampleCount, pickRandom } from "./sample.js";
 import {
   buildListQuery,
   buildTierCountQuery,
+  type ListPredicate,
   type ListTierScope,
 } from "./sparql/buildListQuery.js";
 import {
   type FilterVocabularies,
+  refuseValues,
   resolveFilterPredicates,
 } from "./sparql/filterValues.js";
 import { runSelect } from "./sparql/runSelect.js";
@@ -44,6 +47,7 @@ import {
 } from "./tierScope.js";
 import {
   ENTITY_VARIABLE,
+  type NounLookups,
   type PackAppliedFilter,
   type PackFilter,
   type PackList,
@@ -67,6 +71,10 @@ export interface ListRunMeta {
    * are. Absent leaves the read exactly as it was.
    */
   readonly tierScope?: PackTierScope;
+  /** The prefix map a prefixed IRI handed to a noun filter expands against. */
+  readonly prefixes: Readonly<Record<string, string>>;
+  /** The other stories' lookups, for a filter that names a noun. */
+  readonly nouns?: NounLookups;
 }
 
 /**
@@ -96,12 +104,18 @@ export function makeListRun(
       params,
       meta.source,
     );
-    const predicates = resolveFilterPredicates(
-      shape.filters,
-      params,
-      vocabularies,
-      meta.source.label,
-    );
+    const predicates = [
+      ...resolveFilterPredicates(
+        shape.filters?.filter((filter) => filter.noun === undefined),
+        params,
+        vocabularies,
+        meta.source.label,
+      ),
+      ...(await resolveNounPredicates(rt, shape.filters, params, meta)),
+    ];
+    const omit = (shape.filters ?? [])
+      .flatMap((filter) => (filter.entity ? [filter.entity] : []))
+      .filter((name) => !shape.columns.some((column) => column.field === name));
     const search = readSearchTerm(shape.search, params);
     const scope = await resolveReadScope(
       rt,
@@ -145,6 +159,7 @@ export function makeListRun(
       buildListQuery({
         ...read,
         ...(listScope ? { scope: listScope } : {}),
+        omit,
         window: { limit: limit + 1, offset },
       }),
       meta.source,
@@ -293,6 +308,65 @@ async function readFilterVocabularies(
     );
   }
   return resolved;
+}
+
+/**
+ * Turn the values a caller supplied for each NOUN filter into a constraint on
+ * the entities they name.
+ *
+ * @returns One `"iri"` predicate per noun filter the caller used, over the
+ *   IRIs its values reached. Against a store holding none of that noun's
+ *   entities the predicate names no IRI and the list answers empty.
+ * @throws PragmaError INVALID_INPUT when a value reaches no entity of the noun,
+ *   carrying that noun's names as `validOptions`; CONFIG_ERROR when no story
+ *   known to this one declares a lookup for the noun.
+ */
+async function resolveNounPredicates(
+  rt: PragmaRuntime,
+  filters: readonly PackFilter[] | undefined,
+  params: Record<string, unknown>,
+  meta: ListRunMeta,
+): Promise<ListPredicate[]> {
+  const predicates: ListPredicate[] = [];
+  for (const filter of filters ?? []) {
+    const provided = params[filter.param];
+    if (!filter.noun || !filter.entity || provided === undefined) continue;
+    const occurrences = Array.isArray(provided) ? provided : [provided];
+    if (occurrences.length === 0) continue;
+    const lookup = meta.nouns?.(filter.noun);
+    if (!lookup) {
+      throw PragmaError.configError(
+        `Filter "--${filter.param}" in ${meta.source.label} names the noun "${filter.noun}", and no story declares a lookup for it.`,
+      );
+    }
+    const iris = new Set<string>();
+    const refused: unknown[] = [];
+    for (const occurrence of occurrences) {
+      const reached =
+        typeof occurrence === "string" && occurrence.trim() !== ""
+          ? await resolveEntityIris(
+              rt,
+              lookup,
+              occurrence.trim().normalize("NFC"),
+              meta.source,
+              meta.prefixes,
+            )
+          : [];
+      if (reached.length === 0) refused.push(occurrence);
+      for (const iri of reached) iris.add(iri);
+    }
+    if (refused.length > 0) {
+      const names = await listEntityNames(rt, lookup, meta.source);
+      if (names.length > 0) throw refuseValues(filter, refused, names.sort());
+    }
+    predicates.push({
+      variable: filter.entity,
+      match: "iri",
+      terms: [...iris],
+      ...(filter.via ? { via: filter.via } : {}),
+    });
+  }
+  return predicates;
 }
 
 /**

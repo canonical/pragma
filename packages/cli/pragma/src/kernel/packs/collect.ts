@@ -30,7 +30,7 @@ import type { PackStoryRecord } from "../runtime/graphpack/stories.js";
 import type { CapabilityModule } from "../spec/index.js";
 import { compileStoryModule } from "./compile.js";
 import { parsePackDefinition } from "./schema.js";
-import type { PackDefinition, PackEntry } from "./types.js";
+import type { NounLookups, PackDefinition, PackEntry } from "./types.js";
 import { VERB_PATH_PATTERN } from "./types.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
 
@@ -225,6 +225,11 @@ export function assembleEffectiveModules(
   // Keyed by noun so the stronger tier REPLACES the weaker one — declaring a
   // story both on its pack and at the top level is a refinement, not an error.
   const dynamic = new Map<string, CapabilityModule>();
+  // Read at run time, so a story may name a noun a stronger tier declares
+  // after it; a noun no project story declares is the shipped one.
+  const nouns: NounLookups = (noun) =>
+    (dynamic.get(noun) ?? staticModules.find((module) => module.name === noun))
+      ?.storyLookup;
   for (const entry of packageStories) {
     dynamic.set(
       entry.definition.noun,
@@ -232,6 +237,7 @@ export function assembleEffectiveModules(
         entry.definition,
         { label: entry.source, origin: "package" },
         prefixes,
+        nouns,
       ),
     );
   }
@@ -259,6 +265,7 @@ export function assembleEffectiveModules(
           definition,
           { label: "config", origin: "config" },
           prefixes,
+          nouns,
         ),
       );
     }

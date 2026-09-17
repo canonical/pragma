@@ -97,8 +97,27 @@ const term = z.string().regex(TERM_PATTERN, "must be a prefixed name or IRI");
 const graphqlName = z.string().regex(GRAPHQL_NAME_PATTERN);
 const fieldName = z.string().regex(FIELD_PATTERN);
 
+const nounName = z.string().regex(NOUN_PATTERN, NOUN_MESSAGE);
+
+/** A `matching` expression must at least compile; the store reads it as XPath. */
+const valuePattern = z.string().refine(
+  (pattern) => {
+    try {
+      new RegExp(pattern);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  { message: '"matching" must be a regular expression' },
+);
+
 const columnSchema = z
-  .object({ field: fieldName, label: z.string().optional() })
+  .object({
+    field: fieldName,
+    label: z.string().optional(),
+    noun: nounName.optional(),
+  })
   .strict();
 
 const vocabularySchema = z
@@ -115,11 +134,24 @@ const filterSchema = z
     values: z.array(z.string()).min(1).optional(),
     match: z.enum(["exact", "set"]).optional(),
     vocabulary: vocabularySchema.optional(),
+    noun: nounName.optional(),
+    entity: fieldName.optional(),
+    via: term.optional(),
     description: z.string().optional(),
   })
   .strict()
   .refine((f) => !RESERVED_PARAMS.has(f.param), {
     message: "filter param is a reserved name",
+  })
+  // A noun filter's values are names another story resolves, and the rows are
+  // constrained by IRI — so there is no value set, vocabulary or cell
+  // comparison left for it to declare, and nothing else may claim its terms.
+  .refine((f) => !(f.noun && (f.values || f.vocabulary || f.match)), {
+    message:
+      '"noun" is mutually exclusive with "values", "vocabulary" and "match" — the named noun admits the values and the rows are matched by IRI',
+  })
+  .refine((f) => f.noun !== undefined || !(f.entity || f.via), {
+    message: '"entity" and "via" belong to a filter that names a "noun"',
   })
   // A declared `values` set IS the vocabulary — the filter projects it as an
   // enum and canonicalizes against it. A second, graph-read one alongside would
@@ -209,6 +241,8 @@ const fieldSchema = z
     label: z.string().optional(),
     graphqlField: graphqlName.optional(),
     level: z.string().optional(),
+    noun: nounName.optional(),
+    matching: valuePattern.optional(),
   })
   .strict();
 
@@ -244,8 +278,15 @@ const expandFieldSchema = z
     label: z.string().optional(),
     graphqlField: graphqlName.optional(),
     blankWhenSelf: z.literal(true).optional(),
+    many: z.literal(true).optional(),
+    noun: nounName.optional(),
+    matching: valuePattern.optional(),
   })
-  .strict();
+  .strict()
+  .refine((f) => !(f.many && f.blankWhenSelf), {
+    message:
+      '"many" and "blankWhenSelf" are mutually exclusive — a set of values has no single one to compare with the entity\'s own',
+  });
 
 const expandSchema = z
   .object({
@@ -579,6 +620,13 @@ function refineLookup(
         path: ["lookup"],
       });
     }
+    if (source === "graphql" && value.matching !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `field "${value.name}" sets "matching", which only the SPARQL lane can express — use source "sparql".`,
+        path: ["lookup"],
+      });
+    }
     if (
       source === "graphql" &&
       isPropertyPath(value.property) &&
@@ -620,6 +668,30 @@ function refineLookup(
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `expand "${expand.name}" field "${entry.name}" sets "blankWhenSelf", which only the SPARQL lane can express — set the expand's "source" to "sparql".`,
+          path: ["lookup"],
+        });
+      }
+      for (const option of ["many", "matching"] as const) {
+        if (
+          !("relation" in entry) &&
+          entry[option] !== undefined &&
+          expandSource !== "sparql"
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `expand "${expand.name}" field "${entry.name}" sets "${option}", which only the SPARQL lane can express — set the expand's "source" to "sparql".`,
+            path: ["lookup"],
+          });
+        }
+      }
+      if (
+        "many" in entry &&
+        entry.many &&
+        expand.orderBy?.includes(entry.name)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `expand "${expand.name}" orders by "${entry.name}", a "many" field — a set of values has no order to sort on.`,
           path: ["lookup"],
         });
       }

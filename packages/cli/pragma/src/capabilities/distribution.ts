@@ -49,6 +49,7 @@ export const storyModules: ReadonlyMap<string, CapabilityModule> = new Map(
       story,
       distributionSource("pragma.conf.ts"),
       DEFAULT_PREFIX_MAP,
+      (other) => declaredStories.get(other)?.lookup,
     ),
   ]),
 );

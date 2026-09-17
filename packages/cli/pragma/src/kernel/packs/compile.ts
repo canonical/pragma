@@ -42,6 +42,7 @@ import {
 import { storyIssues } from "./storyRules.js";
 import {
   EVERY_TIER,
+  type NounLookups,
   type PackDefinition,
   type PackFilter,
   type PackGuidance,
@@ -75,12 +76,15 @@ const READ_CAPABILITY = {
  * @param definition - A validated pack definition.
  * @param source - Where the definition came from, for diagnostics.
  * @param prefixes - The merged prefix map used for display compaction.
+ * @param nouns - The other stories' lookups, which a filter naming a noun
+ *   resolves its values through. Read at run time only.
  * @returns The compiled verbs (list, extra verbs, lookup, sample), in order.
  */
 export function compilePack(
   definition: PackDefinition,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  nouns?: NounLookups,
 ): VerbSpec[] {
   const { noun } = definition;
   const verbs: VerbSpec[] = [];
@@ -99,6 +103,7 @@ export function compilePack(
         ...guidanceOf(definition),
         source,
         prefixes,
+        ...(nouns ? { nouns } : {}),
         ...(tierScope ? { tierScope } : {}),
       }),
     );
@@ -114,6 +119,7 @@ export function compilePack(
         ...guidanceOf(verb),
         source,
         prefixes,
+        ...(nouns ? { nouns } : {}),
         ...(tierScope ? { tierScope } : {}),
       }),
     );
@@ -203,6 +209,7 @@ export function compileListable(
  * @param definition - A validated pack definition.
  * @param source - Where the definition came from, for diagnostics.
  * @param prefixes - The merged prefix map used for display compaction.
+ * @param nouns - As {@link compilePack}.
  * @returns The module: the compiled verbs plus the story's module-level data.
  * @throws PragmaError CONFIG_ERROR when the definition cannot be compiled,
  *   naming the field and the rule.
@@ -211,6 +218,7 @@ export function compileStoryModule(
   definition: PackDefinition,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  nouns?: NounLookups,
 ): CapabilityModule {
   const issue = storyIssues(definition)[0];
   if (issue) {
@@ -222,8 +230,9 @@ export function compileStoryModule(
   return {
     name: definition.noun,
     story: true,
-    verbs: compilePack(definition, source, prefixes),
+    verbs: compilePack(definition, source, prefixes, nouns),
     colophon: definition.colophon,
+    ...(definition.lookup ? { storyLookup: definition.lookup } : {}),
     ...(listable ? { mcpListable: listable } : {}),
   };
 }
@@ -245,6 +254,8 @@ interface ListVerbMeta extends PackGuidance {
   readonly doc?: string;
   readonly source: StorySource;
   readonly prefixes: Readonly<Record<string, string>>;
+  /** The other stories' lookups, for a filter that names a noun. */
+  readonly nouns?: NounLookups;
   /** The noun's declared tier hierarchy, when its entities are tiered. */
   readonly tierScope?: PackTierScope;
 }
@@ -289,6 +300,8 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
       runBodies().then((m) =>
         m.makeListRun(shape, {
           source: meta.source,
+          prefixes: meta.prefixes,
+          ...(meta.nouns ? { nouns: meta.nouns } : {}),
           ...(meta.tierScope ? { tierScope: meta.tierScope } : {}),
         })(params, rt),
       ),

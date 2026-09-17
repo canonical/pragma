@@ -130,7 +130,7 @@ function lookupProjection(
   const optionals = fields
     .map(
       (field) =>
-        `  OPTIONAL { ?uri ${formatTerm(field.property)} ?${field.name} . }`,
+        `  OPTIONAL { ?uri ${formatTerm(field.property)} ?${field.name} .${matchingFilter(field, field.name)} }`,
     )
     .join("\n");
   return {
@@ -138,6 +138,16 @@ function lookupProjection(
     constraint: buildTypeConstraint(lookup).trimEnd(),
     optionals,
   };
+}
+
+/** The FILTER a field's declared `matching` adds inside its OPTIONAL, or nothing. */
+function matchingFilter(
+  field: Pick<PackExpandField, "matching">,
+  variable: string,
+): string {
+  return field.matching === undefined
+    ? ""
+    : ` FILTER(REGEX(STR(?${variable}), "${escapeSparqlString(field.matching)}"))`;
 }
 
 /**
@@ -570,13 +580,28 @@ export function buildLookupIrisQuery(lookup: PackLookup, via?: string): string {
  * `lookup` is read for ONE thing — the entity's own identity property, which a
  * `blankWhenSelf` field compares its value against. A lookup declaring no such
  * field never binds it.
+ *
+ * A `many` field is aggregated to one space-separated cell, and the rows are
+ * then grouped by child — so it adds values to a row and never rows.
  */
 export function buildExpandQuery(
   expand: PackExpand,
   entityUri: string,
   lookup?: Pick<PackLookup, "by">,
 ): string {
-  const vars = expand.select.map((field) => `?${field.name}`).join(" ");
+  const fields = expand.select.filter((field) => "property" in field);
+  const single = fields.filter((field) => !field.many);
+  const vars = fields
+    .map((field) =>
+      field.many
+        ? `(GROUP_CONCAT(DISTINCT ?${eachOf(field)}; SEPARATOR=" ") AS ?${field.name})`
+        : `?${field.name}`,
+    )
+    .join(" ");
+  const group =
+    single.length === fields.length
+      ? ""
+      : `GROUP BY ?child${single.map((field) => ` ?${field.name}`).join("")}`;
   const optionals = expand.select
     .map((field) =>
       "property" in field ? expandFieldClause(field, entityUri, lookup) : "",
@@ -592,6 +617,7 @@ export function buildExpandQuery(
     `  <${entityUri}> ${formatTerm(expand.relation)} ?child .`,
     optionals,
     "}",
+    group,
     order,
   ]
     .filter((line) => line !== "")
@@ -613,7 +639,8 @@ function expandFieldClause(
   entityUri: string,
   lookup?: Pick<PackLookup, "by">,
 ): string {
-  const read = `?child ${formatTerm(field.property)} ?${field.name} .`;
+  const variable = field.many ? eachOf(field) : field.name;
+  const read = `?child ${formatTerm(field.property)} ?${variable} .${matchingFilter(field, variable)}`;
   if (!field.blankWhenSelf || !lookup) return `  OPTIONAL { ${read} }`;
   const self = `?${RESERVED_VARIABLE_PREFIX}Self`;
   return [
@@ -623,6 +650,11 @@ function expandFieldClause(
     `    FILTER(STR(?${field.name}) != STR(${self}))`,
     "  }",
   ].join("\n");
+}
+
+/** The variable one value of a `many` field is bound to before aggregation. */
+function eachOf(field: PackExpandField): string {
+  return `${RESERVED_VARIABLE_PREFIX}Each_${field.name}`;
 }
 
 /** Build the SELECT listing all entity names — lookup-miss suggestions. */
