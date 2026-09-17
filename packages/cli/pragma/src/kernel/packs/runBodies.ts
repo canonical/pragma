@@ -259,6 +259,7 @@ export function makeLookupRun(
   noun: string,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  hasList: boolean,
   tierScope?: PackTierScope,
 ): (
   params: Record<string, unknown>,
@@ -276,6 +277,7 @@ export function makeLookupRun(
       source,
       prefixes,
       level,
+      hasList,
       lookupScope(tierScope, scope),
     );
     // A total miss (single or all-miss) exits non-zero; a partial batch renders
@@ -287,7 +289,7 @@ export function makeLookupRun(
           code: first.code as PragmaError["code"],
           message: first.message,
           suggestions: first.suggestions ? [...first.suggestions] : undefined,
-          recovery: listRecovery(noun),
+          recovery: listRecovery(noun, hasList),
         });
       }
     }
@@ -331,6 +333,7 @@ export function makeSampleRun(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   defaultCount: number,
+  hasList: boolean,
 ): (
   params: Record<string, unknown>,
   rt: PragmaRuntime,
@@ -343,7 +346,7 @@ export function makeSampleRun(
     if (names.length === 0) {
       throw PragmaError.emptyResults(noun, {
         message: `No ${noun} entries to sample.`,
-        recovery: listRecovery(noun),
+        recovery: listRecovery(noun, hasList),
       });
     }
     const selected = pickRandom(names, count);
@@ -355,6 +358,7 @@ export function makeSampleRun(
       source,
       prefixes,
       HIGHEST_LEVEL,
+      hasList,
     );
     return {
       samples: output.results,

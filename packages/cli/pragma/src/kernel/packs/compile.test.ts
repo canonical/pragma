@@ -12,6 +12,7 @@ import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import { PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/types.js";
+import { declareVerbs } from "../spec/call.js";
 import { kebabCase } from "../spec/emitSurface.js";
 import type { VerbSpec } from "../spec/types.js";
 import { compileListable, compilePack, compileStoryModule } from "./compile.js";
@@ -396,6 +397,11 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
       prefixes: PREFIXES,
       detail: "detailed",
     }));
+    // A miss recovers to `widget list`; the suite checks every call it renders
+    // against the declared verbs, and a fixture's are not the distribution's.
+    declareVerbs(
+      compilePack(WIDGET_PACK, distributionSource("bundled:widget"), PREFIXES),
+    );
   });
 
   afterAll(async () => {

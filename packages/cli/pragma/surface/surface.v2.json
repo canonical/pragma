@@ -510,6 +510,6 @@
     "projectConfigLoad": "<10ms",
     "warmStoreVerb": "<300ms",
     "mcpP95Warm": "<100ms",
-    "condensedSDL": "<=10000 tokens"
+    "condensedSDL": "<=9700 tokens"
   }
 }

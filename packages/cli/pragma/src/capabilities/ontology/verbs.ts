@@ -74,8 +74,7 @@ const listVerb: VerbSpec<Record<string, unknown>, OntologySummary[]> = {
   path: ["ontology", "list"],
   summary: "List loaded ontology namespaces with class and property counts.",
   useWhen:
-    "Use when asked which vocabularies (namespaces and their prefixes) the data uses — the first step before writing a raw query.",
-  example: {},
+    "when asked which vocabularies (namespaces and their prefixes) the data uses — the first step before writing a raw query",
   params: [],
   output: { formatters: ontologyListFormatters },
   examples: [{ cmd: `${BIN_NAME} ontology list` }],
@@ -218,7 +217,7 @@ export const ontologyLookupVerb = asVerb({
   path: ["ontology", "lookup"],
   summary: "Look up a namespace's classes (hierarchy + counts) and properties.",
   useWhen:
-    "Use when asked which kinds of thing and which properties one vocabulary defines, so a raw query names real terms.",
+    "before writing a raw query, to find the real class and property names under one prefix",
   example: { prefix: "ds" },
   params: BY_NAME_PARAMS,
   output: { formatters: ontologyShowFormatters },

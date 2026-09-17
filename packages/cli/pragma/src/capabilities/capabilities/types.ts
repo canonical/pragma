@@ -8,10 +8,7 @@
  * derivation.
  */
 
-import type {
-  DiscoveryStage,
-  ToolCategory,
-} from "../../kernel/spec/guidance.js";
+import type { DiscoveryStage, ToolCategory } from "../../kernel/spec/index.js";
 
 export type { DiscoveryStage, ToolCategory };
 
@@ -39,8 +36,6 @@ export interface CapabilitiesData {
   readonly conventions: {
     readonly system: string;
     readonly model: string;
-    /** Which tools read components, patterns, layouts and subcomponents. */
-    readonly blocks: string;
     readonly querying: string;
     /** The plan-first/confirm gate every mutating tool follows (D2). */
     readonly mutations: string;

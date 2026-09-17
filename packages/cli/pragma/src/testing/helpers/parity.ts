@@ -7,7 +7,10 @@
  * no separate condensed/text/tokens MCP shape in v2 (confirmed:
  * `mcp/envelope.ts` reuses the CLI's envelope builders verbatim), so parity
  * simplifies to structural data-equality — no byte-exact `condensed ===
- * fmt.llm(...)` comparison to reproduce. This generalizes the pattern already
+ * fmt.llm(...)` comparison to reproduce. The contract has ONE exception, and
+ * the asserter normalises exactly it: the sentence in `meta.notice` may spell a
+ * next step as a command on the CLI and as a tool call over MCP. Both surfaces
+ * must carry a notice or neither may; everything else is deep-equal. This generalizes the pattern already
  * proven ad hoc in `mcp/parity.test.ts` (`probe echo`) and `sources.test.ts`
  * (`sources status`) into one reusable helper every read noun's tests drive.
  */
@@ -51,6 +54,22 @@ export interface ParityCase {
   readonly flags?: Partial<GlobalFlags>;
 }
 
+/** An envelope's `meta.notice` sentence, if it carries one. */
+export function noticeOf(
+  envelope: Record<string, unknown>,
+): string | undefined {
+  return (envelope.meta as { notice?: string } | undefined)?.notice;
+}
+
+/** The envelope minus the one field whose spelling follows the surface. */
+function withoutNotice(envelope: Record<string, unknown>): unknown {
+  const { notice: _notice, ...meta } = (envelope.meta ?? {}) as Record<
+    string,
+    unknown
+  >;
+  return { ...envelope, meta };
+}
+
 /**
  * Run the same read through the CLI (`--format json`) and MCP, and assert the
  * two envelopes are deep-equal.
@@ -81,6 +100,9 @@ export async function assertCliMcpParity(
     await mcp.cleanup();
   }
 
-  expect(cliEnvelope).toEqual(mcpEnvelope);
+  expect(withoutNotice(cliEnvelope)).toEqual(withoutNotice(mcpEnvelope));
+  expect(noticeOf(cliEnvelope) === undefined).toBe(
+    noticeOf(mcpEnvelope) === undefined,
+  );
   return cliEnvelope;
 }

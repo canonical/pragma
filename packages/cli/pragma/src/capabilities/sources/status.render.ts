@@ -4,8 +4,9 @@
 
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import { describeIgnoredPack } from "../../kernel/runtime/resolveSources.js";
-import { type Call, renderCall } from "../../kernel/spec/call.js";
+import { renderCall } from "../../kernel/spec/call.js";
 import type { Formatters } from "../../kernel/spec/index.js";
+import { BUILD_STORE_CALL } from "../shared/calls.js";
 import type { SourcesStatusData } from "./types.js";
 
 /**
@@ -14,15 +15,12 @@ import type { SourcesStatusData } from "./types.js";
  * so reporting it as "up to date" would be a lie.
  */
 function storeHeadline(store: SourcesStatusData["store"]): string {
-  const update = `run \`${renderCall(STATUS_NEXT_CALL, "cli")}\``;
+  const update = `run \`${renderCall(BUILD_STORE_CALL, "cli")}\``;
   if (store === "built") return "ready";
   return store === "embedded"
     ? `embedded snapshot (${update} to build from the configured packs)`
     : `not built (${update})`;
 }
-
-/** The call a status that is not `built` points at. */
-export const STATUS_NEXT_CALL: Call = { verb: "sources update" };
 
 /**
  * Render `sources status` as plain text.

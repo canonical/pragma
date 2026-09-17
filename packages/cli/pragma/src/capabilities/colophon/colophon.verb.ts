@@ -18,8 +18,7 @@ const colophonVerb: VerbSpec<Record<string, unknown>, ColophonData> = {
   summary: "Narrate how the active domain is made.",
   doc: `Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one ${BIN_NAME} declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.`,
   useWhen:
-    "Use when asked how this design-system data is put together — for onboarding or a demo.",
-  example: {},
+    "when asked which packs the data comes from and how it was put together",
   params: [],
   output: { formatters: colophonFormatters },
   examples: [

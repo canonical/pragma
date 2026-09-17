@@ -9,7 +9,7 @@
  */
 
 import { renderCall } from "../../spec/call.js";
-import { exampleCall } from "../../spec/guidance.js";
+import { exampleCall, useWhenSentence } from "../../spec/guidance.js";
 import type { Example, ParamSpec, VerbSpec } from "../../spec/index.js";
 import { kebabCase } from "../../spec/index.js";
 import { MUTATION_FLAG_DOCS, negationFlagDoc } from "./constants.js";
@@ -60,7 +60,8 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
   ];
 
   if (verb.doc) lines.push("", verb.doc);
-  if (verb.useWhen) lines.push("", verb.useWhen);
+  const question = useWhenSentence(verb);
+  if (question) lines.push("", question);
 
   // Every flag the command PARSES is rendered, from the same spec facts
   // registration reads: the declared params, each default-true boolean's

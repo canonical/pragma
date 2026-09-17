@@ -99,7 +99,7 @@ Discover pragma conventions, the annotated tool catalog, and the discovery seque
 
 Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.
 
-Use at the start of a session, or when unsure which tool answers a question: it lists every tool with the question it answers.
+Use when unsure which tool answers a question.
 
 ```
 pragma capabilities
@@ -123,7 +123,7 @@ Narrate how the active domain is made.
 
 Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
-Use when asked how this design-system data is put together — for onboarding or a demo.
+Use when asked which packs the data comes from and how it was put together.
 
 ```
 pragma colophon
@@ -528,7 +528,7 @@ Run a raw SPARQL query against the loaded graph.
 
 Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes.
 
-Use only when no specific tool answers the question: a custom SPARQL query for joins or counts across the whole graph. Check ontology_list for the real prefixes first.
+Use only when no other tool answers the question, for joins or counts across all the data.
 
 ```
 pragma graph query <sparql>
@@ -764,7 +764,7 @@ pragma ontology list
 
 Look up a namespace's classes (hierarchy + counts) and properties.
 
-Use when asked which kinds of thing and which properties one vocabulary defines, so a raw query names real terms.
+Use before writing a raw query, to find the real class and property names under one prefix.
 
 ```
 pragma ontology lookup <prefix> [options]
@@ -1009,7 +1009,7 @@ pragma skill list
 
 Show a skill's metadata and instructions by name.
 
-Use when asked to follow one skill: it returns the skill's full instructions.
+Use when asked to follow one skill.
 
 ```
 pragma skill lookup <name>
@@ -1038,7 +1038,7 @@ Remove this project's built pack.
 
 Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again; a project that declares its own packs cannot answer reads until the next `sources update`. The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built.
 
-Use when asked to go back to the data shipped with the tool, dropping the pack this project built.
+Use to discard locally built data and return to the data shipped with the tool.
 
 ```
 pragma sources reset
@@ -1174,7 +1174,7 @@ Look up one or more standards by name, IRI, or glob. --detail standard adds the 
 
 Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those.
 
-Use when asked how code should be written under one rule — it returns the do and don't examples.
+Use when asked how code should be written under one rule.
 
 ```
 pragma standard lookup <name...>

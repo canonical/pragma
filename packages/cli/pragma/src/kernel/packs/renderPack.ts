@@ -24,9 +24,8 @@ import {
   renderLookupLlm,
   renderLookupPlain,
 } from "../render/renderers.js";
-import { renderNextStep, type Surface } from "../spec/call.js";
-import type { Formatters } from "../spec/index.js";
-import { kebabCase } from "../spec/index.js";
+import { quoteArgument, renderNextStep } from "../spec/call.js";
+import type { Formatters, Surface } from "../spec/index.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import {
   EVERY_TIER,
@@ -38,6 +37,7 @@ import {
   type PackLookup,
   type PackPage,
   type PackRow,
+  TIER_PARAM,
 } from "./types.js";
 
 /** Sample output: the drawn exemplars, the population size, and agent follow-ups. */
@@ -100,13 +100,19 @@ export function listFormatters(
   // `emptyRecovery` becomes the hint; otherwise the generic build/broaden hint.
   // Built per call, not once: the hint ends in the next call to make, spelled
   // for the surface that is about to print it.
-  const { message, call } = shape.emptyRecovery ?? DEFAULT_EMPTY_RECOVERY;
+  const recovery = shape.emptyRecovery ?? DEFAULT_EMPTY_RECOVERY;
+  const hintFor = (surface: Surface): string =>
+    [recovery, ...(recovery.also ?? [])]
+      .map(({ message, call }) =>
+        call ? `${message} ${renderNextStep(call, surface)}` : message,
+      )
+      .join(" ");
   const optionsFor = (surface: Surface): RenderListOptions<PackRow> => ({
     heading: meta.heading,
     columns,
     prefixes: meta.prefixes,
     emptyMessage: `No ${meta.noun} entries found.`,
-    emptyHint: call ? `${message} ${renderNextStep(call, surface)}` : message,
+    emptyHint: hintFor(surface),
   });
   return {
     plain: (page, context) =>
@@ -114,7 +120,7 @@ export function listFormatters(
     llm: (page) => {
       const body = renderListLlm(
         page.rows,
-        emptyCopy(page, meta, optionsFor("cli")),
+        emptyCopy(page, meta, optionsFor("cli"), "cli"),
         {
           more: page.nextAfter !== undefined,
           ...(scopeText(page) === undefined
@@ -122,7 +128,7 @@ export function listFormatters(
             : { scope: scopeText(page) as string }),
         },
       );
-      const notice = listNotice(page, meta);
+      const notice = listNotice(page, meta, "cli");
       return notice ? `${body}\n\n${notice}` : body;
     },
     json: (page) => JSON.stringify(page.rows, null, 2),
@@ -131,10 +137,12 @@ export function listFormatters(
     notice: (page, surface = "cli") =>
       page.rows.length === 0
         ? joinNotices([
-            renderListEmptyNotice(emptyCopy(page, meta, optionsFor(surface))),
-            scopeNotice(page),
+            renderListEmptyNotice(
+              emptyCopy(page, meta, optionsFor(surface), surface),
+            ),
+            scopeNotice(page, surface),
           ])
-        : listNotice(page, meta),
+        : listNotice(page, meta, surface),
     // The scope rides the envelope as DATA as well as prose: an agent deciding
     // whether to widen the read should not have to parse a sentence to learn
     // which tiers it got.
@@ -156,18 +164,25 @@ function scopeText(page: PackPage): string | undefined {
  * the scope — and the notice seam is where this package already puts what the
  * data cannot say about itself.
  */
-function scopeNotice(page: PackPage): string | undefined {
+function scopeNotice(page: PackPage, surface: Surface): string | undefined {
   const scope = scopeText(page);
   if (scope === undefined) return undefined;
   return (
     `Tier scope: ${scope}. ` +
-    `Pass \`--tier <name>\` for one tier and its ancestors, or \`--tier ${EVERY_TIER}\` for every tier.`
+    `Pass ${quoteArgument(TIER_PARAM, "<name>", surface)} for one tier and its ancestors, or ${quoteArgument(TIER_PARAM, EVERY_TIER, surface)} for every tier.`
   );
 }
 
 /** The page's notices, in the order a reader needs them: scope, then paging. */
-function listNotice(page: PackPage, meta: RenderMeta): string | undefined {
-  return joinNotices([scopeNotice(page), pageNotice(page, meta)]);
+function listNotice(
+  page: PackPage,
+  meta: RenderMeta,
+  surface: Surface,
+): string | undefined {
+  return joinNotices([
+    scopeNotice(page, surface),
+    pageNotice(page, meta, surface),
+  ]);
 }
 
 /** Join what a page has to say into one notice, dropping what it has not. */
@@ -208,19 +223,23 @@ function emptyCopy(
   page: PackPage,
   meta: RenderMeta,
   base: RenderListOptions<PackRow>,
+  surface: Surface,
 ): RenderListOptions<PackRow> {
   const applied = page.filters ?? [];
   if (page.rows.length > 0 || applied.length === 0) return base;
   return {
     ...base,
-    emptyMessage: `No ${meta.noun} matches ${listFilters(applied)}.`,
+    emptyMessage: `No ${meta.noun} matches ${listFilters(applied, surface)}.`,
   };
 }
 
 /** The filters in force, as flags a reader can edit: `\`--kind input\`` … */
-function listFilters(applied: readonly PackAppliedFilter[]): string {
-  const flags = applied.map(
-    (filter) => `\`--${kebabCase(filter.param)} ${filter.value}\``,
+function listFilters(
+  applied: readonly PackAppliedFilter[],
+  surface: Surface,
+): string {
+  const flags = applied.map((filter) =>
+    quoteArgument(filter.param, filter.value, surface),
   );
   const last = flags.at(-1) as string;
   return flags.length === 1
@@ -237,12 +256,16 @@ function listFilters(applied: readonly PackAppliedFilter[]): string {
  * that carry this are read by agents — so the sentence contains the flag, the
  * value, and the tool parameter, ready to copy.
  */
-function pageNotice(page: PackPage, meta: RenderMeta): string | undefined {
+function pageNotice(
+  page: PackPage,
+  meta: RenderMeta,
+  surface: Surface,
+): string | undefined {
   if (page.nextAfter === undefined) return undefined;
   return (
     `Showing ${page.rows.length} ${meta.noun} entries, and more exist. ` +
-    `For the next page pass \`--after ${page.nextAfter}\` ` +
-    `(\`after\` over MCP), or raise \`--limit\` (currently ${page.limit}).`
+    `For the next page pass ${quoteArgument("after", page.nextAfter, surface)}, ` +
+    `or raise ${surface === "mcp" ? "`limit`" : "`--limit`"} (currently ${page.limit}).`
   );
 }
 

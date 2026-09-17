@@ -6,10 +6,11 @@ import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { renderCall } from "../../kernel/spec/call.js";
 import { emitSurface, toolName } from "../../kernel/spec/emitSurface.js";
+import { exampleCall } from "../../kernel/spec/guidance.js";
 import type { GlobalFlags, VerbSpec } from "../../kernel/spec/types.js";
 import { capabilities } from "../index.js";
 import { capabilitiesSelfVerb } from "./capabilities.verb.js";
-import { buildCapabilitiesData, liveTools, mutatingTools } from "./catalog.js";
+import { buildCapabilitiesData, liveTools } from "./catalog.js";
 import type { CapabilitiesData } from "./types.js";
 
 const NO_MUT = { dryRun: false, undo: false, yes: false };
@@ -23,6 +24,13 @@ const FLAGS: GlobalFlags = {
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-caps-"));
 const tools = liveTools(capabilities);
 const data = buildCapabilitiesData(capabilities);
+/** The tools whose verbs mutate, read straight off the registry. */
+const mutating = new Set(
+  capabilities
+    .flatMap((module) => module.verbs)
+    .filter((verb) => verb.capability.mutates && verb.capability.mcp.expose)
+    .map((verb) => toolName(verb.path)),
+);
 
 describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", () => {
   // The catalogue has no table of its own to drift: each entry is read off the
@@ -36,8 +44,9 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
     for (const tool of data.tools) {
       const verb = verbs.get(tool.name) as VerbSpec;
       expect(tool.use_when, tool.name).toBe(verb.useWhen);
+      const example = exampleCall(verb);
       expect(tool.example, tool.name).toBe(
-        renderCall({ verb: verb.path.join(" "), params: verb.example }, "mcp"),
+        example ? renderCall(example, "mcp") : undefined,
       );
     }
   });
@@ -59,7 +68,6 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
   });
 
   it("categories agree with the live surface (write ⟺ mutates)", () => {
-    const mutating = mutatingTools(capabilities);
     for (const tool of data.tools) {
       expect(tool.category === "write", tool.name).toBe(
         mutating.has(tool.name),
@@ -87,7 +95,7 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
     ).toBe(counts.total);
     expect(counts.orientation).toBe(1); // exactly `capabilities`
     expect(counts.diagnostic).toBe(2); // `doctor` + `info`
-    expect(counts.write).toBe(mutatingTools(capabilities).size);
+    expect(counts.write).toBe(mutating.size);
   });
 
   it("the discovery sequence's sample stage lists the live *_sample tools", () => {

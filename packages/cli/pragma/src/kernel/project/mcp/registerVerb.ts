@@ -153,7 +153,8 @@ function withDetail(
  * `{"ok":true,"data":[],"meta":{}}` — and, later, could not tell an unambiguous
  * lookup hit from one of three blocks sharing a name. Riding in `meta` keeps
  * `data` its uniform shape while making both of those ≠ silence, and the CLI's
- * `--format json` carries the same key so the two surfaces stay byte-equal.
+ * `--format json` carries the same key. The sentence is the ONE place the two
+ * envelopes may differ: a next step inside it is spelled for its surface.
  */
 function noticeMeta(verb: VerbSpec, data: unknown): Record<string, unknown> {
   const notice = verb.output.formatters.notice?.(data as never, "mcp");
@@ -180,7 +181,7 @@ function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
         // answered it: a pack this project built that the boot passed over
         // because an older CLI built it. The CLI's `--format json` merges the
         // same key from the same place (`cli/dispatch.ts#storeMeta`), so the
-        // two machine surfaces stay byte-equal.
+        // two machine surfaces carry the same fact under the same key.
         ...(session?.ignoredPack ? { ignoredPack: session.ignoredPack } : {}),
         ...noticeMeta(verb, result),
       });

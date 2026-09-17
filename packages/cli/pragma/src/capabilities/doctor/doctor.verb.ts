@@ -28,8 +28,7 @@ const doctorVerb: VerbSpec<Record<string, unknown>, DoctorData> = {
   // "the verbose global flag" rather than by its spelling.
   doc: "Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.",
   useWhen:
-    "Use when something is not working — setup, completions, the MCP connection, the data store — and you need to know what is wrong.",
-  example: {},
+    "when something is not working — setup, completions, the MCP connection, the data store — and you need to know what is wrong",
   category: "diagnostic",
   params: [],
   output: { formatters: doctorFormatters },

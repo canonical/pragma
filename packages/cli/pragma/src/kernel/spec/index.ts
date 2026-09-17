@@ -23,14 +23,19 @@ export {
 export type { Covenant } from "./surfaceConformance.js";
 export { assertConforms, deepEqual } from "./surfaceConformance.js";
 export type {
+  Call,
   Capability,
   CapabilityModule,
   DisclosureSpec,
+  DiscoveryStage,
   Example,
   Formatters,
   McpAnnotations,
+  McpOrientation,
   McpResourceProvider,
   ParamComplete,
   ParamSpec,
+  Surface,
+  ToolCategory,
   VerbSpec,
 } from "./types.js";

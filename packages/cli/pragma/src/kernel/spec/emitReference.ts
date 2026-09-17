@@ -24,7 +24,7 @@ import {
   toolName,
   verbLabel,
 } from "./emitSurface.js";
-import { describeTool } from "./guidance.js";
+import { describeTool, useWhenSentence } from "./guidance.js";
 import type {
   CapabilityModule,
   Example,
@@ -261,7 +261,7 @@ function renderCommandSection(
     `### ${formatInvocation(verb)}`,
     verb.summary,
     verb.doc ?? "",
-    verb.useWhen ?? "",
+    useWhenSentence(verb) ?? "",
     `\`\`\`\n${syntax ? `${BIN_NAME} ${syntax.usage}` : formatUsage(verb)}\n\`\`\``,
     formatArgsTable(verb.params, syntax?.positionalTokens),
     formatFlagsTable(verb.params, syntax?.flagTokens),

@@ -511,7 +511,7 @@ export const createVerbs: Record<
     ],
     {
       useWhen:
-        "Use when asked to start a new React, Svelte or Lit component with its tests, stories and styles.",
+        "when asked to start a new React, Svelte or Lit component with its tests, stories and styles",
       example: { framework: "react", componentPath: "src/components/Button" },
     },
   ),
@@ -528,7 +528,7 @@ export const createVerbs: Record<
       },
     ],
     {
-      useWhen: "Use when asked to start a new npm package inside the monorepo.",
+      useWhen: "when asked to start a new npm package inside the monorepo",
       example: { name: "@canonical/my-lib", type: "library" },
     },
   ),
@@ -543,7 +543,7 @@ export const createVerbs: Record<
     ],
     {
       useWhen:
-        "Use when asked to start a new React application, server-rendered or client-only.",
+        "when asked to start a new React application, server-rendered or client-only",
       example: { appPath: "my-app" },
     },
   ),

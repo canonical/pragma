@@ -12,8 +12,28 @@
  */
 
 import type { Effect, Task } from "@canonical/task";
-import type { PragmaRuntime } from "../runtime/types.js";
-import type { Surface } from "./call.js";
+import type { InteractionRuntime, PragmaRuntime } from "../runtime/types.js";
+
+/** Where text is about to be printed — the projector driving the run. */
+export type Surface = InteractionRuntime["transport"];
+
+/**
+ * A verb path (`"sources update"`) and the params to call it with — the one
+ * type behind every example and every recovery (`call.ts` spells it).
+ */
+export interface Call {
+  readonly verb: string;
+  readonly params?: Readonly<Record<string, unknown>>;
+  /**
+   * GLOBAL CLI flags the command should carry (`--verbose`). They are not
+   * params of the verb and have no MCP counterpart, so only the CLI spelling
+   * renders them.
+   */
+  readonly cliFlags?: readonly string[];
+}
+
+/** A tool's behavioural category, used for grouping + counts. */
+export type ToolCategory = "read" | "write" | "orientation" | "diagnostic";
 
 /** MCP tool annotations mirrored onto exposed verbs. */
 export type McpAnnotations = {
@@ -255,15 +275,20 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
   readonly summary: string;
   readonly doc?: string;
   /**
-   * The question a person would ask that this verb answers, in THEIR words
-   * ("Use when asked which components use a token"). With {@link example} it is
+   * The question a person would ask that this verb answers, in THEIR words, as
+   * a bare clause ("when asked which components use a token" — prose adds the
+   * "Use" lead, the catalogue's `use_when` field needs none). With {@link example} it is
    * the one source of guidance: `guidance.ts` builds the MCP tool description,
    * the `capabilities` catalogue and verb help from it, so none is typed twice.
    * Optional in the type because a third-party story may omit it; every verb
    * this distribution registers is held to it by `callRule.test.ts`.
    */
   readonly useWhen?: string;
-  /** One real call's params — the verb is this one, and both spellings derive. */
+  /**
+   * One real call's params — the verb is this one, and both spellings derive.
+   * Required of a verb with a required param; a verb callable with no arguments
+   * declares none, because `tool {}` teaches nothing.
+   */
   readonly example?: Readonly<Record<string, unknown>>;
   /** The catalogue group, where it is not the default: a mutating verb is a `write`, any other a `read`. */
   readonly category?: "orientation" | "diagnostic";
@@ -524,6 +549,27 @@ export interface CliProjection {
   ) => ReferenceCliSyntax | undefined;
 }
 
+/** A single stage in the discovery flow an agent follows at session start. */
+export interface DiscoveryStage {
+  readonly stage: number;
+  readonly tool: string;
+  readonly purpose: string;
+}
+
+/**
+ * What a distribution tells an agent at the MCP handshake, as DATA. The kernel
+ * lays it out and holds it to a length ceiling; it writes none of the words,
+ * because they name the distribution's own tools and tiers.
+ */
+export interface McpOrientation {
+  /** The sentences the instructions open with, in order. */
+  readonly conventions: readonly string[];
+  /** The discovery sequence, given the live tool names. */
+  readonly discovery: (tools: readonly string[]) => readonly DiscoveryStage[];
+  /** The closing pointer, given the advertised resource templates. */
+  readonly closing: (resourceTemplates: string) => string;
+}
+
 /** A capability module: a named bundle of verbs with optional boot/resources/prompts hooks. */
 export interface CapabilityModule {
   readonly name: string;
@@ -546,6 +592,8 @@ export interface CapabilityModule {
    */
   readonly story?: true;
   readonly boot?: (rt: PragmaRuntime) => void;
+  /** The handshake orientation (a module hook; one module declares it). */
+  readonly mcpOrientation?: McpOrientation;
   /** An optional MCP resource surface (NOT a VerbSpec field — a module hook). */
   readonly mcpResources?: McpResourceProvider;
   /**

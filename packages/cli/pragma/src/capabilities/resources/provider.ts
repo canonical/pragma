@@ -46,12 +46,14 @@ import type {
 } from "../../kernel/runtime/graphpack/types.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
 import { resolveSources } from "../../kernel/runtime/resolveSources.js";
+import { renderNextStep } from "../../kernel/spec/call.js";
 import type {
   CapabilityModule,
   McpListable,
   McpListableRef,
   McpResourceProvider,
 } from "../../kernel/spec/types.js";
+import { BUILD_STORE_CALL } from "../shared/calls.js";
 
 /**
  * The weight an unweighted slice carries — "as important as any other".
@@ -181,7 +183,9 @@ function listEntity(
 }
 
 /** The recovery entry a missing/legacy index degrades to (and its read body). */
-const SOURCES_RECOVERY = `No enriched entity index. Run \`${BIN_NAME} sources update\` to build it.`;
+// This surface is MCP-only, so the next step is always spelled as a tool call.
+const describeNoIndex = (): string =>
+  `No enriched entity index: the store needs building. ${renderNextStep(BUILD_STORE_CALL, "mcp")}`;
 
 /** The single entry a server with no usable index advertises. */
 function sourcesEntry(): ListedResource {
@@ -189,7 +193,7 @@ function sourcesEntry(): ListedResource {
     uri: SOURCES_URI,
     name: SOURCES_VARIABLE,
     title: "Store not indexed",
-    description: SOURCES_RECOVERY,
+    description: describeNoIndex(),
     mimeType: RECOVERY_MIME_TYPE,
   };
 }
@@ -491,7 +495,7 @@ export const resourceProvider: McpResourceProvider = {
                 {
                   uri: url.href,
                   mimeType: RECOVERY_MIME_TYPE,
-                  text: SOURCES_RECOVERY,
+                  text: describeNoIndex(),
                 },
               ],
             };

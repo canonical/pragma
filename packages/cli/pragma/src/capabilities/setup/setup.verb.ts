@@ -434,7 +434,6 @@ function setupVerb(
   return {
     path,
     summary,
-    example: {},
     params: SCOPE_PARAMS,
     output: {
       formatters: setupFormatters,
@@ -457,7 +456,7 @@ const setupAllVerb = setupVerb(
   SELF_CAPABILITY,
   {
     useWhen:
-      "Use when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension.",
+      "when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension",
     doc: "Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.",
     examples: [
       { cmd: `${BIN_NAME} setup` },
@@ -482,7 +481,7 @@ const configVerb = setupVerb(
   "Create your global config file, filled in with the defaults.",
   "config",
   SUB_CAPABILITY,
-  { useWhen: "Use when asked to create only the global config file." },
+  { useWhen: "when asked to create only the global config file" },
 );
 
 const mcpVerb = setupVerb(
@@ -492,7 +491,7 @@ const mcpVerb = setupVerb(
   SUB_CAPABILITY,
   {
     useWhen:
-      "Use when asked to connect only the MCP server to the AI tools on this machine.",
+      "when asked to connect only the MCP server to the AI tools on this machine",
   },
 );
 
@@ -501,7 +500,7 @@ const completionsVerb = setupVerb(
   "Install TAB completion for the shell you are running.",
   "completions",
   SUB_CAPABILITY,
-  { useWhen: "Use when asked to install only TAB completion for the shell." },
+  { useWhen: "when asked to install only TAB completion for the shell" },
 );
 
 const skillsVerb = setupVerb(
@@ -511,7 +510,7 @@ const skillsVerb = setupVerb(
   SUB_CAPABILITY,
   {
     useWhen:
-      "Use when asked to make only the installed skills visible to the AI tools on this machine.",
+      "when asked to make only the installed skills visible to the AI tools on this machine",
   },
 );
 
@@ -521,8 +520,7 @@ const lspVerb = setupVerb(
   "lsp",
   SUB_CAPABILITY,
   {
-    useWhen:
-      "Use when asked to install only the design-token editor extension.",
+    useWhen: "when asked to install only the design-token editor extension",
   },
 );
 

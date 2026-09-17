@@ -86,6 +86,8 @@ export function compilePack(
   const verbs: VerbSpec[] = [];
 
   const tierScope = definition.tierScope;
+  // A story may declare a lookup alone; a miss must not point at a `list` it lacks.
+  const hasList = definition.list !== undefined;
 
   if (definition.list) {
     verbs.push(
@@ -119,10 +121,19 @@ export function compilePack(
 
   if (definition.lookup) {
     verbs.push(
-      compileLookupVerb(definition.lookup, noun, source, prefixes, tierScope),
+      compileLookupVerb(
+        definition.lookup,
+        noun,
+        source,
+        prefixes,
+        hasList,
+        tierScope,
+      ),
     );
     if (definition.lookup.sample) {
-      verbs.push(compileSampleVerb(definition.lookup, noun, source, prefixes));
+      verbs.push(
+        compileSampleVerb(definition.lookup, noun, source, prefixes, hasList),
+      );
     }
   }
 
@@ -297,6 +308,7 @@ function compileLookupVerb(
   noun: string,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  hasList: boolean,
   tierScope?: PackTierScope,
 ): VerbSpec {
   // Derive-by-default: every lookup completes its `<name>` from the pack index
@@ -351,7 +363,14 @@ function compileLookupVerb(
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
       runBodies().then((m) =>
-        m.makeLookupRun(lookup, noun, source, prefixes, tierScope)(params, rt),
+        m.makeLookupRun(
+          lookup,
+          noun,
+          source,
+          prefixes,
+          hasList,
+          tierScope,
+        )(params, rt),
       ),
   };
   return asVerb(verb);
@@ -387,6 +406,7 @@ function compileSampleVerb(
   noun: string,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  hasList: boolean,
 ): VerbSpec {
   const defaultCount = sampleDefaultCount(lookup);
   const config = lookup.sample === true ? undefined : lookup.sample;
@@ -425,6 +445,7 @@ function compileSampleVerb(
           source,
           prefixes,
           defaultCount,
+          hasList,
         )(params, rt),
       ),
   };

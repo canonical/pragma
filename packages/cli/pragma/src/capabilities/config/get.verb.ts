@@ -40,7 +40,7 @@ const getVerb: VerbSpec<Record<string, unknown>, ConfigGetData> = {
   summary: "Print one resolved config value.",
   doc: "Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell.",
   useWhen:
-    "Use when asked for the current value of one setting, such as the default tier.",
+    "when asked for the current value of one setting, such as the default tier",
   example: { key: "tier" },
   params: [
     {

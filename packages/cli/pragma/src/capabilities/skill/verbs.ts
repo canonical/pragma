@@ -25,9 +25,7 @@ export interface SkillLookup extends DiscoveredSkill {
 const listVerb: VerbSpec<Record<string, unknown>, DiscoveredSkill[]> = {
   path: ["skill", "list"],
   summary: "List discovered skills (SKILL.md files under the skill roots).",
-  useWhen:
-    "Use when asked which agent skills (guided workflows) are available.",
-  example: {},
+  useWhen: "when asked which agent skills (guided workflows) are available",
   params: [],
   output: { formatters: skillListFormatters },
   examples: [{ cmd: `${BIN_NAME} skill list` }],
@@ -46,8 +44,7 @@ const listVerb: VerbSpec<Record<string, unknown>, DiscoveredSkill[]> = {
 const lookupVerb: VerbSpec<Record<string, unknown>, SkillLookup> = {
   path: ["skill", "lookup"],
   summary: "Show a skill's metadata and instructions by name.",
-  useWhen:
-    "Use when asked to follow one skill: it returns the skill's full instructions.",
+  useWhen: "when asked to follow one skill",
   example: { name: "specify-component" },
   params: [
     {

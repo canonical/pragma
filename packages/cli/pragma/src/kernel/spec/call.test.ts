@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { isDeclaredVerb, renderNextStep } from "./call.js";
+import {
+  quoteArgument,
+  quoteCall,
+  renderCall,
+  renderNextStep,
+} from "./call.js";
 
 describe("a call is spelled for the surface it is printed on", () => {
   const call = { verb: "token lookup", params: { name: ["color.text"] } };
@@ -13,9 +18,59 @@ describe("a call is spelled for the surface it is printed on", () => {
     );
   });
 
-  it("knows which verbs the distribution declares", () => {
-    expect(isDeclaredVerb("token lookup")).toBe(true);
-    expect(isDeclaredVerb("token nonsense")).toBe(false);
+  it("a next step to a mutating tool confirms over MCP; an example never does", () => {
+    const update = { verb: "sources update" };
+    expect(renderNextStep(update, "mcp")).toBe(
+      "Call `sources_update { confirm: true }`.",
+    );
+    expect(renderNextStep(update, "cli")).toBe("Run `pragma sources update`.");
+    expect(renderCall(update, "mcp")).toBe("sources_update {}");
+  });
+
+  it("a verb withheld from MCP is spelled as the command it is, on both surfaces", () => {
+    expect(renderNextStep({ verb: "setup skills" }, "mcp")).toBe(
+      "Run `pragma setup skills`.",
+    );
+  });
+
+  it("carries global CLI flags on the command only", () => {
+    const verbose = { verb: "sources update", cliFlags: ["--verbose"] };
+    expect(renderCall(verbose, "cli")).toBe("pragma sources update --verbose");
+    expect(renderCall(verbose, "mcp")).toBe("sources_update {}");
+  });
+
+  it("spells flags the way the CLI parses them", () => {
+    // A default-true boolean is negated; a default-false one is simply absent.
+    expect(
+      renderCall(
+        {
+          verb: "create package",
+          params: { name: "x", runInstall: false, withCli: false },
+        },
+        "cli",
+      ),
+    ).toBe("pragma create package --name x --no-run-install");
+    // `undefined` is not an argument, on either surface.
+    const sparse = {
+      verb: "ontology lookup",
+      params: { prefix: "ds", class: undefined },
+    };
+    expect(renderCall(sparse, "mcp")).toBe('ontology_lookup { prefix: "ds" }');
+    expect(renderCall(sparse, "cli")).toBe("pragma ontology lookup ds");
+  });
+
+  it("fences a flag-like positional, and quotes a call containing a backtick safely", () => {
+    expect(
+      quoteCall({ verb: "graph inspect", params: { uri: "-x" } }, "cli"),
+    ).toBe("`pragma graph inspect -- -x`");
+    expect(
+      quoteCall(
+        { verb: "graph query", params: { sparql: 'ASK { ?s ?p "`" }' } },
+        "mcp",
+      ),
+    ).toMatch(/^`` graph_query .* ``$/);
+    expect(quoteArgument("channelOf", "x", "cli")).toBe("`--channel-of x`");
+    expect(quoteArgument("channelOf", "x", "mcp")).toBe('`channelOf: "x"`');
   });
 
   it("outside the suite's checking, renders an undeclared verb's params as flags rather than throwing", async () => {

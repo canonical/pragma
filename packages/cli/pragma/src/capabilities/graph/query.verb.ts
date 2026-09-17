@@ -25,7 +25,7 @@ const queryVerb: VerbSpec<Record<string, unknown>, QueryResult> = {
   summary: "Run a raw SPARQL query against the loaded graph.",
   doc: "Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes.",
   useWhen:
-    "Use only when no specific tool answers the question: a custom SPARQL query for joins or counts across the whole graph. Check ontology_list for the real prefixes first.",
+    "only when no other tool answers the question, for joins or counts across all the data",
   example: { sparql: "SELECT ?s WHERE { ?s a ds:Component } LIMIT 5" },
   params: [
     {

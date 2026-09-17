@@ -14,9 +14,10 @@
  * it there is what lets these stay pure.
  */
 
-import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
-import type { Formatters } from "../../kernel/spec/index.js";
+import { renderNextStep } from "../../kernel/spec/call.js";
+import type { Formatters, Surface } from "../../kernel/spec/index.js";
+import { BUILD_STORE_CALL } from "../shared/calls.js";
 import { renderMarkdownToTerminal } from "./markdownTerminal.js";
 import type { ColophonData, ColophonSection } from "./types.js";
 
@@ -27,7 +28,9 @@ import type { ColophonData, ColophonSection } from "./types.js";
  * Like every empty state it goes to stderr with exit 0 (a calm success), so a
  * script reading stdout still reads nothing.
  */
-const EMPTY_NOTICE = `No colophon declared. A colophon comes from an active pack — build the store with \`${BIN_NAME} sources update\`.`;
+function describeEmpty(surface: Surface): string {
+  return `No colophon declared. A colophon comes from an active pack — build the store. ${renderNextStep(BUILD_STORE_CALL, surface)}`;
+}
 
 /** Render one section (title as H1 + body) as styled terminal Markdown. */
 function plainSection(section: ColophonSection, style: RenderStyle): string {
@@ -56,7 +59,7 @@ export const colophonFormatters: Formatters<ColophonData> = {
     // llm returns before the dispatcher's empty-state routing, so the
     // condensed form carries its own zero-section line (the same shape the
     // other empty states use) rather than handing an agent zero bytes.
-    if (data.sections.length === 0) return `_${EMPTY_NOTICE}_`;
+    if (data.sections.length === 0) return `_${describeEmpty("cli")}_`;
     return data.sections.map(llmSection).join("\n\n");
   },
 
@@ -66,5 +69,6 @@ export const colophonFormatters: Formatters<ColophonData> = {
 
   // Zero sections: the dispatcher routes this to stderr (exit 0) so plain
   // stdout stays empty; llm/json keep their own empty shapes.
-  notice: (data) => (data.sections.length === 0 ? EMPTY_NOTICE : undefined),
+  notice: (data, surface = "cli") =>
+    data.sections.length === 0 ? describeEmpty(surface) : undefined,
 };

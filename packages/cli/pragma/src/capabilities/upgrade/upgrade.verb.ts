@@ -24,8 +24,7 @@ const upgradeVerb: VerbSpec<Record<string, unknown>, UpgradeData> = {
   path: ["upgrade"],
   summary: `Upgrade the ${BIN_NAME} CLI to the latest version.`,
   doc: "Checks the registry for the active channel's latest release and runs your package manager's global-update command. Preview the update before applying it.",
-  useWhen: "Use when asked to update the CLI itself to the latest release.",
-  example: {},
+  useWhen: "when asked to update the CLI itself to the latest release",
   params: [],
   output: { formatters: upgradeFormatters },
   examples: [

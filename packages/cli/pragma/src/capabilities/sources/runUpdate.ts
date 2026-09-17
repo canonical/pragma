@@ -49,10 +49,11 @@ import {
   redactUrl,
   resolvePackage,
 } from "../../kernel/runtime/refs/index.js";
+import { existingGlobalSkillDirs } from "../setup/operations/setupSkills.js";
 // The global scope's EXISTING link directories, from the module that owns the
 // scope covenant — so `sources update` cannot drift away from what
 // `setup skills --global` links, or widen the scope on its own.
-import { existingGlobalSkillDirs } from "../setup/operations/setupSkills.js";
+import { VERBOSE_BUILD_CALL } from "../shared/calls.js";
 import { globalSkillRoots, installedSkillsDir } from "../skill/discover.js";
 import { planHarnessSkillLinks, planSkillInstall } from "./installSkills.js";
 import type { SourcesUpdateData } from "./types.js";
@@ -201,8 +202,8 @@ export async function buildUpdateTask(
         : `The ${entries.length} configured pack(s) resolved 0 RDF sources (no definitions/**.ttl or data/**.ttl). Refusing to build an empty store.`,
       {
         recovery: callRecovery(
-          { verb: "sources update" },
-          "Add a pack that ships `.ttl` under definitions/ or data/, then re-run with --verbose.",
+          VERBOSE_BUILD_CALL,
+          "Add a pack that ships `.ttl` under definitions/ or data/, then re-run.",
         ),
       },
     );
@@ -271,8 +272,8 @@ export async function buildUpdateTask(
         `None of the ${inputs.length} configured source(s) can be parsed — nothing to build.`,
         {
           recovery: callRecovery(
-            { verb: "sources update" },
-            "Fix the reported sources, then re-run with --verbose.",
+            VERBOSE_BUILD_CALL,
+            "Fix the reported sources, then re-run.",
           ),
         },
       );
@@ -304,8 +305,8 @@ export async function buildUpdateTask(
       `The configured sources parsed to 0 RDF triples, so the store would be empty. Refusing to build an empty store.`,
       {
         recovery: callRecovery(
-          { verb: "sources update" },
-          "Check that the pack sources actually contain RDF triples, then re-run with --verbose.",
+          VERBOSE_BUILD_CALL,
+          "Check that the pack sources actually contain RDF triples, then re-run.",
         ),
       },
     );
@@ -497,8 +498,8 @@ export async function classifySourceBuildError(
     : "The configured packs cannot be built into a store";
   return PragmaError.configError(`${where}: ${detail}`, {
     recovery: callRecovery(
-      { verb: "sources update" },
-      "Re-run with --verbose to see each file as it parses. If a pack ships malformed RDF, report it to that pack's maintainer.",
+      VERBOSE_BUILD_CALL,
+      "A verbose re-run shows each file as it parses. If a pack ships malformed RDF, report it to that pack's maintainer.",
     ),
   });
 }

@@ -16,6 +16,14 @@ export function kebabCase(name: string): string {
   return name.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 }
 
+/**
+ * The ceiling on the whole MCP tool catalogue (name + description + input
+ * schema per tool, ~4 characters a token). ONE constant: the emitted surface
+ * states it, the covenant freezes it, and the eval case enforces it. Set from
+ * measurement plus about a tenth — `BUDGETS.md` records each raise.
+ */
+export const CONDENSED_SDL_TOKEN_BUDGET = 9700;
+
 /** The MCP tool name for a verb path (`["config","show"]` -> `config_show`). */
 export function toolName(path: readonly [string, string?]): string {
   const [noun, verb] = path;
@@ -147,7 +155,7 @@ export const FIXED_SURFACE = {
     projectConfigLoad: "<10ms",
     warmStoreVerb: "<300ms",
     mcpP95Warm: "<100ms",
-    condensedSDL: "<=10000 tokens",
+    condensedSDL: `<=${CONDENSED_SDL_TOKEN_BUDGET} tokens`,
   },
 } as const;
 

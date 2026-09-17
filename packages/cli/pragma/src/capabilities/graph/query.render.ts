@@ -9,8 +9,8 @@
  * - json: the serialized {@link QueryResult}.
  */
 
-import { type Call, renderCall, type Surface } from "../../kernel/spec/call.js";
-import type { Formatters } from "../../kernel/spec/index.js";
+import { renderCall } from "../../kernel/spec/call.js";
+import type { Call, Formatters, Surface } from "../../kernel/spec/index.js";
 
 // Inline `import("…")` type (no `from`) — keeps the ke types off the static
 // import graph the lazy-dispatch probe walks (see query.verb.ts).

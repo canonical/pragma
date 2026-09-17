@@ -6,7 +6,7 @@ Mutating tools are plan-first: called without `confirm: true` they return the pl
 
 ### block_list
 
-Use when asked which components, patterns, layouts or subcomponents exist — all four are blocks, and every one of them is read through the block tools. List all design system blocks with their type, tier, and modifier families. Example: block_list {}.
+Use when asked which components, patterns, layouts or subcomponents exist — all four are blocks, and every one of them is read through the block tools. List all design system blocks with their type, tier, and modifier families.
 
 Read-only.
 
@@ -34,7 +34,7 @@ Read-only.
 
 ### block_sample
 
-Use before your first block query, to see what a real block record looks like instead of guessing field names. Return randomly selected complete design-system blocks as exemplars. Example: block_sample {}.
+Use before your first block query, to see what a real block record looks like instead of guessing field names. Return randomly selected complete design-system blocks as exemplars.
 
 Read-only.
 
@@ -44,7 +44,7 @@ _No input parameters._
 
 ### capabilities
 
-Use at the start of a session, or when unsure which tool answers a question: it lists every tool with the question it answers. Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start. Example: capabilities {}.
+Use when unsure which tool answers a question. Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.
 
 Read-only.
 
@@ -54,7 +54,7 @@ _No input parameters._
 
 ### colophon
 
-Use when asked how this design-system data is put together — for onboarding or a demo. Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections. Example: colophon {}.
+Use when asked which packs the data comes from and how it was put together. Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
 Read-only.
 
@@ -121,7 +121,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### config_show
 
-Use when asked how the tool is configured right now — tier, channel, detail level — and which file set each value. Merges built-in defaults, the global XDG config, and the nearest pragma.config.ts, marking which layer supplied each value. Example: config_show {}.
+Use when asked how the tool is configured right now — tier, channel, detail level — and which file set each value. Merges built-in defaults, the global XDG config, and the nearest pragma.config.ts, marking which layer supplied each value.
 
 Read-only.
 
@@ -145,7 +145,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### create_application
 
-Use when asked to start a new React application, server-rendered or client-only. Scaffold a full React application with routing, and either server-side rendering or a client-only SPA. Example: create_application { appPath: "my-app" }.
+Use when asked to start a new React application, server-rendered or client-only. Example: create_application { appPath: "my-app" }.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -164,7 +164,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### create_component
 
-Use when asked to start a new React, Svelte or Lit component with its tests, stories and styles. Scaffold a React, Svelte, or Lit component. Example: create_component { framework: "react", componentPath: "src/components/Button" }.
+Use when asked to start a new React, Svelte or Lit component with its tests, stories and styles. Example: create_component { framework: "react", componentPath: "src/components/Button" }.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -183,7 +183,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### create_package
 
-Use when asked to start a new npm package inside the monorepo. Scaffold a new npm package for the monorepo. Example: create_package { name: "@canonical/my-lib", type: "library" }.
+Use when asked to start a new npm package inside the monorepo. Example: create_package { name: "@canonical/my-lib", type: "library" }.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -204,7 +204,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### doctor
 
-Use when something is not working — setup, completions, the MCP connection, the data store — and you need to know what is wrong. Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run. Example: doctor {}.
+Use when something is not working — setup, completions, the MCP connection, the data store — and you need to know what is wrong. Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.
 
 Read-only.
 
@@ -242,7 +242,7 @@ Read-only.
 
 ### graph_query
 
-Use only when no specific tool answers the question: a custom SPARQL query for joins or counts across the whole graph. Check ontology_list for the real prefixes first. Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes. Example: graph_query { sparql: "SELECT ?s WHERE { ?s a ds:Component } LIMIT 5" }.
+Use only when no other tool answers the question, for joins or counts across all the data. Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes. Example: graph_query { sparql: "SELECT ?s WHERE { ?s a ds:Component } LIMIT 5" }.
 
 Read-only.
 
@@ -254,7 +254,7 @@ Read-only.
 
 ### implementation_libraries
 
-Use when asked which component libraries exist and how much of the design system each covers. List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
+Use when asked which component libraries exist and how much of the design system each covers. List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements.
 
 Read-only.
 
@@ -283,7 +283,7 @@ Read-only.
 
 ### info
 
-Use when asked which version is installed, how it is configured, or whether an update is available. Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available. Example: info {}.
+Use when asked which version is installed, how it is configured, or whether an update is available. Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available.
 
 Read-only.
 
@@ -293,7 +293,7 @@ _No input parameters._
 
 ### modifier_list
 
-Use when asked which variants or options components can take — importance, size, density and the like — and the values each allows. List all modifier families with their values. Example: modifier_list {}.
+Use when asked which variants or options components can take — importance, size, density and the like — and the values each allows. List all modifier families with their values.
 
 Read-only.
 
@@ -320,7 +320,7 @@ Read-only.
 
 ### modifier_sample
 
-Use before your first modifier query, to see what a real modifier family record looks like. Return randomly selected complete modifier families (with value lists) as exemplars. Example: modifier_sample {}.
+Use before your first modifier query, to see what a real modifier family record looks like. Return randomly selected complete modifier families (with value lists) as exemplars.
 
 Read-only.
 
@@ -330,7 +330,7 @@ _No input parameters._
 
 ### ontology_list
 
-Use when asked which vocabularies (namespaces and their prefixes) the data uses — the first step before writing a raw query. List loaded ontology namespaces with class and property counts. Example: ontology_list {}.
+Use when asked which vocabularies (namespaces and their prefixes) the data uses — the first step before writing a raw query.
 
 Read-only.
 
@@ -340,7 +340,7 @@ _No input parameters._
 
 ### ontology_lookup
 
-Use when asked which kinds of thing and which properties one vocabulary defines, so a raw query names real terms. Look up a namespace's classes (hierarchy + counts) and properties. Example: ontology_lookup { prefix: "ds" }.
+Use before writing a raw query, to find the real class and property names under one prefix. Example: ontology_lookup { prefix: "ds" }.
 
 Read-only.
 
@@ -356,7 +356,7 @@ Read-only.
 
 ### prompt_list
 
-Use when asked which ready-made workflow prompts the design system offers. Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body. Example: prompt_list {}.
+Use when asked which ready-made workflow prompts the design system offers. Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
 
 Read-only.
 
@@ -378,7 +378,7 @@ Read-only.
 
 ### setup
 
-Use when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension. Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed. Example: setup {}.
+Use when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension. Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -394,7 +394,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### skill_list
 
-Use when asked which agent skills (guided workflows) are available. List discovered skills (SKILL.md files under the skill roots). Example: skill_list {}.
+Use when asked which agent skills (guided workflows) are available.
 
 Read-only.
 
@@ -404,7 +404,7 @@ _No input parameters._
 
 ### skill_lookup
 
-Use when asked to follow one skill: it returns the skill's full instructions. Show a skill's metadata and instructions by name. Example: skill_lookup { name: "specify-component" }.
+Use when asked to follow one skill. Example: skill_lookup { name: "specify-component" }.
 
 Read-only.
 
@@ -416,7 +416,7 @@ Read-only.
 
 ### sources_reset
 
-Use when asked to go back to the data shipped with the tool, dropping the pack this project built. Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again; a project that declares its own packs cannot answer reads until the next `sources update`. The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built. Example: sources_reset {}.
+Use to discard locally built data and return to the data shipped with the tool. Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again; a project that declares its own packs cannot answer reads until the next `sources update`. The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built.
 
 Mutation — plan-first (set `confirm: true` to apply). Marked destructive.
 
@@ -429,7 +429,7 @@ Mutation — plan-first (set `confirm: true` to apply). Marked destructive.
 
 ### sources_status
 
-Use when asked where answers come from — which data pack is loaded and how fresh it is — or when results look empty or out of date. Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all. Example: sources_status {}.
+Use when asked where answers come from — which data pack is loaded and how fresh it is — or when results look empty or out of date. Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.
 
 Read-only.
 
@@ -439,7 +439,7 @@ _No input parameters._
 
 ### sources_update
 
-Use when asked to fetch or rebuild the design-system data, or when a read reports that the store is unavailable. Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision. Example: sources_update {}.
+Use when asked to fetch or rebuild the design-system data, or when a read reports that the store is unavailable. Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision.
 
 Mutation — plan-first (set `confirm: true` to apply).
 
@@ -453,7 +453,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### standard_categories
 
-Use when asked which areas the code standards cover, or before filtering standards by category. List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.
+Use when asked which areas the code standards cover, or before filtering standards by category. List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering.
 
 Read-only.
 
@@ -481,7 +481,7 @@ Read-only.
 
 ### standard_lookup
 
-Use when asked how code should be written under one rule — it returns the do and don't examples. Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.
+Use when asked how code should be written under one rule. Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.
 
 Read-only.
 
@@ -506,7 +506,7 @@ Read-only.
 
 ### tier_list
 
-Use when asked which tiers the design system has — global, apps, a single product — or before passing `tier` to another tool. List all tiers in the design-system ontology. The `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself. Example: tier_list {}.
+Use when asked which tiers the design system has — global, apps, a single product — or before passing `tier` to another tool. List all tiers in the design-system ontology. The `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself.
 
 Read-only.
 
@@ -577,7 +577,7 @@ Read-only.
 
 ### token_sample
 
-Use before your first token query, to see what a real token record looks like. Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Example: token_sample {}.
+Use before your first token query, to see what a real token record looks like. Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars.
 
 Read-only.
 
@@ -603,7 +603,7 @@ Read-only.
 
 ### upgrade
 
-Use when asked to update the CLI itself to the latest release. Checks the registry for the active channel's latest release and runs your package manager's global-update command. Preview the update before applying it. Example: upgrade {}.
+Use when asked to update the CLI itself to the latest release. Checks the registry for the active channel's latest release and runs your package manager's global-update command. Preview the update before applying it.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -662,7 +662,7 @@ Read-only.
 
 ### variable_sample
 
-Use before your first variable query, to see what a real CSS variable record looks like. Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Example: variable_sample {}.
+Use before your first variable query, to see what a real CSS variable record looks like. Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars.
 
 Read-only.
 

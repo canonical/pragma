@@ -3,12 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GetPromptRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { afterEach, describe, expect, it } from "vitest";
+import {
+  BLOCKS_SENTENCE,
+  CONVENTIONS,
+} from "../../../../capabilities/capabilities/catalog.js";
 import { capabilities } from "../../../../capabilities/index.js";
 import type { McpHarness } from "../../../../testing/helpers/projectMcp.js";
 import { projectMcp } from "../../../../testing/helpers/projectMcp.js";
 import type { PragmaRuntime } from "../../../runtime/types.js";
 import { emitSurface } from "../../../spec/emitSurface.js";
-import { CONVENTIONS } from "../../../spec/guidance.js";
 import type { CapabilityModule } from "../../../spec/types.js";
 import { buildInstructions, INSTRUCTIONS_MAX_CHARS } from "../instructions.js";
 import { fillTemplate, promptProvider } from "./provider.js";
@@ -45,7 +48,8 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
   });
 
   it("opens with the shared catalog's conventions, verbatim and once", () => {
-    // The conventions are authored once (kernel/spec/guidance.ts); instructions
+    // The conventions are authored once (capabilities/catalog.ts) and handed to
+    // the kernel as the module's `mcpOrientation`; instructions
     // must OPEN with them, so a second hand-written preamble cannot creep back
     // in and drift from the `capabilities` tool the same handshake carries.
     expect(buildInstructions(capabilities).startsWith(CONVENTIONS.system)).toBe(
@@ -57,8 +61,11 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
     // People ask about "components"; the tools are named for blocks. An agent
     // that went looking for a component tool found none and fell to raw SPARQL.
     const text = buildInstructions(capabilities);
-    expect(text).toContain(CONVENTIONS.blocks);
-    expect(CONVENTIONS.blocks).toMatch(/components.*block_list/i);
+    expect(text).toContain(BLOCKS_SENTENCE);
+    expect(BLOCKS_SENTENCE).toMatch(/components.*block_list/i);
+    // Said in the handshake and in `block_list`'s own description — not a third
+    // time in the catalogue's conventions.
+    expect(Object.values(CONVENTIONS)).not.toContain(BLOCKS_SENTENCE);
   });
 
   it("quotes the resource templates the MCP surface actually advertises", () => {

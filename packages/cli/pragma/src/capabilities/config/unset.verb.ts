@@ -23,7 +23,7 @@ const unsetVerb: VerbSpec<Record<string, unknown>, ConfigFieldResult> = {
   path: ["config", "unset"],
   summary: "Clear a config field by name.",
   doc: "Removes a field from the global config so the built-in default (or a project config) applies again. The counterpart of `config set` — setting writes a value, unsetting removes one; no value doubles as a remove-marker.",
-  useWhen: "Use when asked to put a setting back to its built-in default.",
+  useWhen: "when asked to put a setting back to its built-in default",
   example: { key: "tier" },
   params: [
     {

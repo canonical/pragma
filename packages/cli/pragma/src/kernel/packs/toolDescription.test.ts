@@ -24,7 +24,7 @@ import { storyModules } from "../../capabilities/distribution.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { formatVerbHelp } from "../project/cli/verbHelp.js";
 import { renderCall } from "../spec/call.js";
-import { describeTool } from "../spec/guidance.js";
+import { describeTool, exampleCall } from "../spec/guidance.js";
 import { toolName } from "../spec/index.js";
 import type { VerbSpec } from "../spec/types.js";
 
@@ -88,7 +88,8 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     // fragment rather than by exact string: the wiring is what this pins, and
     // tool descriptions are explicitly not frozen (`registerVerb.ts:324-326`).
     expect(desc).toContain("List all code standard categories");
-    expect(desc).toContain("Example: standard_categories {}");
+    // Callable with no arguments, so there is no example to show.
+    expect(desc).not.toContain("Example:");
   });
 
   it("CLI --help shows the prose and the example as a COMMAND, never as a tool call", () => {
@@ -124,12 +125,19 @@ describe("every story tool's description is GENERATED from its verb (PROTECTED)"
         const name = toolName(storyVerb.path);
         const desc = tools.find((tool) => tool.name === name)?.description;
         expect(desc, name).toBe(describeTool(storyVerb));
+        expect(desc, name).toMatch(/^Use /);
         expect(desc, name).toContain(storyVerb.useWhen);
         // Spelled with its OWN name and its declared params, so an example
-        // cannot be copied from a sibling tool and left stale.
-        expect(desc, name).toContain(
-          `Example: ${renderCall({ verb: storyVerb.path.join(" "), params: storyVerb.example }, "mcp")}.`,
-        );
+        // cannot be copied from a sibling tool and left stale. A verb callable
+        // with no arguments declares none, and shows none.
+        const example = exampleCall(storyVerb);
+        if (example) {
+          expect(desc, name).toContain(
+            `Example: ${renderCall(example, "mcp")}.`,
+          );
+        } else {
+          expect(desc, name).not.toContain("Example:");
+        }
       }
     } finally {
       await mcp.cleanup();

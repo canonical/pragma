@@ -573,11 +573,13 @@ describe("sources update — data-failure classification (U6)", () => {
     expect(err.message).not.toContain("Internal error");
     expect(err.recovery?.message ?? "").not.toContain("report this issue");
     // The recovery points the user at a runnable, useful next step.
-    // `--verbose` is a global flag, not a param of the verb, so it rides the
-    // sentence; the call is the same one on both surfaces.
-    expect(err.recovery?.cli).toBe("pragma sources update");
-    expect(err.recovery?.mcp).toEqual({ tool: "sources_update", params: {} });
-    expect(err.recovery?.message).toContain("--verbose");
+    expect(err.recovery?.cli).toBe("pragma sources update --verbose");
+    // `--verbose` is a global CLI flag with no MCP counterpart; the tool call
+    // confirms, so following the hint rebuilds rather than returning a plan.
+    expect(err.recovery?.mcp).toEqual({
+      tool: "sources_update",
+      params: { confirm: true },
+    });
     // Nothing was pointed at on failure.
     expect(readActivePack(cwd)).toBeUndefined();
   });

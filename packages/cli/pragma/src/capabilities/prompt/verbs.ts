@@ -38,8 +38,7 @@ const listVerb: VerbSpec<Record<string, unknown>, PromptListData> = {
   summary: "List the workflow prompt templates the design system offers.",
   doc: `Browse the prompt entities the active graph declares (${VOCABULARY.prompt.type} in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.`,
   useWhen:
-    "Use when asked which ready-made workflow prompts the design system offers.",
-  example: {},
+    "when asked which ready-made workflow prompts the design system offers",
   params: [],
   output: { formatters: promptListFormatters },
   examples: [{ cmd: `${BIN_NAME} prompt list` }],
@@ -62,7 +61,7 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
   summary: "Show one workflow prompt template's body and arguments by name.",
   doc: "Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.",
   useWhen:
-    "Use when asked to read or run one workflow prompt by the name prompt_list gave.",
+    "when asked to read or run one workflow prompt by the name prompt_list gave",
   example: { name: "build-a-block" },
   params: [
     {

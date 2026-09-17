@@ -511,7 +511,8 @@ describe("resource read — cold-store failure surfaces isError + recovery (D3)"
     const listed = await harness.listResources();
     expect(listed.map((r) => r.uri)).toEqual(["pragma:sources"]);
     const read = await harness.readResource("pragma:sources");
-    expect(read.text).toMatch(/sources update/);
+    // MCP-only surface: the next step is a tool call, confirmed so it builds.
+    expect(read.text).toContain("`sources_update { confirm: true }`");
   });
 });
 

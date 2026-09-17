@@ -52,7 +52,7 @@ sample, because the user pays it.
 | warm store-backed verb       | < 300 ms        |
 | MCP p95 (warm)               | < 100 ms        |
 | `resources/list` payload     | < 60 KB         |
-| condensed SDL (tool catalog) | ≤ 10000 tokens  |
+| condensed SDL (tool catalog) | ≤ 9700 tokens   |
 
 The `resources/list` ceiling is a SIZE budget, not a latency one, and it is
 enforced where the payload is built rather than by the perf pass:
@@ -1017,7 +1017,14 @@ description costs catalogue tokens, measured the same way as above:
 | When             | Tools | ≈ Tokens | Ceiling | % of ceiling |
 | ---------------- | ----- | -------- | ------- | ------------ |
 | Before this work | 50    | 7 774    | 8 000   | 97%          |
-| After this work  | 50    | 9 146    | 10 000  | 91%          |
+| After this work  | 50    | 8 826    | 9 700   | 91%          |
+
+Three general rules keep the cost down (a first cut measured 9 146): a verb
+callable with no arguments shows no example, the one-line summary is not
+repeated after the question, and `useWhen` is stored as a bare clause so the
+catalogue's `use_when` field does not say "Use when" twice. The ceiling is ONE
+exported constant (`kernel/spec/emitSurface.ts#CONDENSED_SDL_TOKEN_BUDGET`) read
+by the emitted surface and the eval case that enforces it.
 
 The handshake instructions gained one sentence — components, patterns, layouts
 and subcomponents are all read through the block tools — and went from 1 491
