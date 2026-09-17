@@ -259,6 +259,70 @@ describe("pack lookup addressing (PROTECTED)", () => {
     });
   });
 
+  describe("a glob with no prefix reads names AND IRI local names", () => {
+    it("reaches an entity through its local name", async () => {
+      // The recorded case: `*.component.meter` is a pattern over what every
+      // list prints, and it matched nothing while names were the only thing a
+      // prefix-less glob was tried against.
+      const out = await lookupVia(SPQ, "*.timeline");
+      expect(out.errors).toEqual([]);
+      expect(uris(out)).toEqual([`${DS}padded.timeline`]);
+    });
+
+    it("reaches an entity that carries no name at all", async () => {
+      expect(uris(await lookupVia(SPQ, "nameless.*"))).toEqual([
+        `${DS}nameless.widget`,
+      ]);
+    });
+
+    it("answers ONCE for an entity both its name and its local name match", async () => {
+      // `*chip` fits the name "Chip" and the local names `alpha.chip` and
+      // `zeta.chip`. The name match already reaches both, so neither is looked
+      // up a second time by IRI.
+      const out = await lookupVia(SPQ, "*chip");
+      expect(uris(out).sort()).toEqual([`${DS}alpha.chip`, `${DS}zeta.chip`]);
+    });
+
+    it("does not make a bare local name an address", async () => {
+      await expect(lookupVia(SPQ, "alpha.chip")).rejects.toMatchObject({
+        code: "ENTITY_NOT_FOUND",
+      });
+    });
+  });
+
+  describe("a miss suggests the real thing", () => {
+    const suggestionsFor = async (query: string): Promise<string[]> => {
+      const reason = await lookupVia(SPQ, query).catch(
+        (error: unknown) => error,
+      );
+      expect(reason).toMatchObject({ code: "ENTITY_NOT_FOUND" });
+      return (reason as { suggestions: string[] }).suggestions;
+    };
+
+    it("answers a pasted local name with its prefixed IRI, then the name inside it", async () => {
+      expect((await suggestionsFor("alpha.chip")).slice(0, 2)).toEqual([
+        "ds:alpha.chip",
+        "Chip",
+      ]);
+    });
+
+    it("answers a mistyped local name with the prefixed IRI it was near", async () => {
+      expect(await suggestionsFor("nameless.widgit")).toContain(
+        "ds:nameless.widget",
+      );
+    });
+
+    it("every suggestion it prints resolves", async () => {
+      const suggestions = await suggestionsFor("alpha.chip");
+      const out = await lookupVia(SPQ, ...suggestions);
+      expect(out.errors).toEqual([]);
+    });
+
+    it("keeps the five-suggestion cap", async () => {
+      expect((await suggestionsFor("a")).length).toBeLessThanOrEqual(5);
+    });
+  });
+
   describe("an ambiguous name answers with EVERY entity it reaches", () => {
     // `ds:zeta.chip` is declared BEFORE `ds:alpha.chip` in the fixture, so the
     // store enumerates it first while IRI order puts `alpha` first. Neither of

@@ -39,6 +39,7 @@ import {
   SCOPE_TIER_VARIABLE,
 } from "./sparql/buildLookupQuery.js";
 import { runSelect } from "./sparql/runSelect.js";
+import { localName } from "./tierScope.js";
 import {
   expandIsSparql,
   type PackChildRow,
@@ -108,6 +109,9 @@ export interface LookupOutput {
    */
   readonly outOfScope?: OutOfScopeAnswer[];
 }
+
+/** How many suggestions a miss carries — the cap `suggestNames` applies too. */
+const MAX_SUGGESTIONS = 5;
 
 /** What the resolver needs from the runtime: the store + the query facade. */
 type LookupRuntime = Pick<PragmaRuntime, "store" | "query">;
@@ -203,7 +207,13 @@ export async function resolveLookup(
  * lookup argument with a `*` in it. Expanding an IRI pattern over names was why
  * `ds:global.component.but*` matched nothing on any pack while shell completion
  * offered nothing BUT those IRIs. Each population is fetched at most once, and
- * only when a glob of that shape is actually present.
+ * only when a glob is actually present.
+ *
+ * A glob with NO prefix reads both populations, because a caller who writes one
+ * has not said which they mean: `*.component.meter` is a pattern over the IRI
+ * local names every list prints, and it reached nothing while names were the
+ * only thing a prefix-less pattern was tried against. See
+ * {@link expandNameGlob}.
  */
 async function expandQueries(
   rt: LookupRuntime,
@@ -216,9 +226,8 @@ async function expandQueries(
   if (!queries.some(isGlobPattern))
     return { names: [...queries], globErrors: [] };
   const globs = queries.filter(isGlobPattern);
-  const byIri = globs.some(looksLikeIri)
-    ? await listEntityIriSpellings(rt, lookup, source, prefixes)
-    : new Map<string, string>();
+  const addressable = await listAddressable(rt, lookup, source, prefixes);
+  const byIri = iriSpellings(addressable);
   const byName = globs.some((glob) => !looksLikeIri(glob))
     ? await listEntityNames(rt, lookup, source)
     : [];
@@ -239,7 +248,7 @@ async function expandQueries(
             ),
           ),
         ]
-      : expandGlob(query, byName);
+      : expandNameGlob(query, byName, addressable);
     if (matches.length === 0) {
       globErrors.push({
         query,
@@ -251,6 +260,77 @@ async function expandQueries(
     }
   }
   return { names, globErrors };
+}
+
+/**
+ * Expand a prefix-less glob over the names AND the IRI local names.
+ *
+ * A name match expands to the NAME, as it always did: a name several entities
+ * share then answers with all of them, under the tier scope. A local-name match
+ * expands to the entity's prefixed IRI — but only for an entity no name match
+ * already reaches. Without that, every pattern that fits both forms would answer
+ * twice: a token's local name IS its name (`color.text`), so `color.*` would
+ * have looked every token up once by each.
+ */
+function expandNameGlob(
+  glob: string,
+  names: readonly string[],
+  addressable: readonly Addressable[],
+): string[] {
+  const byName = expandGlob(glob, names);
+  const reached = new Set(byName.map((name) => name.toLowerCase()));
+  const locals = new Set(
+    expandGlob(
+      glob,
+      addressable.map((entity) => entity.local),
+    ),
+  );
+  const byLocal = addressable
+    .filter(
+      (entity) =>
+        locals.has(entity.local) &&
+        !(entity.name && reached.has(entity.name.toLowerCase())),
+    )
+    .map((entity) => entity.compact);
+  return [...byName, ...new Set(byLocal)];
+}
+
+/**
+ * What to offer for an argument that reached nothing: near names, and the
+ * prefixed IRI of an entity whose LOCAL NAME is what was typed.
+ *
+ * A bare local name is deliberately not an address — `apps_lxd.component.meter`
+ * is neither a name nor an IRI, and accepting it would make a third identifier
+ * form out of a fragment of the second. But it is the fragment every list
+ * prints, so a caller who pastes it is one prefix away from right, and the miss
+ * says which prefix: the exact local-name match leads, then the ranked near
+ * misses over names and local names alike. A local name is always PRINTED as
+ * the prefixed IRI, because that is the form the lookup accepts.
+ */
+async function suggestForMiss(
+  rt: LookupRuntime,
+  lookup: PackLookup,
+  source: StorySource,
+  prefixes: Readonly<Record<string, string>>,
+  query: string,
+): Promise<string[]> {
+  const names = await listEntityNames(rt, lookup, source);
+  const addressable = await listAddressable(rt, lookup, source, prefixes);
+  // A local name that IS a name (a token's) is already in the pool as one.
+  const taken = new Set(names.map((name) => name.trim().toLowerCase()));
+  const byLocal = new Map<string, string[]>();
+  for (const entity of addressable) {
+    const key = entity.local.toLowerCase();
+    if (taken.has(key)) continue;
+    byLocal.set(key, [...(byLocal.get(key) ?? []), entity.compact]);
+  }
+  const exact = byLocal.get(query.trim().toLowerCase()) ?? [];
+  // A key of `byLocal` is never a name (those were skipped above), so a
+  // candidate found there is a local name and anything else is a name.
+  const ranked = suggestNames(query, [...names, ...byLocal.keys()]).flatMap(
+    (candidate) => byLocal.get(candidate) ?? [candidate],
+  );
+  return [...new Set([...exact, ...ranked])].slice(0, MAX_SUGGESTIONS);
 }
 
 /**
@@ -300,9 +380,8 @@ async function lookupOne(
   );
   const resolved = firstRowPerEntity(rows);
   if (resolved.length === 0) {
-    const candidates = await listEntityNames(rt, lookup, source);
     throw PragmaError.notFound(noun, query, {
-      suggestions: suggestNames(query, candidates),
+      suggestions: await suggestForMiss(rt, lookup, source, prefixes, query),
     });
   }
 
@@ -510,6 +589,39 @@ function looksLikeIri(query: string): boolean {
   );
 }
 
+/** One entity a lookup can address, in each form a caller may write it in. */
+interface Addressable {
+  /** The canonical (absolute) IRI. */
+  readonly uri: string;
+  /** The prefixed form, or the IRI itself when no registered prefix matches. */
+  readonly compact: string;
+  /** The IRI's local name — what is left of `compact` without its prefix. */
+  readonly local: string;
+  /** The `by` value the entity carries, when it carries one. */
+  readonly name?: string;
+}
+
+/** List every entity the lookup can address by IRI. */
+async function listAddressable(
+  rt: LookupRuntime,
+  lookup: PackLookup,
+  source: StorySource,
+  prefixes: Readonly<Record<string, string>>,
+): Promise<Addressable[]> {
+  const rows = await runSelect(rt, buildLookupIrisQuery(lookup), source);
+  return rows
+    .filter((row) => (row.uri ?? "") !== "")
+    .map((row) => {
+      const uri = row.uri as string;
+      return {
+        uri,
+        compact: compactUri(uri, prefixes),
+        local: localName(uri),
+        ...(row.name ? { name: row.name } : {}),
+      };
+    });
+}
+
 /**
  * Every SPELLING an IRI-shaped glob may be written against, mapped to the one
  * entity it addresses.
@@ -526,19 +638,12 @@ function looksLikeIri(query: string): boolean {
  * of both would render the entity twice, which is why the previous shape
  * offered only one.
  */
-async function listEntityIriSpellings(
-  rt: LookupRuntime,
-  lookup: PackLookup,
-  source: StorySource,
-  prefixes: Readonly<Record<string, string>>,
-): Promise<Map<string, string>> {
-  const rows = await runSelect(rt, buildLookupIrisQuery(lookup), source);
+function iriSpellings(
+  addressable: readonly Addressable[],
+): Map<string, string> {
   const spellings = new Map<string, string>();
-  for (const row of rows) {
-    const uri = row.uri ?? "";
-    if (uri === "") continue;
+  for (const { uri, compact } of addressable) {
     spellings.set(uri, uri);
-    const compact = compactUri(uri, prefixes);
     if (compact !== uri) spellings.set(compact, uri);
   }
   return spellings;
