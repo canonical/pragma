@@ -1,14 +1,17 @@
 .ds.input-primitive {
   --color-background-input-active: var(--color-foreground-input-active);
   --color-background-input-hover: var(--color-foreground-input-hover);
+  --color-background-input-disabled: var(--color-foreground-input-disabled);
   --color-background-input: var(--color-foreground-input);
   --dimension-padding-inline-input: var(--dimension-200);
   --dimension-padding-block-input: var(--dimension-050);
   --color-border-input: var(--color-border);
+  --color-border-input-disabled: var(--disabled--color-border);
   --border-style-input: none none solid none;
   --dimension-border-width-input: var(--dimension-stroke-thickness-medium);
   --color-outline-input: var(--color-focusRing);
   --color-text-input: var(--color-text);
+  --color-text-input-disabled: var(--disabled--color-text);
   --color-text-input-placeholder: var(--color-text-muted);
   --typography-input: var(--ds-typography-text-primary);
   --color-background-input-invalid: var(--color-foreground-input-error);
@@ -49,9 +52,9 @@
 
   &:disabled {
     cursor: not-allowed;
-    background-color: var(--color-foreground-input-disabled);
-    color: var(--disabled--color-text);
-    border-color: var(--disabled--color-border);
+    background-color: var(--color-background-input-disabled);
+    color: var(--color-text-input-disabled);
+    border-color: var(--color-border-input-disabled);
   }
 
   &:user-invalid,
