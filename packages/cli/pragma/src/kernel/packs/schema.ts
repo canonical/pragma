@@ -33,6 +33,7 @@ import {
   type PackList,
   type PackTierScope,
   RESERVED_STORY_PARAMS,
+  VERB_PATH_PATTERN,
 } from "./types.js";
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
@@ -152,7 +153,7 @@ const callSchema = z
     verb: z
       .string()
       .regex(
-        /^[a-z][a-z0-9-]*( [a-z][a-z0-9-]*)?$/,
+        VERB_PATH_PATTERN,
         'a call names a verb path — write "sources update", not a command line',
       ),
     params: z.record(z.string(), z.unknown()).optional(),
@@ -163,6 +164,12 @@ const emptyRecoverySchema = z
   .object({
     message: z.string().min(1),
     call: callSchema.optional(),
+    also: z
+      .array(
+        z.object({ message: z.string().min(1), call: callSchema }).strict(),
+      )
+      .min(1)
+      .optional(),
     // The retired spelling, named loudly in the `packages` → `packs` tradition:
     // a third-party pack written against the old grammar is data, not a typo.
     cli: z

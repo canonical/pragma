@@ -393,6 +393,9 @@ export interface PackSearch {
   readonly description?: string;
 }
 
+/** The shape of a verb path (`sources update`): a noun, optionally a verb — never a command line. */
+export const VERB_PATH_PATTERN = /^[a-z][a-z0-9-]*( [a-z][a-z0-9-]*)?$/;
+
 /**
  * A call as a story writes it: a verb path and the params to make it with.
  * Structurally the kernel's `Call` (`spec/call.ts`), restated here because this
@@ -413,6 +416,11 @@ export interface PackEmptyRecovery {
    * for the surface it prints on, so a story stays portable across both.
    */
   readonly call?: PackCall;
+  /** Further readings of the same emptiness, each with the call that settles it. */
+  readonly also?: readonly {
+    readonly message: string;
+    readonly call: PackCall;
+  }[];
 }
 
 /**
@@ -421,9 +429,9 @@ export interface PackEmptyRecovery {
  * are held to declaring both (`callRule.test.ts`).
  */
 export interface PackGuidance {
-  /** The question a person would ask, in their words ("Use when asked …"). */
+  /** The question a person would ask, in their words, as a bare clause ("when asked …"). */
   readonly useWhen?: string;
-  /** One real call's params — the verb is implied, and both spellings derive. */
+  /** One real call's params (never empty) — the verb is implied, and both spellings derive. */
   readonly example?: Readonly<Record<string, unknown>>;
 }
 
