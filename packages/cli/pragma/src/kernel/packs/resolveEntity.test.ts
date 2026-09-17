@@ -32,7 +32,7 @@ import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { compilePack } from "./compile.js";
 import { lookupFormatters, lookupOptions } from "./renderPack.js";
-import type { LookupOutput } from "./resolveEntity.js";
+import { GLOB_EXPANSION_CAP, type LookupOutput } from "./resolveEntity.js";
 import type { PackDefinition, PackLookup } from "./types.js";
 import { distributionSource } from "./types.js";
 import { verbKey } from "./uniqueness.js";
@@ -393,5 +393,81 @@ describe("pack lookup addressing (PROTECTED)", () => {
         lookupNoticeVia(SPQ, await lookupVia(SPQ, "Modal")),
       ).toBeUndefined();
     });
+  });
+});
+
+describe("a glob says what it did", () => {
+  /** More same-family entities than one lookup's patterns may expand to. */
+  const FAMILY = GLOB_EXPANSION_CAP + 12;
+  const pad = (index: number): string => String(index).padStart(3, "0");
+  const FAMILY_TTL = Array.from(
+    { length: FAMILY },
+    (_, index) =>
+      `ds:swatch.${pad(index)} a ds:Component ; ds:name "swatch.${pad(index)}" .`,
+  ).join("\n");
+
+  let rt: PragmaRuntime;
+  beforeAll(async () => {
+    ({ rt } = await buildFixtureRuntime({
+      ttl: BLOCK_TTL + AMBIGUOUS_TTL + FAMILY_TTL,
+      prefixes: BLOCK_PREFIXES,
+      detail: "detailed",
+    }));
+  });
+  afterAll(async () => {
+    (await rt.store.get()).store.dispose();
+  });
+
+  const lookup = (...name: string[]): Promise<LookupOutput> => {
+    const verb = compilePack(SPQ, distributionSource("t"), BLOCK_PREFIXES).find(
+      (v) => verbKey(v.path) === "sblock lookup",
+    );
+    if (!verb) throw new Error("no lookup verb");
+    return verb.run({ name }, rt) as Promise<LookupOutput>;
+  };
+  const formatters = lookupFormatters(SPQ.lookup as PackLookup, BLOCK_PREFIXES);
+
+  it("cuts a wide pattern at the cap and reports the true total", async () => {
+    const out = await lookup("swatch.*");
+    expect(out.results).toHaveLength(GLOB_EXPANSION_CAP);
+    expect(out.truncated).toEqual({ shown: GLOB_EXPANSION_CAP, total: FAMILY });
+  });
+
+  it("says so in each surface's own spelling, and in the condensed body", async () => {
+    const out = await lookup("swatch.*");
+    const counted = `${GLOB_EXPANSION_CAP} of ${FAMILY} matching entries shown.`;
+    expect(formatters.notice?.(out, "cli")).toContain(counted);
+    expect(formatters.notice?.(out, "cli")).toContain("`--detail summary`");
+    expect(formatters.notice?.(out, "mcp")).toContain('`detail: "summary"`');
+    expect(formatters.llm(out).split("\n").at(-1)).toContain(counted);
+    expect(JSON.parse(formatters.json(out)).truncated.total).toBe(FAMILY);
+  });
+
+  it("says nothing about a pattern answered in full", async () => {
+    const out = await lookup("swatch.00*");
+    expect(out.results).toHaveLength(10);
+    expect(out.truncated).toBeUndefined();
+    expect(formatters.notice?.(out, "cli")).toBeUndefined();
+  });
+
+  it("counts an entry ONCE across overlapping patterns", async () => {
+    // Twenty-seven matches over twenty-five entries: `swatch.001` and
+    // `swatch.011` are each matched twice and answered once.
+    const out = await lookup("swatch.00*", "swatch.0*1", "swatch.01*");
+    expect(out.truncated).toBeUndefined();
+    expect(out.results.map((entity) => entity.name)).toHaveLength(25);
+    expect(new Set(out.results.map((entity) => entity.uri)).size).toBe(25);
+  });
+
+  it("answers once for an entity a name pattern and an IRI pattern both reach", async () => {
+    const out = await lookup("swatch.001", "ds:swatch.001", "ds:swatch.00*");
+    expect(out.results).toHaveLength(10);
+  });
+
+  it("never cuts a literal — not even one a cut pattern also matched", async () => {
+    const last = `swatch.${pad(FAMILY - 1)}`;
+    const out = await lookup("swatch.*", last);
+    expect(out.results.map((entity) => entity.name)).toContain(last);
+    expect(out.results).toHaveLength(GLOB_EXPANSION_CAP + 1);
   });
 });

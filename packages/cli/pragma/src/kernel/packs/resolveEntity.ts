@@ -108,7 +108,34 @@ export interface LookupOutput {
    * case, and the case the payload speaks for itself in.
    */
   readonly outOfScope?: OutOfScopeAnswer[];
+  /**
+   * Set when the patterns matched more entries than {@link GLOB_EXPANSION_CAP}
+   * and the answer is the first `shown` of `total`. Absent otherwise — a
+   * pattern answered in full has nothing to admit.
+   */
+  readonly truncated?: GlobTruncation;
 }
+
+/** How far a capped glob expansion was cut. */
+export interface GlobTruncation {
+  readonly shown: number;
+  readonly total: number;
+}
+
+/**
+ * The most entries the patterns of ONE lookup may expand to.
+ *
+ * A pattern is a request for a handful of related entities, and nothing bounded
+ * it: measured on the shipped pack (2026-09-17), `token lookup 'color.*'`
+ * expanded to 473 entities and 460 KB of JSON, about 1 KB and four store
+ * queries apiece, with no sign in the answer that it was unusual. Fifty keeps
+ * the worst case near 50 KB at the fullest level — and still answers every
+ * pattern that means "this family" (`color.text.*` is 36) in full.
+ *
+ * Literal arguments are never counted or cut: a caller who names 80 entities
+ * asked for 80.
+ */
+export const GLOB_EXPANSION_CAP = 50;
 
 /** How many suggestions a miss carries — the cap `suggestNames` applies too. */
 const MAX_SUGGESTIONS = 5;
@@ -160,6 +187,9 @@ export async function resolveLookup(
   const results: PackEntity[] = [];
   const errors: LookupError[] = [...expanded.globErrors];
   const outOfScope: OutOfScopeAnswer[] = [];
+  // Two arguments may reach one entity by different routes — a name pattern
+  // and an IRI pattern, a name and that entity's own IRI. It is answered once.
+  const answered = new Set<string>();
   const settled = await Promise.allSettled(
     expanded.names.map((query) =>
       lookupOne(rt, lookup, noun, query, source, prefixes, level, scope),
@@ -169,7 +199,12 @@ export async function resolveLookup(
     const query = expanded.names[index];
     if (query === undefined) continue;
     if (outcome.status === "fulfilled") {
-      results.push(...outcome.value.entities);
+      for (const entity of outcome.value.entities) {
+        const uri = String(entity.uri);
+        if (answered.has(uri)) continue;
+        answered.add(uri);
+        results.push(entity);
+      }
       if (outcome.value.outOfScope) outOfScope.push(outcome.value.outOfScope);
       continue;
     }
@@ -195,6 +230,7 @@ export async function resolveLookup(
     results,
     errors,
     ...(outOfScope.length > 0 ? { outOfScope } : {}),
+    ...(expanded.truncated ? { truncated: expanded.truncated } : {}),
   };
 }
 
@@ -222,7 +258,11 @@ async function expandQueries(
   source: StorySource,
   queries: readonly string[],
   prefixes: Readonly<Record<string, string>>,
-): Promise<{ names: string[]; globErrors: LookupError[] }> {
+): Promise<{
+  names: string[];
+  globErrors: LookupError[];
+  truncated?: GlobTruncation;
+}> {
   if (!queries.some(isGlobPattern))
     return { names: [...queries], globErrors: [] };
   const globs = queries.filter(isGlobPattern);
@@ -233,9 +273,21 @@ async function expandQueries(
     : [];
   const names: string[] = [];
   const globErrors: LookupError[] = [];
+  // One set across ALL the arguments: two patterns that overlap (`color.*`
+  // beside `*.text`), or a pattern beside a literal it covers, name an entry
+  // once. `matched` counts what the patterns reached; `kept` is what is looked
+  // up — they differ exactly by what the cap cut, which is why a literal is
+  // checked against `kept`: one a cut pattern also matched is still asked for.
+  const matched = new Set<string>();
+  const kept = new Set<string>();
+  const keep = (name: string): void => {
+    if (kept.has(name)) return;
+    kept.add(name);
+    names.push(name);
+  };
   for (const query of queries) {
     if (!isGlobPattern(query)) {
-      names.push(query);
+      keep(query);
       continue;
     }
     // An IRI glob expands over every spelling, then collapses to the entity:
@@ -255,11 +307,19 @@ async function expandQueries(
         code: "EMPTY_RESULTS",
         message: `No ${noun} entries matching "${query}".`,
       });
-    } else {
-      names.push(...matches);
+    }
+    for (const match of matches) {
+      matched.add(match);
+      if (matched.size <= GLOB_EXPANSION_CAP) keep(match);
     }
   }
-  return { names, globErrors };
+  return {
+    names,
+    globErrors,
+    ...(matched.size > GLOB_EXPANSION_CAP
+      ? { truncated: { shown: GLOB_EXPANSION_CAP, total: matched.size } }
+      : {}),
+  };
 }
 
 /**

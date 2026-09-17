@@ -321,7 +321,29 @@ export function lookupFormatters(
     llm: (output) =>
       renderOutput(output, (entity) => renderLookupLlm(entity, options), "llm"),
     json: (output) => JSON.stringify(output, null, 2),
+    notice: (output, surface = "cli") => truncationNotice(output, surface),
   };
+}
+
+/**
+ * What a capped pattern says for itself: how much of the match this is, and the
+ * two things a caller can do about it.
+ *
+ * On the notice seam for the machine surfaces and the terminal, and in the
+ * condensed body as well — for the reason a truncated LIST page says it there
+ * ({@link listFormatters}): the `llm` branch prints the body and nothing else,
+ * and it is what an agent reads.
+ */
+function truncationNotice(
+  output: LookupOutput,
+  surface: Surface,
+): string | undefined {
+  if (!output.truncated) return undefined;
+  const { shown, total } = output.truncated;
+  return (
+    `${shown} of ${total} matching entries shown. Narrow the pattern to reach ` +
+    `the rest, or pass ${quoteArgument("detail", "summary", surface)} for smaller entries.`
+  );
 }
 
 /** Build the sample formatters (renders each exemplar, then the follow-ups). */
@@ -395,6 +417,9 @@ function renderOutput(
       `${mode === "llm" ? "### Not found" : "Not found:"}\n${lines.join("\n")}`,
     );
   }
+  const truncation =
+    mode === "llm" ? truncationNotice(output, "cli") : undefined;
+  if (truncation) bodies.push(truncation);
   return bodies.join("\n\n").trimEnd();
 }
 
