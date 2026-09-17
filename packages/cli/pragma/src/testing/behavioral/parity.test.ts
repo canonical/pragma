@@ -81,33 +81,39 @@ describe("assertCliMcpParity — the shared helper, over stable-now nouns (A5)",
 
 describe("the one place the envelopes differ: the spelling inside meta.notice", () => {
   it("an empty list is equal on both surfaces but for how its next step is spelled", async () => {
-    // A filter that matches nothing: the empty answer names the filter, then
-    // carries the story's empty-state recovery and its next calls.
-    const tokenModule = capabilities.find((module) => module.name === "token");
-    const verb = tokenModule?.verbs.find(
-      (v) => v.path[1] === "consumers",
+    // A search that matches nothing: the empty answer names it, says how to
+    // widen, and keeps the story's next call — unless that call is the rebuild,
+    // which a miss on a healthy store must never advise.
+    const standardModule = capabilities.find(
+      (module) => module.name === "standard",
+    );
+    const verb = standardModule?.verbs.find(
+      (v) => v.path[1] === "list",
     ) as VerbSpec;
     const cwd = freshCwd();
     const params = { search: "zzz-nothing-matches-this" };
     const cliEnvelope = await assertCliMcpParity({
       modules: capabilities,
       verb,
-      tool: "token_consumers",
+      tool: "standard_list",
       cwd,
       params,
     });
     expect(cliEnvelope.data).toEqual([]);
     const cliNotice = noticeOf(cliEnvelope) as string;
     expect(cliNotice).toContain("`--search zzz-nothing-matches-this`");
-    expect(cliNotice).toContain("Run `pragma sources update`.");
+    expect(cliNotice).toContain("Run `pragma standard categories`.");
 
     const mcp = await projectMcp(capabilities, cwd);
-    const mcpNotice = noticeOf(await mcp.callTool("token_consumers", params));
+    const mcpNotice = noticeOf(await mcp.callTool("standard_list", params));
+    const rebuilt = noticeOf(await mcp.callTool("token_consumers", params));
     await mcp.cleanup();
     expect(mcpNotice).toContain('`search: "zzz-nothing-matches-this"`');
-    // Never `confirm`: a next step does not skip the plan.
-    expect(mcpNotice).toContain("Call `sources_update {}`.");
+    expect(mcpNotice).toContain("Call `standard_categories {}`.");
     expect(mcpNotice).not.toContain("pragma ");
+    // A story whose next call IS the rebuild keeps its account and drops it.
+    expect(rebuilt).toContain("drop the argument, or loosen it");
+    expect(rebuilt).not.toContain("sources_update");
     // Two full-registry MCP servers and a CLI dispatch: slow on a busy machine.
   }, 30_000);
 });
