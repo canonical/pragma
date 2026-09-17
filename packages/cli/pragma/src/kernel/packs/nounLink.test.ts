@@ -1,6 +1,6 @@
 /**
  * A filter that names a noun accepts what that noun's lookup accepts, and a
- * `many` / `matching` expand field adds values to a row, never rows.
+ * `many` expand field adds values to a row, never rows.
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
@@ -62,12 +62,7 @@ const MAKER: PackDefinition = {
         relation: "^ex:madeBy",
         select: [
           { name: "name", property: "ex:name", noun: "widget" },
-          {
-            name: "aliases",
-            property: "ex:alias",
-            many: true,
-            matching: "^[^A-Z]*$",
-          },
+          { name: "aliases", property: "ex:alias", many: true },
         ],
       },
       {
@@ -227,18 +222,15 @@ describe("a noun filter across the shipped and the project's stories", () => {
   });
 });
 
-describe("a many, matching expand field", () => {
-  it("is one cell per child holding every matching value", async () => {
+describe("a many expand field", () => {
+  it("is one cell per child holding every value, sorted", async () => {
     const output = (await verb(MAKER, "lookup").run(
       { name: ["ex:acme"] },
       rt,
     )) as LookupOutput;
     const widgets = output.results[0]?.widgets as { aliases?: string }[];
     expect(widgets).toHaveLength(1);
-    expect(widgets[0]?.aliases?.split(" ").sort()).toEqual([
-      "btn",
-      "push-button",
-    ]);
+    expect(widgets[0]?.aliases).toBe("Btn btn push-button");
   });
 });
 

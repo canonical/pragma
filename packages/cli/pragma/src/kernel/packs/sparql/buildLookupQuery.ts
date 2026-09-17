@@ -130,7 +130,7 @@ function lookupProjection(
   const optionals = fields
     .map(
       (field) =>
-        `  OPTIONAL { ?uri ${formatTerm(field.property)} ?${field.name} .${matchingFilter(field, field.name)} }`,
+        `  OPTIONAL { ?uri ${formatTerm(field.property)} ?${field.name} . }`,
     )
     .join("\n");
   return {
@@ -138,16 +138,6 @@ function lookupProjection(
     constraint: buildTypeConstraint(lookup).trimEnd(),
     optionals,
   };
-}
-
-/** The FILTER a field's declared `matching` adds inside its OPTIONAL, or nothing. */
-function matchingFilter(
-  field: Pick<PackExpandField, "matching">,
-  variable: string,
-): string {
-  return field.matching === undefined
-    ? ""
-    : ` FILTER(REGEX(STR(?${variable}), "${escapeSparqlString(field.matching)}"))`;
 }
 
 /**
@@ -647,7 +637,7 @@ function expandFieldClause(
   lookup?: Pick<PackLookup, "by">,
 ): string {
   const variable = field.many ? eachOf(field) : field.name;
-  const read = `?child ${formatTerm(field.property)} ?${variable} .${matchingFilter(field, variable)}`;
+  const read = `?child ${formatTerm(field.property)} ?${variable} .`;
   if (!field.blankWhenSelf || !lookup) return `  OPTIONAL { ${read} }`;
   const self = `?${RESERVED_VARIABLE_PREFIX}Self`;
   return [

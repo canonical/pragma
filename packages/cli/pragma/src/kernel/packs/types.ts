@@ -115,19 +115,8 @@ export interface PackColumn extends PackCellLink {
   readonly label?: string;
 }
 
-/** A value restriction a SPARQL-lane field may declare. */
-export interface PackValuePattern {
-  /**
-   * A regular expression every value of this field must match; a value that
-   * does not is left out, as though the graph did not carry it. For the
-   * restriction a property path cannot state, because it is about the literal
-   * at the end of the path. SPARQL lane only.
-   */
-  readonly matching?: string;
-}
-
 /** A looked-up value: an output name bound to a property of the entity. */
-export interface PackField extends PackCellLink, PackValuePattern {
+export interface PackField extends PackCellLink {
   /** Output field name on the looked-up entity. */
   readonly name: string;
   /** Property to read — a prefixed name (`ds:tier`) or absolute IRI. */
@@ -166,7 +155,7 @@ export interface PackSection extends PackField {
 }
 
 /** A field read from each child node of a {@link PackExpand}. */
-export interface PackExpandField extends PackCellLink, PackValuePattern {
+export interface PackExpandField extends PackCellLink {
   /** Output field name on the child record. */
   readonly name: string;
   /** Property to read on the child node — prefixed name, IRI, or path. */
@@ -193,7 +182,7 @@ export interface PackExpandField extends PackCellLink, PackValuePattern {
   readonly blankWhenSelf?: true;
   /**
    * The property reaches SEVERAL values per child, and the cell is all of them:
-   * distinct, space-separated, one row per child. Without it each value is a
+   * distinct, sorted, space-separated, one row per child. Without it each value is a
    * row of its own, repeating every other cell.
    *
    * SPARQL lane only. Not combinable with {@link blankWhenSelf}, and not a

@@ -73,19 +73,6 @@ by \`sources update\` and addressed by content hash, so the domain you query is
 exactly the domain that was published.`;
 
 /**
- * Keeps the kebab-case CSS variable of a symbol and drops its camelCase twin.
- *
- * A DATA WORKAROUND, to delete with every use of it. 204 of the 745 symbols
- * carry two variables that differ only in spelling (`color-focus-ring` and the
- * older `color-focusRing`), and nothing in the graph marks either. The kebab
- * one is the name to write, so it is the one every answer prints; measured on
- * the shipped pack, no upper-case letter occurs in any other variable of a
- * symbol, and every symbol with a variable keeps exactly one. When
- * design-tokens stops emitting the twins this matches everything and goes.
- */
-const KEBAB_VARIABLE = "^[^A-Z]*$";
-
-/**
  * The read stories the design-system pack supplies — `block`, `token`,
  * `variable`, `modifier` and `tier` as declared data rather than code.
  *
@@ -428,13 +415,12 @@ const designSystemStories: readonly PackDefinition[] = [
               property: "ds:consumesSymbol/rdfs:label",
               noun: "token",
             },
-            // The CSS name to write for that symbol. `many`, so a second
-            // platform's variable adds a name to the cell and not a row.
+            // The CSS names that symbol is written as. `many`, so a second
+            // variable adds a name to the cell and not a row.
             {
               name: "variable",
               property: "ds:consumesSymbol/^dt:ofSymbol/rdfs:label",
               many: true,
-              matching: KEBAB_VARIABLE,
               noun: "variable",
             },
             { name: "key", property: "anatomy:styleKey" },
@@ -751,7 +737,6 @@ const designSystemStories: readonly PackDefinition[] = [
           "  OPTIONAL {",
           "    ?variableUri dt:ofSymbol ?symbolUri ;",
           "                 rdfs:label ?variableName .",
-          `    FILTER(REGEX(?variableName, "${KEBAB_VARIABLE}"))`,
           "  }",
           '  BIND(COALESCE(?blockName, REPLACE(STR(?blockUri), "^.*[/#]", "")) AS ?block)',
           // `IF` and not `COALESCE`: the blank says something a MISSING value
@@ -892,16 +877,6 @@ const designSystemStories: readonly PackDefinition[] = [
         "when asked everything about one token by name: where it is defined, what can change it, and its values",
       example: { name: ["color.text", "color.border"] },
       fields: [
-        // The CSS custom property that stands for this symbol, without its
-        // leading dashes — the address `variable lookup` takes. 29 symbols have
-        // none.
-        {
-          name: "variable",
-          property: "^dt:ofSymbol/rdfs:label",
-          label: "CSS variable",
-          matching: KEBAB_VARIABLE,
-          noun: "variable",
-        },
         // Single-valued: a channel provisions exactly one symbol.
         {
           name: "channelOf",
@@ -938,9 +913,21 @@ const designSystemStories: readonly PackDefinition[] = [
       ],
       expand: [
         {
+          name: "variables",
+          heading: "CSS variables",
+          // Without their leading dashes — the address `variable lookup` takes.
+          // Tokens whose name has a capital carry an older camelCase twin
+          // variable until canonical/design-tokens#141 lands.
+          relation: "^dt:ofSymbol",
+          level: "summary",
+          orderBy: ["name"],
+          select: [{ name: "name", property: "rdfs:label", noun: "variable" }],
+        },
+        {
           name: "definitions",
           heading: "Definitions",
           kind: "table",
+          level: "standard",
           // The inverse edge: definitions point AT the symbol
           // (`?definition dt:symbol ?uri`), so the relation from the symbol is
           // `^dt:symbol`. 1,311 definitions stand behind 745 symbols.
@@ -954,6 +941,7 @@ const designSystemStories: readonly PackDefinition[] = [
         {
           name: "coverage",
           heading: "Covered by",
+          level: "standard",
           // Coverage hangs on the FAMILY, not on the symbol
           // (`?family dt:covers ?symbol`), so this is the inverse too. The
           // family is a `ds:` entity, so its name comes from the
@@ -964,6 +952,7 @@ const designSystemStories: readonly PackDefinition[] = [
         {
           name: "channels",
           heading: "Channels",
+          level: "standard",
           // The symbols that provision this one, at most two. What a channel
           // derives from at each position is that channel's own `values`
           // table: a second hop here would repeat each channel once per
@@ -975,6 +964,7 @@ const designSystemStories: readonly PackDefinition[] = [
           name: "values",
           heading: "Values",
           kind: "table",
+          level: "standard",
           relation: "^dt:forSymbol",
           // BOTH the chain and the derivation, for the reason `token values`
           // states: the shape admits exactly one of them, and selecting only
@@ -1003,6 +993,10 @@ const designSystemStories: readonly PackDefinition[] = [
           ],
         },
       ],
+      disclosure: {
+        levels: ["summary", "standard", "detailed"],
+        default: "detailed",
+      },
       sample: {
         fixedCount: true,
         toolDescription:

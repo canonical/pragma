@@ -99,19 +99,6 @@ const fieldName = z.string().regex(FIELD_PATTERN);
 
 const nounName = z.string().regex(NOUN_PATTERN, NOUN_MESSAGE);
 
-/** A `matching` expression must at least compile; the store reads it as XPath. */
-const valuePattern = z.string().refine(
-  (pattern) => {
-    try {
-      new RegExp(pattern);
-      return true;
-    } catch {
-      return false;
-    }
-  },
-  { message: '"matching" must be a regular expression' },
-);
-
 const columnSchema = z
   .object({
     field: fieldName,
@@ -239,7 +226,6 @@ const fieldSchema = z
     graphqlField: graphqlName.optional(),
     level: z.string().optional(),
     noun: nounName.optional(),
-    matching: valuePattern.optional(),
   })
   .strict();
 
@@ -277,7 +263,6 @@ const expandFieldSchema = z
     blankWhenSelf: z.literal(true).optional(),
     many: z.literal(true).optional(),
     noun: nounName.optional(),
-    matching: valuePattern.optional(),
   })
   .strict()
   .refine((f) => !(f.many && f.blankWhenSelf), {
@@ -617,13 +602,6 @@ function refineLookup(
         path: ["lookup"],
       });
     }
-    if (source === "graphql" && value.matching !== undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `field "${value.name}" sets "matching", which only the SPARQL lane can express — use source "sparql".`,
-        path: ["lookup"],
-      });
-    }
     if (
       source === "graphql" &&
       isPropertyPath(value.property) &&
@@ -668,18 +646,12 @@ function refineLookup(
           path: ["lookup"],
         });
       }
-      for (const option of ["many", "matching"] as const) {
-        if (
-          !("relation" in entry) &&
-          entry[option] !== undefined &&
-          expandSource !== "sparql"
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `expand "${expand.name}" field "${entry.name}" sets "${option}", which only the SPARQL lane can express — set the expand's "source" to "sparql".`,
-            path: ["lookup"],
-          });
-        }
+      if ("many" in entry && entry.many && expandSource !== "sparql") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `expand "${expand.name}" field "${entry.name}" sets "many", which only the SPARQL lane can express — set the expand's "source" to "sparql".`,
+          path: ["lookup"],
+        });
       }
       if (
         "many" in entry &&

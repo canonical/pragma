@@ -42,7 +42,6 @@ import { runSelect } from "./sparql/runSelect.js";
 import { localName } from "./tierScope.js";
 import {
   expandIsSparql,
-  type PackChildRow,
   type PackEntity,
   type PackLookup,
   type PackRow,
@@ -578,7 +577,10 @@ async function addSparqlExpands(
 ): Promise<PackEntity> {
   for (const expand of activeExpands(lookup, level)) {
     if (!expandIsSparql(lookup, expand)) continue;
-    entity[expand.name] = (await runSelect(
+    const many = expand.select.flatMap((field) =>
+      "many" in field && field.many ? [field.name] : [],
+    );
+    const rows = (await runSelect(
       rt,
       buildExpandQuery(expand, String(entity.uri), lookup),
       source,
@@ -589,7 +591,16 @@ async function addSparqlExpands(
       // without that pack does not bind, and every other section of that
       // block is still perfectly answerable.
       { degradeOnUnboundPrefix: true },
-    )) as readonly PackChildRow[];
+    )) as PackRow[];
+    // An aggregate has no order of its own; a `many` cell is sorted here.
+    entity[expand.name] = rows.map((row) => ({
+      ...row,
+      ...Object.fromEntries(
+        many
+          .filter((name) => row[name] !== undefined)
+          .map((name) => [name, (row[name] ?? "").split(" ").sort().join(" ")]),
+      ),
+    }));
   }
   return entity;
 }
