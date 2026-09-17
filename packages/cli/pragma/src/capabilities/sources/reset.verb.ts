@@ -5,11 +5,11 @@
  * like `sources update` it must not boot the store first (a project whose pack
  * it is about to unpoint may not have a bootable one at all), and unlike update
  * it never leaves the machine. Plan-first comes from the projectors, exactly as
- * it does for update — `--dry-run` previews and `--yes` confirms on the CLI, and
+ * it does for update — `--dry-run` previews on the CLI, and
  * over MCP a call without `confirm` returns the plan and writes nothing.
  *
- * `destructive: true`: it removes state a user built on purpose. It is
- * reversible (`--undo` restores the pointer) and it deletes no graph data, but
+ * `destructive: true`: it removes state a user built on purpose. It deletes
+ * no graph data and `sources update` brings the pack back from the cache, but
  * the annotation is what tells an agent's host to ask first, and "your project
  * stops reading the pack it was reading" deserves the ask.
  */

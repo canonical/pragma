@@ -26,7 +26,7 @@
  * reading.
  */
 
-import { $, deleteFile, gen, type Task, writeFile } from "@canonical/task";
+import { $, deleteFile, gen, type Task } from "@canonical/task";
 import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { activePackPath, readActivePack } from "../../kernel/runtime/paths.js";
 import type { SourcesResetData } from "./types.js";
@@ -55,9 +55,10 @@ export async function buildResetTask(
     // looks like, and it keeps `--dry-run` honest (an empty plan, not a delete
     // of a file that is not there).
     if (priorHash !== undefined) {
-      // Undo restores the pointer exactly as found, so `sources reset --undo`
-      // puts the project back on the pack it was reading.
-      yield* $(deleteFile(path, { undo: writeFile(path, priorHash) }));
+      // No undo is declared: an undo re-plans from the disk, where the pointer
+      // is already gone. The way back is `sources update`, which reuses the
+      // cached pack.
+      yield* $(deleteFile(path));
     }
     return data;
   });

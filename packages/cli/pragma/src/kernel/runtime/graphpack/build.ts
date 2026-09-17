@@ -29,6 +29,7 @@ import {
   createStoreQueryFn,
   serializeExtraction,
 } from "@canonical/ke-graphql";
+import { packIsOlderThanCli } from "../packVersion.js";
 import { packDir, packsCacheDir } from "../paths.js";
 import { buildIndex } from "./buildIndex.js";
 import { contentHash, hashSources } from "./hash.js";
@@ -226,7 +227,10 @@ function stampBuilderVersion(
   cached: Manifest,
   version: string,
 ): Manifest {
-  if (cached.version === version) return cached;
+  // Upward only: the cache directory is shared by every project built from the
+  // same sources, so an older (or dev) CLI reusing it must not make a newer
+  // CLI start passing the pack over.
+  if (!packIsOlderThanCli(cached.version, version)) return cached;
   const stamped: Manifest = { ...cached, version };
   try {
     const temp = join(dir, `.manifest-${process.pid}.json`);
