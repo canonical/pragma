@@ -171,7 +171,92 @@ export interface ListQueryInput {
  *   the wrong part of their own file.
  */
 export function buildListQuery(input: ListQueryInput): string {
-  const { query, predicates, search, scope, window, label } = input;
+  const { prologue, projection, body, clauses } = readWrapped(input);
+  return [
+    ...(prologue === "" ? [] : [prologue]),
+    `SELECT ${projection ? projection.map((variable) => `?${variable}`).join(" ") : "*"}`,
+    "WHERE {",
+    "  {",
+    body,
+    "  }",
+    ...clauses.map((clause) => `  ${clause}`),
+    "}",
+    modifier(input.window),
+  ].join("\n");
+}
+
+/** The variable a tier count binds each row's tier to (without `?`). */
+export const TIER_COUNT_TIER = `${RESERVED_VARIABLE_PREFIX}TierOf`;
+
+/** The variable a tier count binds each tier's row count to (without `?`). */
+export const TIER_COUNT_ROWS = `${RESERVED_VARIABLE_PREFIX}TierRows`;
+
+/**
+ * Build the SELECT that counts a scoped list's WHOLE filtered answer, per tier.
+ *
+ * The same wrap the page runs — the author query as a sub-select, under the
+ * same filter and search clauses — with two differences, and they are the
+ * point. There is no page: a heading that counted only the rows in hand would
+ * be the page's size again. And there is no SCOPE clause: the tiers a read did
+ * not answer from are exactly what a reader cannot see from inside it, so
+ * `block list --search meter` finding nothing in scope can still say that
+ * `apps_lxd` holds one.
+ *
+ * A SECOND query, so the page's rows are untouched by construction: joining a
+ * row to its tier inside the page would return an entity in two tiers twice.
+ * Here that entity is counted once under each tier it is in, which is what a
+ * per-tier count means. The tier is OPTIONAL, so an entity in no tier is
+ * counted too, under an unbound tier.
+ *
+ * Measured on the shipped pack (median of 15 warm runs, 2026-09-17): 5.1 ms
+ * beside `block list`'s 10.0 ms page, 13.1 ms beside `modifier list`'s
+ * 12.7 ms, 0.3 ms beside `concept list`'s 0.4 ms.
+ *
+ * @param input - The author query, the supplied filters/search, and the scope
+ *   whose `entity` and `via` say how a row reaches its tier.
+ * @returns SPARQL SELECT text binding {@link TIER_COUNT_TIER} and
+ *   {@link TIER_COUNT_ROWS}, one row per tier.
+ * @throws PragmaError CONFIG_ERROR for the reasons {@link buildListQuery} does.
+ */
+export function buildTierCountQuery(
+  input: Omit<ListQueryInput, "window"> & { readonly scope: ListTierScope },
+): string {
+  const { scope } = input;
+  const { prologue, body, clauses } = readWrapped({
+    ...input,
+    scope: { ...scope, tiers: [] },
+    reserved: true,
+  });
+  return [
+    ...(prologue === "" ? [] : [prologue]),
+    `SELECT ?${TIER_COUNT_TIER} (COUNT(*) AS ?${TIER_COUNT_ROWS})`,
+    "WHERE {",
+    "  {",
+    body,
+    "  }",
+    ...clauses.map((clause) => `  ${clause}`),
+    `  OPTIONAL { ?${scope.entity} ${formatTerm(scope.via)} ?${TIER_COUNT_TIER} }`,
+    "}",
+    `GROUP BY ?${TIER_COUNT_TIER}`,
+  ].join("\n");
+}
+
+/**
+ * Split the author query and compile the clauses that go around it — the part
+ * the page and the tier count share.
+ *
+ * @param input - As {@link buildListQuery}; `reserved` says the caller binds a
+ *   generated variable of its own even when no clause does.
+ */
+function readWrapped(
+  input: Omit<ListQueryInput, "window"> & { readonly reserved?: boolean },
+): {
+  prologue: string;
+  projection: readonly string[] | undefined;
+  body: string;
+  clauses: string[];
+} {
+  const { query, predicates, search, scope, label } = input;
   const clauses = [
     ...predicates.map((predicate, index) =>
       filterClause(predicate, `${RESERVED_VARIABLE_PREFIX}Filter${index}`),
@@ -183,7 +268,10 @@ export function buildListQuery(input: ListQueryInput): string {
       ? [scopeClause(scope, `${RESERVED_VARIABLE_PREFIX}Tier`)]
       : []),
   ];
-  if (clauses.length > 0 && query.includes(RESERVED_VARIABLE_PREFIX)) {
+  if (
+    (clauses.length > 0 || input.reserved === true) &&
+    query.includes(RESERVED_VARIABLE_PREFIX)
+  ) {
     throw PragmaError.configError(
       `Story query in ${label} uses the reserved variable prefix "?${RESERVED_VARIABLE_PREFIX}", ` +
         "which the generated filter clauses bind a caller's values to. Rename it.",
@@ -211,17 +299,7 @@ export function buildListQuery(input: ListQueryInput): string {
         "same order, which `SELECT *` cannot promise.",
     );
   }
-  return [
-    ...(prologue === "" ? [] : [prologue]),
-    `SELECT ${projection ? projection.map((variable) => `?${variable}`).join(" ") : "*"}`,
-    "WHERE {",
-    "  {",
-    body,
-    "  }",
-    ...clauses.map((clause) => `  ${clause}`),
-    "}",
-    modifier(window),
-  ].join("\n");
+  return { prologue, projection, body, clauses };
 }
 
 /** The page as SPARQL solution modifiers (`OFFSET 0` omitted as the no-op it is). */

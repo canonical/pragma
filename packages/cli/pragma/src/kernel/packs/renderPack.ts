@@ -150,9 +150,29 @@ export function listFormatters(
   };
 }
 
-/** The tier scope in the words `--tier` accepts, or nothing when unscoped. */
+/**
+ * The tier scope in the words `--tier` accepts, or nothing when unscoped —
+ * each tier with how many rows of the WHOLE filtered answer it holds, and then
+ * the tiers outside the scope that hold some:
+ * `global 121, apps 39; other tiers: apps_lxd 9`.
+ *
+ * The second half is what a scoped read could not say before. Searching for an
+ * LXD component from inside the default scope answered with nothing and no
+ * sign of where to look; the count names the tier to pass.
+ */
 function scopeText(page: PackPage): string | undefined {
-  return page.scope ? page.scope.tiers.join(", ") : undefined;
+  if (!page.scope) return undefined;
+  const { tiers, counts, untiered } = page.scope;
+  if (!counts) return tiers.join(", ");
+  const held = (tier: string): string => `${tier} ${counts[tier] ?? 0}`;
+  const inScope = [
+    ...tiers.map(held),
+    ...(untiered ? [`no tier ${untiered}`] : []),
+  ];
+  const outside = Object.keys(counts).filter((tier) => !tiers.includes(tier));
+  return outside.length === 0
+    ? inScope.join(", ")
+    : `${inScope.join(", ")}; other tiers: ${outside.map(held).join(", ")}`;
 }
 
 /**

@@ -689,6 +689,19 @@ export interface PageTierScope {
    * use (the tier IRI's local name), base first and then shallowest first.
    */
   readonly tiers: readonly string[];
+  /**
+   * How many rows of the WHOLE filtered answer each tier holds — every page of
+   * it, and the tiers OUTSIDE the scope too, keyed by the same local name and
+   * ordered in-scope first. An in-scope tier holding none is present with 0; a
+   * tier outside the scope is present only when it holds some.
+   *
+   * The scope says which part of the design system was read; this says how
+   * much of the answer is in each part, which is the only way a reader inside
+   * the scope learns that what they asked for lives outside it.
+   */
+  readonly counts?: Readonly<Record<string, number>>;
+  /** Rows whose entity is in no tier at all (in scope by rule), when any. */
+  readonly untiered?: number;
 }
 
 /** One filter a list read was narrowed by, as the caller spelled it. */

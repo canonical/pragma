@@ -227,7 +227,7 @@ export interface Formatters<T> {
    * `notice` is a sentence, and a sentence is the right shape for a human
    * reading stderr and the wrong shape for an agent deciding what to do next.
    * The standing case is the tier scope: `meta.scope` names the tiers a list
-   * answered from, so a caller that wants the rest can widen the read without
+   * answered from and counts the whole filtered answer per tier, so a caller that wants the rest can widen the read without
    * parsing prose for tier names. Both machine surfaces read this ONE seam, the
    * way they already read one `notice`, so CLI-JSON and MCP stay byte-equal.
    *

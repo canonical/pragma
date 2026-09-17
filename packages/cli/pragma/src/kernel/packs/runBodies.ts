@@ -24,7 +24,13 @@ import {
   resolveLookup,
 } from "./resolveEntity.js";
 import { parseSampleCount, pickRandom } from "./sample.js";
-import { buildListQuery } from "./sparql/buildListQuery.js";
+import {
+  buildListQuery,
+  buildTierCountQuery,
+  type ListTierScope,
+  TIER_COUNT_ROWS,
+  TIER_COUNT_TIER,
+} from "./sparql/buildListQuery.js";
 import {
   type FilterVocabularies,
   resolveFilterPredicates,
@@ -32,6 +38,7 @@ import {
 import { runSelect } from "./sparql/runSelect.js";
 import { readSearchTerm } from "./sparql/searchTerm.js";
 import {
+  localName,
   resolveReadScope,
   scopeIris,
   scopeLabel,
@@ -45,6 +52,7 @@ import {
   type PackLookup,
   type PackPage,
   type PackTierScope,
+  type PageTierScope,
   type StorySource,
 } from "./types.js";
 
@@ -127,18 +135,25 @@ export function makeListRun(
       ...(listScope ? [JSON.stringify(tiers)] : []),
     ]);
     const offset = readCursor(params.after, fingerprint);
+    const read = {
+      query: shape.query,
+      predicates,
+      ...(search ? { search } : {}),
+      label: meta.source.label,
+    };
     const rows = await runSelect(
       rt,
       buildListQuery({
-        query: shape.query,
-        predicates,
-        ...(search ? { search } : {}),
+        ...read,
         ...(listScope ? { scope: listScope } : {}),
         window: { limit: limit + 1, offset },
-        label: meta.source.label,
       }),
       meta.source,
     );
+    const breakdown =
+      scope?.kind === "tiers" && listScope
+        ? await readTierCounts(rt, { ...read, scope: listScope }, meta.source)
+        : undefined;
     const hasMore = rows.length > limit;
     const applied = appliedFilters(shape, params, search?.term, scope);
     return {
@@ -148,10 +163,52 @@ export function makeListRun(
         : {}),
       ...(applied.length > 0 ? { filters: applied } : {}),
       ...(scope?.kind === "tiers"
-        ? { scope: { tiers: scope.tiers.map((tier) => tier.local) } }
+        ? {
+            scope: {
+              tiers: scope.tiers.map((tier) => tier.local),
+              ...breakdown,
+            },
+          }
         : {}),
       limit,
     };
+  };
+}
+
+/**
+ * Count the whole filtered answer per tier, for a scoped page's heading.
+ *
+ * One aggregate over the same wrapped query the page ran
+ * ({@link buildTierCountQuery}), never a join into the page: the rows a caller
+ * pages through stay exactly the rows the story's query returns.
+ *
+ * @returns `counts` with every in-scope tier (0 when it holds none) ahead of
+ *   the out-of-scope tiers that hold some, and `untiered` when any row's entity
+ *   is in no tier.
+ */
+async function readTierCounts(
+  rt: PragmaRuntime,
+  read: Parameters<typeof buildTierCountQuery>[0] & { scope: ListTierScope },
+  source: StorySource,
+): Promise<Pick<PageTierScope, "counts" | "untiered">> {
+  const rows = await runSelect(rt, buildTierCountQuery(read), source);
+  const byIri = new Map(
+    rows.map((row) => [
+      row[TIER_COUNT_TIER] ?? "",
+      Number(row[TIER_COUNT_ROWS]),
+    ]),
+  );
+  const inScope = read.scope.tiers.map(
+    (iri) => [localName(iri), byIri.get(iri) ?? 0] as const,
+  );
+  const outside = [...byIri]
+    .filter(([iri]) => iri !== "" && !read.scope.tiers.includes(iri))
+    .map(([iri, count]) => [localName(iri), count] as const)
+    .sort(([a], [b]) => a.localeCompare(b));
+  const untiered = byIri.get("") ?? 0;
+  return {
+    counts: Object.fromEntries([...inScope, ...outside]),
+    ...(untiered > 0 ? { untiered } : {}),
   };
 }
 

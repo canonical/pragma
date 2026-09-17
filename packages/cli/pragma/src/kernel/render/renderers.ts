@@ -201,9 +201,11 @@ function renderHeaderRow<T>(
  *
  * The SCOPE is in the heading for the same reason, and it is the more serious
  * of the two omissions: a truncated page at least ends where it ends, while a
- * scoped read looks exactly like a complete one. `## Block (175, tier scope:
- * global, apps, documentation, sites, stores)` says which part of the design
- * system the 175 are, in the words `--tier` accepts.
+ * scoped read looks exactly like a complete one. `## Block (176, tier scope:
+ * global 121, apps 39, …; other tiers: apps_lxd 9, …)` says which part of the
+ * design system the 176 are, in the words `--tier` accepts — and how the WHOLE
+ * filtered answer divides, the tiers outside the scope included. The caller
+ * composes that text (`packs/renderPack.ts`); this renderer only places it.
  *
  * @param items - The rows on this page.
  * @param options - Columns and empty-state copy.

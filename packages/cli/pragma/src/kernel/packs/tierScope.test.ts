@@ -334,6 +334,8 @@ describe("a scoped answer says so, in every format", () => {
   it("the page carries the scope as data", async () => {
     expect((await page({})).scope).toEqual({
       tiers: ["global", "apps", "sites"],
+      counts: { global: 2, apps: 1, sites: 1, apps_lxd: 2 },
+      untiered: 1,
     });
     expect((await page({ tier: "all" })).scope).toBeUndefined();
   });
@@ -346,7 +348,7 @@ describe("a scoped answer says so, in every format", () => {
       withTier(undefined, LLM),
     );
     expect(outcome.stdout).toContain(
-      "## Widget (5, tier scope: global, apps, sites)",
+      "## Widget (5, tier scope: global 2, apps 1, sites 1, no tier 1; other tiers: apps_lxd 2)",
     );
   });
 
@@ -358,7 +360,8 @@ describe("a scoped answer says so, in every format", () => {
       withTier(undefined, LLM),
     );
     expect(outcome.stdout).toContain(
-      "## Widget (2, more exist, tier scope: global, apps, sites)",
+      // The counts are of the WHOLE answer, not of the two rows in hand.
+      "## Widget (2, more exist, tier scope: global 2, apps 1, sites 1, no tier 1; other tiers: apps_lxd 2)",
     );
   });
 
@@ -372,7 +375,9 @@ describe("a scoped answer says so, in every format", () => {
       withTier(undefined, PLAIN),
     );
     expect(outcome.stdout).toContain("Button");
-    expect(outcome.stderr).toContain("Tier scope: global, apps, sites.");
+    expect(outcome.stderr).toContain(
+      "Tier scope: global 2, apps 1, sites 1, no tier 1; other tiers: apps_lxd 2.",
+    );
     expect(outcome.stderr).toContain("`--tier all` for every tier");
   });
 
@@ -384,10 +389,50 @@ describe("a scoped answer says so, in every format", () => {
       withTier(undefined, JSON_FLAGS),
     );
     const envelope = JSON.parse(outcome.stdout as string);
-    expect(envelope.meta.scope).toEqual({ tiers: ["global", "apps", "sites"] });
-    expect(envelope.meta.notice).toContain("Tier scope: global, apps, sites.");
+    expect(envelope.meta.scope).toEqual({
+      tiers: ["global", "apps", "sites"],
+      counts: { global: 2, apps: 1, sites: 1, apps_lxd: 2 },
+      untiered: 1,
+    });
+    expect(envelope.meta.notice).toContain("Tier scope: global 2, apps 1,");
     // `data` keeps its shape: the bare row array it has always been.
     expect(Array.isArray(envelope.data)).toBe(true);
+  });
+
+  it("counts the FILTERED answer, and names the tier a miss lives in", async () => {
+    // The case the breakdown is for: nothing in scope matches, and the answer
+    // still says which tier to pass.
+    const missed = await page({ search: "meter" });
+    expect(missed.rows).toEqual([]);
+    expect(missed.scope?.counts).toEqual({
+      global: 0,
+      apps: 0,
+      sites: 0,
+      apps_lxd: 1,
+    });
+    const outcome = await executeVerb(
+      verbFor(KIT, "list"),
+      { search: "meter" },
+      REAL,
+      withTier(undefined, LLM),
+    );
+    expect(outcome.stdout).toContain("other tiers: apps_lxd 1");
+  });
+
+  it("counts an entity in two tiers under each, and returns its row once", async () => {
+    const { rt: twice } = await buildFixtureRuntime({
+      ttl: `${TTL}\nex:button ex:tier ex:apps .`,
+      prefixes: PREFIXES,
+    });
+    try {
+      const answer = (await verbFor(KIT, "list").run({}, twice)) as PackPage;
+      expect(answer.rows.filter((row) => row.name === "Button")).toHaveLength(
+        1,
+      );
+      expect(answer.scope?.counts).toMatchObject({ global: 2, apps: 2 });
+    } finally {
+      (await twice.store.get()).store.dispose();
+    }
   });
 
   it("an unscoped read says nothing about a scope", async () => {
