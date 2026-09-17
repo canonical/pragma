@@ -27,6 +27,7 @@ import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { activePackPath, packDir } from "../../kernel/runtime/paths.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
+import { projectMcp } from "../helpers/projectMcp.js";
 
 // Every case here boots its own runtime — a fresh install is what is under test —
 // and the first read in the process parses the embedded pack cold: 65,000 triples,
@@ -292,6 +293,15 @@ describe("after an upgrade — a pack an older CLI built does not answer", () =>
       contentHash: hash,
       builtBy: "0.1.0",
       builtAt: "2026-09-10T21:49:00.411Z",
+    });
+  });
+
+  it("the same read over MCP carries the same meta", async () => {
+    const { cwd, hash } = stalePackCwd();
+    const mcp = await projectMcp([blockModule], cwd);
+    const envelope = await mcp.callTool("block_list");
+    expect(envelope.meta).toMatchObject({
+      ignoredPack: { contentHash: hash, builtBy: "0.1.0" },
     });
   });
 });

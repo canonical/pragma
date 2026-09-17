@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type RenderStyle, styleFor } from "../../kernel/render/style.js";
-import { renderSourcesStatusPlain } from "./status.render.js";
+import { renderSourcesStatusPlain, statusFormatters } from "./status.render.js";
 import type { SourcesStatusData } from "./types.js";
 
 /** A project reading from its own built pack, with two configured sources. */
@@ -106,6 +106,22 @@ describe("renderSourcesStatusPlain", () => {
     expect(out).toContain(
       "  0e82d35c6668: a pack built by pragma 0.37.0 on 2026-09-10 is ignored — run `pragma sources update` to rebuild it or `pragma sources reset` to remove it",
     );
+  });
+
+  it("the llm form names the ignored pack and both ways out", () => {
+    const out = statusFormatters.llm({
+      ...BUILT,
+      store: "embedded",
+      ignoredPack: {
+        contentHash: "0e82d35c66687b8a",
+        builtBy: "0.37.0",
+        builtAt: "2026-09-10T21:49:00.411Z",
+      },
+    });
+    expect(out).toContain(
+      "- Ignored: a pack built by pragma 0.37.0 on 2026-09-10 is ignored",
+    );
+    expect(out).toContain("`pragma sources reset`");
   });
 
   it("says so when no packs are configured", () => {

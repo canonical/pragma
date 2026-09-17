@@ -23,9 +23,8 @@ import type { SourcesResetData } from "./types.js";
 /** The `sources reset` verb spec. */
 export const resetVerb: VerbSpec<Record<string, unknown>, SourcesResetData> = {
   path: ["sources", "reset"],
-  summary:
-    "Remove this project's built pack and read the shipped snapshot again.",
-  doc: "Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again (or, for a project that declares its own packs, until the next `sources update`). The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built.",
+  summary: "Remove this project's built pack.",
+  doc: "Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again; a project that declares its own packs cannot answer reads until the next `sources update`. The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built.",
   params: [],
   output: { formatters: resetFormatters },
   examples: [
