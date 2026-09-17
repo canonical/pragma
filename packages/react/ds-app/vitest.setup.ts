@@ -8,12 +8,8 @@ afterEach(() => {
   cleanup();
 });
 
-// A class, not `vitest.fn().mockImplementation(arrowFn)`: an arrow function
-// cannot be invoked with `new`, and components that construct a real
-// `new ResizeObserver(callback)` (e.g. anything using
-// @canonical/react-ds-global's window-fitment positioning, like Popover)
-// throw "is not a constructor" against the previous mock. Matches the
-// working pattern already used in @canonical/react-ds-global's own setup.
+// A class, not `vitest.fn().mockImplementation(arrowFn)`: consumers call
+// `new ResizeObserver(callback)`, and an arrow function is not a constructor.
 class ResizeObserverMock {
   observe = vitest.fn();
   unobserve = vitest.fn();
