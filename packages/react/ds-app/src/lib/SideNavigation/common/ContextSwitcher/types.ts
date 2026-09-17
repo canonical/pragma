@@ -53,11 +53,11 @@ type OwnProps = Pick<
  * Renders via `ContextualMenu` — a real `<button>` trigger with
  * `aria-haspopup="menu"`/`aria-expanded`, and a `role="menu"` popup with
  * full roving-focus keyboard navigation — a "select"-like widget, not a
- * bare disclosure. Extends `<div>`
- * (`ContextualMenu`'s own root). `onSelect` — a native `<div>` text-
- * selection event — is excluded: it would collide with this component's
- * own item-selection callback (`onContextChange`) under one name with two
- * incompatible signatures.
+ * bare disclosure. Extends `<div>` — the component's own wrapper, which
+ * carries the caption (`title`) and the dropdown field. `onSelect` — a
+ * native `<div>` text-selection event — is excluded: it would collide with
+ * this component's own item-selection callback (`onContextChange`) under
+ * one name with two incompatible signatures.
  */
 export type ContextSwitcherProps = OwnProps &
   Omit<ComponentProps<"div">, keyof OwnProps | "onSelect">;

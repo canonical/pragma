@@ -3,33 +3,41 @@
 @layer ds.components.apps {
   .ds.side-navigation-context-switcher {
     display: block;
-    height: var(--dimension-400);
-    & > .trigger {
-      height: 100%;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      width: 100%;
-      padding-block: var(--sidenav-icon-gap);
-      padding-inline: var(--sidenav-icon-gap);
-      box-sizing: border-box;
-      color: var(--color-text);
-      background: var(--color-foreground-input);
-      border: none;
-      border-block-end: var(--dimension-stroke-thickness-medium) solid
-        var(--color-border);
-      cursor: pointer;
 
-      &:hover {
-        background: var(--color-foreground-input-hover);
-      }
+    /* ContextualMenu's own root — the dropdown field fills the wrapper
+       (its inline-block default is for inline placements; the rail is a
+       block column). */
+    & > .ds.contextual-menu {
+      display: block;
+      height: var(--dimension-400);
 
-      & > .row {
-        display: flex;
+      & > .trigger {
+        height: 100%;
+        display: grid;
+        grid-template-columns: 1fr auto;
         align-items: center;
-        justify-content: space-between;
-        gap: var(--sidenav-icon-gap);
         width: 100%;
+        padding-block: var(--sidenav-icon-gap);
+        padding-inline: var(--sidenav-icon-gap);
+        box-sizing: border-box;
+        color: var(--color-text);
+        background: var(--color-foreground-input);
+        border: none;
+        border-block-end: var(--dimension-stroke-thickness-medium) solid
+          var(--color-border);
+        cursor: pointer;
+
+        &:hover {
+          background: var(--color-foreground-input-hover);
+        }
+
+        & > .row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--sidenav-icon-gap);
+          width: 100%;
+        }
       }
     }
 
@@ -49,6 +57,12 @@
   }
 
   .ds.contextual-menu-item {
+    /* The portaled menu items are styled structurally — this sheet's layer
+       (ds.components.apps) outranks the item's own (ds.components.global)
+       at equal specificity. Both classes are emitted only by this
+       component's renderer, so no other ContextualMenu on the page is
+       affected. */
+    /* A context: name + optional description + optional badge. */
     & .content {
       display: flex;
       flex-direction: column;
@@ -70,7 +84,8 @@
       }
     }
 
-    & [role="menuitem"]:has(.label) {
+    /* The "create context" action: an icon + label row. */
+    & .create-context {
       display: flex;
       align-items: center;
       gap: var(--dimension-100);

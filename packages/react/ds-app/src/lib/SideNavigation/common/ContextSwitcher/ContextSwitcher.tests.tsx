@@ -139,7 +139,7 @@ describe("ContextSwitcher", () => {
   });
 
   it("renders the title as a GroupHeader caption above the trigger", () => {
-    const { container } = render(
+    render(
       <ContextSwitcher
         title="Context"
         currentContext={contexts[0]}
@@ -148,9 +148,12 @@ describe("ContextSwitcher", () => {
     );
     const caption = screen.getByText("Context");
     expect(caption).toHaveClass("ds", "side-navigation-group-header");
-    // A sibling of ContextualMenu's own wrapper, not nested inside it — a
-    // real Fragment child.
-    expect(caption).toBe(container.firstElementChild);
+    // Both are children of the component's own wrapper element — the
+    // caption a sibling of the menu, not nested inside it.
+    expect(caption.parentElement).toHaveClass(
+      "ds",
+      "side-navigation-context-switcher",
+    );
     expect(caption.nextElementSibling).toHaveClass("ds", "contextual-menu");
   });
 
