@@ -15,7 +15,9 @@ describe("the one generator of tool guidance", () => {
     expect(description.startsWith(`Use ${lookup.useWhen}.`)).toBe(true);
     expect(description).toContain(lookup.doc);
     expect(
-      description.endsWith('Example: token_lookup { name: ["color.text"] }.'),
+      description.endsWith(
+        'Example: token_lookup { name: ["color.text","color.border"] }.',
+      ),
     ).toBe(true);
   });
 

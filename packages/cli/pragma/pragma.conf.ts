@@ -232,7 +232,7 @@ const designSystemStories: readonly PackDefinition[] = [
         'Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. `detail: "summary"` trims to the base view.',
       useWhen:
         "when asked about one component, pattern or layout by name — its anatomy, properties, variants, or when to use it",
-      example: { name: ["Button"] },
+      example: { name: ["Button", "Accordion"] },
       by: "ds:name",
       types: ["ds:Component", "ds:Pattern", "ds:Layout", "ds:Subcomponent"],
       // A subcomponent is a PART of a block, never the block someone means:
@@ -469,7 +469,7 @@ const designSystemStories: readonly PackDefinition[] = [
       "List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list.",
     useWhen:
       "when asked which design tokens exist — colours, spacing, typography — or to find a token's exact name",
-    example: { type: "color" },
+    example: { type: ["color", "dimension"] },
     list: {
       // Type and description are DEFINITION-level facts, and 393 of the 745
       // symbols have more than one definition (`color.text` has 20). The one
@@ -594,7 +594,7 @@ const designSystemStories: readonly PackDefinition[] = [
           "List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell.",
         useWhen:
           "when asked what value a token has, in light, dark or any other mode",
-        example: { symbol: "color.text" },
+        example: { symbol: ["color.text", "color.border"] },
         // The resolved-value shape admits exactly one of a chain or a
         // derivation, so BOTH are selected wherever a value is projected. A
         // surface that selected only the chain would show a blank row for every
@@ -697,7 +697,7 @@ const designSystemStories: readonly PackDefinition[] = [
           "List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings.",
         useWhen:
           "when asked which components use a token, or what changing one affects",
-        example: { symbol: "color.text" },
+        example: { symbol: ["color.text", "color.border"] },
         // Seven identity columns, and not one of them is decoration: a binding
         // is identified by the whole tuple, so dropping `rank` or `node` would
         // publish rows a caller cannot tell apart — which is worse than a wide
@@ -919,7 +919,7 @@ const designSystemStories: readonly PackDefinition[] = [
         "Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob.",
       useWhen:
         "when asked everything about one token by name: where it is defined, what can change it, and its values",
-      example: { name: ["color.text"] },
+      example: { name: ["color.text", "color.border"] },
       fields: [
         // Single-valued: a channel provisions exactly one symbol.
         {
@@ -1043,7 +1043,7 @@ const designSystemStories: readonly PackDefinition[] = [
       "List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`).",
     useWhen:
       "when asked which CSS custom properties (variables) exist, or which CSS variable stands for a token",
-    example: { symbol: "color.text" },
+    example: { symbol: ["color.text", "color.border"] },
     list: {
       query: [
         "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility",
@@ -1184,7 +1184,7 @@ const designSystemStories: readonly PackDefinition[] = [
         toolDescription:
           "List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs.",
         useWhen: "when asked which tokens a CSS variable ends up referring to",
-        example: { variable: "modifier-color-text" },
+        example: { variable: ["modifier-color-text", "modifier-color-border"] },
         // ONE property path carries the whole walk, which is why this is a
         // query and not a traversal in code. `dt:references` is an rdf:List of
         // the variables a declaration's value reads, so each hop is
@@ -1262,7 +1262,7 @@ const designSystemStories: readonly PackDefinition[] = [
         "Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`).",
       useWhen:
         "when asked about one CSS variable by name: what it stands for and everywhere it is declared",
-      example: { name: ["color-text"] },
+      example: { name: ["color-text", "color-border"] },
       fields: [
         { name: "symbol", property: "dt:ofSymbol/rdfs:label", label: "Symbol" },
         { name: "tier", property: "dt:tier", label: "Tier" },
@@ -1364,7 +1364,7 @@ const designSystemStories: readonly PackDefinition[] = [
         "Get values and usage details for one or more modifier families by name.",
       useWhen:
         "when asked which values one option allows, such as the levels of importance",
-      example: { name: ["importance"] },
+      example: { name: ["Importance", "Density"] },
       expand: [
         {
           name: "values",
@@ -1418,7 +1418,7 @@ const designSystemStories: readonly PackDefinition[] = [
       toolDescription:
         "Get one or more tiers by name, with the blocks scoped directly to each.",
       useWhen: "when asked which components belong to one tier or product",
-      example: { name: ["apps/lxd"] },
+      example: { name: ["apps/lxd", "global"] },
       expand: [
         {
           name: "blocks",
@@ -1445,7 +1445,7 @@ const conceptStory: PackDefinition = {
     "List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.",
   useWhen:
     "when asked for design guidance that is not about one component — foundations, how-to guides, decision guides",
-  example: { type: "Explanation" },
+  example: { type: ["Explanation", "How to guide"] },
   // Concepts carry a `ds:tier` too (4 of them do), so they are scoped on the
   // same terms as blocks and modifier families. Its `list` publishes no tier
   // COLUMN and does not need to: the scope constrains the entity through
@@ -1513,7 +1513,7 @@ const conceptStory: PackDefinition = {
     toolDescription:
       "Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob.",
     useWhen: "when asked to read one guide or foundation in full",
-    example: { name: ["Foundations: Grid"] },
+    example: { name: ["Foundations: Spacing", "Foundations: Surfaces"] },
     fields: [
       { name: "type", property: "ds:conceptType/ds:name", label: "Type" },
       { name: "tier", property: "ds:tier", label: "Tier" },
@@ -1567,7 +1567,7 @@ const implementationStory: PackDefinition = {
     "List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search.",
   useWhen:
     "when asked whether a component is implemented in React, Svelte or another library, or where its source code lives",
-  example: { platform: "react" },
+  example: { platform: ["react", "svelte"] },
   list: {
     // The library is the subject that carries the platform, so the row is
     // assembled from BOTH ends of `ds:hasImplementation`. `?block` prefers the
@@ -1696,7 +1696,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
       "List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term.",
     useWhen:
       "when asked which coding rules or conventions apply — for React, CSS, testing, documentation and so on",
-    example: { category: "react" },
+    example: { category: ["react", "css"] },
     list: {
       query: [
         // `?category` is the LEAF a standard is filed under — what a row
@@ -1864,7 +1864,10 @@ const codeStandardsStories: readonly PackDefinition[] = [
       toolDescription:
         'Get one or more code standards in full, with dos and don\'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don\'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those.',
       useWhen: "when asked how code should be written under one rule",
-      example: { name: ["react/component/tsdoc"], detail: "detailed" },
+      example: {
+        name: ["cs:react.component.tsdoc", "cs:react.component.props"],
+        detail: "detailed",
+      },
       fields: [
         {
           name: "category",

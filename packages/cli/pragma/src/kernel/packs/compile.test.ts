@@ -578,6 +578,88 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
  * once, for the name resolve, and the resource listing reads that same
  * declaration. Nothing to keep in sync because there is nothing written twice.
  */
+describe("a lookup that declares no disclosure can still be asked for less", () => {
+  /** The widget lookup with every trace of disclosure removed. */
+  const BARE_PACK: PackDefinition = {
+    noun: "widget",
+    lookup: {
+      source: "sparql",
+      by: "ex:name",
+      type: "ex:Widget",
+      fields: [{ name: "description", property: "ex:description" }],
+      expand: [
+        {
+          name: "parts",
+          relation: "ex:hasPart",
+          select: [{ name: "name", property: "ex:name" }],
+        },
+      ],
+    },
+  };
+  const lookupVerb = compilePack(
+    BARE_PACK,
+    distributionSource("bundled:widget"),
+    PREFIXES,
+  ).find((v) => verbKey(v.path) === "widget lookup") as VerbSpec;
+
+  const lookupAt = async (options: {
+    detail?: "summary" | "standard" | "detailed";
+    configDetail?: "summary";
+  }) => {
+    const { rt } = await buildFixtureRuntime({
+      ttl: TTL,
+      prefixes: PREFIXES,
+      ...(options.detail ? { detail: options.detail } : {}),
+      ...(options.configDetail
+        ? { configDetail: options.configDetail, detailOrigin: "project" }
+        : {}),
+    });
+    try {
+      const out = (await lookupVerb.run(
+        { name: ["Button"] },
+        rt,
+      )) as LookupOutput;
+      return out.results.at(0);
+    } finally {
+      (await rt.store.get()).store.dispose();
+    }
+  };
+
+  it("advertises the canonical levels, defaulting to the fullest", () => {
+    expect(lookupVerb.disclosure).toEqual({
+      levels: ["summary", "standard", "detailed"],
+      default: "detailed",
+    });
+  });
+
+  it("answers exactly as before when nothing is asked for", async () => {
+    expect(await lookupAt({})).toEqual(await lookupAt({ detail: "detailed" }));
+    expect((await lookupAt({}))?.parts).toEqual([{ name: "Label" }]);
+  });
+
+  it("is the fields alone at summary, and everything from standard", async () => {
+    const summary = await lookupAt({ detail: "summary" });
+    expect(summary).toMatchObject({ description: "A button." });
+    expect(summary).not.toHaveProperty("parts");
+    expect(await lookupAt({ detail: "standard" })).toHaveProperty("parts");
+  });
+
+  it("follows a configured detail, as a declared disclosure always did", async () => {
+    expect(await lookupAt({ configDetail: "summary" })).not.toHaveProperty(
+      "parts",
+    );
+  });
+
+  it("leaves a declared disclosure exactly as its author wrote it", () => {
+    const declared = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    ).find((v) => verbKey(v.path) === "widget lookup");
+    expect(declared?.disclosure?.default).toBe("summary");
+  });
+});
+
 describe("declared listing (derived from the lookup's types)", () => {
   it("derives one collection per declared type, unweighted types at 1", () => {
     expect(

@@ -42,6 +42,7 @@ import {
   type PackPage,
   type PackRow,
   TIER_PARAM,
+  UNTIERED_KEY,
 } from "./types.js";
 
 /** Sample output: the drawn exemplars, the population size, and agent follow-ups. */
@@ -69,6 +70,10 @@ export const DEFAULT_EMPTY_RECOVERY: PackEmptyRecovery = {
     "Either nothing matched — try a wider filter — or the store has nothing in it yet and needs building.",
   call: BUILD_STORE_CALL,
 };
+
+/** What a filtered empty page says first: the store is fine, the filter missed. */
+const FILTERED_EMPTY_HINT =
+  "The store answered and nothing carries that — drop the argument, or loosen it, to widen the read.";
 
 /**
  * Build the list formatters for a list-shaped verb (list or an extra verb).
@@ -107,6 +112,20 @@ export function listFormatters(
   const { message, call } = shape.emptyRecovery ?? DEFAULT_EMPTY_RECOVERY;
   const hintFor = (surface: Surface): string =>
     call ? `${message} ${renderNextStep(call, surface)}` : message;
+  // A FILTERED empty page is a miss, not an empty store: it says how to widen,
+  // keeps the story's own account of the emptiness, and drops the rebuild call
+  // (any other next step a story declares — listing the values — still helps).
+  const declared = shape.emptyRecovery;
+  const filteredHintFor = (surface: Surface): string =>
+    [
+      FILTERED_EMPTY_HINT,
+      declared?.message,
+      declared?.call && declared.call.verb !== BUILD_STORE_CALL.verb
+        ? renderNextStep(declared.call, surface)
+        : undefined,
+    ]
+      .filter(Boolean)
+      .join(" ");
   const optionsFor = (surface: Surface): RenderListOptions<PackRow> => ({
     heading: meta.heading,
     columns,
@@ -120,7 +139,7 @@ export function listFormatters(
     llm: (page) => {
       const body = renderListLlm(
         page.rows,
-        emptyCopy(page, meta, optionsFor("cli"), "cli"),
+        emptyCopy(page, meta, optionsFor("cli"), "cli", filteredHintFor("cli")),
         {
           more: page.nextAfter !== undefined,
           ...(scopeText(page) === undefined
@@ -138,7 +157,13 @@ export function listFormatters(
       page.rows.length === 0
         ? joinNotices([
             renderListEmptyNotice(
-              emptyCopy(page, meta, optionsFor(surface), surface),
+              emptyCopy(
+                page,
+                meta,
+                optionsFor(surface),
+                surface,
+                filteredHintFor(surface),
+              ),
             ),
             scopeNotice(page, surface),
           ])
@@ -150,9 +175,22 @@ export function listFormatters(
   };
 }
 
-/** The tier scope in the words `--tier` accepts, or nothing when unscoped. */
+/**
+ * The tier scope in the words `--tier` accepts, each tier with its share of
+ * the whole filtered answer; an EMPTY page also names the tiers outside the
+ * scope that hold a match. Nothing when unscoped.
+ */
 function scopeText(page: PackPage): string | undefined {
-  return page.scope ? page.scope.tiers.join(", ") : undefined;
+  if (!page.scope) return undefined;
+  const { tiers, counts } = page.scope;
+  if (!counts) return tiers.join(", ");
+  const held = (tier: string): string => `${tier} ${counts[tier] ?? 0}`;
+  const inside = [...tiers, ...(UNTIERED_KEY in counts ? [UNTIERED_KEY] : [])];
+  const outside = Object.keys(counts).filter((tier) => !inside.includes(tier));
+  const text = inside.map(held).join(", ");
+  return page.rows.length > 0 || outside.length === 0
+    ? text
+    : `${text}; other tiers: ${outside.map(held).join(", ")}`;
 }
 
 /**
@@ -196,40 +234,30 @@ function joinNotices(
 /**
  * The empty-state copy this page deserves.
  *
- * Two facts can empty a list and zero rows cannot tell them apart: nothing was
- * there, or a filter missed what was. Both are worth saying and they are not
- * exclusive, so a filtered empty page says both — the kernel's own sentence
- * names the arguments the caller typed, and the story's `emptyRecovery` follows
- * it on the next line, exactly as it does on an unfiltered page.
- *
- * It did not, briefly: a filtered empty page reported only the narrowing,
- * because the recoveries of the day asserted an empty store ("No token symbols
- * in the store … run `pragma sources update`") and so told a reader with 745
- * symbols in it to rebuild for nothing. That is a WORDING defect, and it is
- * fixed where it lives — a story's recovery is now written to hold whether the
- * population is empty or a filter missed a populated one, or the story declares
- * none. Suppressing it here cost more than it saved: `token consumers --symbol
- * color.text` narrows a table that records no bindings at all, and "No token
- * matches `--symbol color.text`." on its own read as a mistyped symbol while
- * withholding the one account of the emptiness that verb has.
+ * Two facts can empty a list: nothing was there, or a filter missed what was.
+ * An unfiltered empty page gets the story's `emptyRecovery` whole. A filtered
+ * one names the arguments the caller typed and takes `filteredHint` instead —
+ * see {@link listFormatters} for what that keeps and drops.
  *
  * @param page - The rendered page (its rows and the filters that cut them).
  * @param meta - The noun, for the sentence.
  * @param base - The story's own empty copy.
- * @returns `base` unchanged, or `base` with the filter-shaped message — the
- *   story's own hint is kept either way.
+ * @param filteredHint - The hint a filtered empty page carries.
+ * @returns `base` unchanged, or `base` with the filter-shaped message and hint.
  */
 function emptyCopy(
   page: PackPage,
   meta: RenderMeta,
   base: RenderListOptions<PackRow>,
   surface: Surface,
+  filteredHint: string,
 ): RenderListOptions<PackRow> {
   const applied = page.filters ?? [];
   if (page.rows.length > 0 || applied.length === 0) return base;
   return {
     ...base,
     emptyMessage: `No ${meta.noun} matches ${listFilters(applied, surface)}.`,
+    emptyHint: filteredHint,
   };
 }
 
@@ -321,7 +349,27 @@ export function lookupFormatters(
     llm: (output) =>
       renderOutput(output, (entity) => renderLookupLlm(entity, options), "llm"),
     json: (output) => JSON.stringify(output, null, 2),
+    notice: (output, surface = "cli") => truncationNotice(output, surface),
   };
+}
+
+/** What a capped pattern says for itself, on the notice seam and in the llm body. */
+function truncationNotice(
+  output: LookupOutput,
+  surface: Surface,
+): string | undefined {
+  if (!output.truncated) return undefined;
+  const advice =
+    output.detail === "summary"
+      ? ""
+      : `, or pass ${quoteArgument("detail", "summary", surface)} for smaller entries`;
+  const elsewhere = output.elsewhere
+    ? `, and ${output.elsewhere} more in other tiers: pass ${quoteArgument(TIER_PARAM, EVERY_TIER, surface)}`
+    : "";
+  return (
+    `${output.results.length} of ${output.total} matches shown${elsewhere}. ` +
+    `Narrow the pattern to reach the rest${advice}.`
+  );
 }
 
 /** Build the sample formatters (renders each exemplar, then the follow-ups). */
@@ -395,6 +443,9 @@ function renderOutput(
       `${mode === "llm" ? "### Not found" : "Not found:"}\n${lines.join("\n")}`,
     );
   }
+  const truncation =
+    mode === "llm" ? truncationNotice(output, "cli") : undefined;
+  if (truncation) bodies.push(truncation);
   return bodies.join("\n\n").trimEnd();
 }
 

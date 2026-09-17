@@ -85,7 +85,7 @@
  */
 
 import { PragmaError } from "../../error/index.js";
-import { RESERVED_VARIABLE_PREFIX } from "../types.js";
+import { type PackRow, RESERVED_VARIABLE_PREFIX } from "../types.js";
 import { readAuthorQuery } from "./authorQuery.js";
 import { escapeSparqlString, formatTerm } from "./escape.js";
 
@@ -171,7 +171,78 @@ export interface ListQueryInput {
  *   the wrong part of their own file.
  */
 export function buildListQuery(input: ListQueryInput): string {
-  const { query, predicates, search, scope, window, label } = input;
+  const { prologue, projection, body, clauses } = readWrapped(input);
+  return [
+    ...(prologue === "" ? [] : [prologue]),
+    `SELECT ${projection ? projection.map((variable) => `?${variable}`).join(" ") : "*"}`,
+    "WHERE {",
+    "  {",
+    body,
+    "  }",
+    ...clauses.map((clause) => `  ${clause}`),
+    "}",
+    modifier(input.window),
+  ].join("\n");
+}
+
+/**
+ * Build the SELECT counting a scoped list's whole filtered answer per tier —
+ * the page's wrap without the page and without the scope clause — and the
+ * reader of its rows.
+ *
+ * @param input - The author query, the supplied filters/search, and the scope
+ *   whose `entity` and `via` say how a row reaches its tier.
+ * @returns The query text, and `read`: its rows as tier IRI → row count, with
+ *   `""` for rows whose entity is in no tier. An entity in two tiers counts
+ *   under each.
+ * @throws PragmaError CONFIG_ERROR for the reasons {@link buildListQuery} does.
+ */
+export function buildTierCountQuery(
+  input: Omit<ListQueryInput, "window"> & { readonly scope: ListTierScope },
+): { text: string; read: (rows: readonly PackRow[]) => Map<string, number> } {
+  const { scope } = input;
+  const tier = `${RESERVED_VARIABLE_PREFIX}TierOf`;
+  const count = `${RESERVED_VARIABLE_PREFIX}TierRows`;
+  const { prologue, body, clauses } = readWrapped({
+    ...input,
+    scope: { ...scope, tiers: [] },
+    reserved: true,
+  });
+  const text = [
+    ...(prologue === "" ? [] : [prologue]),
+    `SELECT ?${tier} (COUNT(*) AS ?${count})`,
+    "WHERE {",
+    "  {",
+    body,
+    "  }",
+    ...clauses.map((clause) => `  ${clause}`),
+    `  OPTIONAL { ?${scope.entity} ${formatTerm(scope.via)} ?${tier} }`,
+    "}",
+    `GROUP BY ?${tier}`,
+  ].join("\n");
+  return {
+    text,
+    read: (rows) =>
+      new Map(rows.map((row) => [row[tier] ?? "", Number(row[count])])),
+  };
+}
+
+/**
+ * Split the author query and compile the clauses that go around it — the part
+ * the page and the tier count share.
+ *
+ * @param input - As {@link buildListQuery}; `reserved` says the caller binds a
+ *   generated variable of its own even when no clause does.
+ */
+function readWrapped(
+  input: Omit<ListQueryInput, "window"> & { readonly reserved?: boolean },
+): {
+  prologue: string;
+  projection: readonly string[] | undefined;
+  body: string;
+  clauses: string[];
+} {
+  const { query, predicates, search, scope, label } = input;
   const clauses = [
     ...predicates.map((predicate, index) =>
       filterClause(predicate, `${RESERVED_VARIABLE_PREFIX}Filter${index}`),
@@ -183,7 +254,10 @@ export function buildListQuery(input: ListQueryInput): string {
       ? [scopeClause(scope, `${RESERVED_VARIABLE_PREFIX}Tier`)]
       : []),
   ];
-  if (clauses.length > 0 && query.includes(RESERVED_VARIABLE_PREFIX)) {
+  if (
+    (clauses.length > 0 || input.reserved === true) &&
+    query.includes(RESERVED_VARIABLE_PREFIX)
+  ) {
     throw PragmaError.configError(
       `Story query in ${label} uses the reserved variable prefix "?${RESERVED_VARIABLE_PREFIX}", ` +
         "which the generated filter clauses bind a caller's values to. Rename it.",
@@ -211,17 +285,7 @@ export function buildListQuery(input: ListQueryInput): string {
         "same order, which `SELECT *` cannot promise.",
     );
   }
-  return [
-    ...(prologue === "" ? [] : [prologue]),
-    `SELECT ${projection ? projection.map((variable) => `?${variable}`).join(" ") : "*"}`,
-    "WHERE {",
-    "  {",
-    body,
-    "  }",
-    ...clauses.map((clause) => `  ${clause}`),
-    "}",
-    modifier(window),
-  ].join("\n");
+  return { prologue, projection, body, clauses };
 }
 
 /** The page as SPARQL solution modifiers (`OFFSET 0` omitted as the no-op it is). */

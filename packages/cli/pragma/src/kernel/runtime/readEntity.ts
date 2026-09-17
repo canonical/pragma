@@ -111,6 +111,18 @@ const SAMPLE_CAP: Readonly<Record<DetailLevel, number>> = {
 };
 
 /**
+ * How many OBJECTS of one outbound predicate each level lists; the true total
+ * rides {@link PredicateGroup.count}. `summary` keeps a few rather than none —
+ * a predicate's first objects are the entity's type, name and tier. Derivation
+ * in BUDGETS.md.
+ */
+const OUTBOUND_CAP: Readonly<Record<DetailLevel, number>> = {
+  summary: 3,
+  standard: 10,
+  detailed: Number.POSITIVE_INFINITY,
+};
+
+/**
  * How many characters of a LITERAL each level carries.
  *
  * The measured cost of a rich entity is not its structure but its prose: one
@@ -182,7 +194,12 @@ export type NestedRecord = Record<string, ReadTerm>;
 /** All objects asserted for one predicate on the subject. */
 export interface PredicateGroup {
   readonly predicate: ReadTerm;
+  /** The objects — all of them, or the head when {@link truncated}. */
   readonly objects: ReadTerm[];
+  /** Set when `objects` is shorter than the predicate's true fan-out. */
+  readonly truncated?: true;
+  /** The TRUE number of objects, present only when truncated. */
+  readonly count?: number;
 }
 
 /** Everything asserting one predicate ABOUT the subject. */
@@ -383,11 +400,17 @@ export async function readEntity(
     objects.push(term(object));
     groupMap.set(predicate.value, objects);
   }
+  // Cut from the rows already in hand: the count is the group's own length, so
+  // bounding the answer costs no second query.
+  const cap = OUTBOUND_CAP[detail];
   const groups: PredicateGroup[] = [...groupMap.entries()].map(
     ([predicate, objects]) => ({
       // Every key was written from a binding above, so the lookup cannot miss.
       predicate: predicates.get(predicate) as ReadTerm,
-      objects,
+      objects: objects.slice(0, cap),
+      ...(objects.length > cap
+        ? { truncated: true as const, count: objects.length }
+        : {}),
     }),
   );
 
@@ -395,7 +418,10 @@ export async function readEntity(
   const nested =
     detail === "summary" || !hasBlankObject
       ? {}
-      : await readNested(rt, resolved, session.prefixes, term);
+      : capNested(
+          await readNested(rt, resolved, session.prefixes, term),
+          groups,
+        );
 
   const prefixed = compactUri(resolved, session.prefixes);
   const label = session.index.entities.find((e) => e.uri === resolved)?.label;
@@ -409,6 +435,33 @@ export async function readEntity(
     detail,
     prefixes: session.prefixes,
   };
+}
+
+/**
+ * Hold the inlined records to the objects their predicate kept.
+ *
+ * A record IS one of its predicate's objects, written out. Listing ten of a
+ * predicate's 24 blank objects beside all 24 of their records would make the
+ * cap a claim about the group and not about the answer.
+ */
+function capNested(
+  nested: Record<string, NestedRecord[]>,
+  groups: readonly PredicateGroup[],
+): Record<string, NestedRecord[]> {
+  const kept = new Map(
+    groups
+      .filter((group) => group.truncated)
+      .map((group) => [
+        group.predicate.prefixed ?? group.predicate.value,
+        group.objects.filter((object) => object.termType === "BlankNode")
+          .length,
+      ]),
+  );
+  return Object.fromEntries(
+    Object.entries(nested)
+      .map(([via, rows]) => [via, rows.slice(0, kept.get(via))] as const)
+      .filter(([, rows]) => rows.length > 0),
+  );
 }
 
 /**

@@ -17,9 +17,12 @@
  * defect class is not standard-specific, since every pair shares this
  * machinery. Three guarantees per noun:
  *
- * - every name `list` publishes resolves through `lookup` (executed through
- *   the real verb bodies, so glob/IRI argument-shape dispatch is exercised
- *   with the very strings an agent would paste);
+ * - every IDENTIFIER `list` publishes resolves through `lookup`, in every form
+ *   a row is printed in — the name, the prefixed IRI the plain and condensed
+ *   formats print, and the absolute IRI JSON carries (executed through the
+ *   real verb bodies, so glob/IRI argument-shape dispatch is exercised with
+ *   the very strings an agent would paste). One case per form, so a failure
+ *   names the spelling that broke;
  * - every published name is in the addressable population (`listEntityNames`
  *   — the ONE pool that feeds miss-suggestions, glob expansion AND `sample`'s
  *   draw), so a suggestion can never offer a name the resolve cannot answer;
@@ -44,6 +47,7 @@ import {
   type PackPage,
 } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
+import { compactUri, DEFAULT_PREFIX_MAP } from "../kernel/render/index.js";
 import { bootRuntime } from "../kernel/runtime/boot.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
 import type { CapabilityModule, VerbSpec } from "../kernel/spec/types.js";
@@ -96,7 +100,19 @@ function verbOf(
 }
 
 /**
- * Run `<noun> list` and return every name it publishes, verbatim, deduped.
+ * The forms a list row's identifier is printed in, by the format that prints
+ * it. Whatever a reader copies out of a list has to be an address.
+ */
+const FORMS = ["name", "prefixed IRI", "absolute IRI"] as const;
+type Form = (typeof FORMS)[number];
+
+/**
+ * Run `<noun> list` and return every identifier it publishes, per form,
+ * verbatim, deduped.
+ *
+ * The prefixed IRI is compacted against the map the distribution's stories are
+ * compiled with (`distribution.ts`), so it is the string the plain and
+ * condensed renderers print — not a second opinion about how to shorten it.
  *
  * WALKS THE PAGES, and it has to. This file's promise is the round trip over the
  * WHOLE corpus rather than a sample, and that used to come free: every declared
@@ -111,13 +127,15 @@ function verbOf(
  * a large corpus, and an unbounded `while` over a broken cursor would hang the
  * suite instead of failing it.
  */
-async function publishedNames(
+async function publishedIdentifiers(
   rt: PragmaRuntime,
   module: CapabilityModule,
   noun: string,
-): Promise<string[]> {
+): Promise<Record<Form, string[]>> {
   const verb = verbOf(module, noun, "list");
   const names = new Set<string>();
+  const prefixed = new Set<string>();
+  const absolute = new Set<string>();
   let after: string | undefined;
   let pages = 0;
   do {
@@ -128,6 +146,10 @@ async function publishedNames(
     for (const row of page.rows) {
       const name = row.name ?? "";
       if (name !== "") names.add(name);
+      const uri = row.uri ?? "";
+      if (uri === "") continue;
+      absolute.add(uri);
+      prefixed.add(compactUri(uri, DEFAULT_PREFIX_MAP));
     }
     after = page.nextAfter;
     pages += 1;
@@ -137,7 +159,20 @@ async function publishedNames(
       );
     }
   } while (after !== undefined);
-  return [...names];
+  return {
+    name: [...names],
+    "prefixed IRI": [...prefixed],
+    "absolute IRI": [...absolute],
+  };
+}
+
+/** Every NAME `<noun> list` publishes — the form the pool guarantees read. */
+async function publishedNames(
+  rt: PragmaRuntime,
+  module: CapabilityModule,
+  noun: string,
+): Promise<string[]> {
+  return (await publishedIdentifiers(rt, module, noun)).name;
 }
 
 /**
@@ -197,11 +232,11 @@ describe("every list-published name resolves through lookup, whole corpus (PROTE
     expect(NOUNS).toContain("block");
   });
 
-  it.each(NOUNS.map((noun) => [noun] as const))(
-    "%s: every published name round-trips, and its corpus is not silently empty",
-    async (noun) => {
+  it.each(NOUNS.flatMap((noun) => FORMS.map((form) => [noun, form] as const)))(
+    "%s: every published %s round-trips, and its corpus is not silently empty",
+    async (noun, form) => {
       const module = storyModules.get(noun) as CapabilityModule;
-      const names = await publishedNames(rt, module, noun);
+      const names = (await publishedIdentifiers(rt, module, noun))[form];
       if (EMPTY_CORPUS_TODAY.includes(noun)) {
         // Asserted empty, not skipped: this is what expires the allowlist.
         expect(
@@ -210,16 +245,18 @@ describe("every list-published name resolves through lookup, whole corpus (PROTE
             "delete it from EMPTY_CORPUS_TODAY so a later regression to zero rows cannot hide behind the entry",
         ).toEqual([]);
       } else {
+        // Held for every form: each shipped list projects its IRI column, and
+        // an IRI case that passed over zero IRIs would prove nothing.
         expect(
           names.length,
-          `${noun} list published no rows at all from the shipped pack`,
+          `${noun} list published no ${form} at all from the shipped pack`,
         ).toBeGreaterThan(0);
       }
 
       const errors = await lookupErrors(rt, module, noun, names);
       expect(
         errors,
-        `${noun} list published ${errors.length} name(s) its own lookup cannot resolve — ` +
+        `${noun} list published ${errors.length} ${form}(s) its own lookup cannot resolve — ` +
           "the two-step grammar the tool descriptions document is broken for every agent following it",
       ).toEqual([]);
     },
@@ -300,6 +337,78 @@ describe("every list-published name resolves through lookup, whole corpus (PROTE
         `${noun}: ${labelled} asserted name(s) + ${bare} instance(s) with none, but only ` +
           `${pool.length} addressable names — sample's draw pool is an unrepresentative slice of the corpus`,
       ).toBe(labelled + bare);
+    },
+    60_000,
+  );
+});
+
+describe("an IRI's local name is one step from an address (shipped pack)", () => {
+  /** A published block IRI of the `tier.component.name` shape, and its local name. */
+  async function sampleIri(): Promise<{ prefixed: string; local: string }> {
+    const module = storyModules.get("block") as CapabilityModule;
+    const { "prefixed IRI": prefixed } = await publishedIdentifiers(
+      rt,
+      module,
+      "block",
+    );
+    const chosen = prefixed.find((iri) => iri.includes(".component.")) ?? "";
+    expect(chosen).not.toBe("");
+    return { prefixed: chosen, local: chosen.replace(/^[^:]*:/, "") };
+  }
+
+  it("a wildcard over a local name reaches its entity", async () => {
+    const { prefixed, local } = await sampleIri();
+    const module = storyModules.get("block") as CapabilityModule;
+    const output = (await verbOf(module, "block", "lookup").run(
+      { name: [`*.${local.split(".").slice(1).join(".")}`] },
+      rt,
+    )) as { results: { uri: string }[]; errors: unknown[] };
+
+    expect(output.errors).toEqual([]);
+    expect(
+      output.results.map((entity) =>
+        compactUri(entity.uri, DEFAULT_PREFIX_MAP),
+      ),
+    ).toContain(prefixed);
+  }, 60_000);
+
+  it("a bare local name misses, and the miss leads with the prefixed form", async () => {
+    const { prefixed, local } = await sampleIri();
+    const module = storyModules.get("block") as CapabilityModule;
+    const reason = await Promise.resolve(
+      verbOf(module, "block", "lookup").run({ name: [local] }, rt),
+    ).catch((error: unknown) => error);
+
+    expect(reason).toMatchObject({ code: "ENTITY_NOT_FOUND" });
+    expect((reason as { suggestions: string[] }).suggestions.at(0)).toBe(
+      prefixed,
+    );
+  }, 60_000);
+});
+
+describe("every story example answers from the shipped pack", () => {
+  // An example is copied verbatim by the agents it is shown to, so a name the
+  // graph has since renamed is a miss handed out in advance.
+  const examples = [...storyModules.values()].flatMap((module) =>
+    module.verbs
+      .filter((verb) => verb.example !== undefined)
+      .map((verb) => [verbKey(verb.path), verb] as const),
+  );
+
+  it.each(examples)(
+    "%s",
+    async (_label, verb) => {
+      const answer = (await verb.run({ ...verb.example }, rt)) as {
+        rows?: unknown[];
+        results?: unknown[];
+        errors?: unknown[];
+      };
+      expect(answer.errors ?? []).toEqual([]);
+      const named = verb.example?.name;
+      if (Array.isArray(named)) {
+        expect(answer.results?.length).toBeGreaterThanOrEqual(named.length);
+      }
+      if (answer.rows) expect(answer.rows.length).toBeGreaterThan(0);
     },
     60_000,
   );

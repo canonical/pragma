@@ -137,7 +137,7 @@ describe("block list parity — the declared, tier-scoped list", () => {
       {},
       withConfig("global", "experimental"),
     )) as PackPage;
-    expect(scoped.scope).toEqual({ tiers: ["global"] });
+    expect(scoped.scope?.tiers).toEqual(["global"]);
     expect(scoped.rows.map((row) => row.name)).toEqual([
       "Button",
       "Button Icon",
