@@ -13,9 +13,9 @@
  * hierarchy with no `Global`, is a change a human should be made to look at.
  */
 
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { storyModules } from "../../capabilities/distribution.js";
 import { checkPackageRefs } from "../../capabilities/doctor/checks/checkPackageRefs.js";
@@ -24,6 +24,7 @@ import { collectStatus } from "../../capabilities/sources/collectStatus.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
+import { activePackPath, packDir } from "../../kernel/runtime/paths.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
 
@@ -233,5 +234,64 @@ describe("first install — the surfaces say where the answers come from", () =>
     // the row's sub-items when each pack got its own line.
     expect(result.detail).toContain("shipped with the CLI");
     expect(result.detail).toContain("pragma sources update");
+  });
+});
+
+describe("after an upgrade — a pack an older CLI built does not answer", () => {
+  /**
+   * A cwd pointed at a complete pack that some older CLI built.
+   *
+   * Planted rather than built: the point is what the boot does with the
+   * POINTER, and the pack it names is never loaded — if it were, this pack's
+   * one-triple graph would answer instead of the snapshot, which is exactly the
+   * failure under test.
+   */
+  function stalePackCwd(): { cwd: string; hash: string } {
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-stale-"));
+    const hash = "c".repeat(64);
+    const dir = packDir(hash);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
+    writeFileSync(join(dir, "schema.json"), "{}");
+    writeFileSync(join(dir, "index.json"), "{}");
+    writeFileSync(join(dir, "stories.json"), "[]");
+    writeFileSync(
+      join(dir, "manifest.json"),
+      JSON.stringify({
+        name: "pragma",
+        version: "0.1.0",
+        sourceRef: "@canonical/design-system@git:ac03466",
+        contentHash: hash,
+        prefixes: {},
+        createdAt: "2026-09-10T21:49:00.411Z",
+      }),
+    );
+    mkdirSync(dirname(activePackPath(cwd)), { recursive: true });
+    writeFileSync(activePackPath(cwd), hash);
+    return { cwd, hash };
+  }
+
+  it("the read answers from the shipped snapshot, and its meta names the pack", async () => {
+    const { cwd, hash } = stalePackCwd();
+    const outcome = await executeVerb(
+      verbOf(blockModule, "block list"),
+      {},
+      NO_MUTATION,
+      bootRuntime(JSON_FLAGS, cwd),
+    );
+    const envelope = JSON.parse(outcome.stdout as string) as {
+      data: { name: string }[];
+      meta: Record<string, unknown>;
+    };
+    // The upgrade's own graph answered — the planted pack holds one triple and
+    // no blocks at all, so a row named Button can only have come from the
+    // snapshot.
+    expect(envelope.data.map((row) => row.name)).toContain("Button");
+    // And the answer says, as data, which pack it did not come from.
+    expect(envelope.meta.ignoredPack).toEqual({
+      contentHash: hash,
+      builtBy: "0.1.0",
+      builtAt: "2026-09-10T21:49:00.411Z",
+    });
   });
 });

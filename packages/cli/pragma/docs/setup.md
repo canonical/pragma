@@ -176,7 +176,7 @@ The report groups its findings under **Global** and **Local project**, matching 
 |---|---|---|
 | Node version | The runtime is a supported major (20+) | Install a supported Node.js |
 | pragma version | The version, and how it was installed | — (informational) |
-| pack refs | The pack answering reads is the one your config asks for — a project that declared its own packs but never built them fails here | `pragma sources update` |
+| pack refs | The pack answering reads is the one your config asks for — a project that declared its own packs but never built them fails here, and a pack an older CLI built (which the shipped snapshot now answers in place of) is named here | `pragma sources update` |
 | store | The store boots; reports entity count and boot time | `pragma sources update` |
 | config | The global config file exists and parses | `pragma setup config` |
 | completions | The installed script exists, is current, and is wired into the shell | `pragma setup completions` |

@@ -167,15 +167,22 @@ function noticeMeta(verb: VerbSpec, data: unknown): Record<string, unknown> {
 function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   return async (args: Record<string, unknown>): Promise<CallToolResult> => {
     try {
-      if (verb.capability.needsStore) await runtime.store.get();
+      const session = verb.capability.needsStore
+        ? await runtime.store.get()
+        : undefined;
       const params = paramsFromArgs(verb, args);
       const result = await Promise.resolve(
         verb.run(params, withDetail(verb, runtime, args)) as Promise<unknown>,
       );
-      return toolSuccess(
-        JSON.parse(verb.output.formatters.json(result)),
-        noticeMeta(verb, result),
-      );
+      return toolSuccess(JSON.parse(verb.output.formatters.json(result)), {
+        // The store fact this read was answered under, from the session that
+        // answered it: a pack this project built that the boot passed over
+        // because an older CLI built it. The CLI's `--format json` merges the
+        // same key from the same place (`cli/dispatch.ts#storeMeta`), so the
+        // two machine surfaces stay byte-equal.
+        ...(session?.ignoredPack ? { ignoredPack: session.ignoredPack } : {}),
+        ...noticeMeta(verb, result),
+      });
     } catch (error) {
       return toolError(asPragmaError(error));
     }

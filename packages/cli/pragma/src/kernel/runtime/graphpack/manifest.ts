@@ -108,6 +108,21 @@ export function readManifest(dir: string): Manifest | undefined {
  * — see {@link storiesAreReadable} for why it, and only it, is parsed here. */
 export function packIsComplete(dir: string): boolean {
   if (readManifest(dir) === undefined) return false;
+  return packArtifactsPresent(dir);
+}
+
+/**
+ * The second half of {@link packIsComplete}: every non-manifest artifact,
+ * present and usable. Exported so a caller that ALREADY holds the manifest can
+ * finish the completeness check without reading the file twice —
+ * {@link resolveSources} is one, because it now reads the manifest's recorded
+ * builder version as part of the boot decision.
+ *
+ * @param dir - The pack directory.
+ * @returns Whether the four content artifacts are present and readable.
+ * @note Impure — stats (and, for stories, parses) the pack's files.
+ */
+export function packArtifactsPresent(dir: string): boolean {
   for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE, STORIES_FILE]) {
     try {
       if (statSync(join(dir, file)).size <= 0) return false;

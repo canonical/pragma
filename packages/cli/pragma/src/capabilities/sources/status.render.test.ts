@@ -11,6 +11,7 @@ const BUILT: SourcesStatusData = {
   sourceRef: "ds,extra",
   builtAt: "2026-01-01",
   entityCount: 42,
+  ignoredPack: null,
   sources: [
     { name: "ds", ref: "git+https://example.test/ds.git#main" },
     { name: "extra", ref: "extra@1" },
@@ -82,6 +83,29 @@ describe("renderSourcesStatusPlain", () => {
     );
     expect(out).toContain("Store: not built (run `pragma sources update`)");
     expect(out).not.toContain("  pack: ");
+  });
+
+  it("names the built pack the snapshot is answering in place of", () => {
+    // The upgrade state: this project HAS a pack, an older CLI built it, and the
+    // snapshot is answering. The headline still reports what answers (the
+    // snapshot); the extra line is the pack that is being passed over, and both
+    // ways out of it.
+    const out = renderSourcesStatusPlain(
+      {
+        ...BUILT,
+        store: "embedded",
+        ignoredPack: {
+          contentHash: "0e82d35c66687b8a",
+          builtBy: "0.37.0",
+          builtAt: "2026-09-10T21:49:00.411Z",
+        },
+      },
+      styleFor(false),
+    );
+    expect(out).toContain("Store: embedded snapshot");
+    expect(out).toContain(
+      "  0e82d35c6668: a pack built by pragma 0.37.0 on 2026-09-10 is ignored — run `pragma sources update` to rebuild it or `pragma sources reset` to remove it",
+    );
   });
 
   it("says so when no packs are configured", () => {

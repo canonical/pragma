@@ -259,6 +259,11 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Building or refreshing the knowledge-graph pack from the configured packs",
   },
+  sources_reset: {
+    category: "write",
+    use_when:
+      "Dropping the pack this project built, so reads answer from the snapshot shipped with the CLI again — the alternative to rebuilding a pack an older CLI built",
+  },
   upgrade: {
     category: "write",
     use_when: `Upgrading the ${BIN_NAME} CLI itself to the latest release`,
