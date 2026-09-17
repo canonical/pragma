@@ -126,6 +126,30 @@ describe("ontology lookup (primary by-name read)", () => {
       /prefix/i,
     );
   });
+
+  // Each refusal ends in the same next call, in both spellings.
+  const LIST_RECOVERY = {
+    cli: "pragma ontology list",
+    mcp: { tool: "ontology_list", params: {} },
+  };
+
+  it("an unbound namespace URI recovers to the namespace list", async () => {
+    await expect(
+      lookupVerb.run({ prefix: "https://nope.example/" }, rt),
+    ).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+      recovery: LIST_RECOVERY,
+    });
+  });
+
+  it("a class the namespace does not define recovers to the namespace list", async () => {
+    await expect(
+      lookupVerb.run({ prefix: "ds", class: "NoSuchClass" }, rt),
+    ).rejects.toMatchObject({
+      code: "ENTITY_NOT_FOUND",
+      recovery: LIST_RECOVERY,
+    });
+  });
 });
 
 describe("ontology_lookup honours detail over MCP (B5)", () => {

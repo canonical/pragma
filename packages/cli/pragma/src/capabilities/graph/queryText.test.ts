@@ -10,7 +10,11 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { expandPrefixedNames, trimQueryError } from "./queryText.js";
+import {
+  expandPrefixedNames,
+  findUnknownPrefixes,
+  trimQueryError,
+} from "./queryText.js";
 
 const PREFIXES = {
   ds: "https://ds.canonical.com/",
@@ -117,5 +121,55 @@ describe("trimQueryError — the caller's own position", () => {
     expect(trimQueryError("unknown prefix\n  ds", 15, false)).toBe(
       "unknown prefix ds",
     );
+  });
+});
+
+describe("findUnknownPrefixes — only a prefix that can explain the emptiness", () => {
+  const KNOWN = { ds: "https://ds.canonical.com/" };
+  const BAD = "https://example.invalid/t#";
+
+  it("reports a declared, used prefix whose IRI is no namespace of the graph", () => {
+    expect(
+      findUnknownPrefixes(
+        `PREFIX tok: <${BAD}> PREFIX ds: <https://ds.canonical.com/> SELECT ?c WHERE { ?c tok:uses ds:x }`,
+        KNOWN,
+      ),
+    ).toEqual([{ prefix: "tok", iri: BAD }]);
+  });
+
+  it("ignores a PREFIX in a comment or inside a string literal", () => {
+    expect(
+      findUnknownPrefixes(
+        `# PREFIX tok: <${BAD}>\nSELECT ?s WHERE { ?s ds:label "PREFIX tok: <${BAD}> tok:x" }`,
+        KNOWN,
+      ),
+    ).toEqual([]);
+  });
+
+  it("ignores a declared prefix the body never uses", () => {
+    expect(
+      findUnknownPrefixes(
+        `PREFIX tok: <${BAD}> SELECT ?s WHERE { ?s a ds:Component }`,
+        KNOWN,
+      ),
+    ).toEqual([]);
+  });
+
+  it("does not judge a relative IRI, which BASE resolves", () => {
+    expect(
+      findUnknownPrefixes(
+        "BASE <https://ds.canonical.com/> PREFIX rel: <tokens/> SELECT ?s WHERE { ?s rel:p ?o }",
+        KNOWN,
+      ),
+    ).toEqual([]);
+  });
+
+  it("reports the default prefix too, when the body uses it", () => {
+    expect(
+      findUnknownPrefixes(
+        `PREFIX : <${BAD}> SELECT ?s WHERE { ?s :p ?o }`,
+        KNOWN,
+      ),
+    ).toEqual([{ prefix: "", iri: BAD }]);
   });
 });

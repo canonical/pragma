@@ -137,7 +137,7 @@ pragma standard list --category react
 pragma setup mcp
 ```
 
-This registers pragma as an MCP server (over stdio) with the AI coding tools it detects; `pragma mcp` is the manual entry point. The server projects the same reads and scaffolds as MCP tools, plus a `pragma:{+uri}` resource surface for entity reads. Its handshake tells agents to start with the `capabilities` tool and discover from there, and every mutating tool is plan-first: it returns the plan it would apply, and applies nothing until called again with `confirm: true`.
+This registers pragma as an MCP server (over stdio) with the AI coding tools it detects; `pragma mcp` is the manual entry point. The server projects the same reads and scaffolds as MCP tools, plus a `pragma:{+uri}` resource surface for entity reads. Its handshake carries the conventions and an index of tools by the question each answers, and every mutating tool is plan-first: it returns the plan it would apply, and applies nothing until called again with `confirm: true`.
 
 See [docs/mcp-integration.md](./docs/mcp-integration.md) for the full surface.
 

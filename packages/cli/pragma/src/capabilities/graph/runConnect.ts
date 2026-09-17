@@ -32,7 +32,7 @@
  */
 
 import type { QueryResult } from "@canonical/ke";
-import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+import { callRecovery, PragmaError } from "../../kernel/error/index.js";
 import { resolveUri } from "../../kernel/packs/iri.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import { ROSTER_THRESHOLD } from "../../kernel/runtime/readEntity.js";
@@ -258,12 +258,11 @@ async function assertPresent(
     message: `Argument ${label} "${input}" is not in the loaded graph, so nothing can be said about what it connects to.`,
     entity: { type: "entity", name: input },
     suggestions: suggestNames(input, candidates),
-    // `cliRecovery` prepends the distribution's own binary name, so the
+    // `callRecovery` prepends the distribution's own binary name, so the
     // command passed here is the SUFFIX only.
-    recovery: cliRecovery(
-      `graph inspect ${input}`,
+    recovery: callRecovery(
+      { verb: "graph inspect", params: { uri: input } },
       "Check the name against the graph, or list the loaded namespaces.",
-      { tool: "graph_inspect", params: { uri: input } },
     ),
   });
 }

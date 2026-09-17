@@ -22,6 +22,7 @@ import { z } from "zod";
 import { asPragmaError } from "../../error/fromTaskError.js";
 import { PragmaError } from "../../error/index.js";
 import type { InteractionRuntime, PragmaRuntime } from "../../runtime/types.js";
+import { describeTool } from "../../spec/guidance.js";
 import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/index.js";
 import { toolName } from "../../spec/index.js";
 import { toolError, toolSuccess } from "./envelope.js";
@@ -152,10 +153,11 @@ function withDetail(
  * `{"ok":true,"data":[],"meta":{}}` — and, later, could not tell an unambiguous
  * lookup hit from one of three blocks sharing a name. Riding in `meta` keeps
  * `data` its uniform shape while making both of those ≠ silence, and the CLI's
- * `--format json` carries the same key so the two surfaces stay byte-equal.
+ * `--format json` carries the same key. The sentence is the ONE place the two
+ * envelopes may differ: a next step inside it is spelled for its surface.
  */
 function noticeMeta(verb: VerbSpec, data: unknown): Record<string, unknown> {
-  const notice = verb.output.formatters.notice?.(data as never);
+  const notice = verb.output.formatters.notice?.(data as never, "mcp");
   // The seam's machine half, merged here so an agent gets the tier scope as
   // DATA (`meta.scope`) and not only as the sentence `notice` carries. The CLI
   // merges the same seam into the same keys (`cli/dispatch.ts#renderData`).
@@ -179,7 +181,7 @@ function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
         // answered it: a pack this project built that the boot passed over
         // because an older CLI built it. The CLI's `--format json` merges the
         // same key from the same place (`cli/dispatch.ts#storeMeta`), so the
-        // two machine surfaces stay byte-equal.
+        // two machine surfaces carry the same fact under the same key.
         ...(session?.ignoredPack ? { ignoredPack: session.ignoredPack } : {}),
         ...noticeMeta(verb, result),
       });
@@ -304,18 +306,11 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
 }
 
 /**
- * Register one exposed verb as an MCP tool on the server.
- *
- * @param server - The MCP server to register onto.
- * @param verb - The verb to expose (caller ensures `mcp.expose === true`).
- * @param runtime - The runtime handed to the verb's `run`.
- * @note Impure — mutates the server's tool registry.
+ * The whole input shape a verb's tool accepts: its declared params plus the
+ * arguments the projector injects. Exported so the call rule validates every
+ * example and recovery against the schema an agent's call actually meets.
  */
-export function registerVerb(
-  server: McpServer,
-  verb: VerbSpec,
-  runtime: PragmaRuntime,
-): void {
+export function buildToolShape(verb: VerbSpec): z.ZodRawShape {
   const shape = buildZodSchema(verb.params);
   // A verb with progressive disclosure gains a `detail` enum param derived from
   // its DisclosureSpec (Risk2 — NO new VerbSpec field). The handler seeds
@@ -344,17 +339,34 @@ export function registerVerb(
         "Absolute project directory to write into; defaults to the server's working directory.",
       );
   }
+  return shape;
+}
+
+/**
+ * Register one exposed verb as an MCP tool on the server.
+ *
+ * @param server - The MCP server to register onto.
+ * @param verb - The verb to expose (caller ensures `mcp.expose === true`).
+ * @param runtime - The runtime handed to the verb's `run`.
+ * @note Impure — mutates the server's tool registry.
+ */
+export function registerVerb(
+  server: McpServer,
+  verb: VerbSpec,
+  runtime: PragmaRuntime,
+): void {
+  const shape = buildToolShape(verb);
 
   const config: {
     description: string;
     inputSchema?: z.ZodRawShape;
     annotations: McpAnnotations;
   } = {
-    // The agent-facing tool description is the verb's richer `doc` when present
-    // (pack `toolDescription`s compile into it; hand-written verbs author it
-    // directly), falling back to the one-line `summary`. Tool descriptions are
-    // NOT part of the frozen surface, so this stays covenant-safe.
-    description: verb.doc ?? verb.summary,
+    // Generated, never typed: the question the verb answers, its richer `doc`
+    // (pack `toolDescription`s compile into it) or one-line `summary`, and one
+    // example call. Tool descriptions are NOT part of the frozen surface, so
+    // this stays covenant-safe.
+    description: describeTool(verb),
     annotations: annotationsFor(verb),
   };
   if (Object.keys(shape).length > 0) config.inputSchema = shape;

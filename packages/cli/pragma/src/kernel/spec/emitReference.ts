@@ -24,6 +24,7 @@ import {
   toolName,
   verbLabel,
 } from "./emitSurface.js";
+import { describeTool, useWhenSentence } from "./guidance.js";
 import type {
   CapabilityModule,
   Example,
@@ -260,6 +261,7 @@ function renderCommandSection(
     `### ${formatInvocation(verb)}`,
     verb.summary,
     verb.doc ?? "",
+    useWhenSentence(verb) ?? "",
     `\`\`\`\n${syntax ? `${BIN_NAME} ${syntax.usage}` : formatUsage(verb)}\n\`\`\``,
     formatArgsTable(verb.params, syntax?.positionalTokens),
     formatFlagsTable(verb.params, syntax?.flagTokens),
@@ -410,7 +412,8 @@ function formatToolAnnotations(verb: VerbSpec): string {
 function renderToolSection(verb: VerbSpec): string {
   const blocks = [
     `### ${toolName(verb.path)}`,
-    verb.doc ?? verb.summary,
+    // The description an agent is actually served, from the one generator.
+    describeTool(verb),
     formatToolAnnotations(verb),
     "**Input**",
     formatToolParams(verb),
@@ -451,7 +454,7 @@ function renderNonToolSurface(modules: readonly CapabilityModule[]): string {
     );
   }
   bullets.push(
-    "- **Instructions**: the server always sends handshake instructions describing the conventions and the discovery sequence.",
+    "- **Instructions**: the server always sends handshake instructions: the conventions, and a generated index of tools by the question each answers, fitted to 2,000 characters.",
   );
   return `## Non-tool surface\n\n${bullets.join("\n")}`;
 }

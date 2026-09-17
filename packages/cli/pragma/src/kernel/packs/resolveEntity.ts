@@ -20,7 +20,7 @@
  * (including the GraphQL path) stay off the storeless fast path.
  */
 
-import { cliRecovery, PragmaError } from "../error/index.js";
+import { callRecovery, PragmaError, type Recovery } from "../error/index.js";
 import { suggestNames } from "../project/cli/suggestNames.js";
 import { compactUri } from "../render/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
@@ -113,6 +113,17 @@ export interface LookupOutput {
 type LookupRuntime = Pick<PragmaRuntime, "store" | "query">;
 
 /**
+ * Point a missed name at the noun's list — when it has one. A story may declare
+ * a lookup alone, and a recovery naming a `list` that does not exist is a dead
+ * end dressed as a way out.
+ */
+export function listRecovery(noun: string, hasList: boolean): Recovery {
+  return hasList
+    ? callRecovery({ verb: `${noun} list` }, `List available ${noun} entries.`)
+    : { message: `Check the name: ${noun} entries cannot be listed.` };
+}
+
+/**
  * Resolve a batch of lookup queries, collecting per-query failures.
  *
  * @throws PragmaError INVALID_INPUT when the batch is empty.
@@ -125,16 +136,12 @@ export async function resolveLookup(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
+  hasList: boolean,
   scope?: LookupScope,
 ): Promise<LookupOutput> {
   if (queries.length === 0) {
     throw PragmaError.invalidInput("names", "(empty)", {
-      recovery: cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
-        tool: `${noun}_list`,
-        // A concrete, valid argument bag rather than a bare tool name: an
-        // agent can call the recovery as written instead of guessing one.
-        params: {},
-      }),
+      recovery: listRecovery(noun, hasList),
     });
   }
 
@@ -296,12 +303,6 @@ async function lookupOne(
     const candidates = await listEntityNames(rt, lookup, source);
     throw PragmaError.notFound(noun, query, {
       suggestions: suggestNames(query, candidates),
-      recovery: cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
-        tool: `${noun}_list`,
-        // A concrete, valid argument bag rather than a bare tool name: an
-        // agent can call the recovery as written instead of guessing one.
-        params: {},
-      }),
     });
   }
 

@@ -31,6 +31,7 @@ import type { CapabilityModule } from "../spec/index.js";
 import { compileStoryModule } from "./compile.js";
 import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition, PackEntry } from "./types.js";
+import { VERB_PATH_PATTERN } from "./types.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
 
 /** One package-declared story that could not be used, and why. */
@@ -83,10 +84,14 @@ export function validateStories(
   const problems: StoryProblem[] = [];
   for (const record of records) {
     try {
-      const definition = parsePackDefinition(
-        JSON.parse(record.content),
-        record.source,
-      );
+      const migrated = migrateLegacyRecoveries(JSON.parse(record.content));
+      for (const hint of migrated.dropped) {
+        problems.push({
+          source: record.source,
+          message: `its story is kept, but its emptyRecovery.cli hint "${hint}" is not a verb path and was dropped; the key is now emptyRecovery.call.`,
+        });
+      }
+      const definition = parsePackDefinition(migrated.raw, record.source);
       if (reserved.has(definition.noun)) {
         problems.push({
           source: record.source,
@@ -110,6 +115,55 @@ export function validateStories(
     }
   }
   return { entries: [...byNoun.values()], problems };
+}
+
+/**
+ * Carry a PACKAGE story written against the old grammar forward.
+ *
+ * `emptyRecovery.cli: "sources update"` became `emptyRecovery.call: { verb }`. A
+ * project's own config gets the hard error that names the change — its author
+ * can fix it. A package is third-party data, often already built into a pack on
+ * disk, and refusing the key would cost the user the whole noun for the sake of
+ * a hint. So the old string becomes a call when it IS a verb path, and
+ * otherwise only the hint is dropped, reported once under `doctor`.
+ *
+ * @param raw - The parsed story JSON (untrusted; returned unchanged when it
+ *   carries no legacy key).
+ * @returns The story to validate, and the legacy hints that could not be kept.
+ */
+export function migrateLegacyRecoveries(raw: unknown): {
+  raw: unknown;
+  dropped: string[];
+} {
+  const dropped: string[] = [];
+  const migrateHalf = (half: unknown): unknown => {
+    const recovery = (
+      half as { emptyRecovery?: Record<string, unknown> } | null
+    )?.emptyRecovery;
+    if (typeof recovery?.cli !== "string") return half;
+    const { cli, ...rest } = recovery;
+    const keep = VERB_PATH_PATTERN.test(cli);
+    if (!keep) dropped.push(cli);
+    return {
+      ...(half as object),
+      emptyRecovery:
+        keep && rest.call === undefined
+          ? { ...rest, call: { verb: cli } }
+          : rest,
+    };
+  };
+  if (typeof raw !== "object" || raw === null) return { raw, dropped };
+  const story = raw as { list?: unknown; verbs?: unknown };
+  return {
+    raw: {
+      ...story,
+      ...(story.list === undefined ? {} : { list: migrateHalf(story.list) }),
+      ...(Array.isArray(story.verbs)
+        ? { verbs: story.verbs.map(migrateHalf) }
+        : {}),
+    },
+    dropped,
+  };
 }
 
 /**

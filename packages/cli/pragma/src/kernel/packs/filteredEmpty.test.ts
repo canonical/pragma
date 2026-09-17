@@ -58,7 +58,7 @@ ex:slider a ex:Widget ; ex:name "Slider" ; ex:kind "input" .
 const EMPTY_RECOVERY = {
   message:
     "Widgets are recorded by the catalogue build, and a store built before it ran records none.",
-  cli: "sources update",
+  call: { verb: "sources update" },
 } as const;
 
 const listShape = (uriClass: string) => ({

@@ -12,6 +12,7 @@ import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import { PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/types.js";
+import { declareVerbs } from "../spec/call.js";
 import { kebabCase } from "../spec/emitSurface.js";
 import type { VerbSpec } from "../spec/types.js";
 import { compileListable, compilePack, compileStoryModule } from "./compile.js";
@@ -362,19 +363,28 @@ describe("the grammar rejects what the compiler cannot build (PROTECTED)", () =>
     );
   });
 
-  it("rejects an emptyRecovery.cli that names a binary, and names the change", () => {
-    // The hint is rendered as `<consuming distribution> <cli>`, so a story
-    // carrying the old prefixed form would render `pragma pragma sources
-    // update`. Third-party packs are third-party DATA: they get an error that
-    // names the grammar change, not a silently doubled string.
-    const withCli = (cli: string) => ({
+  it("rejects the retired emptyRecovery.cli and a call that is a command line, naming the change", () => {
+    // A recovery names a CALL — a verb path and a param bag — and the consuming
+    // distribution spells it per surface. Third-party packs are third-party
+    // DATA: the old `cli` string gets an error that names the grammar change,
+    // and a command line in `verb` would render `pragma pragma sources update`.
+    const withRecovery = (recovery: Record<string, unknown>) => ({
       noun: "widget",
-      list: { ...listShape, emptyRecovery: { message: "None.", cli } },
+      list: { ...listShape, emptyRecovery: { message: "None.", ...recovery } },
     });
-    expect(parse(withCli(`${RECOVERY_CLI_PREFIX}sources update`))).toThrow(
-      /WITHOUT the binary name/,
+    expect(parse(withRecovery({ cli: "sources update" }))).toThrow(
+      /emptyRecovery\.cli is now emptyRecovery\.call/,
     );
-    expect(parse(withCli("sources update"))).not.toThrow();
+    expect(
+      parse(
+        withRecovery({
+          call: { verb: `${RECOVERY_CLI_PREFIX}sources update` },
+        }),
+      ),
+    ).toThrow(/a call names a verb path/);
+    expect(
+      parse(withRecovery({ call: { verb: "sources update" } })),
+    ).not.toThrow();
   });
 });
 
@@ -387,6 +397,11 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
       prefixes: PREFIXES,
       detail: "detailed",
     }));
+    // A miss recovers to `widget list`; the suite checks every call it renders
+    // against the declared verbs, and a fixture's are not the distribution's.
+    declareVerbs(
+      compilePack(WIDGET_PACK, distributionSource("bundled:widget"), PREFIXES),
+    );
   });
 
   afterAll(async () => {
