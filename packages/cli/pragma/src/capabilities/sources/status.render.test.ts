@@ -108,6 +108,22 @@ describe("renderSourcesStatusPlain", () => {
     );
   });
 
+  it("the llm form names the ignored pack and both ways out", () => {
+    const out = statusFormatters.llm({
+      ...BUILT,
+      store: "embedded",
+      ignoredPack: {
+        contentHash: "0e82d35c66687b8a",
+        builtBy: "0.37.0",
+        builtAt: "2026-09-10T21:49:00.411Z",
+      },
+    });
+    expect(out).toContain(
+      "- Ignored: a pack built by pragma 0.37.0 on 2026-09-10 is ignored",
+    );
+    expect(out).toContain("`pragma sources reset`");
+  });
+
   it("says so when no packs are configured", () => {
     const out = renderSourcesStatusPlain(
       { ...BUILT, sources: [] },

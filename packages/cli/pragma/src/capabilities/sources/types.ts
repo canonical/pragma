@@ -3,6 +3,8 @@
  * (the Task that resolves, builds, and points the project at a pack).
  */
 
+import type { IgnoredPack } from "../../kernel/runtime/resolveSources.js";
+
 /** The `sources status` payload — assembled without booting the store. */
 export interface SourcesStatusData {
   readonly cwd: string;
@@ -27,12 +29,7 @@ export interface SourcesStatusData {
    * pack is still there and why it is not being read. Null whenever there is
    * nothing passed over, which is every other state.
    */
-  readonly ignoredPack: {
-    readonly contentHash: string;
-    /** The CLI version that built it. */
-    readonly builtBy: string;
-    readonly builtAt: string;
-  } | null;
+  readonly ignoredPack: IgnoredPack | null;
   /** The configured pack declarations, as written in the config. */
   readonly sources: readonly {
     readonly name: string;
