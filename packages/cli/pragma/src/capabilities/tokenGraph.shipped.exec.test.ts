@@ -44,7 +44,7 @@ import { bootRuntime } from "../kernel/runtime/boot.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
 import type { CapabilityModule, VerbSpec } from "../kernel/spec/types.js";
 import { TEST_FLAGS } from "../testing/helpers/projectCli.js";
-import { declaredStories } from "./distribution.js";
+import { declaredLookups, declaredStories } from "./distribution.js";
 
 const SOURCE = distributionSource("pragma.conf.ts");
 
@@ -55,7 +55,7 @@ const modules = new Map<string, CapabilityModule>(
   NOUNS.map((noun) => {
     const story = declaredStories.get(noun);
     if (!story) throw new Error(`pragma.conf.ts declares no "${noun}" story`);
-    return [noun, compileStoryModule(story, SOURCE, {})];
+    return [noun, compileStoryModule(story, SOURCE, {}, declaredLookups)];
   }),
 );
 

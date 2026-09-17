@@ -82,6 +82,7 @@
         {
           "v": "consumers",
           "flags": [
+            "--block",
             "--symbol",
             "--variable",
             "--key",

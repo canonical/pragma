@@ -533,7 +533,7 @@ Read-only.
 
 ### token_consumers
 
-Use when asked which components use a token, or what changing one affects. List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { symbol: "color.text" }.
+Use when asked which components use a token, or what changing one affects. List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable); narrow to the components a name reaches, or to one by IRI, with block. Answers empty until the packs record bindings. Example: token_consumers { symbol: "color.text" }.
 
 Read-only.
 
@@ -541,6 +541,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
+| `block` | string[] | no | Filter to the blocks a name reaches (every tier), or to one block by IRI. |
 | `symbol` | string[] | no | Filter to one symbol. |
 | `variable` | string[] | no | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
 | `key` | string[] | no | Filter to one style key. |

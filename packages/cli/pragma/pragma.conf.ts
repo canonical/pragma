@@ -91,6 +91,19 @@ exactly the domain that was published.`;
  * `PackSource.stories` is deliberately `readonly unknown[]`, because the config
  * layer does not know the pack grammar (`parsePackDefinition` does).
  */
+/**
+ * Keeps the kebab-case CSS variable of a symbol and drops its camelCase twin.
+ *
+ * A DATA WORKAROUND, to delete with every use of it. 204 of the 745 symbols
+ * carry two variables that differ only in spelling (`color-focus-ring` and the
+ * older `color-focusRing`), and nothing in the graph marks either. The kebab
+ * one is the name to write, so it is the one every answer prints; measured on
+ * the shipped pack, no upper-case letter occurs in any other variable of a
+ * symbol, and every symbol with a variable keeps exactly one. When
+ * design-tokens stops emitting the twins this matches everything and goes.
+ */
+const KEBAB_VARIABLE = "^[^A-Z]*$";
+
 const designSystemStories: readonly PackDefinition[] = [
   // `block list` is declared content: one SELECT over the four UIBlock
   // classes, listing every block the TIER SCOPE admits — experimental and
@@ -508,7 +521,7 @@ const designSystemStories: readonly PackDefinition[] = [
       // 60-second timeout; over this query it takes 1.8 s, and the whole
       // population comes back in 71 ms rather than 1.1 s a page.
       query: [
-        "SELECT DISTINCT ?uri ?name ?type ?description ?channelOf",
+        "SELECT DISTINCT ?uri ?name ?type ?description ?channelOf ?channelOfUri",
         "WHERE {",
         "  ?uri a dt:TokenSymbol ;",
         "       rdfs:label ?name .",
@@ -517,7 +530,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // noun of its own. Bound to the base symbol's LABEL, not its IRI: the
         // filter column and the displayed column are one column, and an
         // unbound IRI cell renders as a full IRI.
-        "  OPTIONAL { ?uri dt:channelOf/rdfs:label ?channelOf }",
+        "  OPTIONAL { ?uri dt:channelOf ?channelOfUri . ?channelOfUri rdfs:label ?channelOf }",
         "  OPTIONAL {",
         "    ?resolved dt:forSymbol ?uri ;",
         "              dt:resolutionChain/rdf:first ?definition .",
@@ -531,7 +544,7 @@ const designSystemStories: readonly PackDefinition[] = [
       columns: [
         { field: "name", label: "Name" },
         { field: "type", label: "Type" },
-        { field: "channelOf", label: "Channel of" },
+        { field: "channelOf", label: "Channel of", noun: "token" },
         { field: "description", label: "Description" },
         { field: "uri", label: "IRI" },
       ],
@@ -556,22 +569,11 @@ const designSystemStories: readonly PackDefinition[] = [
         {
           param: "channelOf",
           variable: "channelOf",
-          // The dimension is "which SYMBOL", so the roster is EVERY symbol —
+          // The dimension is "which SYMBOL", so every symbol is admissible —
           // not the far smaller set that happens to have a channel today.
-          // Asking for a symbol nothing provisions is the documented calm empty
-          // list, which is the whole reason a vocabulary is read from the graph
-          // rather than from the rows a page returned.
-          //
-          // Keyed on `rdfs:label`, the same term the column binds and the same
-          // term the lookup resolves by. All three move together or not at all.
-          vocabulary: {
-            query: [
-              "SELECT DISTINCT ?channelOf WHERE {",
-              "  ?symbol a dt:TokenSymbol ;",
-              "          rdfs:label ?channelOf .",
-              "}",
-            ].join("\n"),
-          },
+          // Asking for a symbol nothing provisions is a calm empty list.
+          noun: "token",
+          entity: "channelOfUri",
           description: "Filter to one symbol's channels.",
         },
       ],
@@ -616,7 +618,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // definition the value was authored in, and that is what the lookup's
         // `values` expand projects with `rdf:first`.
         query: [
-          "SELECT ?symbol ?position ?value ?derivedFrom",
+          "SELECT ?symbol ?position ?value ?derivedFrom ?symbolUri",
           '       (GROUP_CONCAT(DISTINCT ?chainItem; SEPARATOR=" ") AS ?chain)',
           "WHERE {",
           "  ?resolved a dt:ResolvedValue ;",
@@ -636,11 +638,11 @@ const designSystemStories: readonly PackDefinition[] = [
           // its cell is empty rather than a full IRI.
           '  BIND(REPLACE(REPLACE(STR(?coordinate), "^.*[/#]", ""), "^coordinate[.]", "") AS ?position)',
           "}",
-          "GROUP BY ?resolved ?symbol ?position ?value ?derivedFrom",
+          "GROUP BY ?resolved ?symbol ?position ?value ?derivedFrom ?symbolUri",
           "ORDER BY ?symbol ?position",
         ].join("\n"),
         columns: [
-          { field: "symbol", label: "Symbol" },
+          { field: "symbol", label: "Symbol", noun: "token" },
           { field: "position", label: "Position" },
           { field: "value", label: "Value" },
           { field: "chain", label: "Chain" },
@@ -650,14 +652,8 @@ const designSystemStories: readonly PackDefinition[] = [
           {
             param: "symbol",
             variable: "symbol",
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?symbol WHERE {",
-                "  ?s a dt:TokenSymbol ;",
-                "     rdfs:label ?symbol .",
-                "}",
-              ].join("\n"),
-            },
+            noun: "token",
+            entity: "symbolUri",
             description: "Filter to one symbol.",
           },
           {
@@ -694,7 +690,7 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List which blocks consume which token symbol, at which style key, state and rank.",
         toolDescription:
-          "List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings.",
+          "List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable); narrow to the components a name reaches, or to one by IRI, with block. Answers empty until the packs record bindings.",
         useWhen:
           "when asked which components use a token, or what changing one affects",
         example: { symbol: "color.text" },
@@ -724,7 +720,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // because "Button via Button" is not news and 24 of Button's rows
         // would say it.
         query: [
-          "SELECT ?block ?via ?symbol ?key ?state ?rank ?node ?uri",
+          "SELECT ?block ?via ?symbol ?key ?state ?rank ?node ?uri ?blockUri ?symbolUri",
           '       (GROUP_CONCAT(DISTINCT ?variableName; SEPARATOR=" ") AS ?variable)',
           "WHERE {",
           "  ?blockUri ds:hasTokenBinding ?uri .",
@@ -736,16 +732,13 @@ const designSystemStories: readonly PackDefinition[] = [
           "  OPTIONAL { ?uri ds:node ?node }",
           "  OPTIONAL { ?uri ds:viaBlock ?viaUri . OPTIONAL { ?viaUri ds:name ?viaName } }",
           "  OPTIONAL { ?blockUri ds:name ?blockName }",
-          // Every platform spelling of the consumed symbol, as a SET rather
-          // than a join that multiplies the row: 204 symbols carry both a
-          // kebab and a camelCase variable, and binding one row per variable
-          // would publish each binding twice under names a caller cannot tell
-          // apart. Aggregated, both spellings land in one cell and `--variable`
-          // set-matches either — which is also why the two spellings of one
-          // symbol return the SAME set rather than partitioning it.
+          // The variable standing for the consumed symbol, as a SET rather
+          // than a join: a second platform's variable must add a name to the
+          // cell, not a second row for one binding.
           "  OPTIONAL {",
           "    ?variableUri dt:ofSymbol ?symbolUri ;",
           "                 rdfs:label ?variableName .",
+          `    FILTER(REGEX(?variableName, "${KEBAB_VARIABLE}"))`,
           "  }",
           '  BIND(COALESCE(?blockName, REPLACE(STR(?blockUri), "^.*[/#]", "")) AS ?block)',
           // `IF` and not `COALESCE`: the blank says something a MISSING value
@@ -757,7 +750,7 @@ const designSystemStories: readonly PackDefinition[] = [
           '        COALESCE(?viaName, REPLACE(STR(?viaUri), "^.*[/#]", "")),',
           '        "") AS ?via)',
           "}",
-          "GROUP BY ?block ?via ?symbol ?key ?state ?rank ?node ?uri",
+          "GROUP BY ?block ?via ?symbol ?key ?state ?rank ?node ?uri ?blockUri ?symbolUri",
           // `?via` second, so a block's OWN bindings (blank via, which sorts
           // first) come before the ones it inherits, and the inherited ones
           // stay grouped by the block they come from.
@@ -775,10 +768,10 @@ const designSystemStories: readonly PackDefinition[] = [
         // in; a story cannot reorder that, so the column goes rather than the
         // block staying second to an unusable id.
         columns: [
-          { field: "block", label: "Block" },
+          { field: "block", label: "Block", noun: "block" },
           { field: "via", label: "Via" },
-          { field: "symbol", label: "Symbol" },
-          { field: "variable", label: "Variables" },
+          { field: "symbol", label: "Symbol", noun: "token" },
+          { field: "variable", label: "Variables", noun: "variable" },
           { field: "key", label: "Style key" },
           { field: "state", label: "State" },
           { field: "rank", label: "Rank" },
@@ -786,16 +779,21 @@ const designSystemStories: readonly PackDefinition[] = [
         ],
         filters: [
           {
+            param: "block",
+            variable: "block",
+            // By IRI, because a block name is not an address: 313 blocks
+            // share some 277 names. A name means every block it reaches, in
+            // every tier; a prefixed IRI means one.
+            noun: "block",
+            entity: "blockUri",
+            description:
+              "Filter to the blocks a name reaches (every tier), or to one block by IRI.",
+          },
+          {
             param: "symbol",
             variable: "symbol",
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?symbol WHERE {",
-                "  ?s a dt:TokenSymbol ;",
-                "     rdfs:label ?symbol .",
-                "}",
-              ].join("\n"),
-            },
+            noun: "token",
+            entity: "symbolUri",
             description: "Filter to one symbol.",
           },
           {
@@ -807,19 +805,11 @@ const designSystemStories: readonly PackDefinition[] = [
             // to take two calls and a spelling the caller did not start with.
             // The join is in the query instead.
             //
-            // `set`, because the cell is every platform spelling of the
-            // consumed symbol and one row legitimately belongs to all of them.
-            match: "set",
-            // The variable labels, the same source `variable lookup` resolves
-            // against — so a name that works there works here.
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?variable WHERE {",
-                "  ?v a dt:Variable ;",
-                "     rdfs:label ?variable .",
-                "}",
-              ].join("\n"),
-            },
+            // Constrains the SYMBOL, through the variables standing for it —
+            // so either spelling of a twinned variable finds the same rows.
+            noun: "variable",
+            entity: "symbolUri",
+            via: "^dt:ofSymbol",
             // Two things a caller will otherwise assume, both wrong.
             //
             // A CHANNEL variable and its semantic sibling are DIFFERENT
@@ -1046,12 +1036,12 @@ const designSystemStories: readonly PackDefinition[] = [
     example: { symbol: "color.text" },
     list: {
       query: [
-        "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility",
+        "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility ?symbolUri",
         '       (GROUP_CONCAT(DISTINCT ?coordinateName; SEPARATOR=" ") AS ?coordinate)',
         "WHERE {",
         "  ?uri a dt:Variable ;",
         "       rdfs:label ?name .",
-        "  OPTIONAL { ?uri dt:ofSymbol/rdfs:label ?symbol }",
+        "  OPTIONAL { ?uri dt:ofSymbol ?symbolUri . ?symbolUri rdfs:label ?symbol }",
         "  OPTIONAL { ?uri dt:tier ?tierUri }",
         "  OPTIONAL { ?uri dt:visibility ?visibilityUri }",
         // A variable is selected at a coordinate two ways, and both count: the
@@ -1074,12 +1064,12 @@ const designSystemStories: readonly PackDefinition[] = [
         '  BIND(REPLACE(REPLACE(STR(?tierUri), "^.*[/#]", ""), "^tier[.]", "") AS ?tier)',
         '  BIND(REPLACE(REPLACE(STR(?visibilityUri), "^.*[/#]", ""), "^visibility[.]", "") AS ?visibility)',
         "}",
-        "GROUP BY ?uri ?name ?platform ?symbol ?tier ?visibility",
+        "GROUP BY ?uri ?name ?platform ?symbol ?tier ?visibility ?symbolUri",
         "ORDER BY ?name",
       ].join("\n"),
       columns: [
         { field: "name", label: "Name" },
-        { field: "symbol", label: "Symbol" },
+        { field: "symbol", label: "Symbol", noun: "token" },
         { field: "tier", label: "Tier" },
         { field: "visibility", label: "Visibility" },
         { field: "platform", label: "Platform" },
@@ -1108,16 +1098,8 @@ const designSystemStories: readonly PackDefinition[] = [
         {
           param: "symbol",
           variable: "symbol",
-          // The symbol roster, read the same way `token list`'s `channelOf`
-          // filter reads it: every symbol, keyed on `rdfs:label`.
-          vocabulary: {
-            query: [
-              "SELECT DISTINCT ?symbol WHERE {",
-              "  ?s a dt:TokenSymbol ;",
-              "     rdfs:label ?symbol .",
-              "}",
-            ].join("\n"),
-          },
+          noun: "token",
+          entity: "symbolUri",
           description: "Filter to one symbol.",
         },
         {
@@ -1192,7 +1174,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // the whole thing transitive. The terminal is a variable that stands
         // for a symbol, which is what `dt:ofSymbol` reads.
         query: [
-          "SELECT ?variable ?reaches ?symbol",
+          "SELECT ?variable ?reaches ?symbol ?uri ?symbolUri",
           "WHERE {",
           "  ?uri a dt:Variable ;",
           "       rdfs:label ?variable .",
@@ -1204,40 +1186,23 @@ const designSystemStories: readonly PackDefinition[] = [
           "ORDER BY ?variable ?reaches ?symbol",
         ].join("\n"),
         columns: [
-          { field: "variable", label: "Variable" },
+          { field: "variable", label: "Variable", noun: "variable" },
           { field: "reaches", label: "Reaches" },
-          { field: "symbol", label: "Symbol" },
+          { field: "symbol", label: "Symbol", noun: "token" },
         ],
         filters: [
           {
             param: "variable",
             variable: "variable",
-            // The variable roster, keyed on the same `rdfs:label` the column
-            // binds and the lookup resolves by — the CSS name with its leading
-            // `--` already stripped, which is the only form typable as a
-            // positional. `variable.parity.test.ts` pins that the stripping is
-            // injective and collides with no symbol name.
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?variable WHERE {",
-                "  ?v a dt:Variable ;",
-                "     rdfs:label ?variable .",
-                "}",
-              ].join("\n"),
-            },
+            noun: "variable",
+            entity: "uri",
             description: "Filter to one variable.",
           },
           {
             param: "symbol",
             variable: "symbol",
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?symbol WHERE {",
-                "  ?s a dt:TokenSymbol ;",
-                "     rdfs:label ?symbol .",
-                "}",
-              ].join("\n"),
-            },
+            noun: "token",
+            entity: "symbolUri",
             description: "Filter to one symbol.",
           },
         ],

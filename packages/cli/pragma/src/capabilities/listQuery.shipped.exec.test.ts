@@ -34,6 +34,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { MAX_LISTED_OPTIONS } from "../kernel/error/validOptions.js";
 import { compileStoryModule } from "../kernel/packs/compile.js";
 import { MAX_LIST_WINDOW } from "../kernel/packs/paging.js";
+import { listEntityNames } from "../kernel/packs/resolveEntity.js";
 import {
   distributionSource,
   type PackFilter,
@@ -47,7 +48,7 @@ import type { PragmaRuntime } from "../kernel/runtime/types.js";
 import { kebabCase } from "../kernel/spec/emitSurface.js";
 import type { VerbSpec } from "../kernel/spec/types.js";
 import { TEST_FLAGS } from "../testing/helpers/projectCli.js";
-import { declaredStories } from "./distribution.js";
+import { declaredLookups, declaredStories } from "./distribution.js";
 
 const SOURCE = distributionSource("pragma.conf.ts");
 
@@ -65,7 +66,7 @@ interface Body {
  */
 const BODIES: readonly Body[] = [...declaredStories].flatMap(
   ([noun, story]) => {
-    const module = compileStoryModule(story, SOURCE, {});
+    const module = compileStoryModule(story, SOURCE, {}, declaredLookups);
     const find = (verb: string): VerbSpec => {
       const found = module.verbs.find(
         (v) => verbKey(v.path) === `${noun} ${verb}`,
@@ -119,9 +120,14 @@ async function population(body: Body): Promise<readonly PackRow[]> {
   return (await page(body, { limit: MAX_LIST_WINDOW })).rows;
 }
 
-/** The values a value-free filter's declared vocabulary admits. */
+/**
+ * The values a value-free filter admits: its declared vocabulary, or — for a
+ * filter naming a noun — every name that noun's lookup resolves.
+ */
 async function vocabulary(filter: PackFilter): Promise<readonly string[]> {
   if (filter.values) return filter.values;
+  const named = filter.noun ? declaredLookups(filter.noun) : undefined;
+  if (named) return listEntityNames(rt, named, SOURCE);
   const declared = filter.vocabulary;
   if (!declared) throw new Error(`filter --${filter.param} declares neither`);
   const result = await rt.query.sparql(declared.query);
@@ -275,9 +281,15 @@ describe("the compiled query agrees with the retired row predicate (PROTECTED)",
             [filter.param]: value,
             limit: MAX_LIST_WINDOW,
           });
-          expect(JSON.stringify(answered.rows)).toBe(
-            JSON.stringify(rowPredicate(whole, filter, value)),
-          );
+          const expected = rowPredicate(whole, filter, value);
+          // A `via` filter constrains an entity the cell only PRINTS one name
+          // of, so a name the cell does not print may still answer; whatever
+          // the cell does print must answer exactly.
+          if (filter.via === undefined || expected.length > 0) {
+            expect(JSON.stringify(answered.rows)).toBe(
+              JSON.stringify(expected),
+            );
+          }
         }
       }
     },
@@ -374,6 +386,8 @@ describe("a refusal and a calm empty answer stay distinguishable (PROTECTED)", (
     for (const body of NARROWABLE) {
       const whole = await population(body);
       for (const filter of body.shape.filters ?? []) {
+        // The cell is no oracle for emptiness under a `via` filter (above).
+        if (filter.via !== undefined) continue;
         for (const value of sweep(await vocabulary(filter))) {
           if (rowPredicate(whole, filter, value).length === 0) {
             unpopulated.push({ body, param: filter.param, value });
@@ -389,11 +403,12 @@ describe("a refusal and a calm empty answer stay distinguishable (PROTECTED)", (
       // And the calm sentence rides the same seam it always did — naming the
       // filter that narrowed to nothing, since a filtered empty answer is a
       // statement about the filter and not about the population.
+      // In the flag's own spelling: a story's `channelOf` param is typed
+      // `--channel-of`, and an answer that named the param would be naming
+      // something no caller can pass. A value with a space in it is quoted.
+      const shown = /\s/.test(value) ? `'${value}'` : value;
       expect(body.verb.output.formatters.notice?.(answered as never)).toContain(
-        // In the flag's own spelling: a story's `channelOf` param is typed
-        // `--channel-of`, and an answer that named the param would be naming
-        // something no caller can pass.
-        `matches \`--${kebabCase(param)} ${value}\`.`,
+        `matches \`--${kebabCase(param)} ${shown}\`.`,
       );
     }
   }, 120_000);

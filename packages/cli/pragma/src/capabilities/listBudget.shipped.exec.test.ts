@@ -43,7 +43,7 @@ import { bootRuntime } from "../kernel/runtime/boot.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
 import type { VerbSpec } from "../kernel/spec/types.js";
 import { TEST_FLAGS } from "../testing/helpers/projectCli.js";
-import { declaredStories } from "./distribution.js";
+import { declaredLookups, declaredStories } from "./distribution.js";
 
 /**
  * The ceiling on ONE list-shaped answer, in bytes of the serialised payload.
@@ -82,7 +82,7 @@ interface Body {
  */
 const BODIES: readonly Body[] = [...declaredStories].flatMap(
   ([noun, story]) => {
-    const module = compileStoryModule(story, SOURCE, {});
+    const module = compileStoryModule(story, SOURCE, {}, declaredLookups);
     const find = (verb: string): Body => {
       const found = module.verbs.find(
         (v) => verbKey(v.path) === `${noun} ${verb}`,
