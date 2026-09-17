@@ -138,11 +138,11 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
   });
 
   it("emits no heading for an empty group, and skips a verb declaring no useWhen", () => {
-    const base = capabilities.find((m) => m.name === "capabilities");
-    const { useWhen: _useWhen, ...silent } = base?.verbs[0] as VerbSpec;
-    const text = buildInstructions([
-      { ...(base as CapabilityModule), verbs: [silent as VerbSpec] },
-    ]);
+    const base = capabilities.find(
+      (m) => m.name === "capabilities",
+    ) as CapabilityModule;
+    const { useWhen: _useWhen, ...silent } = base.verbs[0] as VerbSpec;
+    const text = buildInstructions([{ ...base, verbs: [silent as VerbSpec] }]);
     expect(text).not.toContain("When asked:");
     expect(text).not.toContain("Also:");
     expect(text).not.toContain("undefined");
