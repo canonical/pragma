@@ -423,7 +423,20 @@ const designSystemStories: readonly PackDefinition[] = [
             // The dotted name, not the symbol's IRI: it is the address
             // `token lookup` and `token consumers --symbol` both take, so a row
             // here is a query a reader can run.
-            { name: "symbol", property: "ds:consumesSymbol/rdfs:label" },
+            {
+              name: "symbol",
+              property: "ds:consumesSymbol/rdfs:label",
+              noun: "token",
+            },
+            // The CSS name to write for that symbol. `many`, so a second
+            // platform's variable adds a name to the cell and not a row.
+            {
+              name: "variable",
+              property: "ds:consumesSymbol/^dt:ofSymbol/rdfs:label",
+              many: true,
+              matching: KEBAB_VARIABLE,
+              noun: "variable",
+            },
             { name: "key", property: "anatomy:styleKey" },
             { name: "state", property: "anatomy:styleState" },
             { name: "rank", property: "ds:rank" },
@@ -911,11 +924,22 @@ const designSystemStories: readonly PackDefinition[] = [
         "when asked everything about one token by name: where it is defined, what can change it, and its values",
       example: { name: ["color.text"] },
       fields: [
+        // The CSS custom property that stands for this symbol, without its
+        // leading dashes — the address `variable lookup` takes. 29 symbols have
+        // none.
+        {
+          name: "variable",
+          property: "^dt:ofSymbol/rdfs:label",
+          label: "CSS variable",
+          matching: KEBAB_VARIABLE,
+          noun: "variable",
+        },
         // Single-valued: a channel provisions exactly one symbol.
         {
           name: "channelOf",
           property: "dt:channelOf/rdfs:label",
           label: "Channel of",
+          noun: "token",
         },
         // The same pair `token list` publishes, reached the same way: the head
         // of a resolved value's chain is the definition that value was authored
@@ -967,7 +991,17 @@ const designSystemStories: readonly PackDefinition[] = [
           // family is a `ds:` entity, so its name comes from the
           // design-system pack rather than the token ontology.
           relation: "^dt:covers",
-          select: [{ name: "family", property: "ds:name" }],
+          select: [{ name: "family", property: "ds:name", noun: "modifier" }],
+        },
+        {
+          name: "channels",
+          heading: "Channels",
+          // The symbols that provision this one, at most two. What a channel
+          // derives from at each position is that channel's own `values`
+          // table: a second hop here would repeat each channel once per
+          // position.
+          relation: "^dt:channelOf",
+          select: [{ name: "name", property: "rdfs:label", noun: "token" }],
         },
         {
           name: "values",
@@ -993,7 +1027,11 @@ const designSystemStories: readonly PackDefinition[] = [
             { name: "position", property: "dt:coordinate" },
             { name: "value", property: "dt:resolvesTo" },
             { name: "chain", property: "dt:resolutionChain/rdf:first" },
-            { name: "derivedFrom", property: "dt:derivedFrom/rdfs:label" },
+            {
+              name: "derivedFrom",
+              property: "dt:derivedFrom/rdfs:label",
+              noun: "token",
+            },
           ],
         },
       ],
@@ -1229,7 +1267,12 @@ const designSystemStories: readonly PackDefinition[] = [
         "when asked about one CSS variable by name: what it stands for and everywhere it is declared",
       example: { name: ["color-text"] },
       fields: [
-        { name: "symbol", property: "dt:ofSymbol/rdfs:label", label: "Symbol" },
+        {
+          name: "symbol",
+          property: "dt:ofSymbol/rdfs:label",
+          label: "Symbol",
+          noun: "token",
+        },
         { name: "tier", property: "dt:tier", label: "Tier" },
         { name: "visibility", property: "dt:visibility", label: "Visibility" },
       ],
@@ -1239,6 +1282,7 @@ const designSystemStories: readonly PackDefinition[] = [
           heading: "Declarations",
           kind: "table",
           relation: "dt:declaredAt",
+          level: "standard",
           // 927 variables are declared once; the rest up to 17 times, which is
           // why this is an expand and not a set of fields.
           select: [
@@ -1262,7 +1306,33 @@ const designSystemStories: readonly PackDefinition[] = [
             { name: "derives", property: "dt:derives" },
           ],
         },
+        {
+          name: "values",
+          heading: "Values",
+          kind: "table",
+          // What the variable's symbol resolves to, one row per position the
+          // graph materialises: the base row has no position, a channel's rows
+          // carry the symbol each position derives from and no value. A
+          // declaration's `emits` is the stylesheet's expression; this is the
+          // value that expression comes to.
+          relation: "dt:ofSymbol/^dt:forSymbol",
+          level: "detailed",
+          orderBy: ["position"],
+          select: [
+            { name: "position", property: "dt:coordinate" },
+            { name: "value", property: "dt:resolvesTo" },
+            {
+              name: "derivedFrom",
+              property: "dt:derivedFrom/rdfs:label",
+              noun: "token",
+            },
+          ],
+        },
       ],
+      disclosure: {
+        levels: ["summary", "standard", "detailed"],
+        default: "detailed",
+      },
       sample: {
         fixedCount: true,
         toolDescription:
@@ -1335,9 +1405,65 @@ const designSystemStories: readonly PackDefinition[] = [
           name: "values",
           heading: "Values",
           relation: "ds:hasModifier",
+          level: "standard",
           select: [{ name: "name", property: "ds:name" }],
         },
+        // The token side of the family, joined on the family's own IRI — an
+        // axis is not named after its family (`theme` encodes Mode). SPARQL
+        // lane: three of the four start on an inverse edge, which a generated
+        // document cannot walk.
+        {
+          name: "axis",
+          heading: "Token axis",
+          relation: "^dt:encodes",
+          source: "sparql",
+          level: "standard",
+          select: [{ name: "name", property: "w3c-tokens:name" }],
+        },
+        {
+          name: "positions",
+          heading: "Positions",
+          kind: "table",
+          relation: "^dt:encodes/w3c-tokens:context",
+          source: "sparql",
+          level: "standard",
+          orderBy: ["context"],
+          select: [
+            { name: "context", property: "w3c-tokens:name" },
+            { name: "position", property: "dt:encodes" },
+            { name: "value", property: "dt:encodes/dt:concept/ds:name" },
+          ],
+        },
+        {
+          name: "contract",
+          heading: "Token contract",
+          kind: "table",
+          relation: "dt:contract",
+          source: "sparql",
+          level: "standard",
+          select: [
+            { name: "level", property: "dt:level" },
+            { name: "provision", property: "dt:provision" },
+            { name: "providesType", property: "dt:providesType" },
+          ],
+        },
+        {
+          name: "tokens",
+          heading: "Covered tokens",
+          // The symbols a value of this family may rebind. A block can declare
+          // the family and consume none of them; `token consumers` says which
+          // do. At `detailed` only: Mode covers 354 of them.
+          relation: "dt:covers",
+          source: "sparql",
+          level: "detailed",
+          orderBy: ["name"],
+          select: [{ name: "name", property: "rdfs:label", noun: "token" }],
+        },
       ],
+      disclosure: {
+        levels: ["summary", "standard", "detailed"],
+        default: "detailed",
+      },
       sample: {
         fixedCount: true,
         toolDescription:
