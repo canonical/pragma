@@ -5,14 +5,15 @@ import type {
 } from "./types.js";
 
 /**
- * The rail-collapse shortcut: Ctrl+B. A single named constant so the key
- * can change in one place if a consumer needs a different binding.
+ * The rail-collapse shortcut: Ctrl+B. A single module-level constant so
+ * the key can change in one place if a consumer needs a different
+ * binding.
  */
-export const COLLAPSE_SHORTCUT = { key: "b", ctrlKey: true } as const;
+const COLLAPSE_SHORTCUT = { key: "b", ctrlKey: true } as const;
 
 /**
- * Binds `COLLAPSE_SHORTCUT` to `onTrigger` while `enabled`.
- * `SideNavigation` calls this with `enabled: keyboardShortcut`
+ * Binds `COLLAPSE_SHORTCUT` to `onTrigger` while `condition` holds.
+ * `SideNavigation` calls this with its `keyboardShortcut` prop
  * (default `true`).
  *
  * The match is exact: the Ctrl+B chord with no other modifiers held, and
@@ -20,12 +21,12 @@ export const COLLAPSE_SHORTCUT = { key: "b", ctrlKey: true } as const;
  * textarea, select, or contenteditable host) — Ctrl+B is bold in editors,
  * and the shortcut must never steal it.
  */
-export const useCollapseShortcut = ({
-  enabled = false,
+const useCollapseShortcut = ({
+  condition = false,
   onTrigger,
 }: UseCollapseShortcutProps): UseCollapseShortcutResult => {
   useEffect(() => {
-    if (!enabled) return;
+    if (!condition) return;
 
     const isEditableTarget = (target: EventTarget | null): boolean => {
       if (!(target instanceof HTMLElement)) return false;
@@ -54,5 +55,7 @@ export const useCollapseShortcut = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [enabled, onTrigger]);
+  }, [condition, onTrigger]);
 };
+
+export default useCollapseShortcut;

@@ -1,7 +1,7 @@
 import type React from "react";
 import { useCallback, useEffect, useId, useState } from "react";
-import { useCollapseShortcut } from "./common/hooks/useCollapseShortcut/index.js";
 import { Content, ContextSwitcher, Footer, Header } from "./common/index.js";
+import { useCollapseShortcut } from "./hooks/useCollapseShortcut/index.js";
 import type { SideNavigationProps } from "./types.js";
 import "./styles.css";
 
@@ -79,8 +79,8 @@ const SideNavigation = ({
   }, []);
 
   // Ctrl+B rail-collapse shortcut — on unless
-  // `keyboardShortcut` opts out. See common/hooks/useCollapseShortcut.
-  useCollapseShortcut({ enabled: keyboardShortcut, onTrigger: handleToggle });
+  // `keyboardShortcut` opts out. See hooks/useCollapseShortcut.
+  useCollapseShortcut({ condition: keyboardShortcut, onTrigger: handleToggle });
 
   // --- Controlled circuit (not official yet) -------------------------------
   // const [uncontrolledExpanded, setUncontrolledExpanded] =
