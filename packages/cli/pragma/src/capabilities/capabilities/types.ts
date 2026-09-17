@@ -1,34 +1,27 @@
 /**
  * Types for the `capabilities` orientation tool.
  *
- * The catalog is DERIVED from the live grammar (`emitSurface`) plus an authored
- * hint table — never a hand-maintained tool list — so it cannot drift from the
- * real surface (the exact failure mode of the old shell's `TOOL_CATALOG`, which
- * still named retired tools). See {@link ToolHint} + `hints.ts` for the one
- * authored input, and `catalog.ts` for the derivation.
+ * The catalog is DERIVED from the live grammar (`emitSurface`) plus the guidance
+ * each verb declares — never a hand-maintained tool list — so it cannot drift
+ * from the real surface (the exact failure mode of the old shell's
+ * `TOOL_CATALOG`, which still named retired tools). See `catalog.ts` for the
+ * derivation.
  */
 
-/** A tool's behavioural category, used for grouping + counts. */
-export type ToolCategory = "read" | "write" | "orientation" | "diagnostic";
+import type {
+  DiscoveryStage,
+  ToolCategory,
+} from "../../kernel/spec/guidance.js";
 
-/** The one authored fact per tool: its category + a one-line "use when" hint. */
-export interface ToolHint {
-  readonly category: ToolCategory;
-  readonly use_when: string;
-}
+export type { DiscoveryStage, ToolCategory };
 
-/** One tool as it appears in the catalog — its live name plus its hint. */
+/** One tool as it appears in the catalog — its live name plus its verb's guidance. */
 export interface CatalogTool {
   readonly name: string;
   readonly category: ToolCategory;
   readonly use_when: string;
-}
-
-/** A single stage in the discovery flow an agent follows at session start. */
-export interface DiscoveryStage {
-  readonly stage: number;
-  readonly tool: string;
-  readonly purpose: string;
+  /** One real call, as an MCP tool call; absent only if the verb declares none. */
+  readonly example?: string;
 }
 
 /** Tool counts by category (all DERIVED from the live catalog, never pinned). */
@@ -46,6 +39,8 @@ export interface CapabilitiesData {
   readonly conventions: {
     readonly system: string;
     readonly model: string;
+    /** Which tools read components, patterns, layouts and subcomponents. */
+    readonly blocks: string;
     readonly querying: string;
     /** The plan-first/confirm gate every mutating tool follows (D2). */
     readonly mutations: string;

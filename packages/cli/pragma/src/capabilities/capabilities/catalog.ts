@@ -3,61 +3,29 @@
  *
  * `buildCapabilitiesData(modules)` projects the LIVE grammar: it emits the
  * surface, walks `mcpSurface.tools` (the sorted, covenant-conformant set), and
- * annotates each tool from the authored `TOOL_HINTS` table. The tool set, the
+ * annotates each tool from the guidance its OWN verb declares (`useWhen`,
+ * `example` — see `kernel/spec/guidance.ts`). The tool set, the
  * category counts, and the discovery-sample list are all DERIVED — never pinned
  * — so the catalog tracks the surface automatically (the fix for the old shell's
  * hand-maintained list, which drifted to name retired tools).
  *
  * Pure + zod-free: it reads only `emitSurface` (itself fast-path-safe), so the
- * verb's storeless guarantee holds. The conventions + discovery strings are
- * exported so `kernel/project/mcp/instructions.ts` derives the handshake
- * orientation from the SAME source and the two can never diverge.
+ * verb's storeless guarantee holds. The conventions + discovery strings come
+ * from the kernel's guidance generator, the SAME source the handshake
+ * instructions read, so the two can never diverge.
  */
 
-import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../constants.js";
-import type { CapabilityModule } from "../../kernel/spec/index.js";
-import { emitSurface } from "../../kernel/spec/index.js";
-import { TOOL_HINTS } from "./hints.js";
-import type {
-  CapabilitiesData,
-  CatalogTool,
-  DiscoveryStage,
-  ToolCounts,
-} from "./types.js";
-
-/**
- * The four orientation conventions, and the single source both the
- * `capabilities` tool and the MCP handshake read, so the two cannot contradict
- * each other. `system` projects the distribution's identity rather than naming
- * a domain — the live tool catalog the same handshake carries already says
- * which nouns exist. `querying` is verbatim from the old shell (the SPARQL
- * model is still accurate for v2); `mutations` is new in v2, surfacing the
- * plan-first/confirm gate.
- *
- * `model` is the one that has had to be rewritten twice, and both times because
- * it was describing a gate that had moved. It stopped claiming reads were
- * tier/channel-scoped when the hand-written filtering was removed (the
- * hierarchy became graph data, not a query gate) — and "Reads are unscoped —
- * every list shows everything" became false the day the tier scope landed. An
- * agent reading it took a scoped `block_list` for the whole design system,
- * which is the exact misreading the sentence existed to prevent. So it now says
- * what is true of each half separately: the TIER hierarchy gates a read of a
- * tiered noun and names the argument that widens it, while the CHANNEL is still
- * data on the entity and gates nothing.
- */
-export const CONVENTIONS = {
-  // `help` is authored as a bare phrase (`--help` renders it as one), so the
-  // self-description trails in parentheses rather than after a period this
-  // string would have to add — a fork writing "Explore the recipe graph."
-  // otherwise reads "recipe graph.. A CLI and MCP server…".
-  system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION} (a CLI and MCP server over a knowledge graph).`,
-  model:
-    'The tier hierarchy (global > apps > apps_lxd) SCOPES every read of a tiered entity: lists answer from the top-level tiers, lookups prefer them. Pass tier: "<name>" for a tier plus its ancestors, or tier: "all" for every tier; each answer states its scope. Channels scope nothing.',
-  querying:
-    "All queries run against an RDF triple store. Prefixed IRIs (e.g. prefix:name) identify entities. Use ontology_list to discover the active namespaces.",
-  mutations:
-    "Mutating tools are plan-first: call once WITHOUT confirm to get a plan (meta.planOnly, no writes), then repeat the call with confirm: true to execute.",
-} as const;
+import { VERSION } from "../../constants.js";
+import { renderCall } from "../../kernel/spec/call.js";
+import {
+  buildDiscoverySequence,
+  CONVENTIONS,
+  exampleCall,
+  verbCategory,
+} from "../../kernel/spec/guidance.js";
+import type { CapabilityModule, VerbSpec } from "../../kernel/spec/index.js";
+import { emitSurface, toolName } from "../../kernel/spec/index.js";
+import type { CapabilitiesData, CatalogTool, ToolCounts } from "./types.js";
 
 /** The output modes v2 renders (dropped "text" → "plain"; condensed retired). */
 const OUTPUT_MODES = ["plain", "json", "llm"] as const;
@@ -76,44 +44,6 @@ function mutatingTools(modules: readonly CapabilityModule[]): Set<string> {
 /** The live sorted tool names the covenant blesses, from the emitted surface. */
 export function liveTools(modules: readonly CapabilityModule[]): string[] {
   return emitSurface(modules).mcpSurface.tools;
-}
-
-/**
- * Build the discovery sequence, deriving the sample list from the tools that
- * ACTUALLY exist (v2 ships block/standard/modifier/token samples). Wording is
- * ported from the old `buildCapabilitiesData`, plus a store-state pre-check so a
- * cold agent is never sent into `*_sample` (or any store read) blind — every
- * store read fails STORE_UNAVAILABLE until `sources_update` has built the store.
- */
-export function buildDiscoverySequence(
-  tools: readonly string[],
-): DiscoveryStage[] {
-  const samples = tools.filter((tool) => tool.endsWith("_sample"));
-  const sampleList = samples.length > 0 ? samples.join(", ") : "the *_sample";
-  return [
-    {
-      stage: 1,
-      tool: "capabilities",
-      purpose: "Understand conventions, available tools, and how to navigate",
-    },
-    {
-      stage: 2,
-      tool: "sources_status",
-      purpose:
-        "See which pack is answering. A fresh install answers reads from the snapshot shipped with the CLI and needs no build; only an `unavailable` status requires sources_update (confirm: true), which is a project that declared its own packs and has not built them.",
-    },
-    {
-      stage: 3,
-      tool: "*_sample",
-      purpose: `Call ${sampleList} tools to see real data shapes before querying. Prevents guessing at property names.`,
-    },
-    {
-      stage: 4,
-      tool: "domain tools",
-      purpose:
-        "Query specific entities — block_list, standard_lookup, etc. Use the use_when hints above to pick the right tool.",
-    },
-  ];
 }
 
 /** Tally the catalog tools by category (all counts DERIVED, never pinned). */
@@ -140,15 +70,22 @@ export function buildCapabilitiesData(
   modules: readonly CapabilityModule[],
 ): CapabilitiesData {
   const tools = liveTools(modules);
+  const verbs = new Map(
+    modules.flatMap((module) =>
+      module.verbs.map((verb) => [toolName(verb.path), verb] as const),
+    ),
+  );
   const catalogTools: CatalogTool[] = tools.map((name) => {
-    const hint = TOOL_HINTS[name];
-    // A missing hint is a drift bug caught by `capabilities.test.ts`; degrade
-    // to a truthful placeholder rather than throwing inside a tool call.
+    // Every emitted tool IS a verb of these modules, so the lookup cannot miss.
+    const verb = verbs.get(name) as VerbSpec;
+    const example = exampleCall(verb);
+    // Missing guidance is a drift bug caught by `callRule.test.ts`; degrade to
+    // the summary rather than throwing inside a tool call.
     return {
       name,
-      category: hint?.category ?? "read",
-      use_when:
-        hint?.use_when ?? "(no hint authored — see capabilities/hints.ts)",
+      category: verbCategory(verb),
+      use_when: verb.useWhen ?? verb.summary,
+      ...(example ? { example: renderCall(example, "mcp") } : {}),
     };
   });
 

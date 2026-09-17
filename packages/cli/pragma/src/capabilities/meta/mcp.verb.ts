@@ -16,6 +16,9 @@ import type { VerbSpec } from "../../kernel/spec/index.js";
 export const mcpVerb: VerbSpec<Record<string, unknown>, void> = {
   path: ["mcp", "serve"],
   summary: "Start the MCP server over stdio.",
+  useWhen:
+    "Use when an MCP client needs to launch this server; people rarely run it by hand.",
+  example: {},
   params: [],
   output: {
     formatters: {

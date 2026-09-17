@@ -9,7 +9,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BIN_NAME } from "../../constants.js";
-import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+import { callRecovery, PragmaError } from "../../kernel/error/index.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
@@ -25,6 +25,9 @@ export interface SkillLookup extends DiscoveredSkill {
 const listVerb: VerbSpec<Record<string, unknown>, DiscoveredSkill[]> = {
   path: ["skill", "list"],
   summary: "List discovered skills (SKILL.md files under the skill roots).",
+  useWhen:
+    "Use when asked which agent skills (guided workflows) are available.",
+  example: {},
   params: [],
   output: { formatters: skillListFormatters },
   examples: [{ cmd: `${BIN_NAME} skill list` }],
@@ -43,6 +46,9 @@ const listVerb: VerbSpec<Record<string, unknown>, DiscoveredSkill[]> = {
 const lookupVerb: VerbSpec<Record<string, unknown>, SkillLookup> = {
   path: ["skill", "lookup"],
   summary: "Show a skill's metadata and instructions by name.",
+  useWhen:
+    "Use when asked to follow one skill: it returns the skill's full instructions.",
+  example: { name: "specify-component" },
   params: [
     {
       kind: "string",
@@ -75,9 +81,10 @@ const lookupVerb: VerbSpec<Record<string, unknown>, SkillLookup> = {
           name,
           skills.map((skill) => skill.name),
         ),
-        recovery: cliRecovery("skill list", "List discovered skills.", {
-          tool: "skill_list",
-        }),
+        recovery: callRecovery(
+          { verb: "skill list" },
+          "List discovered skills.",
+        ),
       });
     }
     return { ...match, instructions: readInstructions(match.sourcePath) };

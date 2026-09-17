@@ -393,16 +393,38 @@ export interface PackSearch {
   readonly description?: string;
 }
 
+/**
+ * A call as a story writes it: a verb path and the params to make it with.
+ * Structurally the kernel's `Call` (`spec/call.ts`), restated here because this
+ * file is on the distribution config's import graph and may import nothing.
+ */
+export interface PackCall {
+  readonly verb: string;
+  readonly params?: Readonly<Record<string, unknown>>;
+}
+
 /** Opt-in empty-result recovery for a list story. */
 export interface PackEmptyRecovery {
   /** Human-readable cause + fix (e.g. which packages provide the data). */
   readonly message: string;
   /**
-   * The command that fixes the emptiness, WITHOUT the binary name
-   * (`sources update`). The consuming distribution's renderer prepends its own
-   * name, so a story stays portable across distributions.
+   * The call that fixes the emptiness (`{ verb: "sources update" }`). A verb
+   * path, never a binary name: the consuming distribution's renderer spells it
+   * for the surface it prints on, so a story stays portable across both.
    */
-  readonly cli?: string;
+  readonly call?: PackCall;
+}
+
+/**
+ * What a story half tells a caller choosing between tools. Optional in the
+ * grammar, because third-party packs predate it; the distribution's own stories
+ * are held to declaring both (`callRule.test.ts`).
+ */
+export interface PackGuidance {
+  /** The question a person would ask, in their words ("Use when asked …"). */
+  readonly useWhen?: string;
+  /** One real call's params — the verb is implied, and both spellings derive. */
+  readonly example?: Readonly<Record<string, unknown>>;
 }
 
 /** The list half of a pack (always SPARQL-sourced). */
@@ -424,7 +446,7 @@ export interface PackList {
  * machinery as `list` (e.g. standard's `categories`). May not collide with the
  * compiled `list`/`lookup`/`sample` verbs.
  */
-export interface PackVerb extends PackList {
+export interface PackVerb extends PackList, PackGuidance {
   /** Verb name (kebab-case), e.g. `"categories"`. */
   readonly verb: string;
   /** CLI description for the command. */
@@ -437,7 +459,7 @@ export interface PackVerb extends PackList {
  * The sample capability: `<noun> sample [count]` returns 1–5 randomly selected
  * complete entities (resolved through the lookup path at the HIGHEST level).
  */
-export interface PackSample {
+export interface PackSample extends PackGuidance {
   /** Default sample count when none is requested (1–5; default 2). */
   readonly count?: number;
   /**
@@ -516,7 +538,7 @@ export interface PackScopeWeight {
  * ALWAYS generated SPARQL regardless of source (an implementation detail, not a
  * second declared source).
  */
-export interface PackLookup {
+export interface PackLookup extends PackGuidance {
   /**
    * Field-fetch strategy (default `"sparql"`). `"graphql"` keeps the SPARQL
    * name→URI resolve, then fetches all fields/sections/expands in ONE generated
@@ -692,7 +714,7 @@ export type PackChildRow = Record<
 export type PackEntity = Record<string, string | readonly PackChildRow[]>;
 
 /** One declarative read story: a noun with its preferred queries. */
-export interface PackDefinition {
+export interface PackDefinition extends PackGuidance {
   /** Command noun (kebab-case), e.g. `"standard"` → `pragma standard list`. */
   readonly noun: string;
   /** CLI description for the list command. */

@@ -29,6 +29,9 @@ const setVerb: VerbSpec<Record<string, unknown>, ConfigFieldResult> = {
   path: ["config", "set"],
   summary: "Set a config field by name.",
   doc: "Write a global config field by name. `key` is one of `tier`, `channel`, or `detail`; clearing a field is `config unset <key>`'s job, and the values that used to double as clear-markers are refused. Written to the global layer only — project configs are authored by hand.",
+  useWhen:
+    "Use when asked to change a setting, such as making one product's tier the default for every read.",
+  example: { key: "tier", value: "apps/lxd" },
   params: [
     {
       kind: "enum",

@@ -22,7 +22,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+import { callRecovery, PragmaError } from "../../kernel/error/index.js";
 import { resolvePackDetail } from "../../kernel/packs/disclosure.js";
 import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
@@ -51,12 +51,9 @@ function resolvePrefix(
     if (entry) return { prefix: entry[0], namespace: entry[1] };
     throw PragmaError.invalidInput("namespace", input, {
       validOptions: Object.values(prefixes),
-      recovery: cliRecovery(
-        "ontology list",
+      recovery: callRecovery(
+        { verb: "ontology list" },
         "List loaded ontology namespaces.",
-        {
-          tool: "ontology_list",
-        },
       ),
     });
   }
@@ -64,9 +61,10 @@ function resolvePrefix(
   if (namespace === undefined) {
     throw PragmaError.invalidInput("prefix", input, {
       validOptions: Object.keys(prefixes),
-      recovery: cliRecovery("ontology list", "List loaded ontologies.", {
-        tool: "ontology_list",
-      }),
+      recovery: callRecovery(
+        { verb: "ontology list" },
+        "List loaded ontologies.",
+      ),
     });
   }
   return { prefix: input, namespace };
@@ -75,6 +73,9 @@ function resolvePrefix(
 const listVerb: VerbSpec<Record<string, unknown>, OntologySummary[]> = {
   path: ["ontology", "list"],
   summary: "List loaded ontology namespaces with class and property counts.",
+  useWhen:
+    "Use when asked which vocabularies (namespaces and their prefixes) the data uses — the first step before writing a raw query.",
+  example: {},
   params: [],
   output: { formatters: ontologyListFormatters },
   examples: [{ cmd: `${BIN_NAME} ontology list` }],
@@ -192,9 +193,10 @@ async function runByName(
 
   if (classes.length === 0 && properties.length === 0) {
     throw PragmaError.notFound("ontology", String(params.prefix), {
-      recovery: cliRecovery("ontology list", "List loaded ontologies.", {
-        tool: "ontology_list",
-      }),
+      recovery: callRecovery(
+        { verb: "ontology list" },
+        "List loaded ontologies.",
+      ),
     });
   }
 
@@ -215,6 +217,9 @@ export const ontologyListVerb = asVerb(listVerb);
 export const ontologyLookupVerb = asVerb({
   path: ["ontology", "lookup"],
   summary: "Look up a namespace's classes (hierarchy + counts) and properties.",
+  useWhen:
+    "Use when asked which kinds of thing and which properties one vocabulary defines, so a raw query names real terms.",
+  example: { prefix: "ds" },
   params: BY_NAME_PARAMS,
   output: { formatters: ontologyShowFormatters },
   examples: [

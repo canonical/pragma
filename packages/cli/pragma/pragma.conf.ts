@@ -15,8 +15,8 @@
  * module's load runs on `--help`, `__complete` and `--version`. That also makes
  * the reverse edge impossible — importing `constants.js` from here is a
  * temporal-dead-zone cycle. It is also why no string below names the binary
- * except `name` itself: an `emptyRecovery.cli` is the command WITHOUT the
- * binary name, and the renderer prepends the consuming distribution's.
+ * except `name` itself: an `emptyRecovery.call` names a verb path, never the
+ * binary, and the renderer spells it for the consuming distribution.
  * `capabilities/lazy.test.ts` pins both halves of that.
  */
 
@@ -148,7 +148,10 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "block",
     description: "List all design system blocks.",
     toolDescription:
-      "List all design system blocks with their type, tier, and modifier families. Use when browsing which blocks exist. Example: block_list {}.",
+      "List all design system blocks with their type, tier, and modifier families.",
+    useWhen:
+      "Use when asked which components, patterns, layouts or subcomponents exist — all four are blocks, and every one of them is read through the block tools.",
+    example: {},
     colophon: DESIGN_SYSTEM_COLOPHON,
     // Blocks are TIERED, so every read of them is SCOPED: `block list` answers
     // from the top-level tiers, `--tier apps_lxd` from that tier and its
@@ -220,13 +223,16 @@ const designSystemStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "No blocks in the store. Build it from the configured design-system packs.",
-        cli: "sources update",
+        call: { verb: "sources update" },
       },
     },
     lookup: {
       source: "graphql",
       toolDescription:
-        'Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { name: ["Button"] }.',
+        'Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. `detail: "summary"` trims to the base view.',
+      useWhen:
+        "Use when asked about one component, pattern or layout by name — its anatomy, properties, variants, or when to use it.",
+      example: { name: ["Button"] },
       by: "ds:name",
       types: ["ds:Component", "ds:Pattern", "ds:Layout", "ds:Subcomponent"],
       // A subcomponent is a PART of a block, never the block someone means:
@@ -428,7 +434,10 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete design-system blocks as exemplars. Use BEFORE writing queries to see actual data shapes, anatomy, and property names. Example: block_sample {}.",
+          "Return randomly selected complete design-system blocks as exemplars.",
+        useWhen:
+          "Use before your first block query, to see what a real block record looks like instead of guessing field names.",
+        example: {},
       },
     },
   },
@@ -458,7 +467,10 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "token",
     description: "List the design-token symbols.",
     toolDescription:
-      'List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol\'s OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.',
+      "List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list.",
+    useWhen:
+      "Use when asked which design tokens exist — colours, spacing, typography — or to find a token's exact name.",
+    example: { type: "color" },
     list: {
       // Type and description are DEFINITION-level facts, and 393 of the 745
       // symbols have more than one definition (`color.text` has 20). The one
@@ -580,7 +592,10 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List the value each symbol resolves to at each position, with its chain or its derivation.",
         toolDescription:
-          'List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.',
+          "List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell.",
+        useWhen:
+          "Use when asked what value a token has — the actual colour or size — in light mode, dark mode or any other setting.",
+        example: { symbol: "color.text" },
         // The resolved-value shape admits exactly one of a chain or a
         // derivation, so BOTH are selected wherever a value is projected. A
         // surface that selected only the chain would show a blank row for every
@@ -672,7 +687,7 @@ const designSystemStories: readonly PackDefinition[] = [
         emptyRecovery: {
           message:
             "Resolved token values come from the @canonical/token-ontology pack, and a value is only addressable by symbol once that pack publishes its name literals — a store built without that pack carries none.",
-          cli: "sources update",
+          call: { verb: "sources update" },
         },
       },
       {
@@ -680,7 +695,10 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List which blocks consume which token symbol, at which style key, state and rank.",
         toolDescription:
-          'List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.',
+          "List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings.",
+        useWhen:
+          "Use when asked which components use a colour, spacing or other token, or what changing a token would affect.",
+        example: { symbol: "color.text" },
         // Seven identity columns, and not one of them is decoration: a binding
         // is identified by the whole tuple, so dropping `rank` or `node` would
         // publish rows a caller cannot tell apart — which is worse than a wide
@@ -884,7 +902,7 @@ const designSystemStories: readonly PackDefinition[] = [
         emptyRecovery: {
           message:
             "Either no component uses this token, or no component is recorded as using any token yet — which components use which tokens comes from the component anatomies in the design-system document, and a copy of the graph built before any anatomy named its tokens is empty for every token. Run the same command without `--symbol` to tell the two apart: an empty unfiltered answer means the graph predates the anatomies and fills in once they are written and the graph is rebuilt. If you asked about a CSS variable rather than a token: some variables are computed from others (the `--hover--…` and `--disabled--…` ones, for example) and stand for no token, so nothing is ever recorded as using them; `pragma variable chain --variable <name>` shows what such a variable ends up as.",
-          cli: "sources update",
+          call: { verb: "sources update" },
         },
       },
     ],
@@ -899,7 +917,10 @@ const designSystemStories: readonly PackDefinition[] = [
       description:
         "Look up one or more token symbols by dotted name, IRI, or glob.",
       toolDescription:
-        'Get one design-token symbol in full: its own type and description, every definition behind it with that definition\'s own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.',
+        "Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob.",
+      useWhen:
+        "Use when asked everything about one token by name: where it is defined, what can change it, and its values.",
+      example: { name: ["color.text"] },
       fields: [
         // Single-valued: a channel provisions exactly one symbol.
         {
@@ -990,7 +1011,10 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Use BEFORE writing queries to see real data shapes. Example: token_sample {}.",
+          "Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars.",
+        useWhen:
+          "Use before your first token query, to see what a real token record looks like.",
+        example: {},
       },
     },
   },
@@ -1018,7 +1042,10 @@ const designSystemStories: readonly PackDefinition[] = [
     description:
       "List the platform variables the design tokens are emitted as.",
     toolDescription:
-      'List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.',
+      "List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`).",
+    useWhen:
+      "Use when asked which CSS custom properties (variables) exist, or which CSS variable stands for a token.",
+    example: { symbol: "color.text" },
     list: {
       query: [
         "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility",
@@ -1148,7 +1175,7 @@ const designSystemStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "Platform variables come from the @canonical/token-ontology pack, and a variable is only addressable once that pack publishes its name literals — a store built without that pack carries none.",
-        cli: "sources update",
+        call: { verb: "sources update" },
       },
     },
     verbs: [
@@ -1157,7 +1184,10 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List the walk from a variable to every symbol it reaches, through every variable in between.",
         toolDescription:
-          'List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.',
+          "List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs.",
+        useWhen:
+          "Use when asked what a CSS variable ultimately refers to — the tokens it reaches through other variables.",
+        example: { variable: "modifier-color-text" },
         // ONE property path carries the whole walk, which is why this is a
         // query and not a traversal in code. `dt:references` is an rdf:List of
         // the variables a declaration's value reads, so each hop is
@@ -1217,7 +1247,7 @@ const designSystemStories: readonly PackDefinition[] = [
         emptyRecovery: {
           message:
             "A resolution walk follows the declarations the @canonical/token-ontology pack provides, and the walk is only addressable by name once that pack publishes its name literals — a store built without that pack carries none.",
-          cli: "sources update",
+          call: { verb: "sources update" },
         },
       },
     ],
@@ -1232,7 +1262,10 @@ const designSystemStories: readonly PackDefinition[] = [
       description:
         "Look up one or more platform variables by name (without the leading dashes), IRI, or glob.",
       toolDescription:
-        'Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.',
+        "Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`).",
+      useWhen:
+        "Use when asked about one CSS variable by name: what it stands for and everywhere it is declared.",
+      example: { name: ["color-text"] },
       fields: [
         { name: "symbol", property: "dt:ofSymbol/rdfs:label", label: "Symbol" },
         { name: "tier", property: "dt:tier", label: "Tier" },
@@ -1271,7 +1304,10 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see real data shapes. Example: variable_sample {}.",
+          "Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars.",
+        useWhen:
+          "Use before your first variable query, to see what a real CSS variable record looks like.",
+        example: {},
       },
     },
   },
@@ -1284,8 +1320,10 @@ const designSystemStories: readonly PackDefinition[] = [
   {
     noun: "modifier",
     description: "List all modifier families.",
-    toolDescription:
-      "List all modifier families with their values. Use when browsing which modifier families exist and the values each allows. Example: modifier_list {}.",
+    toolDescription: "List all modifier families with their values.",
+    useWhen:
+      "Use when asked which variants or options components can take — importance, size, density and the like — and the values each allows.",
+    example: {},
     // Tiered like blocks — 11 of the modifier families carry a `ds:tier` — so
     // the same scope, declared with the same four terms. The scope is per NOUN
     // because being tiered is a fact about the entities, and the design
@@ -1319,7 +1357,7 @@ const designSystemStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "No modifier families in the store. Build it from the configured design-system packs.",
-        cli: "sources update",
+        call: { verb: "sources update" },
       },
     },
     lookup: {
@@ -1327,7 +1365,10 @@ const designSystemStories: readonly PackDefinition[] = [
       by: "ds:name",
       type: "ds:ModifierFamily",
       toolDescription:
-        'Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { name: ["importance"] }.',
+        "Get values and usage details for one or more modifier families by name.",
+      useWhen:
+        "Use when asked which values one option allows, such as the levels of importance.",
+      example: { name: ["importance"] },
       expand: [
         {
           name: "values",
@@ -1339,7 +1380,10 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete modifier families (with value lists) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: modifier_sample {}.",
+          "Return randomly selected complete modifier families (with value lists) as exemplars.",
+        useWhen:
+          "Use before your first modifier query, to see what a real modifier family record looks like.",
+        example: {},
       },
     },
   },
@@ -1356,7 +1400,10 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "tier",
     description: "List all tiers in the design system ontology.",
     toolDescription:
-      "List all tiers in the design-system ontology. Use when picking the tier to read with: the `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself. Example: tier_list {}.",
+      "List all tiers in the design-system ontology. The `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself.",
+    useWhen:
+      "Use when asked which tiers the design system has — global, apps, a single product — or before passing `tier` to another tool.",
+    example: {},
     list: {
       query: [
         "SELECT ?uri ?name WHERE {",
@@ -1375,7 +1422,9 @@ const designSystemStories: readonly PackDefinition[] = [
       type: "ds:Tier",
       description: "Show tiers by name, with the blocks scoped to each.",
       toolDescription:
-        'Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { name: ["apps/lxd"] }.',
+        "Get one or more tiers by name, with the blocks scoped directly to each.",
+      useWhen: "Use when asked which components belong to one tier or product.",
+      example: { name: ["apps/lxd"] },
       expand: [
         {
           name: "blocks",
@@ -1399,7 +1448,10 @@ const conceptStory: PackDefinition = {
   noun: "concept",
   description: "List design-system concepts.",
   toolDescription:
-    'List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: "Explanation" }.',
+    "List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.",
+  useWhen:
+    "Use when asked for design guidance that is not about one component — foundations, how-to guides, decision guides.",
+  example: { type: "Explanation" },
   // Concepts carry a `ds:tier` too (4 of them do), so they are scoped on the
   // same terms as blocks and modifier families. Its `list` publishes no tier
   // COLUMN and does not need to: the scope constrains the entity through
@@ -1455,7 +1507,7 @@ const conceptStory: PackDefinition = {
     emptyRecovery: {
       message:
         "Concepts come from the @canonical/design-system pack, and a local store built without it carries none — refresh it.",
-      cli: "sources update",
+      call: { verb: "sources update" },
     },
   },
   lookup: {
@@ -1465,7 +1517,9 @@ const conceptStory: PackDefinition = {
     description:
       "Look up a concept's full documentation by name, IRI, or glob.",
     toolDescription:
-      'Get a design-system concept\'s full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Grid"] }.',
+      "Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob.",
+    useWhen: "Use when asked to read one guide or foundation in full.",
+    example: { name: ["Foundations: Grid"] },
     fields: [
       { name: "type", property: "ds:conceptType/ds:name", label: "Type" },
       { name: "tier", property: "ds:tier", label: "Tier" },
@@ -1516,7 +1570,10 @@ const implementationStory: PackDefinition = {
   noun: "implementation",
   description: "List which library implements which design-system block.",
   toolDescription:
-    'List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.',
+    "List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search.",
+  useWhen:
+    "Use when asked whether a component is implemented in React, Svelte or another library, or where its source code lives.",
+  example: { platform: "react" },
   list: {
     // The library is the subject that carries the platform, so the row is
     // assembled from BOTH ends of `ds:hasImplementation`. `?block` prefers the
@@ -1584,7 +1641,7 @@ const implementationStory: PackDefinition = {
     emptyRecovery: {
       message:
         "Implementations come from the @canonical/ds-implementations pack, and a local store built without it carries none — refresh it.",
-      cli: "sources update",
+      call: { verb: "sources update" },
     },
   },
   verbs: [
@@ -1592,7 +1649,10 @@ const implementationStory: PackDefinition = {
       verb: "libraries",
       description: "List the implementation libraries.",
       toolDescription:
-        "List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.",
+        "List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements.",
+      useWhen:
+        "Use when asked which component libraries exist and how much of the design system each covers.",
+      example: {},
       // `ds:implementationCount` is asserted by the aggregate index on the SAME
       // subject the per-library file describes, so the two merge in the store
       // and the count needs no aggregation here.
@@ -1620,7 +1680,7 @@ const implementationStory: PackDefinition = {
       emptyRecovery: {
         message:
           "No implementation libraries in the store. The @canonical/ds-implementations pack provides them; refresh the local store.",
-        cli: "sources update",
+        call: { verb: "sources update" },
       },
     },
   ],
@@ -1640,7 +1700,10 @@ const codeStandardsStories: readonly PackDefinition[] = [
     noun: "standard",
     description: "List all code standards.",
     toolDescription:
-      'List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row\'s `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term. Example: standard_list { category: "react" }.',
+      "List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term.",
+    useWhen:
+      "Use when asked which coding rules or conventions apply — for React, CSS, testing, documentation and so on.",
+    example: { category: "react" },
     list: {
       query: [
         // `?category` is the LEAF a standard is filed under — what a row
@@ -1723,7 +1786,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "Category slugs come from the graph, and a parent slug answers for its whole branch — read them out rather than guessing.",
-        cli: "standard categories",
+        call: { verb: "standard categories" },
       },
     },
     verbs: [
@@ -1732,7 +1795,10 @@ const codeStandardsStories: readonly PackDefinition[] = [
         description:
           "List all standard categories with counts (a parent counts its whole branch).",
         toolDescription:
-          "List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.",
+          "List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering.",
+        useWhen:
+          "Use when asked which areas the code standards cover, or before filtering standards by category.",
+        example: {},
         query: [
           // The same reflexive roll-up `list` filters with — written the other
           // way round (every category whose broader-chain reaches ?cat), so the
@@ -1762,7 +1828,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
         emptyRecovery: {
           message:
             "The code standards ship with the CLI itself, so no categories at all means the store did not load — not that it is out of date.",
-          cli: "doctor",
+          call: { verb: "doctor" },
         },
       },
     ],
@@ -1805,7 +1871,10 @@ const codeStandardsStories: readonly PackDefinition[] = [
       description:
         "Look up one or more standards by name, IRI, or glob. --detail standard adds the dos, --detail detailed adds the don'ts.",
       toolDescription:
-        'Get one or more code standards in full, with dos and don\'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don\'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.',
+        'Get one or more code standards in full, with dos and don\'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don\'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those.',
+      useWhen:
+        "Use when asked how code should be written under one rule — it returns the do and don't examples.",
+      example: { name: ["react/component/tsdoc"], detail: "detailed" },
       fields: [
         {
           name: "category",
@@ -1851,7 +1920,10 @@ const codeStandardsStories: readonly PackDefinition[] = [
         description:
           "Return randomly selected complete standard instances as exemplars for shape discovery.",
         toolDescription:
-          "Return 1–5 randomly selected complete code standard instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances. Example: standard_sample { count: 2 }.",
+          "Return 1–5 randomly selected complete code standard instances as exemplars. Each call returns different instances.",
+        useWhen:
+          "Use before your first standards query, to see what a real code standard record looks like.",
+        example: { count: "2" },
       },
     },
   },

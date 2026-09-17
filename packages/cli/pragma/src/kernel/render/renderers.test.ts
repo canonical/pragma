@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PragmaError } from "../error/PragmaError.js";
-import { cliRecovery } from "../error/recovery.js";
+import { callRecovery } from "../error/recovery.js";
 import {
   renderErrorJson,
   renderErrorLlm,
@@ -293,7 +293,7 @@ describe("error render matrix (× plain/llm/json)", () => {
   it("renders each error across the three formats", () => {
     const notFound = PragmaError.notFound("block", "Buton", {
       suggestions: ["Button"],
-      recovery: cliRecovery("block list", "List available blocks."),
+      recovery: callRecovery({ verb: "block list" }, "List available blocks."),
     });
     const empty = PragmaError.emptyResults("token", {
       filters: { channel: "stable", tier: "core" },

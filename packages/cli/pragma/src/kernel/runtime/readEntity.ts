@@ -54,7 +54,7 @@
  */
 
 import type { DetailLevel } from "../../constants.js";
-import { cliRecovery, PragmaError } from "../error/index.js";
+import { callRecovery, PragmaError } from "../error/index.js";
 import { resolveUri } from "../packs/iri.js";
 import { compactUri, resolveDetail } from "../render/index.js";
 import type { PackIndex } from "./graphpack/types.js";
@@ -348,10 +348,12 @@ export async function readEntity(
 
   if (outbound.type !== "select" || outbound.termBindings.length === 0) {
     throw PragmaError.notFound("entity", uri, {
-      recovery: cliRecovery(
-        `graph query 'SELECT ?s WHERE { ?s ?p ?o } LIMIT 10'`,
+      recovery: callRecovery(
+        {
+          verb: "graph query",
+          params: { sparql: "SELECT ?s WHERE { ?s ?p ?o } LIMIT 10" },
+        },
         "Check the URI, or list known entities.",
-        { tool: "graph_query" },
       ),
     });
   }

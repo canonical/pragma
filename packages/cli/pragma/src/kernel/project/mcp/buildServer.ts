@@ -18,6 +18,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { MCP_SERVER_NAME, VERSION } from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/index.js";
 import { bootRuntime } from "../../runtime/index.js";
+import { declareVerbs } from "../../spec/call.js";
 import type { CapabilityModule } from "../../spec/index.js";
 import { buildInstructions } from "./instructions.js";
 import { registerVerb } from "./registerVerb.js";
@@ -58,6 +59,8 @@ export async function buildServer(
     { instructions: buildInstructions(modules) },
   );
   const runtime = bootRuntime(MCP_FLAGS, cwd);
+  // Tells the call renderer which verbs exist (see `spec/call.ts`).
+  declareVerbs(modules.flatMap((module) => module.verbs));
 
   for (const module of modules) {
     for (const verb of module.verbs) {

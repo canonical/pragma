@@ -13,6 +13,7 @@
 
 import type { Effect, Task } from "@canonical/task";
 import type { PragmaRuntime } from "../runtime/types.js";
+import type { Surface } from "./call.js";
 
 /** MCP tool annotations mirrored onto exposed verbs. */
 export type McpAnnotations = {
@@ -191,7 +192,12 @@ export interface Formatters<T> {
   ) => string;
   readonly llm: (d: T) => string;
   readonly json: (d: T) => string;
-  readonly notice?: (d: T) => string | undefined;
+  /**
+   * `surface` says where the sentence is about to be printed, so a notice that
+   * ends in a next call spells it as a tool call on MCP and a command on the
+   * CLI (the default).
+   */
+  readonly notice?: (d: T, surface?: Surface) => string | undefined;
   /**
    * The MACHINE half of the notice seam: facts about the read that belong in
    * the envelope's `meta` as DATA, merged there by both projectors under the
@@ -248,6 +254,19 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
   readonly path: readonly [noun: string, verb?: string];
   readonly summary: string;
   readonly doc?: string;
+  /**
+   * The question a person would ask that this verb answers, in THEIR words
+   * ("Use when asked which components use a token"). With {@link example} it is
+   * the one source of guidance: `guidance.ts` builds the MCP tool description,
+   * the `capabilities` catalogue and verb help from it, so none is typed twice.
+   * Optional in the type because a third-party story may omit it; every verb
+   * this distribution registers is held to it by `callRule.test.ts`.
+   */
+  readonly useWhen?: string;
+  /** One real call's params — the verb is this one, and both spellings derive. */
+  readonly example?: Readonly<Record<string, unknown>>;
+  /** The catalogue group, where it is not the default: a mutating verb is a `write`, any other a `read`. */
+  readonly category?: "orientation" | "diagnostic";
   readonly params: readonly ParamSpec[];
   readonly output: {
     schema?: unknown;

@@ -3,12 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GetPromptRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { CONVENTIONS } from "../../../../capabilities/capabilities/catalog.js";
 import { capabilities } from "../../../../capabilities/index.js";
 import type { McpHarness } from "../../../../testing/helpers/projectMcp.js";
 import { projectMcp } from "../../../../testing/helpers/projectMcp.js";
 import type { PragmaRuntime } from "../../../runtime/types.js";
 import { emitSurface } from "../../../spec/emitSurface.js";
+import { CONVENTIONS } from "../../../spec/guidance.js";
 import type { CapabilityModule } from "../../../spec/types.js";
 import { buildInstructions, INSTRUCTIONS_MAX_CHARS } from "../instructions.js";
 import { fillTemplate, promptProvider } from "./provider.js";
@@ -45,12 +45,20 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
   });
 
   it("opens with the shared catalog's conventions, verbatim and once", () => {
-    // The conventions are authored once (capabilities/catalog.ts); instructions
+    // The conventions are authored once (kernel/spec/guidance.ts); instructions
     // must OPEN with them, so a second hand-written preamble cannot creep back
     // in and drift from the `capabilities` tool the same handshake carries.
     expect(buildInstructions(capabilities).startsWith(CONVENTIONS.system)).toBe(
       true,
     );
+  });
+
+  it("says which tools read components, patterns, layouts and subcomponents", () => {
+    // People ask about "components"; the tools are named for blocks. An agent
+    // that went looking for a component tool found none and fell to raw SPARQL.
+    const text = buildInstructions(capabilities);
+    expect(text).toContain(CONVENTIONS.blocks);
+    expect(CONVENTIONS.blocks).toMatch(/components.*block_list/i);
   });
 
   it("quotes the resource templates the MCP surface actually advertises", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RECOVERY_CLI_PREFIX } from "../../constants.js";
-import { cliRecovery } from "./recovery.js";
+import { callRecovery } from "./recovery.js";
 
 describe("recovery.cli invariant (D5)", () => {
   it("carries the shipped distribution's recovery prefix", () => {
@@ -11,27 +11,60 @@ describe("recovery.cli invariant (D5)", () => {
     expect(RECOVERY_CLI_PREFIX).toBe("pragma ");
   });
 
-  it("prepends the distribution's prefix to the command it is given", () => {
-    // The caller passes the SUFFIX, so a hint naming the wrong binary is
-    // unwritable rather than merely asserted against. What replaced the deleted
-    // `assertRecoveryCli` is `kernel/copy.test.ts`'s position rule, which sees
-    // the raw `cli:` literals that never reached this function at all — the only
-    // place a wrong prefix was ever actually written.
-    expect(cliRecovery("config show", "See the resolved config.")).toEqual({
-      cli: "pragma config show",
-      message: "See the resolved config.",
+  it("derives both spellings from the one call it is given", () => {
+    // The caller names a CALL, so a hint naming the wrong binary — or a CLI
+    // string and an MCP hint that disagree about an argument — is unwritable
+    // rather than merely asserted against. `kernel/copy.test.ts`'s position
+    // rule still sees the raw `cli:` literals that never reach this function.
+    expect(
+      callRecovery(
+        { verb: "config unset", params: { key: "tier" } },
+        "Clear the field.",
+      ),
+    ).toEqual({
+      cli: "pragma config unset tier",
+      message: "Clear the field.",
+      mcp: { tool: "config_unset", params: { key: "tier" } },
     });
   });
 
-  it("carries an MCP tool alongside the command when one is given", () => {
+  it("spells a flag, quotes what a shell would split, and repeats a variadic positional", () => {
     expect(
-      cliRecovery("sources update", "Build the store.", {
-        tool: "sources_update",
-      }),
-    ).toEqual({
-      cli: "pragma sources update",
-      message: "Build the store.",
-      mcp: { tool: "sources_update" },
+      callRecovery(
+        { verb: "token consumers", params: { symbol: "color.text" } },
+        "m",
+      ).cli,
+    ).toBe("pragma token consumers --symbol color.text");
+    expect(
+      callRecovery(
+        { verb: "graph query", params: { sparql: "ASK { ?s ?p 'x' }" } },
+        "m",
+      ).cli,
+    ).toBe("pragma graph query 'ASK { ?s ?p '\\''x'\\'' }'");
+    expect(
+      callRecovery(
+        { verb: "block lookup", params: { name: ["Button", "Card"] } },
+        "m",
+      ).cli,
+    ).toBe("pragma block lookup Button Card");
+    expect(
+      callRecovery(
+        { verb: "sources update", params: { skipInvalid: true } },
+        "m",
+      ).cli,
+    ).toBe("pragma sources update --skip-invalid");
+    expect(
+      callRecovery(
+        { verb: "sources update", params: { skipInvalid: false } },
+        "m",
+      ).cli,
+    ).toBe("pragma sources update");
+  });
+
+  it("names no MCP tool for a verb withheld from MCP", () => {
+    expect(callRecovery({ verb: "version" }, "See the version.")).toEqual({
+      cli: "pragma version",
+      message: "See the version.",
     });
   });
 });

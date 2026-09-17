@@ -24,6 +24,7 @@ import {
   toolName,
   verbLabel,
 } from "./emitSurface.js";
+import { describeTool } from "./guidance.js";
 import type {
   CapabilityModule,
   Example,
@@ -260,6 +261,7 @@ function renderCommandSection(
     `### ${formatInvocation(verb)}`,
     verb.summary,
     verb.doc ?? "",
+    verb.useWhen ?? "",
     `\`\`\`\n${syntax ? `${BIN_NAME} ${syntax.usage}` : formatUsage(verb)}\n\`\`\``,
     formatArgsTable(verb.params, syntax?.positionalTokens),
     formatFlagsTable(verb.params, syntax?.flagTokens),
@@ -410,7 +412,8 @@ function formatToolAnnotations(verb: VerbSpec): string {
 function renderToolSection(verb: VerbSpec): string {
   const blocks = [
     `### ${toolName(verb.path)}`,
-    verb.doc ?? verb.summary,
+    // The description an agent is actually served, from the one generator.
+    describeTool(verb),
     formatToolAnnotations(verb),
     "**Input**",
     formatToolParams(verb),

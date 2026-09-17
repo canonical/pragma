@@ -10,7 +10,7 @@
  * (`graph query`) goes through the facade directly and stays INVALID_INPUT.
  */
 
-import { cliRecovery, PragmaError } from "../../error/index.js";
+import { callRecovery, PragmaError } from "../../error/index.js";
 import type { PragmaRuntime } from "../../runtime/index.js";
 import type { PackRow, StorySource } from "../types.js";
 
@@ -63,12 +63,9 @@ function unboundPrefixError(source: StorySource): PragmaError {
   return PragmaError.storeUnavailable(
     "The local store was not built from a pack that defines every term this read uses.",
     {
-      recovery: cliRecovery(
-        "sources update",
+      recovery: callRecovery(
+        { verb: "sources update" },
         "Build the local store from the configured packs.",
-        // An agent recovers by calling the tool, then retrying (PR9 C1 cold-
-        // store retry makes the post-update retry succeed).
-        { tool: "sources_update" },
       ),
     },
   );

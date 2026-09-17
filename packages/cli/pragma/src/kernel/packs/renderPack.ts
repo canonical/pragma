@@ -9,7 +9,6 @@
  * them (disclosure gates the fetch), never HOW it is laid out.
  */
 
-import { BIN_NAME, RECOVERY_CLI_PREFIX } from "../../constants.js";
 import type {
   ColumnDef,
   LookupField,
@@ -25,6 +24,7 @@ import {
   renderLookupLlm,
   renderLookupPlain,
 } from "../render/renderers.js";
+import { renderNextStep, type Surface } from "../spec/call.js";
 import type { Formatters } from "../spec/index.js";
 import { kebabCase } from "../spec/index.js";
 import type { LookupOutput } from "./resolveEntity.js";
@@ -32,6 +32,7 @@ import {
   EVERY_TIER,
   type PackAppliedFilter,
   type PackChildRow,
+  type PackEmptyRecovery,
   type PackEntity,
   type PackList,
   type PackLookup,
@@ -59,7 +60,11 @@ export interface RenderMeta {
  * list on a BUILT store (a cold store would have failed with STORE_UNAVAILABLE
  * first) means "nothing matched", so point at both possible fixes.
  */
-const DEFAULT_EMPTY_HINT = `Either nothing matched — try a wider filter — or the store has nothing in it yet: build it with \`${BIN_NAME} sources update\`.`;
+export const DEFAULT_EMPTY_RECOVERY: PackEmptyRecovery = {
+  message:
+    "Either nothing matched — try a wider filter — or the store has nothing in it yet and needs building.",
+  call: { verb: "sources update" },
+};
 
 /**
  * Build the list formatters for a list-shaped verb (list or an extra verb).
@@ -93,39 +98,40 @@ export function listFormatters(
   // Zero results is a calm success, not an error (see runBodies.makeListRun):
   // render a non-blank message, exit 0, JSON stays []. A pack's authored
   // `emptyRecovery` becomes the hint; otherwise the generic build/broaden hint.
-  const emptyHint = shape.emptyRecovery
-    ? `${shape.emptyRecovery.message}${
-        shape.emptyRecovery.cli
-          ? ` Run \`${RECOVERY_CLI_PREFIX}${shape.emptyRecovery.cli}\`.`
-          : ""
-      }`
-    : DEFAULT_EMPTY_HINT;
-  const options: RenderListOptions<PackRow> = {
+  // Built per call, not once: the hint ends in the next call to make, spelled
+  // for the surface that is about to print it.
+  const { message, call } = shape.emptyRecovery ?? DEFAULT_EMPTY_RECOVERY;
+  const optionsFor = (surface: Surface): RenderListOptions<PackRow> => ({
     heading: meta.heading,
     columns,
     prefixes: meta.prefixes,
     emptyMessage: `No ${meta.noun} entries found.`,
-    emptyHint,
-  };
+    emptyHint: call ? `${message} ${renderNextStep(call, surface)}` : message,
+  });
   return {
-    plain: (page, context) => renderListPlain(page.rows, options, context),
+    plain: (page, context) =>
+      renderListPlain(page.rows, optionsFor("cli"), context),
     llm: (page) => {
-      const body = renderListLlm(page.rows, emptyCopy(page, meta, options), {
-        more: page.nextAfter !== undefined,
-        ...(scopeText(page) === undefined
-          ? {}
-          : { scope: scopeText(page) as string }),
-      });
+      const body = renderListLlm(
+        page.rows,
+        emptyCopy(page, meta, optionsFor("cli")),
+        {
+          more: page.nextAfter !== undefined,
+          ...(scopeText(page) === undefined
+            ? {}
+            : { scope: scopeText(page) as string }),
+        },
+      );
       const notice = listNotice(page, meta);
       return notice ? `${body}\n\n${notice}` : body;
     },
     json: (page) => JSON.stringify(page.rows, null, 2),
     // Zero rows: the dispatcher routes this to stderr (exit 0) so the plain
     // stdout stream stays pure data; llm/json keep their own empty shapes.
-    notice: (page) =>
+    notice: (page, surface = "cli") =>
       page.rows.length === 0
         ? joinNotices([
-            renderListEmptyNotice(emptyCopy(page, meta, options)),
+            renderListEmptyNotice(emptyCopy(page, meta, optionsFor(surface))),
             scopeNotice(page),
           ])
         : listNotice(page, meta),

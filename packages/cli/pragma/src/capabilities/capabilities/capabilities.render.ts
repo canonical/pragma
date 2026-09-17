@@ -25,6 +25,7 @@ export const capabilitiesFormatters: Formatters<CapabilitiesData> = {
     lines.push("Conventions");
     lines.push(`  ${data.conventions.system}`);
     lines.push(`  ${data.conventions.model}`);
+    lines.push(`  ${data.conventions.blocks}`);
     lines.push(`  ${data.conventions.querying}`);
     lines.push("");
 
@@ -59,6 +60,7 @@ export const capabilitiesFormatters: Formatters<CapabilitiesData> = {
     lines.push("## Conventions");
     lines.push(`- ${data.conventions.system}`);
     lines.push(`- ${data.conventions.model}`);
+    lines.push(`- ${data.conventions.blocks}`);
     lines.push(`- ${data.conventions.querying}`);
     lines.push("");
 

@@ -31,7 +31,7 @@ import {
   writeFile,
 } from "@canonical/task";
 import { VERSION } from "../../constants.js";
-import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+import { callRecovery, PragmaError } from "../../kernel/error/index.js";
 // DIRECT LEAF IMPORT, not `graphpack/index.js`. The barrel re-exports
 // `embedded.ts`, which statically imports the ~1.9 MB generated pack — and
 // with per-file `tsc` output ESM evaluates that re-export when this module
@@ -200,9 +200,9 @@ export async function buildUpdateTask(
         ? "No packs are configured, so there are no sources to build a store from. The embedded pack answers reads until you add a pack."
         : `The ${entries.length} configured pack(s) resolved 0 RDF sources (no definitions/**.ttl or data/**.ttl). Refusing to build an empty store.`,
       {
-        recovery: cliRecovery(
-          "sources update --verbose",
-          "Add a pack that ships `.ttl` under definitions/ or data/, then re-run.",
+        recovery: callRecovery(
+          { verb: "sources update" },
+          "Add a pack that ships `.ttl` under definitions/ or data/, then re-run with --verbose.",
         ),
       },
     );
@@ -270,9 +270,9 @@ export async function buildUpdateTask(
       throw PragmaError.configError(
         `None of the ${inputs.length} configured source(s) can be parsed — nothing to build.`,
         {
-          recovery: cliRecovery(
-            "sources update --verbose",
-            "Fix the reported sources, then re-run.",
+          recovery: callRecovery(
+            { verb: "sources update" },
+            "Fix the reported sources, then re-run with --verbose.",
           ),
         },
       );
@@ -303,9 +303,9 @@ export async function buildUpdateTask(
     throw PragmaError.configError(
       `The configured sources parsed to 0 RDF triples, so the store would be empty. Refusing to build an empty store.`,
       {
-        recovery: cliRecovery(
-          "sources update --verbose",
-          "Check that the pack sources actually contain RDF triples, then re-run.",
+        recovery: callRecovery(
+          { verb: "sources update" },
+          "Check that the pack sources actually contain RDF triples, then re-run with --verbose.",
         ),
       },
     );
@@ -496,8 +496,8 @@ export async function classifySourceBuildError(
     ? `Pack source "${culprit.path}" cannot be parsed`
     : "The configured packs cannot be built into a store";
   return PragmaError.configError(`${where}: ${detail}`, {
-    recovery: cliRecovery(
-      "sources update --verbose",
+    recovery: callRecovery(
+      { verb: "sources update" },
       "Re-run with --verbose to see each file as it parses. If a pack ships malformed RDF, report it to that pack's maintainer.",
     ),
   });

@@ -6,7 +6,7 @@ Mutating tools are plan-first: called without `confirm: true` they return the pl
 
 ### block_list
 
-List all design system blocks with their type, tier, and modifier families. Use when browsing which blocks exist. Example: block_list {}.
+Use when asked which components, patterns, layouts or subcomponents exist — all four are blocks, and every one of them is read through the block tools. List all design system blocks with their type, tier, and modifier families. Example: block_list {}.
 
 Read-only.
 
@@ -20,7 +20,7 @@ Read-only.
 
 ### block_lookup
 
-Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { name: ["Button"] }.
+Use when asked about one component, pattern or layout by name — its anatomy, properties, variants, or when to use it. Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. `detail: "summary"` trims to the base view. Example: block_lookup { name: ["Button"] }.
 
 Read-only.
 
@@ -34,7 +34,7 @@ Read-only.
 
 ### block_sample
 
-Return randomly selected complete design-system blocks as exemplars. Use BEFORE writing queries to see actual data shapes, anatomy, and property names. Example: block_sample {}.
+Use before your first block query, to see what a real block record looks like instead of guessing field names. Return randomly selected complete design-system blocks as exemplars. Example: block_sample {}.
 
 Read-only.
 
@@ -44,7 +44,7 @@ _No input parameters._
 
 ### capabilities
 
-Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.
+Use at the start of a session, or when unsure which tool answers a question: it lists every tool with the question it answers. Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start. Example: capabilities {}.
 
 Read-only.
 
@@ -54,7 +54,7 @@ _No input parameters._
 
 ### colophon
 
-Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
+Use when asked how this design-system data is put together — for onboarding or a demo. Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections. Example: colophon {}.
 
 Read-only.
 
@@ -64,7 +64,7 @@ _No input parameters._
 
 ### concept_list
 
-List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: "Explanation" }.
+Use when asked for design guidance that is not about one component — foundations, how-to guides, decision guides. List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: "Explanation" }.
 
 Read-only.
 
@@ -80,7 +80,7 @@ Read-only.
 
 ### concept_lookup
 
-Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Grid"] }.
+Use when asked to read one guide or foundation in full. Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Grid"] }.
 
 Read-only.
 
@@ -94,7 +94,7 @@ Read-only.
 
 ### config_get
 
-Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell.
+Use when asked for the current value of one setting, such as the default tier. Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell. Example: config_get { key: "tier" }.
 
 Read-only.
 
@@ -106,7 +106,7 @@ Read-only.
 
 ### config_set
 
-Write a global config field by name. `key` is one of `tier`, `channel`, or `detail`; clearing a field is `config unset <key>`'s job, and the values that used to double as clear-markers are refused. Written to the global layer only — project configs are authored by hand.
+Use when asked to change a setting, such as making one product's tier the default for every read. Write a global config field by name. `key` is one of `tier`, `channel`, or `detail`; clearing a field is `config unset <key>`'s job, and the values that used to double as clear-markers are refused. Written to the global layer only — project configs are authored by hand. Example: config_set { key: "tier", value: "apps/lxd" }.
 
 Mutation — plan-first (set `confirm: true` to apply).
 
@@ -121,7 +121,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### config_show
 
-Merges built-in defaults, the global XDG config, and the nearest pragma.config.ts, marking which layer supplied each value.
+Use when asked how the tool is configured right now — tier, channel, detail level — and which file set each value. Merges built-in defaults, the global XDG config, and the nearest pragma.config.ts, marking which layer supplied each value. Example: config_show {}.
 
 Read-only.
 
@@ -131,7 +131,7 @@ _No input parameters._
 
 ### config_unset
 
-Removes a field from the global config so the built-in default (or a project config) applies again. The counterpart of `config set` — setting writes a value, unsetting removes one; no value doubles as a remove-marker.
+Use when asked to put a setting back to its built-in default. Removes a field from the global config so the built-in default (or a project config) applies again. The counterpart of `config set` — setting writes a value, unsetting removes one; no value doubles as a remove-marker. Example: config_unset { key: "tier" }.
 
 Mutation — plan-first (set `confirm: true` to apply).
 
@@ -145,7 +145,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### create_application
 
-Scaffold a full React application with routing, and either server-side rendering or a client-only SPA.
+Use when asked to start a new React application, server-rendered or client-only. Scaffold a full React application with routing, and either server-side rendering or a client-only SPA. Example: create_application { appPath: "my-app" }.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -164,7 +164,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### create_component
 
-Scaffold a React, Svelte, or Lit component.
+Use when asked to start a new React, Svelte or Lit component with its tests, stories and styles. Scaffold a React, Svelte, or Lit component. Example: create_component { framework: "react", componentPath: "src/components/Button" }.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -183,7 +183,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### create_package
 
-Scaffold a new npm package for the monorepo.
+Use when asked to start a new npm package inside the monorepo. Scaffold a new npm package for the monorepo. Example: create_package { name: "@canonical/my-lib", type: "library" }.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -204,7 +204,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### doctor
 
-Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.
+Use when something is not working — setup, completions, the MCP connection, the data store — and you need to know what is wrong. Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run. Example: doctor {}.
 
 Read-only.
 
@@ -214,7 +214,7 @@ _No input parameters._
 
 ### graph_connect
 
-Finds every shortest path of RELATION edges between two entities, and says which kind of nothing it found when there is no path. An edge counts as a relation only where it does not fan out into a roster — membership of a class, a tier or a family is answered by that noun's list verb, not by a path — so most pairs are correctly reported as unconnected. Address each endpoint by prefixed name (ds:global.component.button) or absolute IRI. Every answer states the hop limit, the fan-in threshold, and the packs searched.
+Use when asked whether and how two things are related — a component and a token, say — without knowing the link in advance. Finds every shortest path of RELATION edges between two entities, and says which kind of nothing it found when there is no path. An edge counts as a relation only where it does not fan out into a roster — membership of a class, a tier or a family is answered by that noun's list verb, not by a path — so most pairs are correctly reported as unconnected. Address each endpoint by prefixed name (ds:global.component.button) or absolute IRI. Every answer states the hop limit, the fan-in threshold, and the packs searched. Example: graph_connect { a: "ds:global.component.button", b: "dt:color.text" }.
 
 Read-only.
 
@@ -229,7 +229,7 @@ Read-only.
 
 ### graph_inspect
 
-Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.
+Use when asked for everything recorded about one thing whose identifier you have, or when a specific tool's answer leaves something out. Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI. Example: graph_inspect { uri: "ds:global.component.button" }.
 
 Read-only.
 
@@ -242,7 +242,7 @@ Read-only.
 
 ### graph_query
 
-Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes.
+Use only when no specific tool answers the question: a custom SPARQL query for joins or counts across the whole graph. Check ontology_list for the real prefixes first. Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes. Example: graph_query { sparql: "SELECT ?s WHERE { ?s a ds:Component } LIMIT 5" }.
 
 Read-only.
 
@@ -254,7 +254,7 @@ Read-only.
 
 ### implementation_libraries
 
-List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
+Use when asked which component libraries exist and how much of the design system each covers. List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
 
 Read-only.
 
@@ -267,7 +267,7 @@ Read-only.
 
 ### implementation_list
 
-List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.
+Use when asked whether a component is implemented in React, Svelte or another library, or where its source code lives. List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.
 
 Read-only.
 
@@ -283,7 +283,7 @@ Read-only.
 
 ### info
 
-Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available.
+Use when asked which version is installed, how it is configured, or whether an update is available. Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available. Example: info {}.
 
 Read-only.
 
@@ -293,7 +293,7 @@ _No input parameters._
 
 ### modifier_list
 
-List all modifier families with their values. Use when browsing which modifier families exist and the values each allows. Example: modifier_list {}.
+Use when asked which variants or options components can take — importance, size, density and the like — and the values each allows. List all modifier families with their values. Example: modifier_list {}.
 
 Read-only.
 
@@ -307,7 +307,7 @@ Read-only.
 
 ### modifier_lookup
 
-Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { name: ["importance"] }.
+Use when asked which values one option allows, such as the levels of importance. Get values and usage details for one or more modifier families by name. Example: modifier_lookup { name: ["importance"] }.
 
 Read-only.
 
@@ -320,7 +320,7 @@ Read-only.
 
 ### modifier_sample
 
-Return randomly selected complete modifier families (with value lists) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: modifier_sample {}.
+Use before your first modifier query, to see what a real modifier family record looks like. Return randomly selected complete modifier families (with value lists) as exemplars. Example: modifier_sample {}.
 
 Read-only.
 
@@ -330,7 +330,7 @@ _No input parameters._
 
 ### ontology_list
 
-List loaded ontology namespaces with class and property counts.
+Use when asked which vocabularies (namespaces and their prefixes) the data uses — the first step before writing a raw query. List loaded ontology namespaces with class and property counts. Example: ontology_list {}.
 
 Read-only.
 
@@ -340,7 +340,7 @@ _No input parameters._
 
 ### ontology_lookup
 
-Look up a namespace's classes (hierarchy + counts) and properties.
+Use when asked which kinds of thing and which properties one vocabulary defines, so a raw query names real terms. Look up a namespace's classes (hierarchy + counts) and properties. Example: ontology_lookup { prefix: "ds" }.
 
 Read-only.
 
@@ -356,7 +356,7 @@ Read-only.
 
 ### prompt_list
 
-Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
+Use when asked which ready-made workflow prompts the design system offers. Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body. Example: prompt_list {}.
 
 Read-only.
 
@@ -366,7 +366,7 @@ _No input parameters._
 
 ### prompt_lookup
 
-Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.
+Use when asked to read or run one workflow prompt by the name prompt_list gave. Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries. Example: prompt_lookup { name: "build-a-block" }.
 
 Read-only.
 
@@ -378,7 +378,7 @@ Read-only.
 
 ### setup
 
-Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.
+Use when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension. Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed. Example: setup {}.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -394,7 +394,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### skill_list
 
-List discovered skills (SKILL.md files under the skill roots).
+Use when asked which agent skills (guided workflows) are available. List discovered skills (SKILL.md files under the skill roots). Example: skill_list {}.
 
 Read-only.
 
@@ -404,7 +404,7 @@ _No input parameters._
 
 ### skill_lookup
 
-Show a skill's metadata and instructions by name.
+Use when asked to follow one skill: it returns the skill's full instructions. Show a skill's metadata and instructions by name. Example: skill_lookup { name: "specify-component" }.
 
 Read-only.
 
@@ -416,7 +416,7 @@ Read-only.
 
 ### sources_reset
 
-Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again (or, for a project that declares its own packs, until the next `sources update`). The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built.
+Use when asked to go back to the data shipped with the tool, dropping the pack this project built. Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again (or, for a project that declares its own packs, until the next `sources update`). The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built. Example: sources_reset {}.
 
 Mutation — plan-first (set `confirm: true` to apply). Marked destructive.
 
@@ -429,7 +429,7 @@ Mutation — plan-first (set `confirm: true` to apply). Marked destructive.
 
 ### sources_status
 
-Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.
+Use when asked where answers come from — which data pack is loaded and how fresh it is — or when results look empty or out of date. Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all. Example: sources_status {}.
 
 Read-only.
 
@@ -439,7 +439,7 @@ _No input parameters._
 
 ### sources_update
 
-Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision.
+Use when asked to fetch or rebuild the design-system data, or when a read reports that the store is unavailable. Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision. Example: sources_update {}.
 
 Mutation — plan-first (set `confirm: true` to apply).
 
@@ -453,7 +453,7 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 ### standard_categories
 
-List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.
+Use when asked which areas the code standards cover, or before filtering standards by category. List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.
 
 Read-only.
 
@@ -466,7 +466,7 @@ Read-only.
 
 ### standard_list
 
-List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term. Example: standard_list { category: "react" }.
+Use when asked which coding rules or conventions apply — for React, CSS, testing, documentation and so on. List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term. Example: standard_list { category: "react" }.
 
 Read-only.
 
@@ -481,7 +481,7 @@ Read-only.
 
 ### standard_lookup
 
-Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.
+Use when asked how code should be written under one rule — it returns the do and don't examples. Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.
 
 Read-only.
 
@@ -494,7 +494,7 @@ Read-only.
 
 ### standard_sample
 
-Return 1–5 randomly selected complete code standard instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances. Example: standard_sample { count: 2 }.
+Use before your first standards query, to see what a real code standard record looks like. Return 1–5 randomly selected complete code standard instances as exemplars. Each call returns different instances. Example: standard_sample { count: "2" }.
 
 Read-only.
 
@@ -506,7 +506,7 @@ Read-only.
 
 ### tier_list
 
-List all tiers in the design-system ontology. Use when picking the tier to read with: the `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself. Example: tier_list {}.
+Use when asked which tiers the design system has — global, apps, a single product — or before passing `tier` to another tool. List all tiers in the design-system ontology. The `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself. Example: tier_list {}.
 
 Read-only.
 
@@ -519,7 +519,7 @@ Read-only.
 
 ### tier_lookup
 
-Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { name: ["apps/lxd"] }.
+Use when asked which components belong to one tier or product. Get one or more tiers by name, with the blocks scoped directly to each. Example: tier_lookup { name: ["apps/lxd"] }.
 
 Read-only.
 
@@ -531,7 +531,7 @@ Read-only.
 
 ### token_consumers
 
-List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
+Use when asked which components use a colour, spacing or other token, or what changing a token would affect. List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { symbol: "color.text" }.
 
 Read-only.
 
@@ -549,7 +549,7 @@ Read-only.
 
 ### token_list
 
-List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
+Use when asked which design tokens exist — colours, spacing, typography — or to find a token's exact name. List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
 
 Read-only.
 
@@ -565,7 +565,7 @@ Read-only.
 
 ### token_lookup
 
-Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
+Use when asked everything about one token by name: where it is defined, what can change it, and its values. Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
 
 Read-only.
 
@@ -577,7 +577,7 @@ Read-only.
 
 ### token_sample
 
-Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Use BEFORE writing queries to see real data shapes. Example: token_sample {}.
+Use before your first token query, to see what a real token record looks like. Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Example: token_sample {}.
 
 Read-only.
 
@@ -587,7 +587,7 @@ _No input parameters._
 
 ### token_values
 
-List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.
+Use when asked what value a token has — the actual colour or size — in light mode, dark mode or any other setting. List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.
 
 Read-only.
 
@@ -603,7 +603,7 @@ Read-only.
 
 ### upgrade
 
-Checks the registry for the active channel's latest release and runs your package manager's global-update command. Preview the update before applying it.
+Use when asked to update the CLI itself to the latest release. Checks the registry for the active channel's latest release and runs your package manager's global-update command. Preview the update before applying it. Example: upgrade {}.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -616,7 +616,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### variable_chain
 
-List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
+Use when asked what a CSS variable ultimately refers to — the tokens it reaches through other variables. List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
 
 Read-only.
 
@@ -631,7 +631,7 @@ Read-only.
 
 ### variable_list
 
-List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
+Use when asked which CSS custom properties (variables) exist, or which CSS variable stands for a token. List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
 
 Read-only.
 
@@ -650,7 +650,7 @@ Read-only.
 
 ### variable_lookup
 
-Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.
+Use when asked about one CSS variable by name: what it stands for and everywhere it is declared. Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.
 
 Read-only.
 
@@ -662,7 +662,7 @@ Read-only.
 
 ### variable_sample
 
-Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see real data shapes. Example: variable_sample {}.
+Use before your first variable query, to see what a real CSS variable record looks like. Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Example: variable_sample {}.
 
 Read-only.
 

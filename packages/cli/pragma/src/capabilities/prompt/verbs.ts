@@ -13,7 +13,7 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+import { callRecovery, PragmaError } from "../../kernel/error/index.js";
 import { VOCABULARY } from "../../kernel/index.js";
 import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
@@ -37,6 +37,9 @@ const listVerb: VerbSpec<Record<string, unknown>, PromptListData> = {
   path: ["prompt", "list"],
   summary: "List the workflow prompt templates the design system offers.",
   doc: `Browse the prompt entities the active graph declares (${VOCABULARY.prompt.type} in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.`,
+  useWhen:
+    "Use when asked which ready-made workflow prompts the design system offers.",
+  example: {},
   params: [],
   output: { formatters: promptListFormatters },
   examples: [{ cmd: `${BIN_NAME} prompt list` }],
@@ -58,6 +61,9 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
   path: ["prompt", "lookup"],
   summary: "Show one workflow prompt template's body and arguments by name.",
   doc: "Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.",
+  useWhen:
+    "Use when asked to read or run one workflow prompt by the name prompt_list gave.",
+  example: { name: "build-a-block" },
   params: [
     {
       kind: "string",
@@ -91,9 +97,10 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
         const available = await m.readPrompts(rt);
         throw PragmaError.notFound("prompt", name, {
           suggestions: available.map((prompt) => prompt.name),
-          recovery: cliRecovery("prompt list", "List available prompts.", {
-            tool: "prompt_list",
-          }),
+          recovery: callRecovery(
+            { verb: "prompt list" },
+            "List available prompts.",
+          ),
         });
       }
       return entry;

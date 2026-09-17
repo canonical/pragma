@@ -44,6 +44,7 @@ import {
   EVERY_TIER,
   type PackDefinition,
   type PackFilter,
+  type PackGuidance,
   type PackList,
   type PackLookup,
   type PackPage,
@@ -93,6 +94,7 @@ export function compilePack(
         verb: "list",
         summary: definition.description ?? `List ${noun} entries.`,
         doc: definition.toolDescription,
+        ...guidanceOf(definition),
         source,
         prefixes,
         ...(tierScope ? { tierScope } : {}),
@@ -107,6 +109,7 @@ export function compilePack(
         verb: verb.verb,
         summary: verb.description ?? `List ${noun} ${verb.verb}.`,
         doc: verb.toolDescription,
+        ...guidanceOf(verb),
         source,
         prefixes,
         ...(tierScope ? { tierScope } : {}),
@@ -220,8 +223,16 @@ export function compileStoryModule(
   };
 }
 
+/** Carry a story half's declared guidance onto its verb, omitting what is absent. */
+function guidanceOf(half: PackGuidance): Pick<VerbSpec, "useWhen" | "example"> {
+  return {
+    ...(half.useWhen ? { useWhen: half.useWhen } : {}),
+    ...(half.example ? { example: half.example } : {}),
+  };
+}
+
 /** Presentation facts for one compiled list-shaped verb. */
-interface ListVerbMeta {
+interface ListVerbMeta extends PackGuidance {
   readonly noun: string;
   readonly verb: string;
   readonly summary: string;
@@ -246,6 +257,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
     path: [meta.noun, meta.verb],
     summary: meta.summary,
     ...(meta.doc ? { doc: meta.doc } : {}),
+    ...guidanceOf(meta),
     params,
     output: {
       formatters: listFormatters(shape, {
@@ -319,6 +331,7 @@ function compileLookupVerb(
     summary:
       lookup.description ?? `Look up ${noun} details by name, IRI, or glob.`,
     ...(lookup.toolDescription ? { doc: lookup.toolDescription } : {}),
+    ...guidanceOf(lookup),
     params: [nameParam, ...tierParams(tierScope)],
     output: { formatters: lookupFormatters(lookup, prefixes) },
     examples: [
@@ -396,6 +409,7 @@ function compileSampleVerb(
       config?.description ??
       `Return randomly selected complete ${noun} entries as exemplars.`,
     ...(config?.toolDescription ? { doc: config.toolDescription } : {}),
+    ...guidanceOf(config ?? {}),
     params: countParam,
     output: { formatters: sampleFormatters(lookup, noun, prefixes) },
     examples: [

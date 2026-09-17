@@ -52,7 +52,7 @@ sample, because the user pays it.
 | warm store-backed verb       | < 300 ms        |
 | MCP p95 (warm)               | < 100 ms        |
 | `resources/list` payload     | < 60 KB         |
-| condensed SDL (tool catalog) | ≤ 8000 tokens   |
+| condensed SDL (tool catalog) | ≤ 10000 tokens  |
 
 The `resources/list` ceiling is a SIZE budget, not a latency one, and it is
 enforced where the payload is built rather than by the perf pass:
@@ -1005,3 +1005,24 @@ large corpus, and the suite says so.
 
 No latency constant moves. A page is two integers in a generated query, and the
 store does the work either way.
+
+## 2026-09-17 — descriptions open with the question the tool answers; two ceilings raised
+
+Every tool description is now generated from what its verb declares: the
+question a person would ask (`useWhen`), the prose, and one example call. The
+question used to live only in the `capabilities` answer, so an agent that never
+called `capabilities` chose between fifty tools without it. Carrying it in each
+description costs catalogue tokens, measured the same way as above:
+
+| When             | Tools | ≈ Tokens | Ceiling | % of ceiling |
+| ---------------- | ----- | -------- | ------- | ------------ |
+| Before this work | 50    | 7 774    | 8 000   | 97%          |
+| After this work  | 50    | 9 146    | 10 000  | 91%          |
+
+The handshake instructions gained one sentence — components, patterns, layouts
+and subcomponents are all read through the block tools — and went from 1 491
+characters under a 1 500 ceiling to 1 635 under 1 800.
+
+Both ceilings are set from the new measurement plus about a tenth. They are
+guards against unnoticed growth, not targets: the next raise should come with
+its own measurement, as this one does.

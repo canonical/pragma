@@ -174,6 +174,11 @@ describe("pack list empty-state (U5, PROTECTED)", () => {
       const notice = formatters.notice?.(empty);
       expect(notice).toContain(`No ${pack.noun} entries found.`);
       expect(notice).toMatch(hint);
+      // Over MCP the same hint ends in a TOOL CALL: an agent cannot run a
+      // command, and `meta.notice` is the only place it reads this.
+      const overMcp = formatters.notice?.(empty, "mcp");
+      expect(overMcp).toMatch(/Call `[a-z]+_[a-z]+ \{\}`\./);
+      expect(overMcp).not.toMatch(hint);
       // JSON is the uniform empty array — unchanged by the message.
       expect(formatters.json(empty)).toBe("[]");
       // The llm view stays non-blank too (the `(0)` heading plus the message).

@@ -6,22 +6,23 @@
  * conventions + the discovery sequence. To guarantee it never diverges from the
  * `capabilities` tool, the WHOLE orientation — the opening line included —
  * derives from the SAME source: `CONVENTIONS` and
- * `buildDiscoverySequence` in `capabilities/capabilities/catalog.ts`. Live
+ * `buildDiscoverySequence` in `kernel/spec/guidance.ts`. Live
  * numbers (tier/channel/entity counts) are deliberately DROPPED (they would need
  * a store boot at handshake); agents fetch those via `info`/`config show`/
  * `sources status`. Kept short (a hard length ceiling is asserted in the test),
  * since it counts against every session's context.
  */
 
-import {
-  buildDiscoverySequence,
-  CONVENTIONS,
-} from "../../../capabilities/capabilities/catalog.js";
+import { buildDiscoverySequence, CONVENTIONS } from "../../spec/guidance.js";
 import type { CapabilityModule } from "../../spec/index.js";
 import { emitSurface } from "../../spec/index.js";
 
-/** Hard ceiling on the instructions length (asserted by the protected test). */
-export const INSTRUCTIONS_MAX_CHARS = 1500;
+/**
+ * Ceiling on the instructions length (asserted by the protected test). Set from
+ * measurement plus about a tenth: 1,635 characters once the orientation says
+ * which tools read components, up from 1,491 under a 1,500 ceiling.
+ */
+export const INSTRUCTIONS_MAX_CHARS = 1800;
 
 /**
  * Build the handshake orientation string from the live capability modules.
@@ -43,7 +44,7 @@ export function buildInstructions(
   const templates = resources.map((template) => `\`${template}\``).join(", ");
 
   return [
-    `${CONVENTIONS.system} ${CONVENTIONS.model} ${CONVENTIONS.querying} ${CONVENTIONS.mutations}`,
+    `${CONVENTIONS.system} ${CONVENTIONS.model} ${CONVENTIONS.blocks} ${CONVENTIONS.querying} ${CONVENTIONS.mutations}`,
     "",
     "Discovery sequence:",
     steps,

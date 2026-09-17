@@ -26,6 +26,9 @@ export const resetVerb: VerbSpec<Record<string, unknown>, SourcesResetData> = {
   summary:
     "Remove this project's built pack and read the shipped snapshot again.",
   doc: "Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again (or, for a project that declares its own packs, until the next `sources update`). The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built.",
+  useWhen:
+    "Use when asked to go back to the data shipped with the tool, dropping the pack this project built.",
+  example: {},
   params: [],
   output: { formatters: resetFormatters },
   examples: [

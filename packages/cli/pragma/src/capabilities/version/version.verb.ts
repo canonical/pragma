@@ -15,6 +15,8 @@ const versionVerb: VerbSpec<Record<string, unknown>, string> = {
   path: ["version"],
   summary: "Print the CLI version.",
   doc: "Prints the version `--version` prints — one value, two spellings of the same read.",
+  useWhen: "Use when asked only for the installed version number.",
+  example: {},
   params: [],
   output: {
     formatters: {

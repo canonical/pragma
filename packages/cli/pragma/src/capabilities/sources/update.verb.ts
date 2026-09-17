@@ -26,6 +26,9 @@ export const updateVerb: VerbSpec<
   path: ["sources", "update"],
   summary: "Resolve configured packs and build the local store from them.",
   doc: "Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision.",
+  useWhen:
+    "Use when asked to fetch or rebuild the design-system data, or when a read reports that the store is unavailable.",
+  example: {},
   params: [
     {
       kind: "boolean",

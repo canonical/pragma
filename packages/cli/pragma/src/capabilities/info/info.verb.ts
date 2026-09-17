@@ -16,6 +16,10 @@ const infoVerb: VerbSpec<Record<string, unknown>, InfoData> = {
   path: ["info"],
   summary: "Show version, resolved config, provenance, and update status.",
   doc: "Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available.",
+  useWhen:
+    "Use when asked which version is installed, how it is configured, or whether an update is available.",
+  example: {},
+  category: "diagnostic",
   params: [],
   output: { formatters: infoFormatters },
   examples: [

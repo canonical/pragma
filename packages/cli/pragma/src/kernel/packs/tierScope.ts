@@ -38,7 +38,7 @@
  * next read re-learns the hierarchy from the pack that replaced it.
  */
 
-import { cliRecovery, PragmaError } from "../error/index.js";
+import { callRecovery, PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
 import type { StoreSession } from "../runtime/types.js";
 import { formatTerm } from "./sparql/escape.js";
@@ -330,15 +330,13 @@ export function resolveTierScope(
       validOptions,
       recovery:
         perCall === undefined
-          ? cliRecovery(
-              "config unset tier",
+          ? callRecovery(
+              { verb: "config unset", params: { key: "tier" } },
               `The \`tier\` config key names "${asked}", which is not one of this pack's ${hierarchy.tiers.length} tiers. Clear it, or set one that exists.`,
-              { tool: "config_unset", params: { key: "tier" } },
             )
-          : cliRecovery(
-              "tier list",
+          : callRecovery(
+              { verb: "tier list" },
               `Name one of the ${hierarchy.tiers.length} tiers, or "${EVERY_TIER}" for every tier.`,
-              { tool: "tier_list", params: {} },
             ),
     });
   }

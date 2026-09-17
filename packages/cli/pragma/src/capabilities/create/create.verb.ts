@@ -453,10 +453,12 @@ function createVerb(
   summary: string,
   params: ParamSpec[],
   examples: VerbSpec["examples"],
+  guidance: Required<Pick<VerbSpec, "useWhen" | "example">>,
 ): VerbSpec<Record<string, unknown>, GeneratorResult> {
   return {
     path: ["create", kind],
     summary,
+    ...guidance,
     params,
     output: CREATE_OUTPUT,
     examples,
@@ -507,6 +509,11 @@ export const createVerbs: Record<
         note: "preview the files without writing",
       },
     ],
+    {
+      useWhen:
+        "Use when asked to start a new React, Svelte or Lit component with its tests, stories and styles.",
+      example: { framework: "react", componentPath: "src/components/Button" },
+    },
   ),
   package: createVerb(
     "package",
@@ -520,6 +527,10 @@ export const createVerbs: Record<
         cmd: `${BIN_NAME} create package --name @canonical/my-tool --no-run-install`,
       },
     ],
+    {
+      useWhen: "Use when asked to start a new npm package inside the monorepo.",
+      example: { name: "@canonical/my-lib", type: "library" },
+    },
   ),
   application: createVerb(
     "application",
@@ -530,5 +541,10 @@ export const createVerbs: Record<
       { cmd: `${BIN_NAME} create application react my-app --relay` },
       { cmd: `${BIN_NAME} create application react my-app --rendering spa` },
     ],
+    {
+      useWhen:
+        "Use when asked to start a new React application, server-rendered or client-only.",
+      example: { appPath: "my-app" },
+    },
   ),
 };

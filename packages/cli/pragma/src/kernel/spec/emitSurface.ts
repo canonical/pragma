@@ -147,7 +147,7 @@ export const FIXED_SURFACE = {
     projectConfigLoad: "<10ms",
     warmStoreVerb: "<300ms",
     mcpP95Warm: "<100ms",
-    condensedSDL: "<=8000 tokens",
+    condensedSDL: "<=10000 tokens",
   },
 } as const;
 

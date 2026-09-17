@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createStore } from "@canonical/ke";
 import { compileFromExtraction } from "@canonical/ke-graphql";
-import { cliRecovery, PragmaError } from "../../error/index.js";
+import { callRecovery, PragmaError } from "../../error/index.js";
 import type { StoreSession } from "../types.js";
 import { readManifest } from "./manifest.js";
 import { packIndexSchema } from "./schemas.js";
@@ -25,12 +25,9 @@ import { DATA_FILE, INDEX_FILE, SCHEMA_FILE } from "./types.js";
 /** STORE_UNAVAILABLE with the canonical `pragma sources update` recovery (CLI + MCP). */
 function packUnavailable(reason: string): PragmaError {
   return PragmaError.storeUnavailable(reason, {
-    recovery: cliRecovery(
-      "sources update",
+    recovery: callRecovery(
+      { verb: "sources update" },
       "Rebuild the local store from the configured packs.",
-      // An agent recovers by calling the tool, then retrying (PR9 C1 cold-store
-      // retry makes the post-update retry succeed).
-      { tool: "sources_update" },
     ),
   });
 }

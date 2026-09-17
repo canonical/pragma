@@ -8,7 +8,9 @@
  * `formatVerbHelp`, retargeted at the grammar.
  */
 
-import type { ParamSpec, VerbSpec } from "../../spec/index.js";
+import { renderCall } from "../../spec/call.js";
+import { exampleCall } from "../../spec/guidance.js";
+import type { Example, ParamSpec, VerbSpec } from "../../spec/index.js";
 import { kebabCase } from "../../spec/index.js";
 import { MUTATION_FLAG_DOCS, negationFlagDoc } from "./constants.js";
 import {
@@ -18,18 +20,6 @@ import {
   helpTerm,
   helpUsage,
 } from "./helpFormat.js";
-
-/**
- * A verb's `doc` doubles as its MCP tool description, so a pack's authored
- * `toolDescription` may end with an MCP tool-call example — `Example:
- * token_lookup { names: ["…"] }`. That `noun_verb {…}` syntax is MCP-transport
- * shape, meaningless on the CLI, so the CLI projector drops the trailing example
- * sentence; the MCP projector keeps the authored text whole. Hand-written docs
- * carry no such example and pass through untouched.
- */
-function stripToolCallExample(doc: string): string {
-  return doc.replace(/\s*Example:\s+[a-z][a-z0-9_]*\s*\{[^{}]*\}\.?\s*$/, "");
-}
 
 /** The positional usage token for a param (`<name>` / `[name]`, `...` variadic). */
 function positionalToken(param: ParamSpec): string {
@@ -69,10 +59,8 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
     verb.summary,
   ];
 
-  if (verb.doc) {
-    const cliDoc = stripToolCallExample(verb.doc);
-    if (cliDoc) lines.push("", cliDoc);
-  }
+  if (verb.doc) lines.push("", verb.doc);
+  if (verb.useWhen) lines.push("", verb.useWhen);
 
   // Every flag the command PARSES is rendered, from the same spec facts
   // registration reads: the declared params, each default-true boolean's
@@ -97,9 +85,17 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
     lines.push("", helpHeading("Flags"), ...helpColumns(flagRows));
   }
 
-  if (verb.examples && verb.examples.length > 0) {
+  // The verb's declared example leads, spelled as a command by the same
+  // renderer that spells it as a tool call in the MCP description.
+  const declaredExample = exampleCall(verb);
+  const generated = declaredExample && renderCall(declaredExample, "cli");
+  const examples = [
+    ...(generated ? [{ cmd: generated } as Example] : []),
+    ...(verb.examples ?? []).filter((example) => example.cmd !== generated),
+  ];
+  if (examples.length > 0) {
     lines.push("", helpHeading("Examples"));
-    for (const example of verb.examples) {
+    for (const example of examples) {
       lines.push(`  ${helpTerm(example.cmd)}`);
       if (example.note) lines.push(`    ${helpDim(example.note)}`);
     }

@@ -31,6 +31,10 @@ const capabilitiesVerb: VerbSpec<Record<string, unknown>, CapabilitiesData> = {
   path: ["capabilities"],
   summary: `Discover ${BIN_NAME} conventions, the annotated tool catalog, and the discovery sequence.`,
   doc: "Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.",
+  useWhen:
+    "Use at the start of a session, or when unsure which tool answers a question: it lists every tool with the question it answers.",
+  example: {},
+  category: "orientation",
   params: [],
   output: { formatters: capabilitiesFormatters },
   examples: [
