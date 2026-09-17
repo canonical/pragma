@@ -11,7 +11,10 @@
  * the asserter normalises exactly it: inside `meta.notice`, a call or argument
  * is spelled as a command on the CLI and as a tool call over MCP. Only those
  * spellings are normalised — the backticked spans and the `Run`/`Call` lead —
- * so a scope or paging sentence missing from one surface still fails. This generalizes the pattern already
+ * so a scope or paging sentence missing from one surface still fails. What it
+ * CANNOT see: a span is blanked whole, so the two surfaces naming a different
+ * argument VALUE (or a different call) inside one goes unnoticed here — the
+ * renderers' own tests pin those spellings. This generalizes the pattern already
  * proven ad hoc in `mcp/parity.test.ts` (`probe echo`) and `sources.test.ts`
  * (`sources status`) into one reusable helper every read noun's tests drive.
  */

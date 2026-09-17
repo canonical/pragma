@@ -454,7 +454,7 @@ function renderNonToolSurface(modules: readonly CapabilityModule[]): string {
     );
   }
   bullets.push(
-    "- **Instructions**: the server always sends handshake instructions describing the conventions and the discovery sequence.",
+    "- **Instructions**: the server always sends handshake instructions: the conventions, and a generated index of tools by the question each answers, fitted to 2,000 characters.",
   );
   return `## Non-tool surface\n\n${bullets.join("\n")}`;
 }

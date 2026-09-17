@@ -674,4 +674,4 @@ _No input parameters._
 
 - **Resources**: `pragma:{+uri}` — entity reads addressed by URI (listing and autocomplete are storeless over the pack index). The template — its scheme and the `_meta` taxonomy keys its entries carry — is frozen protocol identity, served unchanged by every distribution: clients persist resource URIs, so the scheme never follows a fork's name.
 - **Prompts**: the workflow prompt templates the active graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. A graph declaring none leaves both views empty.
-- **Instructions**: the server always sends handshake instructions describing the conventions and the discovery sequence.
+- **Instructions**: the server always sends handshake instructions: the conventions, and a generated index of tools by the question each answers, fitted to 2,000 characters.

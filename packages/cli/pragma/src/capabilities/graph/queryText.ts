@@ -246,24 +246,42 @@ export interface UnknownPrefix {
 }
 
 /**
- * Find the `PREFIX` declarations in a query that bind an IRI the store does not
- * know as a namespace.
+ * Find the prefixes a query declares, USES, and binds to an IRI the store does
+ * not know as a namespace.
  *
  * A declared prefix always parses, so an invented one fails silently: every
  * pattern under it simply matches nothing, and the caller reads "no results"
  * as "no such data". Checked against the store's own prefix map, this is the
  * one emptiness the query's text can explain.
  *
+ * Read through the same {@link SCANNER} the expander uses, so a `PREFIX` in a
+ * comment or inside a string literal is not a declaration. A declared prefix
+ * the body never uses cannot be why nothing matched, and a relative IRI
+ * (resolved against `BASE`) cannot be judged from the text, so neither is
+ * reported.
+ *
  * @param sparql - The query text as the caller wrote it.
  * @param prefixes - The store's prefix map (prefix → namespace IRI).
- * @returns The declarations whose IRI is not a known namespace, in order.
+ * @returns The used declarations whose IRI is not a known namespace, in order.
  */
 export function findUnknownPrefixes(
   sparql: string,
   prefixes: Readonly<Record<string, string>>,
 ): UnknownPrefix[] {
   const known = new Set(Object.values(prefixes));
-  return [...sparql.matchAll(/\bPREFIX\s+([A-Za-z][\w.-]*)?:\s*<([^>]*)>/gi)]
+  const code = sparql.replace(SCANNER, (token) =>
+    /^[#"']/.test(token) ? " " : token,
+  );
+  const body = code.replace(PREFIX_DECLARATION, " ");
+  const used = new Set(
+    [...body.matchAll(/(?:^|[^\w<:.-])([A-Za-z][\w.-]*)?:(?!\/\/)/g)].map(
+      (match) => match[1] ?? "",
+    ),
+  );
+  return [...code.matchAll(PREFIX_DECLARATION)]
     .map((match) => ({ prefix: match[1] ?? "", iri: match[2] ?? "" }))
-    .filter(({ iri }) => !known.has(iri));
+    .filter(
+      ({ prefix, iri }) =>
+        /^[a-z][a-z0-9+.-]*:/i.test(iri) && used.has(prefix) && !known.has(iri),
+    );
 }
