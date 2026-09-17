@@ -115,24 +115,6 @@ export function validateStories(
       });
     }
   }
-  // A package story naming a noun nothing looks up is dropped like any other
-  // unusable one: its filter could only ever fail.
-  const known = (noun: string): boolean =>
-    byNoun.get(noun)?.definition.lookup !== undefined ||
-    staticModules.some(
-      (module) =>
-        module.name === noun &&
-        storyOf(module)?.definition.lookup !== undefined,
-    );
-  for (const [noun, entry] of byNoun) {
-    const unknown = nounsNamed(entry.definition).find((named) => !known(named));
-    if (unknown === undefined) continue;
-    byNoun.delete(noun);
-    problems.push({
-      source: entry.source,
-      message: `it names the noun "${unknown}", and no story declares a lookup for it.`,
-    });
-  }
   return { entries: [...byNoun.values()], problems };
 }
 
@@ -221,7 +203,7 @@ function projectStoryTiers(layers: ConfigLayers): readonly unknown[][] {
  * @returns The effective modules, uniqueness-checked.
  * @throws PragmaError CONFIG_ERROR on an invalid CONFIG story, a config story
  *   claiming an authored non-story noun, a duplicate noun within one config
- *   tier, or a cell or filter naming a noun no effective story looks up. Package stories were already screened and never throw here.
+ *   tier, or a config or shipped story naming a noun no story declares. Package stories were already screened and never throw here.
  */
 export function assembleEffectiveModules(
   staticModules: readonly CapabilityModule[],
@@ -249,7 +231,13 @@ export function assembleEffectiveModules(
   const nouns: NounLookups = (noun) => {
     const module =
       dynamic.get(noun) ?? staticModules.find((m) => m.name === noun);
-    return module && storyOf(module)?.definition.lookup;
+    const story = module && storyOf(module);
+    if (story && !story.definition.lookup) {
+      throw PragmaError.configError(
+        `The "${noun}" story in ${story.source.label} declares no lookup, so a filter that takes a ${noun} cannot resolve its value. Add a lookup to that story.`,
+      );
+    }
+    return story?.definition.lookup;
   };
   for (const entry of packageStories) {
     dynamic.set(
@@ -310,21 +298,61 @@ export function assembleEffectiveModules(
         : module;
     });
   const effective = [...kept, ...dynamic.values()];
+  // A noun some story declares without a lookup is refused when a filter on it
+  // is used, not here: only a noun NO story declares is a declaration error.
+  // Package stories never throw; {@link screenPackageStories} drops them.
   for (const module of effective) {
     const story = storyOf(module);
-    // Package stories were screened by validateStories and never throw here.
     const unknown =
       story && story.source.origin !== "package"
-        ? nounsNamed(story.definition).find((noun) => !nouns(noun))
+        ? undeclaredNoun(story.definition, effective)
         : undefined;
     if (story && unknown) {
       throw PragmaError.configError(
-        `Invalid story in ${story.source.label}: "${module.name}" names the noun "${unknown}", and no story declares a lookup for it.`,
+        `Invalid story in ${story.source.label}: "${module.name}" names the noun "${unknown}", and no story declares it.`,
       );
     }
   }
   assertUniqueVerbs(effective.flatMap((module) => [...module.verbs]));
   return effective;
+}
+
+/** The first noun a story names that no effective story declares. */
+function undeclaredNoun(
+  definition: PackDefinition,
+  effective: readonly CapabilityModule[],
+): string | undefined {
+  return nounsNamed(definition).find(
+    (noun) => !effective.some((m) => m.name === noun && storyOf(m)),
+  );
+}
+
+/**
+ * Drop each PACKAGE story naming a noun no effective story declares, reporting
+ * it — judged over the assembled set, so the order of declaration is nothing.
+ *
+ * @param effective - The assembled modules.
+ * @returns The modules kept, and one problem per story dropped.
+ */
+export function screenPackageStories(effective: readonly CapabilityModule[]): {
+  readonly modules: readonly CapabilityModule[];
+  readonly problems: readonly StoryProblem[];
+} {
+  const problems: StoryProblem[] = [];
+  const modules = effective.filter((module) => {
+    const story = storyOf(module);
+    const unknown =
+      story?.source.origin === "package"
+        ? undeclaredNoun(story.definition, effective)
+        : undefined;
+    if (!story || unknown === undefined) return true;
+    problems.push({
+      source: story.source.label,
+      message: `it names the noun "${unknown}", and no story declares it.`,
+    });
+    return false;
+  });
+  return { modules: problems.length === 0 ? effective : modules, problems };
 }
 
 /**
@@ -361,8 +389,11 @@ export async function loadEffectiveModules(
     activeStories(resolveSources(layers, cwd)),
     staticModules,
   );
+  const screened = screenPackageStories(
+    assembleEffectiveModules(staticModules, layers, entries),
+  );
   return {
-    modules: assembleEffectiveModules(staticModules, layers, entries),
-    problems,
+    modules: screened.modules,
+    problems: [...problems, ...screened.problems],
   };
 }

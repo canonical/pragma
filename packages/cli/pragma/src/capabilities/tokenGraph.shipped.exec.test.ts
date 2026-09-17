@@ -536,6 +536,18 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
     }
   });
 
+  it("several mistyped symbols each get a share of the suggestions", async () => {
+    const refusal = await rows("token", "values", {
+      symbol: ["color.tex", "color.bordr"],
+    }).catch((error: unknown) => error);
+    expect(refusal).toMatchObject({
+      code: "INVALID_INPUT",
+      message: 'No token is named "color.tex", "color.bordr".',
+    });
+    const { suggestions } = refusal as { suggestions: string[] };
+    expect(suggestions.slice(0, 2)).toEqual(["color.text", "color.border"]);
+  });
+
   it("a dash-stripped variable name resolves, with its declarations", async () => {
     const variable = await lookup("variable", "color-text");
     expect(variable).toMatchObject({

@@ -856,7 +856,7 @@ const designSystemStories: readonly PackDefinition[] = [
         },
         emptyRecovery: {
           message:
-            "Which components use which tokens is recorded from the component anatomies, and not every component's anatomy names its tokens yet, so a component with no rows may simply not be recorded. A CSS variable computed from others (the `--hover--…` and `--disabled--…` ones, for example) stands for no token and is never recorded as used; the variable chain read shows what it ends up as.",
+            "Which components use which tokens is recorded from the component anatomies, and not every component's anatomy names its tokens yet, so a component with no rows may simply not be recorded. A CSS variable computed from others (the `--hover--…` and `--disabled--…` ones, for example) stands for no token and is never recorded as used; the variable chain read shows what it ends up as. If this list is empty with no filter at all, the graph predates the anatomies and a rebuild fills it in.",
           call: { verb: "sources update" },
         },
       },
@@ -1154,7 +1154,7 @@ const designSystemStories: readonly PackDefinition[] = [
       },
       emptyRecovery: {
         message:
-          "29 tokens, the composite typography ones such as `typography.heading.1`, have no CSS variable of their own; the token values read shows their value.",
+          "Some tokens, such as the composite typography ones (`typography.heading.1`), have no CSS variable of their own; the token values read shows their value.",
       },
     },
     verbs: [

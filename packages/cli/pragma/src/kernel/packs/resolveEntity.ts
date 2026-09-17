@@ -249,8 +249,8 @@ export async function resolveLookup(
  *
  * @returns The distinct IRIs; none when the store holds no entity of the noun.
  * @throws PragmaError INVALID_INPUT naming every argument that reaches nothing,
- *   with the suggestions a lookup miss offers; or when an IRI-shaped argument
- *   cannot be embedded in a query.
+ *   with the suggestions a lookup miss offers; when an argument is empty; or
+ *   when an IRI-shaped argument cannot be embedded in a query.
  */
 export async function resolveEntityIris(
   rt: LookupRuntime,
@@ -260,6 +260,12 @@ export async function resolveEntityIris(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
 ): Promise<string[]> {
+  const blank = queries.find((query) => query.trim() === "");
+  if (blank !== undefined) {
+    throw PragmaError.invalidInput(noun, "(empty)", {
+      recovery: { message: `Give a ${noun} name or IRI.` },
+    });
+  }
   const iris = new Set<string>();
   const missed: string[] = [];
   // The graphql-sourced resolve is the bare `?uri ?name` pair: no field read.
@@ -282,7 +288,17 @@ export async function resolveEntityIris(
   throw new PragmaError({
     code: "INVALID_INPUT",
     message: `No ${noun} is named "${missed.join('", "')}".`,
-    suggestions: [...new Set(suggestions.flat())].slice(0, MAX_SUGGESTIONS),
+    // Interleaved, so every miss gets a share of the slots.
+    suggestions: [
+      ...new Set(
+        suggestions
+          .flatMap((list, miss) =>
+            list.map((name, rank) => ({ name, rank, miss })),
+          )
+          .sort((a, b) => a.rank - b.rank || a.miss - b.miss)
+          .map((entry) => entry.name),
+      ),
+    ].slice(0, MAX_SUGGESTIONS),
   });
 }
 

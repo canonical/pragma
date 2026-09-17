@@ -389,9 +389,10 @@ export interface PackFilter {
    */
   readonly vocabulary?: PackFilterVocabulary;
   /**
-   * In place of {@link values} or a {@link vocabulary}: a value is whatever
-   * `<noun> lookup` accepts as an argument, and rows are kept by the IRIs it
-   * reaches, matched against {@link entity}.
+   * In place of {@link values} or a {@link vocabulary}: a value is a literal
+   * name or IRI of that noun (never a pattern), resolved as `<noun> lookup`
+   * resolves one, and rows are kept by the IRIs it reaches, matched against
+   * {@link entity}.
    */
   readonly noun?: string;
   /**
@@ -671,7 +672,8 @@ export interface PackLookup extends PackGuidance {
 /**
  * The lookup another story's noun declares, by noun — how a {@link PackFilter}
  * naming a `noun` reaches that noun's resolver. A story is compiled alone, so
- * whoever compiles it supplies this over the stories it knows.
+ * whoever compiles it supplies this over the stories it knows. It may throw a
+ * CONFIG_ERROR of its own when it knows why a noun has no lookup.
  */
 export type NounLookups = (noun: string) => PackLookup | undefined;
 

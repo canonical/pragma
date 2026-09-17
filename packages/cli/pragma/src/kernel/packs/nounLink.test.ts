@@ -8,7 +8,7 @@ import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import type { ConfigLayers } from "../config/index.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
-import { assembleEffectiveModules } from "./collect.js";
+import { assembleEffectiveModules, screenPackageStories } from "./collect.js";
 import { compilePack, compileStoryModule } from "./compile.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import { parsePackDefinition } from "./schema.js";
@@ -159,6 +159,13 @@ describe("a filter that names a noun", () => {
     });
   });
 
+  it("refuses an empty value as empty input", async () => {
+    await expect(widgetsBy("")).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+      message: 'Invalid maker "(empty)".',
+    });
+  });
+
   it("is a configuration error when no story declares the noun", async () => {
     const orphan = compilePack(
       WIDGET,
@@ -215,10 +222,49 @@ describe("a noun filter across the shipped and the project's stories", () => {
     });
   });
 
-  it("refuses a story naming a noun nothing looks up, where it is assembled", () => {
+  it("refuses a story naming a noun no story declares, where it is assembled", () => {
     expect(() => assembleEffectiveModules([], project([WIDGET]))).toThrow(
-      /"widget" names the noun "maker"/,
+      /Invalid story in config: "widget" names the noun "maker"/,
     );
+  });
+
+  it("a project overriding a named noun with no lookup breaks only the filter, when used", async () => {
+    const listOnly = { noun: "maker", list: WIDGET.list };
+    const modules = assembleEffectiveModules(
+      shipped(MAKER, WIDGET),
+      project([listOnly]),
+    );
+    const widgets = modules
+      .flatMap((module) => module.verbs)
+      .find((v) => verbKey(v.path) === "widget list") as VerbSpec;
+    expect(((await widgets.run({}, rt)) as PackPage).rows).toHaveLength(3);
+    await expect(makerFilter(modules, "Bolt")).rejects.toMatchObject({
+      code: "CONFIG_ERROR",
+      message: expect.stringMatching(
+        /The "maker" story in config declares no lookup/,
+      ),
+    });
+  });
+
+  it("a package story is screened against the assembled nouns, whatever the order", () => {
+    const entry = { source: "pkg/stories/widget.json", definition: WIDGET };
+    const withMaker = screenPackageStories(
+      assembleEffectiveModules([], project([MAKER]), [entry]),
+    );
+    expect(withMaker.modules.map((module) => module.name)).toContain("widget");
+    expect(withMaker.problems).toEqual([]);
+
+    const other = { noun: "gadget", lookup: MAKER.lookup };
+    const without = screenPackageStories(
+      assembleEffectiveModules([], project([other]), [entry]),
+    );
+    expect(without.modules.map((module) => module.name)).toEqual(["gadget"]);
+    expect(without.problems).toEqual([
+      {
+        source: "pkg/stories/widget.json",
+        message: 'it names the noun "maker", and no story declares it.',
+      },
+    ]);
   });
 });
 
