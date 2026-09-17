@@ -23,8 +23,9 @@ import type { Recovery } from "./types.js";
  * A recovery speaks to BOTH surfaces: `cli` guides a person, while `mcp` names
  * the tool an agent invokes (an agent cannot run a shell command). Both derive
  * from the one call, so they cannot disagree about the verb or its arguments;
- * `mcp` is absent only when the verb is withheld from MCP, and carries
- * `confirm: true` for a mutating tool so that following it does the thing.
+ * `mcp` is absent only when the verb is withheld from MCP. Neither spelling
+ * ever carries `confirm`: a mutating tool is plan-first, and the plan it
+ * returns says how to proceed.
  *
  * @param call - The verb to run and the params to run it with.
  * @param message - Human-readable guidance shown alongside the command.

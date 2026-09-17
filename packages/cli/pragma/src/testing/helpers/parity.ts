@@ -8,9 +8,10 @@
  * `mcp/envelope.ts` reuses the CLI's envelope builders verbatim), so parity
  * simplifies to structural data-equality — no byte-exact `condensed ===
  * fmt.llm(...)` comparison to reproduce. The contract has ONE exception, and
- * the asserter normalises exactly it: the sentence in `meta.notice` may spell a
- * next step as a command on the CLI and as a tool call over MCP. Both surfaces
- * must carry a notice or neither may; everything else is deep-equal. This generalizes the pattern already
+ * the asserter normalises exactly it: inside `meta.notice`, a call or argument
+ * is spelled as a command on the CLI and as a tool call over MCP. Only those
+ * spellings are normalised — the backticked spans and the `Run`/`Call` lead —
+ * so a scope or paging sentence missing from one surface still fails. This generalizes the pattern already
  * proven ad hoc in `mcp/parity.test.ts` (`probe echo`) and `sources.test.ts`
  * (`sources status`) into one reusable helper every read noun's tests drive.
  */
@@ -61,13 +62,21 @@ export function noticeOf(
   return (envelope.meta as { notice?: string } | undefined)?.notice;
 }
 
-/** The envelope minus the one field whose spelling follows the surface. */
-function withoutNotice(envelope: Record<string, unknown>): unknown {
-  const { notice: _notice, ...meta } = (envelope.meta ?? {}) as Record<
-    string,
-    unknown
-  >;
-  return { ...envelope, meta };
+/**
+ * The envelope with its notice's surface spellings blanked: every backticked
+ * span (a call, an argument) and the `Run`/`Call` lead before one. The prose
+ * around them — which sentences are present, in what order — is kept.
+ */
+function withNormalisedNotice(envelope: Record<string, unknown>): unknown {
+  const notice = noticeOf(envelope);
+  if (notice === undefined) return envelope;
+  const normalised = notice
+    .replace(/\b(Run|Call) (?=`)/g, "")
+    .replace(/``.*?``|`[^`]*`/g, "`…`");
+  return {
+    ...envelope,
+    meta: { ...(envelope.meta as object), notice: normalised },
+  };
 }
 
 /**
@@ -100,9 +109,8 @@ export async function assertCliMcpParity(
     await mcp.cleanup();
   }
 
-  expect(withoutNotice(cliEnvelope)).toEqual(withoutNotice(mcpEnvelope));
-  expect(noticeOf(cliEnvelope) === undefined).toBe(
-    noticeOf(mcpEnvelope) === undefined,
+  expect(withNormalisedNotice(cliEnvelope)).toEqual(
+    withNormalisedNotice(mcpEnvelope),
   );
   return cliEnvelope;
 }

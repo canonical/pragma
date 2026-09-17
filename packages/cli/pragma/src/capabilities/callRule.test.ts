@@ -40,9 +40,7 @@ const label = (verb: VerbSpec): string => verb.path.join(" ");
 
 const storyEmpties = [...declaredStories.values()].flatMap((story) =>
   [story.list, ...(story.verbs ?? [])].flatMap((half) =>
-    [half?.emptyRecovery, ...(half?.emptyRecovery?.also ?? [])].flatMap(
-      (recovery) => (recovery?.call ? [recovery.call] : []),
-    ),
+    half?.emptyRecovery?.call ? [half.emptyRecovery.call] : [],
   ),
 );
 
@@ -97,8 +95,13 @@ describe("every call names a registered verb and params its schema accepts", () 
   });
 
   it("the validator is the verb's tool schema: it knows confirm and detail, and rejects the rest", () => {
+    // A next step or an example NEVER skips the plan: a mutating tool is
+    // plan-first, and the plan it returns says how to proceed.
     expect(
       findProblem({ verb: "sources update", params: { confirm: true } }),
+    ).toMatch(/confirm/i);
+    expect(
+      findProblem({ verb: "sources update", params: { skipInvalid: true } }),
     ).toBeUndefined();
     expect(
       findProblem({

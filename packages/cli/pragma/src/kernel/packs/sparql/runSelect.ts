@@ -12,6 +12,7 @@
 
 import { callRecovery, PragmaError } from "../../error/index.js";
 import type { PragmaRuntime } from "../../runtime/index.js";
+import { BUILD_STORE_CALL } from "../../spec/call.js";
 import type { PackRow, StorySource } from "../types.js";
 
 /**
@@ -64,7 +65,7 @@ function unboundPrefixError(source: StorySource): PragmaError {
     "The local store was not built from a pack that defines every term this read uses.",
     {
       recovery: callRecovery(
-        { verb: "sources update" },
+        BUILD_STORE_CALL,
         "Build the local store from the configured packs.",
       ),
     },

@@ -64,16 +64,11 @@ function callToolName(call: Call): string {
 }
 
 /**
- * The call as the NEXT STEP of a dead end. A mutating tool is plan-first over
- * MCP, so a hint that means "do this" carries `confirm: true` — following it
- * does the thing instead of returning a plan. An example never does: it shows
- * the call, and the plan-first convention is the instructions' to teach.
+ * Build (or rebuild) the store from the configured packs — the one call the
+ * kernel itself points at, from every unavailable store and every empty list.
+ * Named once, here, because the kernel owns the verb's name.
  */
-function asNextStep(call: Call): Call {
-  return declared.get(call.verb)?.capability.mutates
-    ? { ...call, params: { ...call.params, confirm: true } }
-    : call;
-}
+export const BUILD_STORE_CALL: Call = { verb: "sources update" };
 
 /** The MCP tool a recovery names, or nothing when its verb is withheld from MCP. */
 export function callTool(
@@ -82,7 +77,7 @@ export function callTool(
   if (declared.get(call.verb)?.capability.mcp.expose === false) {
     return undefined;
   }
-  return { tool: callToolName(call), params: { ...asNextStep(call).params } };
+  return { tool: callToolName(call), params: { ...call.params } };
 }
 
 /** Quote a CLI word unless the shell would read it bare. */
@@ -100,9 +95,7 @@ function renderCliCall(call: Call): string {
   const positional = specs.filter((p) => p.positional).map((p) => p.name);
   const flags: string[] = [];
   for (const [name, value] of Object.entries(params)) {
-    // `confirm` is MCP's plan-first gate; the CLI has no such flag.
-    if (positional.includes(name) || value === undefined || name === "confirm")
-      continue;
+    if (positional.includes(name) || value === undefined) continue;
     const flag = `--${kebabCase(name)}`;
     if (typeof value === "boolean") {
       const spec = specs.find((p) => p.name === name);
@@ -166,7 +159,8 @@ function spellingFor(call: Call, surface: Surface): Surface {
 /**
  * One argument, quoted as code, in the surface's own spelling: `--tier all` on
  * the CLI, `tier: "all"` over MCP. For the sentences that name an argument to
- * change rather than a whole call to make.
+ * change rather than a whole call to make. The CLI value is shell-quoted like
+ * any other word, so what is printed can be pasted.
  */
 export function quoteArgument(
   name: string,
@@ -175,7 +169,7 @@ export function quoteArgument(
 ): string {
   return surface === "mcp"
     ? `\`${name}: ${JSON.stringify(value)}\``
-    : `\`--${kebabCase(name)} ${value}\``;
+    : `\`--${kebabCase(name)} ${quoteWord(value)}\``;
 }
 
 /** A call quoted as code; one containing a backtick takes the doubled fence. */
@@ -187,6 +181,6 @@ export function quoteCall(call: Call, surface: Surface): string {
 /** The sentence that ends a dead end: the exact next call, for this surface. */
 export function renderNextStep(call: Call, surface: Surface): string {
   return spellingFor(call, surface) === "mcp"
-    ? `Call ${quoteCall(asNextStep(call), surface)}.`
+    ? `Call ${quoteCall(call, surface)}.`
     : `Run ${quoteCall(call, surface)}.`;
 }

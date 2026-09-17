@@ -164,12 +164,6 @@ const emptyRecoverySchema = z
   .object({
     message: z.string().min(1),
     call: callSchema.optional(),
-    also: z
-      .array(
-        z.object({ message: z.string().min(1), call: callSchema }).strict(),
-      )
-      .min(1)
-      .optional(),
     // The retired spelling, named loudly in the `packages` → `packs` tradition:
     // a third-party pack written against the old grammar is data, not a typo.
     cli: z

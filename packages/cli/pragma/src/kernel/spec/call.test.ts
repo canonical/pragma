@@ -18,11 +18,9 @@ describe("a call is spelled for the surface it is printed on", () => {
     );
   });
 
-  it("a next step to a mutating tool confirms over MCP; an example never does", () => {
+  it("a next step to a mutating tool never confirms: the tool is plan-first, and its plan says how to proceed", () => {
     const update = { verb: "sources update" };
-    expect(renderNextStep(update, "mcp")).toBe(
-      "Call `sources_update { confirm: true }`.",
-    );
+    expect(renderNextStep(update, "mcp")).toBe("Call `sources_update {}`.");
     expect(renderNextStep(update, "cli")).toBe("Run `pragma sources update`.");
     expect(renderCall(update, "mcp")).toBe("sources_update {}");
   });
@@ -70,6 +68,10 @@ describe("a call is spelled for the surface it is printed on", () => {
       ),
     ).toMatch(/^`` graph_query .* ``$/);
     expect(quoteArgument("channelOf", "x", "cli")).toBe("`--channel-of x`");
+    // Shell-quoted like any other word, so the printed flag can be pasted.
+    expect(quoteArgument("search", "two words; rm", "cli")).toBe(
+      "`--search 'two words; rm'`",
+    );
     expect(quoteArgument("channelOf", "x", "mcp")).toBe('`channelOf: "x"`');
   });
 

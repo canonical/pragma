@@ -24,8 +24,9 @@ export function verbCategory(verb: VerbSpec): ToolCategory {
 }
 
 /**
- * A verb's declared example as a call. A verb that takes no params has nothing
- * to show — its only call is its own name — so it declares and renders none.
+ * A verb's declared example as a call. A verb with no required param may
+ * declare none — called bare, its only call is its own name — and then none
+ * is rendered.
  */
 export function exampleCall(verb: VerbSpec): Call | undefined {
   return verb.example

@@ -194,8 +194,9 @@ export type ParamSpec =
  *   mutes it (success-path guidance).
  * - `--format json` AND the MCP tool result: it rides the envelope as
  *   `meta.notice` (`project/cli/dispatch.ts#renderData`,
- *   `project/mcp/registerVerb.ts#emptyMeta` — the same key from the same seam,
- *   so the two MACHINE surfaces stay byte-equal). `data` keeps its uniform empty
+ *   `project/mcp/registerVerb.ts#noticeMeta` — the same key from the same
+ *   seam; the sentence differs only in how a next step inside it is spelled
+ *   for its surface). `data` keeps its uniform empty
  *   shape; `[]` stays `[]`. Without it an agent could not tell an unbuilt store,
  *   a mistyped filter and a genuinely empty result apart — all three were
  *   `{"ok":true,"data":[],"meta":{}}`.
@@ -566,8 +567,8 @@ export interface McpOrientation {
   readonly conventions: readonly string[];
   /** The discovery sequence, given the live tool names. */
   readonly discovery: (tools: readonly string[]) => readonly DiscoveryStage[];
-  /** The closing pointer, given the advertised resource templates. */
-  readonly closing: (resourceTemplates: string) => string;
+  /** The closing pointer; the kernel appends the advertised resource templates. */
+  readonly closing: string;
 }
 
 /** A capability module: a named bundle of verbs with optional boot/resources/prompts hooks. */

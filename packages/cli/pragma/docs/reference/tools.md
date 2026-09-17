@@ -6,7 +6,7 @@ Mutating tools are plan-first: called without `confirm: true` they return the pl
 
 ### block_list
 
-Use when asked which components, patterns, layouts or subcomponents exist — all four are blocks, and every one of them is read through the block tools. List all design system blocks with their type, tier, and modifier families.
+Use when asked which components, patterns, layouts or subcomponents exist — all four are blocks, and every one of them is read through the block tools. List all design system blocks with their type, tier, and modifier families. Example: block_list { tier: "all" }.
 
 Read-only.
 
@@ -293,7 +293,7 @@ _No input parameters._
 
 ### modifier_list
 
-Use when asked which variants or options components can take — importance, size, density and the like — and the values each allows. List all modifier families with their values.
+Use when asked which variants or options components can take — importance, size, density and the like — and the values each allows. List all modifier families with their values. Example: modifier_list { tier: "all" }.
 
 Read-only.
 
@@ -378,7 +378,7 @@ Read-only.
 
 ### setup
 
-Use when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension. Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.
+Use when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension. Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed. Example: setup { scope: "project" }.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -439,7 +439,7 @@ _No input parameters._
 
 ### sources_update
 
-Use when asked to fetch or rebuild the design-system data, or when a read reports that the store is unavailable. Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision.
+Use when asked to fetch or rebuild the design-system data, or when a read reports that the store is unavailable. Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision. Example: sources_update { skipInvalid: true }.
 
 Mutation — plan-first (set `confirm: true` to apply).
 

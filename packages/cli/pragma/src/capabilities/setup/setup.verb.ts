@@ -457,6 +457,7 @@ const setupAllVerb = setupVerb(
   {
     useWhen:
       "when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension",
+    example: { scope: "project" },
     doc: "Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.",
     examples: [
       { cmd: `${BIN_NAME} setup` },

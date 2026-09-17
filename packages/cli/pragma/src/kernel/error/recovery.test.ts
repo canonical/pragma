@@ -24,9 +24,8 @@ describe("recovery.cli invariant (D5)", () => {
     ).toEqual({
       cli: "pragma config unset tier",
       message: "Clear the field.",
-      // A mutating tool is plan-first over MCP: the recovery confirms, so
-      // following it clears the field instead of returning a plan.
-      mcp: { tool: "config_unset", params: { key: "tier", confirm: true } },
+      // A mutating tool is plan-first: the recovery never carries `confirm`.
+      mcp: { tool: "config_unset", params: { key: "tier" } },
     });
   });
 

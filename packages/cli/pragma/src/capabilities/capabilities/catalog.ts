@@ -105,8 +105,8 @@ export const ORIENTATION: McpOrientation = {
     CONVENTIONS.mutations,
   ],
   discovery: buildDiscoverySequence,
-  closing: (templates) =>
-    `Call the \`capabilities\` tool for the full annotated tool catalog; read ${templates} resources (or \`graph_inspect\`) for entity detail.`,
+  closing:
+    "Call the `capabilities` tool for the full annotated tool catalog; for entity detail use `graph_inspect`, or read the resources",
 };
 
 /** The output modes v2 renders (dropped "text" → "plain"; condensed retired). */

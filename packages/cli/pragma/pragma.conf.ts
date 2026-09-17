@@ -151,6 +151,7 @@ const designSystemStories: readonly PackDefinition[] = [
       "List all design system blocks with their type, tier, and modifier families.",
     useWhen:
       "when asked which components, patterns, layouts or subcomponents exist — all four are blocks, and every one of them is read through the block tools",
+    example: { tier: "all" },
     colophon: DESIGN_SYSTEM_COLOPHON,
     // Blocks are TIERED, so every read of them is SCOPED: `block list` answers
     // from the top-level tiers, `--tier apps_lxd` from that tier and its
@@ -899,15 +900,8 @@ const designSystemStories: readonly PackDefinition[] = [
         // the reader the one command that separates them.
         emptyRecovery: {
           message:
-            "Either no component uses this token, or no component is recorded as using any token yet — which components use which tokens comes from the component anatomies in the design-system document, and a copy of the graph built before any anatomy named its tokens is empty for every token. Ask again without the symbol filter to tell the two apart: an empty unfiltered answer means the graph predates the anatomies and fills in once they are written and the graph is rebuilt.",
+            "Either no component uses this token, or no component is recorded as using any token yet — which components use which tokens comes from the component anatomies in the design-system document, and a copy of the graph built before any anatomy named its tokens is empty for every token. Ask again without the symbol filter to tell the two apart: an empty unfiltered answer means the graph predates the anatomies and fills in once they are written and the graph is rebuilt. If you asked about a CSS variable rather than a token: some variables are computed from others (the `--hover--…` and `--disabled--…` ones, for example) and stand for no token, so nothing is ever recorded as using them; follow that variable's chain (the variable chain read) to see what it ends up as. To rebuild the graph:",
           call: { verb: "sources update" },
-          also: [
-            {
-              message:
-                "If you asked about a CSS variable rather than a token: some variables are computed from others (the `--hover--…` and `--disabled--…` ones, for example) and stand for no token, so nothing is ever recorded as using them. To see what such a variable ends up as:",
-              call: { verb: "variable chain", params: { variable: "<name>" } },
-            },
-          ],
         },
       },
     ],
@@ -1326,6 +1320,7 @@ const designSystemStories: readonly PackDefinition[] = [
     toolDescription: "List all modifier families with their values.",
     useWhen:
       "when asked which variants or options components can take — importance, size, density and the like — and the values each allows",
+    example: { tier: "all" },
     // Tiered like blocks — 11 of the modifier families carry a `ds:tier` — so
     // the same scope, declared with the same four terms. The scope is per NOUN
     // because being tiered is a fact about the entities, and the design

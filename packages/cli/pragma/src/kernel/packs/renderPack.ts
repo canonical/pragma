@@ -24,7 +24,11 @@ import {
   renderLookupLlm,
   renderLookupPlain,
 } from "../render/renderers.js";
-import { quoteArgument, renderNextStep } from "../spec/call.js";
+import {
+  BUILD_STORE_CALL,
+  quoteArgument,
+  renderNextStep,
+} from "../spec/call.js";
 import type { Formatters, Surface } from "../spec/index.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import {
@@ -63,7 +67,7 @@ export interface RenderMeta {
 export const DEFAULT_EMPTY_RECOVERY: PackEmptyRecovery = {
   message:
     "Either nothing matched — try a wider filter — or the store has nothing in it yet and needs building.",
-  call: { verb: "sources update" },
+  call: BUILD_STORE_CALL,
 };
 
 /**
@@ -100,13 +104,9 @@ export function listFormatters(
   // `emptyRecovery` becomes the hint; otherwise the generic build/broaden hint.
   // Built per call, not once: the hint ends in the next call to make, spelled
   // for the surface that is about to print it.
-  const recovery = shape.emptyRecovery ?? DEFAULT_EMPTY_RECOVERY;
+  const { message, call } = shape.emptyRecovery ?? DEFAULT_EMPTY_RECOVERY;
   const hintFor = (surface: Surface): string =>
-    [recovery, ...(recovery.also ?? [])]
-      .map(({ message, call }) =>
-        call ? `${message} ${renderNextStep(call, surface)}` : message,
-      )
-      .join(" ");
+    call ? `${message} ${renderNextStep(call, surface)}` : message;
   const optionsFor = (surface: Surface): RenderListOptions<PackRow> => ({
     heading: meta.heading,
     columns,

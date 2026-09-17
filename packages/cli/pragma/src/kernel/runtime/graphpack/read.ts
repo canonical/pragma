@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { createStore } from "@canonical/ke";
 import { compileFromExtraction } from "@canonical/ke-graphql";
 import { callRecovery, PragmaError } from "../../error/index.js";
+import { BUILD_STORE_CALL } from "../../spec/call.js";
 import type { StoreSession } from "../types.js";
 import { readManifest } from "./manifest.js";
 import { packIndexSchema } from "./schemas.js";
@@ -26,7 +27,7 @@ import { DATA_FILE, INDEX_FILE, SCHEMA_FILE } from "./types.js";
 function packUnavailable(reason: string): PragmaError {
   return PragmaError.storeUnavailable(reason, {
     recovery: callRecovery(
-      { verb: "sources update" },
+      BUILD_STORE_CALL,
       "Rebuild the local store from the configured packs.",
     ),
   });

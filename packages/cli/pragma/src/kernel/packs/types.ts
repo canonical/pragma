@@ -398,7 +398,7 @@ export const VERB_PATH_PATTERN = /^[a-z][a-z0-9-]*( [a-z][a-z0-9-]*)?$/;
 
 /**
  * A call as a story writes it: a verb path and the params to make it with.
- * Structurally the kernel's `Call` (`spec/call.ts`), restated here because this
+ * Structurally the kernel's `Call` (`spec/types.ts`), restated here because this
  * file is on the distribution config's import graph and may import nothing.
  */
 export interface PackCall {
@@ -416,11 +416,6 @@ export interface PackEmptyRecovery {
    * for the surface it prints on, so a story stays portable across both.
    */
   readonly call?: PackCall;
-  /** Further readings of the same emptiness, each with the call that settles it. */
-  readonly also?: readonly {
-    readonly message: string;
-    readonly call: PackCall;
-  }[];
 }
 
 /**

@@ -25,8 +25,11 @@ export function findCallProblem(
   verb: VerbSpec | undefined,
 ): string | undefined {
   if (!verb) return "names no registered verb";
+  // A call is a next step or an example, and neither may skip the plan or pick
+  // a write root: `confirm` and `cwd` are the caller's to add, never a hint's.
+  const { confirm: _confirm, cwd: _cwd, ...shape } = buildToolShape(verb);
   const parsed = z
-    .object(buildToolShape(verb))
+    .object(shape)
     .strict()
     .safeParse(call.params ?? {});
   return parsed.success

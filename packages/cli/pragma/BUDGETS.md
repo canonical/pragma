@@ -1017,7 +1017,7 @@ description costs catalogue tokens, measured the same way as above:
 | When             | Tools | ≈ Tokens | Ceiling | % of ceiling |
 | ---------------- | ----- | -------- | ------- | ------------ |
 | Before this work | 50    | 7 774    | 8 000   | 97%          |
-| After this work  | 50    | 8 826    | 9 700   | 91%          |
+| After this work  | 50    | 8 866    | 9 700   | 91%          |
 
 Three general rules keep the cost down (a first cut measured 9 146): a verb
 callable with no arguments shows no example, the one-line summary is not
@@ -1028,7 +1028,7 @@ by the emitted surface and the eval case that enforces it.
 
 The handshake instructions gained one sentence — components, patterns, layouts
 and subcomponents are all read through the block tools — and went from 1 491
-characters under a 1 500 ceiling to 1 635 under 1 800.
+characters under a 1 500 ceiling to 1 642 under 1 800.
 
 Both ceilings are set from the new measurement plus about a tenth. They are
 guards against unnoticed growth, not targets: the next raise should come with

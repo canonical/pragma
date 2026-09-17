@@ -105,10 +105,11 @@ describe("the one place the envelopes differ: the spelling inside meta.notice", 
     const mcpNotice = noticeOf(await mcp.callTool("token_consumers", params));
     await mcp.cleanup();
     expect(mcpNotice).toContain('`search: "zzz-nothing-matches-this"`');
-    expect(mcpNotice).toContain('`variable_chain { variable: "<name>" }`');
-    expect(mcpNotice).toContain("Call `sources_update { confirm: true }`.");
+    // Never `confirm`: a next step does not skip the plan.
+    expect(mcpNotice).toContain("Call `sources_update {}`.");
     expect(mcpNotice).not.toContain("pragma ");
-  });
+    // Two full-registry MCP servers and a CLI dispatch: slow on a busy machine.
+  }, 30_000);
 });
 
 describe("plan-first is uniform across surfaces (A6)", () => {

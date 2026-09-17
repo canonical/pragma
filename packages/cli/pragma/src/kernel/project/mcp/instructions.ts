@@ -18,7 +18,7 @@ import { emitSurface } from "../../spec/index.js";
 
 /**
  * Ceiling on the instructions length (asserted by the protected test). Set from
- * measurement plus about a tenth: 1,635 characters once the orientation says
+ * measurement plus about a tenth: 1,642 characters once the orientation says
  * which tools read components, up from 1,491 under a 1,500 ceiling.
  */
 export const INSTRUCTIONS_MAX_CHARS = 1800;
@@ -55,6 +55,6 @@ export function buildInstructions(
     "Discovery sequence:",
     steps,
     "",
-    orientation.closing(templates),
+    `${orientation.closing} ${templates}.`,
   ].join("\n");
 }

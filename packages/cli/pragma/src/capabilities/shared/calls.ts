@@ -1,13 +1,14 @@
 /**
- * The calls more than one capability's dead end points at. Named once, so every
- * empty state that means "build the store" makes the same call, spelled for the
- * surface it prints on, and `callRule.test.ts` can hold each to its verb.
+ * The calls more than one capability's dead end points at, so
+ * `callRule.test.ts` can hold each to its verb. "Build the store" is the
+ * kernel's own constant (`kernel/spec/call.ts#BUILD_STORE_CALL`), re-exported
+ * here so capabilities and kernel make the same call.
  */
 
+import { BUILD_STORE_CALL } from "../../kernel/spec/call.js";
 import type { Call } from "../../kernel/spec/index.js";
 
-/** Build (or rebuild) the store from the configured packs. */
-export const BUILD_STORE_CALL: Call = { verb: "sources update" };
+export { BUILD_STORE_CALL };
 
 /** Link installed skills into the AI harnesses — CLI-only, so it is always spelled as a command. */
 export const LINK_SKILLS_CALL: Call = { verb: "setup skills" };
