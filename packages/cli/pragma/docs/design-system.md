@@ -42,11 +42,11 @@ A **block** is one reusable piece of UI, at any of four grains:
 - **pattern** — a composition of components serving one purpose (`ActionBar`)
 - **layout** — a page- or view-level arrangement (`ApplicationLayout`)
 
-This distribution's graph carries **313** blocks across fifteen tiers. `block list` shows the **176** in the five top-level tiers — the shared vocabulary — and says so in its heading, which also counts the whole answer tier by tier, the tiers outside the scope included:
+This distribution's graph carries **313** blocks across fifteen tiers. `block list` shows the **176** in the five top-level tiers — the shared vocabulary — and says so in its heading, which counts the whole answer tier by tier:
 
 ```console
 $ pragma block list
-## Block (176, tier scope: global 121, apps 39, documentation 2, sites 14, stores 0; other tiers: apps_anbox 2, …, apps_lxd 9, …)
+## Block (176, tier scope: global 121, apps 39, documentation 2, sites 14, stores 0)
 
 - `ds:global.component.accordion` — **Accordion** component | global
 - `ds:global.subcomponent.accordion-item` — **Accordion.Item** subcomponent | global

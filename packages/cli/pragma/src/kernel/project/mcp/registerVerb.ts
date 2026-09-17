@@ -88,10 +88,7 @@ function zodForParam(param: ParamSpec): z.ZodTypeAny {
   const item = zodForItem(wire.item);
   if (!wire.list) return item;
   return z.preprocess(
-    (value) =>
-      value === undefined || value === null || Array.isArray(value)
-        ? value
-        : [value],
+    (value) => (typeof value === "string" ? [value] : value),
     z.array(item),
   );
 }

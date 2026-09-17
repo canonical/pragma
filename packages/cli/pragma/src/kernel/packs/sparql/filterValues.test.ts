@@ -58,9 +58,7 @@ describe("a refused filter value names its vocabulary once", () => {
     expect(occurrences(plain, "color.text.0,")).toBe(1);
     expect(plain).toContain("Valid options (745), first 40:");
     // The recovery says what to do, and names the flag — without the list.
-    expect(plain).toContain(
-      "Every --symbol value must be one of the 745 it accepts.",
-    );
+    expect(plain).toContain("Every value must be one of the 745 accepted.");
     expect(renderErrorLlm(error)).toContain("must be one of the 745");
     expect(occurrences(renderErrorLlm(error), "color.text.0,")).toBe(1);
   });
@@ -77,9 +75,7 @@ describe("a refused filter value names its vocabulary once", () => {
 
     expect(occurrences(plain, "dimension")).toBe(1);
     expect(plain).toContain("Valid options: color, dimension, duration");
-    expect(plain).toContain(
-      "Every --type value must be one of the 3 it accepts.",
-    );
+    expect(plain).toContain("Every value must be one of the 3 accepted.");
   });
 
   it("a short vocabulary stays cheap to read", () => {

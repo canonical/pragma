@@ -1041,3 +1041,43 @@ replaced the prose discovery sequence. They went from 1 491 characters under a
 2 KB, so text past that is text no agent reads: this ceiling is never raised on
 measurement. A new verb that does not fit is made to fit by tightening a
 sentence.
+
+## 2026-09-17 — lookups and `graph inspect` get a size budget, patterns a cap
+
+Enforced in `src/capabilities/lookupBudget.shipped.exec.test.ts`, measured the
+way the list budget is: over the shipped pack, on the re-serialised JSON.
+
+**The pattern cap: `GLOB_EXPANSION_CAP = 50` entities.** `token lookup 'color.*'`
+answered 473 entities and 460,263 bytes, about 1 KB and four store queries
+apiece, with nothing in the answer saying so. Fifty answers every pattern that
+means "this family" in full (`color.text.*` is 36). It bounds the COUNT, not
+the bytes — those follow the noun's own level:
+
+| Widest pattern     | matched | `summary` bytes | `detailed` bytes |
+| ------------------ | ------- | --------------- | ---------------- |
+| `block lookup '*'` | 313     | 22,592          | 206,809          |
+| `token lookup 'color.*'` | 473 | 11,221        | 58,164           |
+
+Ceilings × 1.5: 34,000 and 310,000. Warm cost of `token lookup 'color.*'`:
+895 ms uncapped, 32 ms capped.
+
+**One looked-up entity, largest of any noun per level:** 2,425 bytes at
+`summary` (a code standard), 25,282 at `standard` (a concept), 70,097 at
+`detailed` (a block). Ceilings × 1.5: 3,700 / 38,000 / 105,000. A lookup that
+declares no levels is given the canonical three with untagged expands from
+`standard`, so for it `standard` equals `detailed`; `summary` vs `detailed` per
+such noun: token 548 / 4,174, variable 393 / 4,854, tier 101 / 3,847, modifier
+103 / 203.
+
+**`graph inspect` outbound caps: 3 objects per predicate at `summary`, 10 at
+`standard`, all at `detailed`.** One button's 24 inlined token bindings were
+19.8 KB of a 28.7 KB `standard` read. Largest block per level after the cap:
+5,785 / 20,551 / 72,258 bytes; ceilings × 1.5: 8,700 / 31,000 / 108,000. The
+global Button went 28,713 → 18,173 at `standard` and 7,522 → 5,558 at `summary`.
+
+**The per-tier count of a scoped list** is one aggregate beside the first page
+(median of 15 warm runs): 5.1 ms beside `block list`'s 10.0 ms page, 13.1 ms
+beside `modifier list`'s 12.7 ms, 0.3 ms beside `concept list`'s 0.4 ms.
+
+**A lookup miss** reads one pool, once per call (warm medians, `token lookup`):
+one miss 10.5 ms (10.3 before this change), eight misses 26.5 ms (58.0 before).

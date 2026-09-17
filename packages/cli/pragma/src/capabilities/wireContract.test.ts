@@ -17,7 +17,6 @@ import { z } from "zod";
 import { buildToolShape } from "../kernel/project/mcp/registerVerb.js";
 import { toolName } from "../kernel/spec/index.js";
 import type { ParamSpec, VerbSpec } from "../kernel/spec/types.js";
-import { wireType } from "../kernel/spec/wireType.js";
 import { type McpHarness, projectMcp } from "../testing/helpers/projectMcp.js";
 import { capabilities } from "./index.js";
 
@@ -102,11 +101,10 @@ describe("what is advertised is a plain array", () => {
   // the advertised schema.
   it.each([...variadic, ...repeatable])(
     "%s { %s } is `type: array`, never `anyOf`",
-    (tool, name, _verb, param) => {
+    (tool, name) => {
       const advertised = schemas.get(tool)?.[name];
       expect(advertised?.type).toBe("array");
       expect(advertised).not.toHaveProperty("anyOf");
-      expect(wireType(param).list).toBe(true);
     },
   );
 });

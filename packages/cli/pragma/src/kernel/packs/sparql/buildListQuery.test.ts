@@ -12,12 +12,7 @@
 
 import { describe, expect, it } from "vitest";
 import { PragmaError } from "../../error/index.js";
-import {
-  buildListQuery,
-  buildTierCountQuery,
-  TIER_COUNT_ROWS,
-  TIER_COUNT_TIER,
-} from "./buildListQuery.js";
+import { buildListQuery, buildTierCountQuery } from "./buildListQuery.js";
 
 /** The author query every case below wraps: aggregate, grouped, ordered. */
 const AUTHORED = [
@@ -361,7 +356,7 @@ describe("buildTierCountQuery — the whole filtered answer, per tier", () => {
       search: { variables: ["name"], term: "props" },
       scope,
       label,
-    });
+    }).text;
 
   it("wraps the author query under the page's own filter and search clauses", () => {
     const page = buildListQuery({
@@ -381,15 +376,31 @@ describe("buildTierCountQuery — the whole filtered answer, per tier", () => {
   });
 
   it("groups by the row's tier, which is OPTIONAL so an untiered row counts", () => {
-    expect(build()).toContain(
-      `SELECT ?${TIER_COUNT_TIER} (COUNT(*) AS ?${TIER_COUNT_ROWS})`,
+    expect(build()).toMatch(
+      /SELECT \?(\w+) \(COUNT\(\*\) AS \?\w+\)[\s\S]*OPTIONAL \{ \?uri ds:tier \?\1 \}\n\}\nGROUP BY \?\1$/,
     );
-    expect(build()).toContain(
-      `  OPTIONAL { ?uri ds:tier ?${TIER_COUNT_TIER} }`,
-    );
-    expect(build().trimEnd().endsWith(`GROUP BY ?${TIER_COUNT_TIER}`)).toBe(
-      true,
-    );
+  });
+
+  it("reads its rows as tier → row count, the unbound tier as the empty key", () => {
+    const query = buildTierCountQuery({
+      query: AUTHORED,
+      predicates: [],
+      scope,
+      label,
+    });
+    const [, tier, count] =
+      /SELECT \?(\w+) \(COUNT\(\*\) AS \?(\w+)\)/.exec(query.text) ?? [];
+    const rows = [
+      {
+        [tier as string]: "https://ds.canonical.com/apps",
+        [count as string]: "3",
+      },
+      { [count as string]: "1" },
+    ];
+    expect([...query.read(rows)]).toEqual([
+      ["https://ds.canonical.com/apps", 3],
+      ["", 1],
+    ]);
   });
 
   it("carries neither the page nor the scope it is the breakdown OF", () => {

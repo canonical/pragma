@@ -690,19 +690,15 @@ export interface PageTierScope {
    */
   readonly tiers: readonly string[];
   /**
-   * How many rows of the WHOLE filtered answer each tier holds — every page of
-   * it, and the tiers OUTSIDE the scope too, keyed by the same local name and
-   * ordered in-scope first. An in-scope tier holding none is present with 0; a
-   * tier outside the scope is present only when it holds some.
-   *
-   * The scope says which part of the design system was read; this says how
-   * much of the answer is in each part, which is the only way a reader inside
-   * the scope learns that what they asked for lives outside it.
+   * Rows of the WHOLE filtered answer per tier, keyed by local name: every
+   * in-scope tier (0 when empty), the out-of-scope tiers holding some, and
+   * {@link UNTIERED_KEY} for rows in no tier. First page only.
    */
   readonly counts?: Readonly<Record<string, number>>;
-  /** Rows whose entity is in no tier at all (in scope by rule), when any. */
-  readonly untiered?: number;
 }
+
+/** The `counts` key for rows whose entity is in no tier (no tier is named so). */
+export const UNTIERED_KEY = "no tier";
 
 /** One filter a list read was narrowed by, as the caller spelled it. */
 export interface PackAppliedFilter {

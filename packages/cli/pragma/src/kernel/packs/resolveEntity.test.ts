@@ -430,7 +430,7 @@ describe("a glob says what it did", () => {
   it("cuts a wide pattern at the cap and reports the true total", async () => {
     const out = await lookup("swatch.*");
     expect(out.results).toHaveLength(GLOB_EXPANSION_CAP);
-    expect(out.truncated).toEqual({ shown: GLOB_EXPANSION_CAP, total: FAMILY });
+    expect(out).toMatchObject({ truncated: true, total: FAMILY });
   });
 
   it("says so in each surface's own spelling, and in the condensed body", async () => {
@@ -440,7 +440,36 @@ describe("a glob says what it did", () => {
     expect(formatters.notice?.(out, "cli")).toContain("`--detail summary`");
     expect(formatters.notice?.(out, "mcp")).toContain('`detail: "summary"`');
     expect(formatters.llm(out).split("\n").at(-1)).toContain(counted);
-    expect(JSON.parse(formatters.json(out)).truncated.total).toBe(FAMILY);
+    expect(JSON.parse(formatters.json(out)).total).toBe(FAMILY);
+  });
+
+  it("does not advise summary to a caller already there", () => {
+    const out: LookupOutput = {
+      results: [],
+      errors: [],
+      truncated: true,
+      total: FAMILY,
+      detail: "summary",
+    };
+    expect(formatters.notice?.(out, "mcp")).toBe(
+      `0 of ${FAMILY} matches shown. Narrow the pattern to reach the rest.`,
+    );
+  });
+
+  it("counts ENTITIES: a name route and an IRI route to the same ones are one total", async () => {
+    const out = await lookup("swatch.*", "ds:swatch.*");
+    expect(out.total).toBe(FAMILY);
+    expect(out.results).toHaveLength(GLOB_EXPANSION_CAP);
+  });
+
+  it("cuts the same fifty every time, in name order", async () => {
+    const names = (await lookup("swatch.*")).results.map((e) => e.name);
+    expect(names).toEqual(
+      Array.from({ length: GLOB_EXPANSION_CAP }, (_, i) => `swatch.${pad(i)}`),
+    );
+    expect(
+      (await lookup("*.0*", "swatch.*")).results.map((e) => e.name),
+    ).toEqual(names);
   });
 
   it("says nothing about a pattern answered in full", async () => {

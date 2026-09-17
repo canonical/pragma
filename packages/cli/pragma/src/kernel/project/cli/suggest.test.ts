@@ -163,6 +163,19 @@ describe("suggestNames", () => {
       ).toEqual(["react/component/tsdoc"]);
     });
 
+    it("reads past a prefix, so a prefixed name suggests like its bare form", () => {
+      expect(
+        suggestNames("dt:color.text.zzz", ["color.text", "color"]),
+      ).toEqual(["color.text", "color"]);
+    });
+
+    it("builds no runs for a query too long to be a name", () => {
+      const parts = Array.from({ length: 3000 }, (_, i) => `s${i}`);
+      const started = performance.now();
+      expect(suggestNames(parts.join("."), ["s1.s2"])).toEqual([]);
+      expect(performance.now() - started).toBeLessThan(100);
+    });
+
     it("keeps the five-result cap", () => {
       const parts = ["a1", "b2", "c3", "d4", "e5", "f6", "g7"];
       expect(suggestNames(parts.join("."), parts)).toHaveLength(5);

@@ -111,20 +111,10 @@ const SAMPLE_CAP: Readonly<Record<DetailLevel, number>> = {
 };
 
 /**
- * How many OBJECTS of one outbound predicate each level lists.
- *
- * The inbound side was bounded and the outbound side was not, on the theory
- * that what an entity asserts about itself is small. It is not: one button
- * asserts 24 token bindings, each an inlined record, and they were 19.8 KB of a
- * 28.7 KB `standard` read — of an entity whose own lookup verb serves the same
- * bindings under its own disclosure. So a predicate is cut the way an inbound
- * relation is: the head is listed, {@link PredicateGroup.count} states the true
- * total, and `detailed` is where the whole set lives.
- *
- * Counted per predicate and by nothing else, so no vocabulary is named here
- * either. `summary` keeps a few rather than none: a predicate's first objects
- * are what the entity IS (its type, its name, its tier), and a summary without
- * them would describe nothing.
+ * How many OBJECTS of one outbound predicate each level lists; the true total
+ * rides {@link PredicateGroup.count}. `summary` keeps a few rather than none —
+ * a predicate's first objects are the entity's type, name and tier. Derivation
+ * in BUDGETS.md.
  */
 const OUTBOUND_CAP: Readonly<Record<DetailLevel, number>> = {
   summary: 3,

@@ -164,7 +164,7 @@ function refuseValues(
     {
       validOptions,
       recovery: {
-        message: `Every --${filter.param} value must be one of the ${validOptions.length} it accepts.`,
+        message: `Every value must be one of the ${validOptions.length} accepted.`,
       },
     },
   );

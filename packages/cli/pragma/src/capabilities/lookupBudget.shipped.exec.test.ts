@@ -60,16 +60,12 @@ const ENTITY_BUDGET_BYTES: Readonly<Record<DetailLevel, number>> = {
  * The ceiling on the answer to the widest pattern a noun can be handed.
  *
  * It moves with {@link GLOB_EXPANSION_CAP} and with how fat a noun's entities
- * are, and with nothing else. Measured 2026-09-17, largest noun first: `block`
- * at 29,541 bytes (`summary`) and 266,175 (`detailed`) — 50 names reaching 70
- * blocks, since a block name may be shared across tiers — then `token` at
- * 11,210 and 58,152, which answered 460,263 before there was a cap. × 1.5,
- * rounded. The `detailed` figure is large because a block's own default level
- * is, which is why the notice a cut answer carries names `summary`.
+ * are. Measured 2026-09-17: `block` at 22,592 bytes (`summary`) and 206,809
+ * (`detailed`), × 1.5, rounded. Full table in BUDGETS.md.
  */
 const GLOB_BUDGET_BYTES: Readonly<Record<"summary" | "detailed", number>> = {
-  summary: 45_000,
-  detailed: 400_000,
+  summary: 34_000,
+  detailed: 310_000,
 };
 
 /**
@@ -150,7 +146,7 @@ describe("lookup response budget, shipped pack (PROTECTED)", () => {
     "%s lookup at %s: the largest entity is inside the budget",
     async (noun, level) => {
       const names = await population(noun);
-      if (names.length === 0) return;
+      expect(names.length).toBeGreaterThan(0);
       const output = (await verbOf(noun, "lookup").run(
         { name: names, ...everyTier(noun) },
         at(level),
@@ -176,8 +172,10 @@ describe("lookup response budget, shipped pack (PROTECTED)", () => {
       )) as LookupOutput;
       const bytes = bytesOf(JSON.parse(verb.output.formatters.json(output)));
       // Cut exactly when there was more than the cap to cut.
-      expect(output.truncated?.shown ?? GLOB_EXPANSION_CAP).toBe(
-        GLOB_EXPANSION_CAP,
+      const entities = (await population(noun)).length;
+      expect(output.truncated === true).toBe(entities > GLOB_EXPANSION_CAP);
+      expect(output.results.length).toBe(
+        Math.min(entities, GLOB_EXPANSION_CAP),
       );
       expect(bytes).toBeLessThanOrEqual(GLOB_BUDGET_BYTES[level]);
     },

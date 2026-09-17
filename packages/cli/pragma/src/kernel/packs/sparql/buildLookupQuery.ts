@@ -542,24 +542,17 @@ export function buildIriResolveQuery(lookup: PackLookup, iri: string): string {
 
 /**
  * Build the SELECT listing every entity IRI a lookup can address, with the name
- * it carries when it carries one (IRI globs, and local-name matching).
- *
- * The name rides along so a caller matching on an IRI's local name can tell
- * which entities a NAME match already reached, and not answer with them twice.
+ * it carries when it carries one and, for a scoped lookup, its tier.
  */
-export function buildLookupIrisQuery(lookup: PackLookup): string {
-  const constraint = buildTypeConstraint(lookup).trimEnd();
+export function buildLookupIrisQuery(lookup: PackLookup, via?: string): string {
+  const tier = scopeTierProjection(via);
   return [
-    "SELECT DISTINCT ?uri ?name WHERE {",
-    // A pack that constrains by class is asking about its class; one that does
-    // not has only the `by` triple to bound the scan, so it keeps that bound
-    // (and, like the name population, addresses only entities that carry one).
-    // {@link iriNameBinding} is that same split: OPTIONAL under a class,
-    // required without one.
-    constraint,
+    `SELECT DISTINCT ?uri ?name${tier.variable} WHERE {`,
+    buildTypeConstraint(lookup).trimEnd(),
+    // OPTIONAL under a class, required without one — the only bound there is.
     iriNameBinding(lookup),
+    tier.optional,
     "}",
-    "ORDER BY STR(?uri)",
   ]
     .filter((line) => line !== "")
     .join("\n");

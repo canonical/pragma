@@ -95,6 +95,11 @@ describe("buildZodSchema (params → zod)", () => {
     expect(lists.safeParse({}).success).toBe(false);
     expect(lists.safeParse({ name: "x", kind: "z" }).success).toBe(false);
     expect(lists.safeParse({ name: "x", kind: ["a", 7] }).success).toBe(false);
+    // Only a STRING is coerced, so a wrong type is refused at the param itself.
+    for (const name of [5, { a: 1 }]) {
+      const refused = lists.safeParse({ name });
+      expect(refused.error?.issues.at(0)?.path).toEqual(["name"]);
+    }
   });
 
   it("applies a declared default when the field is omitted (CLI parity)", () => {

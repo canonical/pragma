@@ -445,26 +445,10 @@ function compileSampleVerb(
 }
 
 /**
- * Give a lookup that declares no disclosure the canonical one, so EVERY lookup
- * can be asked for less.
- *
- * A lookup without levels answered with everything it had, and offered no
- * `detail` to say otherwise — which made the size of an answer a property of
- * which noun was asked rather than of what the caller wanted. The imputed
- * ladder is chosen so that declaring nothing still MEANS what it meant:
- *
- * - the default is the HIGHEST level, so the default answer is byte for byte
- *   the one the lookup gave before;
- * - an untagged expand is tagged `standard`. Expands are where an answer's
- *   bulk lives (a token's values at every position, a tier's every block), so
- *   `summary` is the fields alone and `standard` already has everything.
- *
- * The gating rule itself ({@link ./disclosure.isActiveAtLevel}) is untouched:
- * this writes the tags that rule already reads. A lookup that declares its own
- * disclosure is returned as it is — its author decided.
- *
- * One consequence is accepted rather than avoided: a user whose config sets
- * `detail` now sees these lookups follow it, as every declared one always did.
+ * Give a lookup that declares no disclosure the canonical ladder: default
+ * `detailed` (so its default answer is unchanged) and untagged expands from
+ * `standard` (so `summary` is the fields alone, and `standard` equals
+ * `detailed`). A declared disclosure is returned as written.
  */
 function withDisclosure(lookup: PackLookup): PackLookup {
   if (lookup.disclosure) return lookup;

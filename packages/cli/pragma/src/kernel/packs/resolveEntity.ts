@@ -21,7 +21,7 @@
  */
 
 import { callRecovery, PragmaError, type Recovery } from "../error/index.js";
-import { suggestNames } from "../project/cli/suggestNames.js";
+import { MAX_SUGGESTIONS, suggestNames } from "../project/cli/suggestNames.js";
 import { compactUri } from "../render/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
 import { activeExpands } from "./disclosure.js";
@@ -108,37 +108,19 @@ export interface LookupOutput {
    * case, and the case the payload speaks for itself in.
    */
   readonly outOfScope?: OutOfScopeAnswer[];
-  /**
-   * Set when the patterns matched more entries than {@link GLOB_EXPANSION_CAP}
-   * and the answer is the first `shown` of `total`. Absent otherwise — a
-   * pattern answered in full has nothing to admit.
-   */
-  readonly truncated?: GlobTruncation;
-}
-
-/** How far a capped glob expansion was cut. */
-export interface GlobTruncation {
-  readonly shown: number;
-  readonly total: number;
+  /** Set when the patterns matched more entities than {@link GLOB_EXPANSION_CAP}. */
+  readonly truncated?: true;
+  /** How many entities the patterns matched, present only when truncated. */
+  readonly total?: number;
+  /** The level the cut answer was built at, present only when truncated. */
+  readonly detail?: string;
 }
 
 /**
- * The most entries the patterns of ONE lookup may expand to.
- *
- * A pattern is a request for a handful of related entities, and nothing bounded
- * it: measured on the shipped pack (2026-09-17), `token lookup 'color.*'`
- * expanded to 473 entities and 460 KB of JSON, about 1 KB and four store
- * queries apiece, with no sign in the answer that it was unusual. Fifty keeps
- * the worst case near 50 KB at the fullest level — and still answers every
- * pattern that means "this family" (`color.text.*` is 36) in full.
- *
- * Literal arguments are never counted or cut: a caller who names 80 entities
- * asked for 80.
+ * The most entities the patterns of ONE lookup may expand to (derivation in
+ * BUDGETS.md). Literal arguments are never counted or cut.
  */
 export const GLOB_EXPANSION_CAP = 50;
-
-/** How many suggestions a miss carries — the cap `suggestNames` applies too. */
-const MAX_SUGGESTIONS = 5;
 
 /** What the resolver needs from the runtime: the store + the query facade. */
 type LookupRuntime = Pick<PragmaRuntime, "store" | "query">;
@@ -176,23 +158,32 @@ export async function resolveLookup(
     });
   }
 
-  const expanded = await expandQueries(
-    rt,
-    lookup,
-    noun,
-    source,
-    queries,
-    prefixes,
-  );
+  // Read at most once per call, however many patterns and misses need it.
+  let pool: Promise<Addressable[]> | undefined;
+  const addressable = (): Promise<Addressable[]> => {
+    pool ??= listAddressable(rt, lookup, source, prefixes, scope?.via);
+    return pool;
+  };
+  const expanded = await expandQueries(noun, queries, addressable, scope);
   const results: PackEntity[] = [];
   const errors: LookupError[] = [...expanded.globErrors];
-  const outOfScope: OutOfScopeAnswer[] = [];
+  const outOfScope: OutOfScopeAnswer[] = [...expanded.outOfScope];
   // Two arguments may reach one entity by different routes — a name pattern
   // and an IRI pattern, a name and that entity's own IRI. It is answered once.
   const answered = new Set<string>();
   const settled = await Promise.allSettled(
     expanded.names.map((query) =>
-      lookupOne(rt, lookup, noun, query, source, prefixes, level, scope),
+      lookupOne(
+        rt,
+        lookup,
+        noun,
+        query,
+        source,
+        prefixes,
+        level,
+        addressable,
+        scope,
+      ),
     ),
   );
   for (const [index, outcome] of settled.entries()) {
@@ -230,163 +221,118 @@ export async function resolveLookup(
     results,
     errors,
     ...(outOfScope.length > 0 ? { outOfScope } : {}),
-    ...(expanded.truncated ? { truncated: expanded.truncated } : {}),
+    ...(expanded.total === undefined
+      ? {}
+      : {
+          truncated: true as const,
+          total: expanded.total,
+          ...(level ? { detail: level } : {}),
+        }),
   };
 }
 
 /**
- * Expand glob queries against the population their own shape addresses;
- * literals pass through.
+ * Expand glob queries to the ENTITIES they reach; literals pass through.
  *
- * A name glob expands over the `by` values, an IRI glob over the entity IRIs —
- * the same split {@link buildResolveQuery} makes, because a glob is just a
- * lookup argument with a `*` in it. Expanding an IRI pattern over names was why
- * `ds:global.component.but*` matched nothing on any pack while shell completion
- * offered nothing BUT those IRIs. Each population is fetched at most once, and
- * only when a glob is actually present.
- *
- * A glob with NO prefix reads both populations, because a caller who writes one
- * has not said which they mean: `*.component.meter` is a pattern over the IRI
- * local names every list prints, and it reached nothing while names were the
- * only thing a prefix-less pattern was tried against. See
- * {@link expandNameGlob}.
+ * An IRI-shaped glob is matched against both spellings of an IRI, a prefix-less
+ * one against names and IRI local names. Matches are keyed by entity, so two
+ * routes to one entity count once. Under a tier scope the in-scope matches come
+ * first and an out-of-scope namesake of one is dropped, as a name lookup would;
+ * the cap is applied after that, over a deterministic order.
  */
 async function expandQueries(
-  rt: LookupRuntime,
-  lookup: PackLookup,
   noun: string,
-  source: StorySource,
   queries: readonly string[],
-  prefixes: Readonly<Record<string, string>>,
+  addressable: () => Promise<Addressable[]>,
+  scope: LookupScope | undefined,
 ): Promise<{
   names: string[];
   globErrors: LookupError[];
-  truncated?: GlobTruncation;
+  outOfScope: OutOfScopeAnswer[];
+  total?: number;
 }> {
-  if (!queries.some(isGlobPattern))
-    return { names: [...queries], globErrors: [] };
+  const literals = [...new Set(queries.filter((q) => !isGlobPattern(q)))];
   const globs = queries.filter(isGlobPattern);
-  const addressable = await listAddressable(rt, lookup, source, prefixes);
-  const byIri = iriSpellings(addressable);
-  const byName = globs.some((glob) => !looksLikeIri(glob))
-    ? await listEntityNames(rt, lookup, source)
-    : [];
-  const names: string[] = [];
+  if (globs.length === 0) {
+    return { names: literals, globErrors: [], outOfScope: [] };
+  }
+  const pool = await addressable();
   const globErrors: LookupError[] = [];
-  // One set across ALL the arguments: two patterns that overlap (`color.*`
-  // beside `*.text`), or a pattern beside a literal it covers, name an entry
-  // once. `matched` counts what the patterns reached; `kept` is what is looked
-  // up — they differ exactly by what the cap cut, which is why a literal is
-  // checked against `kept`: one a cut pattern also matched is still asked for.
-  const matched = new Set<string>();
-  const kept = new Set<string>();
-  const keep = (name: string): void => {
-    if (kept.has(name)) return;
-    kept.add(name);
-    names.push(name);
-  };
-  for (const query of queries) {
-    if (!isGlobPattern(query)) {
-      keep(query);
-      continue;
-    }
-    // An IRI glob expands over every spelling, then collapses to the entity:
-    // matching `ds:button` and its absolute twin must not list it twice.
-    const matches = looksLikeIri(query)
-      ? [
-          ...new Set(
-            expandGlob(query, [...byIri.keys()]).map(
-              (spelling) => byIri.get(spelling) ?? spelling,
-            ),
-          ),
-        ]
-      : expandNameGlob(query, byName, addressable);
-    if (matches.length === 0) {
+  const matched = new Map<string, Addressable>();
+  const inScope = (entity: Addressable): boolean =>
+    !scope || entity.tier === undefined || scope.tiers.includes(entity.tier);
+  for (const glob of globs) {
+    const forms = (entity: Addressable): string[] =>
+      looksLikeIri(glob)
+        ? [entity.uri, entity.compact]
+        : [entity.name ?? "", entity.local];
+    const hits = new Set(expandGlob(glob, pool.flatMap(forms)));
+    const entities = pool.filter((entity) =>
+      forms(entity).some((form) => hits.has(form)),
+    );
+    if (entities.length === 0) {
       globErrors.push({
-        query,
+        query: glob,
         code: "EMPTY_RESULTS",
-        message: `No ${noun} entries matching "${query}".`,
+        message: `No ${noun} entries matching "${glob}".`,
       });
     }
-    for (const match of matches) {
-      matched.add(match);
-      if (matched.size <= GLOB_EXPANSION_CAP) keep(match);
+    for (const entity of entities) {
+      // An entity in two tiers is in scope when either row is.
+      const known = matched.get(entity.uri);
+      if (!known || (!inScope(known) && inScope(entity))) {
+        matched.set(entity.uri, entity);
+      }
     }
   }
-  return {
-    names,
-    globErrors,
-    ...(matched.size > GLOB_EXPANSION_CAP
-      ? { truncated: { shown: GLOB_EXPANSION_CAP, total: matched.size } }
-      : {}),
-  };
-}
-
-/**
- * Expand a prefix-less glob over the names AND the IRI local names.
- *
- * A name match expands to the NAME, as it always did: a name several entities
- * share then answers with all of them, under the tier scope. A local-name match
- * expands to the entity's prefixed IRI — but only for an entity no name match
- * already reaches. Without that, every pattern that fits both forms would answer
- * twice: a token's local name IS its name (`color.text`), so `color.*` would
- * have looked every token up once by each.
- */
-function expandNameGlob(
-  glob: string,
-  names: readonly string[],
-  addressable: readonly Addressable[],
-): string[] {
-  const byName = expandGlob(glob, names);
-  const reached = new Set(byName.map((name) => name.toLowerCase()));
-  const locals = new Set(
-    expandGlob(
-      glob,
-      addressable.map((entity) => entity.local),
-    ),
+  const label = (entity: Addressable): string => entity.name ?? entity.compact;
+  const scoped = new Set(
+    [...matched.values()].filter(inScope).map((e) => label(e).toLowerCase()),
   );
-  const byLocal = addressable
-    .filter(
-      (entity) =>
-        locals.has(entity.local) &&
-        !(entity.name && reached.has(entity.name.toLowerCase())),
-    )
-    .map((entity) => entity.compact);
-  return [...byName, ...new Set(byLocal)];
+  const ordered = [...matched.values()]
+    .filter((e) => inScope(e) || !scoped.has(label(e).toLowerCase()))
+    .sort(
+      (a, b) =>
+        Number(!inScope(a)) - Number(!inScope(b)) ||
+        label(a).localeCompare(label(b)) ||
+        a.uri.localeCompare(b.uri),
+    );
+  const kept = ordered.slice(0, GLOB_EXPANSION_CAP);
+  return {
+    names: [...literals, ...kept.map((entity) => entity.compact)],
+    globErrors,
+    outOfScope: kept
+      .filter((entity) => !inScope(entity))
+      .map((entity) => ({
+        query: label(entity),
+        tiers: [scopeTierName(entity.tier ?? "")],
+        scope: scope?.label ?? "",
+      })),
+    ...(ordered.length > kept.length ? { total: ordered.length } : {}),
+  };
 }
 
 /**
  * What to offer for an argument that reached nothing: near names, and the
- * prefixed IRI of an entity whose LOCAL NAME is what was typed.
- *
- * A bare local name is deliberately not an address — `apps_lxd.component.meter`
- * is neither a name nor an IRI, and accepting it would make a third identifier
- * form out of a fragment of the second. But it is the fragment every list
- * prints, so a caller who pastes it is one prefix away from right, and the miss
- * says which prefix: the exact local-name match leads, then the ranked near
- * misses over names and local names alike. A local name is always PRINTED as
- * the prefixed IRI, because that is the form the lookup accepts.
+ * prefixed IRI of an entity whose local name is what was typed (exact match
+ * first). A bare local name is not an address; the miss names the form that is.
  */
 async function suggestForMiss(
-  rt: LookupRuntime,
-  lookup: PackLookup,
-  source: StorySource,
-  prefixes: Readonly<Record<string, string>>,
+  addressable: () => Promise<Addressable[]>,
   query: string,
 ): Promise<string[]> {
-  const names = await listEntityNames(rt, lookup, source);
-  const addressable = await listAddressable(rt, lookup, source, prefixes);
-  // A local name that IS a name (a token's) is already in the pool as one.
+  const pool = await addressable();
+  const names = [...new Set(pool.flatMap((e) => (e.name ? [e.name] : [])))];
   const taken = new Set(names.map((name) => name.trim().toLowerCase()));
   const byLocal = new Map<string, string[]>();
-  for (const entity of addressable) {
+  for (const entity of pool) {
     const key = entity.local.toLowerCase();
     if (taken.has(key)) continue;
-    byLocal.set(key, [...(byLocal.get(key) ?? []), entity.compact]);
+    byLocal.set(key, [
+      ...new Set([...(byLocal.get(key) ?? []), entity.compact]),
+    ]);
   }
   const exact = byLocal.get(query.trim().toLowerCase()) ?? [];
-  // A key of `byLocal` is never a name (those were skipped above), so a
-  // candidate found there is a local name and anything else is a name.
   const ranked = suggestNames(query, [...names, ...byLocal.keys()]).flatMap(
     (candidate) => byLocal.get(candidate) ?? [candidate],
   );
@@ -430,6 +376,7 @@ async function lookupOne(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
+  addressable: () => Promise<Addressable[]>,
   scope?: LookupScope,
 ): Promise<{ entities: PackEntity[]; outOfScope?: OutOfScopeAnswer }> {
   const graphqlSourced = lookup.source === "graphql";
@@ -441,7 +388,7 @@ async function lookupOne(
   const resolved = firstRowPerEntity(rows);
   if (resolved.length === 0) {
     throw PragmaError.notFound(noun, query, {
-      suggestions: await suggestForMiss(rt, lookup, source, prefixes, query),
+      suggestions: await suggestForMiss(addressable, query),
     });
   }
 
@@ -649,16 +596,18 @@ function looksLikeIri(query: string): boolean {
   );
 }
 
-/** One entity a lookup can address, in each form a caller may write it in. */
+/** One way to address an entity: a row per name and per tier it carries. */
 interface Addressable {
   /** The canonical (absolute) IRI. */
   readonly uri: string;
   /** The prefixed form, or the IRI itself when no registered prefix matches. */
   readonly compact: string;
-  /** The IRI's local name — what is left of `compact` without its prefix. */
+  /** The IRI's local name. */
   readonly local: string;
   /** The `by` value the entity carries, when it carries one. */
   readonly name?: string;
+  /** The tier IRI, when the lookup is scoped and the entity is in one. */
+  readonly tier?: string;
 }
 
 /** List every entity the lookup can address by IRI. */
@@ -667,46 +616,22 @@ async function listAddressable(
   lookup: PackLookup,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  via: string | undefined,
 ): Promise<Addressable[]> {
-  const rows = await runSelect(rt, buildLookupIrisQuery(lookup), source);
+  const rows = await runSelect(rt, buildLookupIrisQuery(lookup, via), source);
   return rows
     .filter((row) => (row.uri ?? "") !== "")
     .map((row) => {
       const uri = row.uri as string;
+      const tier = row[SCOPE_TIER_VARIABLE];
       return {
         uri,
         compact: compactUri(uri, prefixes),
         local: localName(uri),
         ...(row.name ? { name: row.name } : {}),
+        ...(tier ? { tier } : {}),
       };
     });
-}
-
-/**
- * Every SPELLING an IRI-shaped glob may be written against, mapped to the one
- * entity it addresses.
- *
- * An entity under a registered prefix has two legal spellings — the compact
- * `ds:button` shell completion offers, and the absolute
- * `https://ds.canonical.com/button` a user pastes from a browser. Both resolve
- * to the same entity in a literal lookup, so a glob must expand over both;
- * offering only the compact form made `https://ds.canonical.com/but*` return
- * EMPTY_RESULTS while the literal IRI it generalises succeeded.
- *
- * The map is spelling → CANONICAL IRI precisely so a pattern that matches an
- * entity under both spellings still yields it once. Matching over a flat list
- * of both would render the entity twice, which is why the previous shape
- * offered only one.
- */
-function iriSpellings(
-  addressable: readonly Addressable[],
-): Map<string, string> {
-  const spellings = new Map<string, string>();
-  for (const { uri, compact } of addressable) {
-    spellings.set(uri, uri);
-    if (compact !== uri) spellings.set(compact, uri);
-  }
-  return spellings;
 }
 
 /** List every entity name the lookup can address (miss suggestions + sample/glob). */

@@ -42,6 +42,7 @@ import {
   type PackPage,
   type PackRow,
   TIER_PARAM,
+  UNTIERED_KEY,
 } from "./types.js";
 
 /** Sample output: the drawn exemplars, the population size, and agent follow-ups. */
@@ -151,28 +152,21 @@ export function listFormatters(
 }
 
 /**
- * The tier scope in the words `--tier` accepts, or nothing when unscoped —
- * each tier with how many rows of the WHOLE filtered answer it holds, and then
- * the tiers outside the scope that hold some:
- * `global 121, apps 39; other tiers: apps_lxd 9`.
- *
- * The second half is what a scoped read could not say before. Searching for an
- * LXD component from inside the default scope answered with nothing and no
- * sign of where to look; the count names the tier to pass.
+ * The tier scope in the words `--tier` accepts, each tier with its share of
+ * the whole filtered answer; an EMPTY page also names the tiers outside the
+ * scope that hold a match. Nothing when unscoped.
  */
 function scopeText(page: PackPage): string | undefined {
   if (!page.scope) return undefined;
-  const { tiers, counts, untiered } = page.scope;
+  const { tiers, counts } = page.scope;
   if (!counts) return tiers.join(", ");
   const held = (tier: string): string => `${tier} ${counts[tier] ?? 0}`;
-  const inScope = [
-    ...tiers.map(held),
-    ...(untiered ? [`no tier ${untiered}`] : []),
-  ];
-  const outside = Object.keys(counts).filter((tier) => !tiers.includes(tier));
-  return outside.length === 0
-    ? inScope.join(", ")
-    : `${inScope.join(", ")}; other tiers: ${outside.map(held).join(", ")}`;
+  const inside = [...tiers, ...(UNTIERED_KEY in counts ? [UNTIERED_KEY] : [])];
+  const outside = Object.keys(counts).filter((tier) => !inside.includes(tier));
+  const text = inside.map(held).join(", ");
+  return page.rows.length > 0 || outside.length === 0
+    ? text
+    : `${text}; other tiers: ${outside.map(held).join(", ")}`;
 }
 
 /**
@@ -345,24 +339,19 @@ export function lookupFormatters(
   };
 }
 
-/**
- * What a capped pattern says for itself: how much of the match this is, and the
- * two things a caller can do about it.
- *
- * On the notice seam for the machine surfaces and the terminal, and in the
- * condensed body as well — for the reason a truncated LIST page says it there
- * ({@link listFormatters}): the `llm` branch prints the body and nothing else,
- * and it is what an agent reads.
- */
+/** What a capped pattern says for itself, on the notice seam and in the llm body. */
 function truncationNotice(
   output: LookupOutput,
   surface: Surface,
 ): string | undefined {
   if (!output.truncated) return undefined;
-  const { shown, total } = output.truncated;
+  const advice =
+    output.detail === "summary"
+      ? ""
+      : `, or pass ${quoteArgument("detail", "summary", surface)} for smaller entries`;
   return (
-    `${shown} of ${total} matches shown. Narrow the pattern to reach ` +
-    `the rest, or pass ${quoteArgument("detail", "summary", surface)} for smaller entries.`
+    `${output.results.length} of ${output.total} matches shown. ` +
+    `Narrow the pattern to reach the rest${advice}.`
   );
 }
 

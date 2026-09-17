@@ -28,8 +28,6 @@ import {
   buildListQuery,
   buildTierCountQuery,
   type ListTierScope,
-  TIER_COUNT_ROWS,
-  TIER_COUNT_TIER,
 } from "./sparql/buildListQuery.js";
 import {
   type FilterVocabularies,
@@ -54,6 +52,7 @@ import {
   type PackTierScope,
   type PageTierScope,
   type StorySource,
+  UNTIERED_KEY,
 } from "./types.js";
 
 /** The highest canonical level — sample fetches everything for shape discovery. */
@@ -150,9 +149,14 @@ export function makeListRun(
       }),
       meta.source,
     );
-    const breakdown =
-      scope?.kind === "tiers" && listScope
-        ? await readTierCounts(rt, { ...read, scope: listScope }, meta.source)
+    // First page only, and never the reason a list fails.
+    const counts =
+      scope?.kind === "tiers" && listScope && params.after === undefined
+        ? await readTierCounts(
+            rt,
+            { ...read, scope: listScope },
+            meta.source,
+          ).catch(() => undefined)
         : undefined;
     const hasMore = rows.length > limit;
     const applied = appliedFilters(shape, params, search?.term, scope);
@@ -166,7 +170,7 @@ export function makeListRun(
         ? {
             scope: {
               tiers: scope.tiers.map((tier) => tier.local),
-              ...breakdown,
+              ...(counts ? { counts } : {}),
             },
           }
         : {}),
@@ -176,28 +180,17 @@ export function makeListRun(
 }
 
 /**
- * Count the whole filtered answer per tier, for a scoped page's heading.
- *
- * One aggregate over the same wrapped query the page ran
- * ({@link buildTierCountQuery}), never a join into the page: the rows a caller
- * pages through stay exactly the rows the story's query returns.
- *
- * @returns `counts` with every in-scope tier (0 when it holds none) ahead of
- *   the out-of-scope tiers that hold some, and `untiered` when any row's entity
- *   is in no tier.
+ * Count the whole filtered answer's rows per tier: every in-scope tier (0 when
+ * it holds none), then the out-of-scope tiers that hold some, then
+ * {@link UNTIERED_KEY} when any row's entity is in no tier.
  */
 async function readTierCounts(
   rt: PragmaRuntime,
   read: Parameters<typeof buildTierCountQuery>[0] & { scope: ListTierScope },
   source: StorySource,
-): Promise<Pick<PageTierScope, "counts" | "untiered">> {
-  const rows = await runSelect(rt, buildTierCountQuery(read), source);
-  const byIri = new Map(
-    rows.map((row) => [
-      row[TIER_COUNT_TIER] ?? "",
-      Number(row[TIER_COUNT_ROWS]),
-    ]),
-  );
+): Promise<NonNullable<PageTierScope["counts"]>> {
+  const query = buildTierCountQuery(read);
+  const byIri = query.read(await runSelect(rt, query.text, source));
   const inScope = read.scope.tiers.map(
     (iri) => [localName(iri), byIri.get(iri) ?? 0] as const,
   );
@@ -205,11 +198,12 @@ async function readTierCounts(
     .filter(([iri]) => iri !== "" && !read.scope.tiers.includes(iri))
     .map(([iri, count]) => [localName(iri), count] as const)
     .sort(([a], [b]) => a.localeCompare(b));
-  const untiered = byIri.get("") ?? 0;
-  return {
-    counts: Object.fromEntries([...inScope, ...outside]),
-    ...(untiered > 0 ? { untiered } : {}),
-  };
+  const untiered = byIri.get("");
+  return Object.fromEntries([
+    ...inScope,
+    ...outside,
+    ...(untiered ? [[UNTIERED_KEY, untiered] as const] : []),
+  ]);
 }
 
 /**

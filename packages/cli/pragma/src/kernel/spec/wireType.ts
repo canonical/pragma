@@ -1,20 +1,8 @@
 /**
- * What a parameter accepts ON THE WIRE — stated once.
- *
- * The MCP projector builds its input schema from this and the reference
- * generator prints it, so the documented type and the validated type cannot
- * drift: the reference used to mirror the schema by hand, and a mirror is only
- * right until one side changes.
- *
- * A parameter is a LIST when several values are a legal answer to it: a
- * `string[]` positional, and every `repeatable` flag (the CLI spelling of the
- * same fact is the flag repeated). A list is ADVERTISED as an array and a bare
- * value is coerced into a one-element one, so the two ways a caller can be
- * slightly wrong cost nothing: a filter that took one value forced twenty calls
- * where one would do, and a lookup handed `name: "color.text"` refused the call
- * outright over a pair of brackets.
- *
- * Pure and zod-free: the reference generator runs on the storeless path.
+ * What a parameter accepts on the wire, stated once: the MCP schema is built
+ * from it and the reference prints it. A `string[]` positional and every
+ * `repeatable` flag are LISTS — advertised as an array, with one bare string
+ * coerced to a list of one. Pure and zod-free (the reference is storeless).
  */
 
 import type { ParamSpec } from "./types.js";
