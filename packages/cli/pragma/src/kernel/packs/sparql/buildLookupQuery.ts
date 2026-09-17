@@ -582,7 +582,8 @@ export function buildLookupIrisQuery(lookup: PackLookup, via?: string): string {
  * field never binds it.
  *
  * A `many` field is aggregated to one space-separated cell, and the rows are
- * then grouped by child — so it adds values to a row and never rows.
+ * then grouped by child — so it adds values to a row and never rows. A grouped
+ * expand's rows come back in one order on every run.
  */
 export function buildExpandQuery(
   expand: PackExpand,
@@ -598,19 +599,25 @@ export function buildExpandQuery(
         : `?${field.name}`,
     )
     .join(" ");
-  const group =
-    single.length === fields.length
-      ? ""
-      : `GROUP BY ?child${single.map((field) => ` ?${field.name}`).join("")}`;
+  const grouped = single.length < fields.length;
+  const group = grouped
+    ? `GROUP BY ?child${single.map((field) => ` ?${field.name}`).join("")}`
+    : "";
   const optionals = expand.select
     .map((field) =>
       "property" in field ? expandFieldClause(field, entityUri, lookup) : "",
     )
     .filter((line) => line !== "")
     .join("\n");
+  // Grouping discards the store's scan order, so a grouped expand orders by
+  // every single-valued field: the declared names first, the rest as tiebreaks.
+  const declared = expand.orderBy ?? [];
+  const keys = grouped
+    ? [...new Set([...declared, ...single.map((field) => field.name)])]
+    : declared;
   const order =
-    expand.orderBy && expand.orderBy.length > 0
-      ? `ORDER BY ${expand.orderBy.map((name) => `?${name}`).join(" ")}`
+    keys.length > 0
+      ? `ORDER BY ${keys.map((name) => `?${name}`).join(" ")}`
       : "";
   return [
     `SELECT ${vars} WHERE {`,

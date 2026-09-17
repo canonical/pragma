@@ -38,6 +38,14 @@ ex:button a ex:Widget ; ex:name "Button" ; ex:madeBy ex:acme ;
   ex:alias "btn" , "Btn" , "push-button" .
 ex:label a ex:Widget ; ex:name "Label" ; ex:madeBy ex:acme2 .
 ex:slider a ex:Widget ; ex:name "Slider" ; ex:madeBy ex:bolt .
+
+ex:bolt ex:part
+  [ ex:group "g" ; ex:label "f" ; ex:tag "x" , "y" ] ,
+  [ ex:group "g" ; ex:label "c" ; ex:tag "x" ] ,
+  [ ex:group "g" ; ex:label "e" ] ,
+  [ ex:group "g" ; ex:label "a" ; ex:tag "y" ] ,
+  [ ex:group "g" ; ex:label "d" ; ex:tag "x" ] ,
+  [ ex:group "g" ; ex:label "b" ] .
 `;
 
 const MAKER: PackDefinition = {
@@ -58,6 +66,18 @@ const MAKER: PackDefinition = {
             many: true,
             matching: "^[^A-Z]*$",
           },
+        ],
+      },
+      {
+        name: "parts",
+        kind: "table",
+        relation: "ex:part",
+        // Every part ties on the one declared key.
+        orderBy: ["group"],
+        select: [
+          { name: "group", property: "ex:group" },
+          { name: "label", property: "ex:label" },
+          { name: "tags", property: "ex:tag", many: true },
         ],
       },
     ],
@@ -165,6 +185,22 @@ describe("a many, matching expand field", () => {
       "btn",
       "push-button",
     ]);
+  });
+});
+
+describe("a grouped expand", () => {
+  it("orders rows that tie on orderBy the same way on every store", async () => {
+    const labels: string[] = [];
+    for (let boot = 0; boot < 3; boot += 1) {
+      const fresh = await buildFixtureRuntime({ ttl: TTL, prefixes: PREFIXES });
+      const output = (await verb(MAKER, "lookup").run(
+        { name: ["Bolt"] },
+        fresh.rt,
+      )) as LookupOutput;
+      const parts = output.results[0]?.parts as { label: string }[];
+      labels.push(parts.map((part) => part.label).join(""));
+    }
+    expect(labels).toEqual(["abcdef", "abcdef", "abcdef"]);
   });
 });
 
