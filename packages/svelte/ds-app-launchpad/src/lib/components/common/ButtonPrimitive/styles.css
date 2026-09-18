@@ -42,6 +42,5 @@
   &[aria-disabled="true"] {
     cursor: not-allowed;
     color: var(--disabled--color-text);
-    border-color: var(--disabled--color-border);
   }
 }
