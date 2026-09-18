@@ -6,8 +6,20 @@ import Content from "./Content.js";
 
 describe("Content SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(<Content>Test content</Content>);
-    expect(html).toContain("Test content");
+    const html = renderToString(
+      <Content
+        root={{
+          key: "root",
+          items: [{ key: "g", items: [{ url: "/one", label: "One" }] }],
+        }}
+      />,
+    );
+    expect(html).toContain("One");
+    expect(html).toContain("ds content");
+  });
+
+  it("renders an empty landmark with no root", () => {
+    const html = renderToString(<Content />);
     expect(html).toContain("ds content");
   });
 });
