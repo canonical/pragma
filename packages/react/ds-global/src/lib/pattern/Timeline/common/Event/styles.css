@@ -1,128 +1,152 @@
 /* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
 @layer ds.components.global {
-  /**
-   * Timeline.Event styles
-   * @implements ds:global.subcomponent.timeline-event
-   *
-   * DSL anatomy mapping:
-   * - layout.type: flow -> display: flex
-   * - layout.direction: horizontal -> flex-direction: row
-   */
+  /* Vertical rhythm (Figma): 16px above each row, 12px below; the first
+     row sits 4px below the header rule. */
   .ds.timeline-event {
-    /* layout.type: flow, layout.direction: horizontal */
-    display: flex;
-    flex-direction: row;
-    gap: var(--timeline-event-gap, var(--spacing-medium, 1rem));
-
-    /* Position relative for the connecting line */
+    --timeline-row-height: var(--dimension-400);
     position: relative;
+    display: grid;
+    /* Same template as `.ds.timeline-content`; rows subgrid to it inside a
+       timeline. This copy is the standalone-event fallback. */
+    grid-template-columns:
+      [datetime] max-content
+      [marker] var(--timeline-axis-width, var(--dimension-400))
+      [content] minmax(0, 1fr);
+    column-gap: var(--dimension-200);
+    align-items: start;
+
+    /* Leading datetime column, left of the marker. */
+    & > .ds.timeline-datetime {
+      grid-column: datetime;
+      grid-row: 1;
+      padding-block-start: var(--dimension-150);
+      font-size: var(--typography-text-primary-font-size);
+      line-height: var(--typography-text-primary-line-height);
+      color: var(--color-text-muted);
+    }
+
+    /*
+     * Thumbnail column; the marker centres on the first text line. The
+     * `criticality` class remaps --modifier-color-border to a criticality
+     * channel; the marker (a descendant) reads the same channel, so the
+     * connector line, dot, and marker border all tint together.
+     */
+    & > .marker {
+      grid-column: marker;
+      grid-row: 1;
+      padding-block-start: var(--dimension-150);
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-self: stretch;
+      align-items: flex-start;
+      justify-content: center;
+
+      /* Default dot: the small outlined square. */
+      & > .dot {
+        inline-size: var(--dimension-100);
+        block-size: var(--dimension-100);
+        box-sizing: border-box;
+        border: var(--dimension-stroke-thickness-medium) solid
+          var(--modifier-color-border, var(--color-border-muted));
+      }
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        block-size: 100%;
+        inline-size: var(--dimension-stroke-thickness-medium);
+        background-color: var(
+          --modifier-color-border,
+          var(--color-border-muted)
+        );
+      }
+
+      /* The marker's own border reads the same criticality channel. */
+      & .ds.timeline-marker {
+        border-color: var(--modifier-color-border, var(--color-border-muted));
+      }
+    }
+
+    /* Content column: default block, then custom block, 8px apart. */
+    & > .content {
+      grid-column: content;
+      grid-row: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--dimension-100);
+      padding-block-end: var(--dimension-150);
+      padding-block-start: var(--dimension-150);
+
+      /* Figma "Default": name + description grow, dateTime trails. */
+      & > .default-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--dimension-100);
+        min-block-size: var(--timeline-row-height);
+
+        & > .actor {
+          font-size: var(--typography-text-primary-font-size);
+          line-height: var(--typography-text-primary-line-height);
+          font-weight: var(--typography-weight-semi-bold);
+          color: var(--color-text);
+          block-size: var(--timeline-row-height);
+          flex: none;
+          align-items: center;
+          display: flex;
+          text-decoration: none;
+        }
+
+        /* Trailing DateTime node. */
+        & > .ds.timeline-datetime {
+          font-size: var(--typography-text-primary-font-size);
+          line-height: var(--typography-text-primary-line-height);
+          color: var(--color-text-muted);
+          block-size: var(--timeline-row-height);
+          flex: none;
+          align-items: center;
+          display: flex;
+        }
+
+        /* The description grows, pushing a trailing dateTime to the end. */
+        & > .payload {
+          flex: 1 1 8rem;
+          min-width: 0;
+          font-size: var(--typography-text-primary-font-size);
+          line-height: var(--typography-text-primary-line-height);
+          color: var(--color-text);
+        }
+      }
+
+      & > .custom {
+        flex-basis: 100%;
+      }
+    }
+
+    /* Fully custom content spans the whole row; the marker overlays it. */
+    & > .custom.full {
+      grid-column: -2;
+      grid-row: 1;
+      min-width: 0;
+    }
+
+    /* Small breakpoint: the description drops below the actor name. */
+    @container (max-width: 620px) {
+      & > .content > .default-row > .payload {
+        flex-basis: 100%;
+        order: 1;
+      }
+    }
   }
 
-  /**
-   * Timeline marker/dot
-   * Visual indicator connecting events
-   */
-  .ds.timeline-event > .marker {
-    flex-shrink: 0;
-    width: var(--timeline-marker-size, 12px);
-    height: var(--timeline-marker-size, 12px);
-    border-radius: 50%;
-    background-color: var(
-      --modifier-color-foreground-primary,
-      var(--timeline-marker-color, var(--color-border, #ccc))
-    );
-    border: var(--timeline-marker-border-width, 2px) solid
-      var(
-        --modifier-color-border,
-        var(--timeline-marker-border-color, var(--color-surface, #fff))
-      );
-    margin-top: var(--timeline-marker-offset, 0.25rem);
-
-    /* Position for connecting line */
-    position: relative;
-    z-index: 1;
+  /* Composition mode: subgrid the content element's shared tracks. */
+  .ds.timeline-content > .ds.timeline-event {
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    column-gap: var(--dimension-200);
   }
-
-  /* Connecting line between events */
-  .ds.timeline-event::before {
-    content: "";
-    position: absolute;
-    left: calc(var(--timeline-marker-size, 12px) / 2 - 1px);
-    top: calc(
-      var(--timeline-marker-size, 12px) +
-      var(--timeline-marker-offset, 0.25rem)
-    );
-    bottom: calc(
-      -1 *
-      var(--timeline-event-spacing, var(--spacing-large, 1.5rem))
-    );
-    width: var(--timeline-line-width, 2px);
-    background-color: var(--timeline-line-color, var(--color-border, #e0e0e0));
-  }
-
-  /* Hide line for last event */
-  .ds.timeline-event:last-child::before {
-    display: none;
-  }
-
-  /**
-   * Event content container
-   * DSL: layout.type: flow, layout.direction: horizontal
-   * The edges (actor, datetime, payload) flow horizontally per DSL spec
-   */
-  .ds.timeline-event > .content {
-    flex: 1;
-    min-width: 0;
-    padding-bottom: var(--timeline-event-spacing, var(--spacing-large, 1.5rem));
-
-    /* DSL edges flow horizontally: actor → datetime → payload */
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--timeline-content-gap, var(--spacing-small, 0.5rem));
-  }
-
-  /**
-   * Actor element
-   * DSL: role: actor (cardinality: 0..1)
-   */
-  .ds.timeline-event > .content > .actor {
-    font-weight: var(
-      --timeline-actor-font-weight,
-      var(--font-weight-semibold, 600)
-    );
-    color: var(--timeline-actor-color, var(--color-text-primary, inherit));
-  }
-
-  /**
-   * Datetime element
-   * DSL: role: datetime (cardinality: 0..1)
-   */
-  .ds.timeline-event > .content > .datetime {
-    font-size: var(
-      --timeline-datetime-font-size,
-      var(--font-size-small, 0.875rem)
-    );
-    color: var(--timeline-datetime-color, var(--color-text-secondary, #666));
-  }
-
-  /**
-   * Payload element
-   * DSL: role: payload (cardinality: 1, slotName: default)
-   */
-  .ds.timeline-event > .content > .payload {
-    color: var(--timeline-payload-color, var(--color-text-primary, inherit));
-    line-height: var(
-      --timeline-payload-line-height,
-      var(--font-line-height-relaxed, 1.6)
-    );
-    /* Allow payload to wrap to full width on its own line when content is long */
-    flex-basis: 100%;
-  }
-
-  /* Criticality styling is handled by the modifier system:
-     .success, .error, .warning, .information classes set
-     --modifier-color-foreground-primary via design-tokens. */
 }
