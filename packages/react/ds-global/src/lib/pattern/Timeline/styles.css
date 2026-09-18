@@ -1,17 +1,125 @@
 /* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
 @layer ds.components.global {
-  /**
-   * Timeline styles
-   * @implements ds:global.pattern.timeline
-   *
-   * DSL anatomy mapping:
-   * - layout.type: stack -> display: flex; flex-direction: column
-   * - layout.direction: vertical -> flex-direction: column
-   */
   .ds.timeline {
-    /* layout.type: stack, layout.direction: vertical */
+    /* The 32px thumbnail column every marker centres on (Figma). */
+    --timeline-axis-width: var(--dimension-400);
+    --timeline-row-height: var(--dimension-400);
+
     display: flex;
     flex-direction: column;
+    gap: var(--dimension-200);
+    container-type: inline-size;
+
+    /* Live region: announced, never seen. */
+    & > .ds.timeline-status {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    & > .ds.timeline-content {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+
+      /*
+       * A grid so every event shares three tracks (datetime, marker,
+       * content); rows subgrid them so markers align across events.
+       *
+       * @implements ds:global.subcomponent.timeline-content
+       */
+      display: grid;
+      grid-template-columns:
+        [datetime] max-content
+        [marker] var(--timeline-axis-width)
+        [content] minmax(0, 1fr);
+      column-gap: var(--dimension-200);
+
+      /* Data-driven rows: the li and the event subgrid the shared tracks. */
+      & > .ds.timeline-item {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1 / -1;
+        column-gap: var(--dimension-200);
+
+        & > .ds.timeline-event {
+          grid-template-columns: subgrid;
+          grid-column: 1 / -1;
+          column-gap: var(--dimension-200);
+        }
+      }
+
+      /*
+       * The expansion strip spans the whole row; the connector line
+       * passes it on two 12px rails set on the marker axis.
+       */
+      & > .ds.timeline-item.expansion {
+        & > .ds.timeline-expansion {
+          grid-column: 1 / -1;
+        }
+
+        &::before,
+        &::after {
+          content: "";
+          grid-column: marker;
+          grid-row: 1;
+          justify-self: center;
+          inline-size: var(--dimension-stroke-thickness-medium);
+          block-size: var(--dimension-150);
+          background-color: var(
+            --modifier-color-border,
+            var(--color-border-muted)
+          );
+        }
+
+        &::before {
+          align-self: start;
+        }
+
+        &::after {
+          align-self: end;
+        }
+      }
+
+      /* A strip leading the timeline has nothing above it: no top rail. */
+      & > .ds.timeline-item.expansion:first-child::before {
+        display: none;
+      }
+
+      /* The trim lands only when an event leads the list. */
+      & > .ds.timeline-item:first-child > .ds.timeline-event > .marker::before {
+        top: var(--dimension-150);
+      }
+    }
+
+    /* The line stops at the marker centre unless a trailing component
+       continues it past the gap. */
+    &:not(.has-trailing)
+      > .ds.timeline-content
+      > .ds.timeline-item.expansion:last-child::after {
+      display: none;
+    }
+    /*
+     * Last row, no trailing component: the line stops at the marker centre
+     */
+    &:not(.has-trailing)
+      > .ds.timeline-content
+      > .ds.timeline-item:last-child
+      > .ds.timeline-event
+      > .marker::before {
+      block-size: var(--timeline-row-height);
+    }
+
+    &.has-trailing
+      > .ds.timeline-content
+      > .ds.timeline-item:last-child
+      > .ds.timeline-event
+      > .marker::before {
+      block-size: calc(100% + var(--dimension-200));
+    }
   }
 }
