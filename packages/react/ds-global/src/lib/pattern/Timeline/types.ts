@@ -1,7 +1,8 @@
 import type { ModifierFamily } from "@canonical/ds-types";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
-import type { ContentProps } from "./common/Content/types.js";
 import type { EventProps } from "./common/Event/types.js";
+import type { ExpansionIndicatorProps } from "./common/ExpansionIndicator/types.js";
+import type { HeaderProps } from "./common/Header/types.js";
 
 export type TimelineSortOrder = "newest" | "oldest";
 
@@ -94,36 +95,55 @@ export type TimelineRenderContext = {
   index: number;
 };
 
-type OwnProps = {
+export type TimelineDataProps = {
+  items: TimelineItem[];
+  /** Header controls visibility. All default true. */
+  showControls?: boolean;
+  showActorFilter?: boolean;
+  showEventFilter?: boolean;
+  showSorting?: boolean;
+  actorFilterLabel?: string;
+  eventFilterLabel?: string;
+  defaultSortOrder?: TimelineSortOrder;
+  sortOrder?: TimelineSortOrder;
+  onSortOrderChange?: (order: TimelineSortOrder) => void;
+  defaultFilters?: TimelineFilterState;
+  filters?: TimelineFilterState;
+  onFiltersChange?: (filters: TimelineFilterState) => void;
+  /** Persist filters and sort as URL query params. Default false. */
+  syncUrlParams?: boolean;
+  /** Query-param namespace. Default "tl". */
+  paramPrefix?: string;
   /**
-   * Timeline.Content element (required)
-   * Maps to DSL edges[1]: timeline-content (cardinality: 1)
+   * How URL writes enter the history stack: `"replace"` rewrites the
+   * current entry, `"push"` adds one so back and forward restore earlier
+   * filter and sort states. Default `"replace"`.
    */
-  children: ReactElement<ContentProps>;
+  urlHistory?: "replace" | "push";
+  /** Default "trailing". */
+  dateTimePosition?: TimelineDateTimePosition;
+  /** Default "all-sizes". */
+  markerCombination?: TimelineMarkerCombination;
+  /** Default `{ method: "bottom" }`; false disables. */
+  expansion?: TimelineExpansion | false;
+  dateTimeFormats?: TimelineDateTimeFormatProps;
+  /** Always the last node; the connector line attaches to it. */
+  trailing?: ReactNode;
+  /** Full render control per item; `null` renders an empty item. */
+  renderItem?: (
+    item: TimelineItem,
+    context: TimelineRenderContext,
+  ) => ReactNode;
+  label?: string;
+  onVisibleItemsChange?: (visible: TimelineItem[]) => void;
 };
 
-/**
- * Props for the Timeline component
- *
- * @implements ds:global.pattern.timeline
- *
- * Anatomy (from DSL):
- * - layout.type: stack
- * - layout.direction: vertical
- * - edges:
- *   - [0] timeline-header (cardinality: 0..1) - NOT IMPLEMENTED
- *   - [1] timeline-content (cardinality: 1, slotName: default)
- *   - [2] timeline-footer (cardinality: 0..1) - NOT IMPLEMENTED
- *
- * Note: Timeline.Header and Timeline.Footer are not yet implemented.
- */
-export type TimelineProps = OwnProps &
-  Omit<ComponentProps<"div">, keyof OwnProps>;
+/** Fully data-driven: everything except `items` is derived. */
+export type TimelineProps = TimelineDataProps &
+  Omit<ComponentProps<"div">, keyof TimelineDataProps>;
 
-/**
- * Timeline component type with attached subcomponents
- */
 export type TimelineComponent = ((props: TimelineProps) => ReactElement) & {
-  Content: (props: ContentProps) => ReactElement;
   Event: (props: EventProps) => ReactElement;
+  Header: (props: HeaderProps) => ReactElement;
+  ExpansionIndicator: (props: ExpansionIndicatorProps) => ReactElement;
 };
