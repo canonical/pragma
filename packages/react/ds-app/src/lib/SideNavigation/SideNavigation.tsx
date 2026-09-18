@@ -1,7 +1,7 @@
 import type React from "react";
 import { useCallback, useEffect, useId, useState } from "react";
-import { useCollapseShortcut } from "./common/hooks/useCollapseShortcut/index.js";
 import { Content, ContextSwitcher, Footer, Header } from "./common/index.js";
+import { useCollapseShortcut } from "./hooks/useCollapseShortcut/index.js";
 import type { SideNavigationProps } from "./types.js";
 import "./styles.css";
 
@@ -62,7 +62,7 @@ const SideNavigation = ({
 
   const [expanded, setExpanded] = useState(defaultExpandedProp ?? true);
 
-  // Mobile seed (SPEC.md §4 responsive): below the small breakpoint, the
+  // Mobile seed: below the small breakpoint, the
   // expanded state renders as a fullscreen fixed overlay — a takeover, not a
   // rail — so with `defaultExpanded` left unset (desktop default `true`), a
   // small viewport collapses the rail after mount instead. An explicit
@@ -78,9 +78,9 @@ const SideNavigation = ({
     setExpanded((current) => !current);
   }, []);
 
-  // Ctrl+B rail-collapse shortcut (the 24.04 spec §10.1) — on unless
-  // `keyboardShortcut` opts out. See common/hooks/useCollapseShortcut.
-  useCollapseShortcut({ enabled: keyboardShortcut, onTrigger: handleToggle });
+  // Ctrl+B rail-collapse shortcut — on unless
+  // `keyboardShortcut` opts out. See hooks/useCollapseShortcut.
+  useCollapseShortcut({ condition: keyboardShortcut, onTrigger: handleToggle });
 
   // --- Controlled circuit (not official yet) -------------------------------
   // const [uncontrolledExpanded, setUncontrolledExpanded] =
