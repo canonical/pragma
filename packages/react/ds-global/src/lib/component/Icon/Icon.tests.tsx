@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { setIconRoot } from "../../index.js";
 import Component from "./Icon.js";
 
 /**
@@ -17,6 +18,34 @@ const iconMetadataFitsExplorer: IconMetadataFitsExplorer = true;
 void iconMetadataFitsExplorer;
 
 describe("Icon component", () => {
+  afterEach(() => {
+    setIconRoot("/icons");
+  });
+
+  it("resolves the icon from the configured root", () => {
+    setIconRoot("/new_dashboard/icons");
+
+    const { container } = render(<Component icon="user" />);
+
+    expect(container.querySelector("use")).toHaveAttribute(
+      "href",
+      "/new_dashboard/icons/user.svg#user",
+    );
+  });
+
+  it("prefers an explicit rootPath over the configured root", () => {
+    setIconRoot("/new_dashboard/icons");
+
+    const { container } = render(
+      <Component icon="user" rootPath="/preview/icons" />,
+    );
+
+    expect(container.querySelector("use")).toHaveAttribute(
+      "href",
+      "/preview/icons/user.svg#user",
+    );
+  });
+
   it("renders decoratively by default", () => {
     const { container } = render(<Component icon={"user"} />);
     const svg = container.querySelector("svg");

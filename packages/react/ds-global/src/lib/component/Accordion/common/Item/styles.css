@@ -206,11 +206,11 @@
       width: 100%;
       height: 100%;
       background-color: var(--accordion-item-color-icon);
-      mask-image: url("/icons/chevron-down.svg#chevron-down");
+      mask-image: url("@canonical/ds-assets/icons/chevron-down.svg#chevron-down");
       mask-repeat: no-repeat;
       mask-position: center;
       mask-size: contain;
-      -webkit-mask-image: url("/icons/chevron-down.svg#chevron-down");
+      -webkit-mask-image: url("@canonical/ds-assets/icons/chevron-down.svg#chevron-down");
       -webkit-mask-repeat: no-repeat;
       -webkit-mask-position: center;
       -webkit-mask-size: contain;

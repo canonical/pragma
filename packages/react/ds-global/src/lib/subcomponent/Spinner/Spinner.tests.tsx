@@ -1,8 +1,13 @@
+import { setIconRoot } from "@canonical/ds-assets";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import Component from "./Spinner.js";
 
 describe("Spinner subcomponent", () => {
+  afterEach(() => {
+    setIconRoot("/icons");
+  });
+
   it("renders the spinner icon", () => {
     const { container } = render(<Component />);
     expect(container.querySelector("use")).toHaveAttribute(
@@ -51,10 +56,23 @@ describe("Spinner subcomponent", () => {
   });
 
   it("resolves the icon from a custom rootPath", () => {
+    setIconRoot("/new_dashboard/icons");
+
     const { container } = render(<Component rootPath="/assets/icons" />);
     expect(container.querySelector("use")).toHaveAttribute(
       "href",
       "/assets/icons/spinner.svg#spinner",
+    );
+  });
+
+  it("resolves the icon from the configured root", () => {
+    setIconRoot("/new_dashboard/icons");
+
+    const { container } = render(<Component />);
+
+    expect(container.querySelector("use")).toHaveAttribute(
+      "href",
+      "/new_dashboard/icons/spinner.svg#spinner",
     );
   });
 });

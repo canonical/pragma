@@ -805,6 +805,7 @@
       "name": "@canonical/react-ds-global-form",
       "version": "0.38.0",
       "dependencies": {
+        "@canonical/ds-assets": "^0.38.0",
         "@canonical/ds-utils": "^0.38.0",
         "@canonical/react-ds-global": "^0.38.0",
         "@canonical/storybook-config": "^0.38.0",

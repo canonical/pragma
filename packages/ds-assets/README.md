@@ -52,6 +52,20 @@ Icons can be referenced directly via SVG's `<use>` element:
 </svg>
 ```
 
+Design-system components use `/icons` as their runtime asset root by default.
+Applications hosted below the domain root can configure it once before
+rendering:
+
+```typescript
+import { setIconRoot } from "@canonical/ds-assets";
+
+setIconRoot("/new_dashboard/icons");
+```
+
+The setting is process-wide, so server-rendered applications must not change it
+between concurrent requests. React applications can import the same setter from
+`@canonical/react-ds-global`.
+
 See [docs/ICONS.md](docs/ICONS.md) for the complete icon specification, naming conventions, and migration notes from Vanilla.
 
 ## Fonts

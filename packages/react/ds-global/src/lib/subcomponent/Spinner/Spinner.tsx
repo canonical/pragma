@@ -1,3 +1,4 @@
+import { getIconRoot } from "@canonical/ds-assets";
 import type { ReactElement } from "react";
 import type { SpinnerProps } from "./types.js";
 import "./styles.css";
@@ -16,11 +17,9 @@ const hasAccessibleName = (value: string | undefined): boolean =>
  * — and adds the continuous rotation, which pauses under `prefers-reduced-motion`.
  *
  * The glyph is referenced from `@canonical/ds-assets` at runtime
- * (`${rootPath}/spinner.svg#spinner`, default `/icons`), not bundled — the
- * consuming app must serve those SVGs at that path, or the spinner renders
- * empty. If the app serves icons from a different location, pass `rootPath`
- * (per instance; there is no global default yet). See the package README
- * ("Icon assets").
+ * (`${rootPath}/spinner.svg#spinner`, default `/icons`), not bundled. Configure
+ * the application default with `setIconRoot`, or pass `rootPath` for a
+ * per-instance override. See the package README ("Icon assets").
  *
  * `import { Spinner } from "@canonical/react-ds-global";`
  *
@@ -28,10 +27,12 @@ const hasAccessibleName = (value: string | undefined): boolean =>
  */
 const Spinner = ({
   className,
-  rootPath = "/icons",
+  rootPath,
   role,
   ...props
 }: SpinnerProps): ReactElement => {
+  const resolvedRootPath = rootPath ?? getIconRoot();
+
   // Decorative by default and hidden from assistive technology; providing an
   // accessible name (or an explicit role) exposes it as a named image instead.
   // An empty label counts as decorative, mirroring the `alt=""` convention.
@@ -49,7 +50,7 @@ const Spinner = ({
       aria-hidden={isLabelled || role ? undefined : true}
       {...props}
     >
-      <use href={`${rootPath}/spinner.svg#spinner`} />
+      <use href={`${resolvedRootPath}/spinner.svg#spinner`} />
     </svg>
   );
 };
