@@ -24,7 +24,7 @@ describe("Modal SSR", () => {
         </Component.Footer>
       </Component>,
     );
-    expect(html).toContain('class="ds modal"');
+    expect(html).toContain('class="ds modal elevated"');
     expect(html).toContain('class="ds modal-header"');
     expect(html).toContain('class="ds modal-content"');
     expect(html).toContain('class="ds modal-footer"');

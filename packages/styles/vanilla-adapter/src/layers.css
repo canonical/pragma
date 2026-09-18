@@ -50,7 +50,7 @@
  *   ds.typography  the typography element rules and the baseline engine; the
  *                  confined copy
  *   ds.modifiers   theme, scale, channels and their shims, density and context
- *   ds.surfaces    .surface, .contrasted, .modal
+ *   ds.surfaces    .surface, .contrasted, .elevated
  *   ds.states      the universal derived-state rule, custom properties only
  *   ds.adapter     the theme bridge (adapter.css). A sublayer of `ds` on
  *                  purpose: sublayers sort inside their parent, and `ds` takes

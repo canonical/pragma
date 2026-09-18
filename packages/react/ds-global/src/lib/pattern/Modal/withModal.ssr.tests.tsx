@@ -39,7 +39,7 @@ describe("withModal (SSR)", () => {
     const html = renderToString(<TriggeredModal>Open</TriggeredModal>);
 
     expect(html).toContain("Open");
-    expect(html).toContain('class="ds modal"');
+    expect(html).toContain('class="ds modal elevated"');
     // The dialog is only opened by a client-side effect, so it must render
     // closed on the server.
     expect(html).not.toMatch(/<dialog[^>]*\sopen/);

@@ -16,7 +16,7 @@ const meta = {
         {/* A plain div standing in for the open <dialog>: the stack layout is
             scoped to dialog[open], so it is supplied inline here. */}
         <div
-          className="ds modal"
+          className="ds modal elevated"
           style={{ display: "flex", flexDirection: "column" }}
         >
           <Story />

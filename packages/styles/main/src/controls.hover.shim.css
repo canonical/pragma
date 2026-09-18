@@ -1,7 +1,7 @@
 /* @canonical/styles — Control selected-state SURFACE + HOVER SHIM (temporary)
  *
  * The generated design-tokens surface the control colours per nesting level
- * (`.surface` → `.surface .surface` → `.contrasted` → `.modal`, in
+ * (`.surface` → `.surface .surface` → `.contrasted` → `.elevated`, in
  * `@canonical/design-tokens/dist/modifiers.surfaces.css`) for the checkbox/radio
  * UNSELECTED + checkmark and the switch knob — but NOT for any SELECTED state,
  * nor the switch's unselected track. They also expose `--hover--color-foreground-*`
@@ -63,7 +63,7 @@
     .surface .surface,
     .surface .surface .surface,
     .contrasted,
-    .modal
+    .elevated
   ) {
     --surface-color-foreground-checkbox-selected: var(
       --color-foreground-checkbox-selected

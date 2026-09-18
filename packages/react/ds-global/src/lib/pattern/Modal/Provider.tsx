@@ -7,7 +7,7 @@ import useModalState from "./hooks/useModalState.js";
 import type { ModalProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds modal";
+const componentCssClassName = "ds modal elevated";
 
 /**
  * A modal is a focused container that sits on top of the main view, requiring

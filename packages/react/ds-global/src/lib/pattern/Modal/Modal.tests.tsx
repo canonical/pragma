@@ -62,7 +62,7 @@ describe("Modal pattern", () => {
           <Component.Content>Placeholder content</Component.Content>
         </OpenModal>,
       );
-      expect(screen.getByRole("dialog")).toHaveClass("ds", "modal");
+      expect(screen.getByRole("dialog")).toHaveClass("ds", "modal", "elevated");
     });
 
     it("renders the composed sections inside the dialog", () => {

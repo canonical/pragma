@@ -11,10 +11,11 @@
    *   - layout.type: stack, direction vertical -> display: flex; flex-direction: column
    *   - layout.overflow: hidden -> overflow: hidden
    *   -  appearance.background: color/surface/overlay -> --surface-color-background,
-   *     supplied by the `.modal` surface class in @canonical/design-tokens'
-   *     modifiers.surfaces.css. That class is matched by this component's own
-   *     `ds modal` className, so renaming the component class would silently drop
-   *     the surface reset and the modal would inherit the page's layer depth.
+   *     supplied by the `.elevated` surface class in @canonical/design-tokens'
+   *     modifiers.surfaces.css. That class is matched by the `elevated` word in
+   *     this component's own `ds modal elevated` className, so dropping it would
+   *     silently lose the surface reset and the modal would inherit the page's
+   *     layer depth.
    *
    *   - appearance.radius: radius/modal -> --modal-border-radius
    *   - appearance.shadow: shadow/overlay -> no shadow token exists at
@@ -74,16 +75,16 @@
     max-block-size: var(--modal-max-block-size);
 
     /*
-      Read the surface channels on the element itself. The token layer defines a
-      `.modal` surface (identical to top-level `.surface`), matched by this
-      component's own `ds modal` className, so the dialog paints at base surface
-      depth even when opened from a nested `.surface` — which is the DSL's
+      Read the surface channels on the element itself. The token layer defines an
+      `.elevated` surface (identical to top-level `.surface`), matched by this
+      component's own `ds modal elevated` className, so the dialog paints at base
+      surface depth even when opened from a nested `.surface` — which is the DSL's
       `color/surface/overlay`.
 
-      The background channel is always emitted on the `.modal` surface, so it is
+      The background channel is always emitted on the `.elevated` surface, so it is
       read bare. The text channel is different: the surface family emits
       `--surface-color-text` only on polarity-inverting (contrasted) surfaces —
-      a same-polarity surface like `.modal` deliberately emits none, and the
+      a same-polarity surface like `.elevated` deliberately emits none, and the
       documented consumption is `var(--surface-color-text, var(--color-text))`,
       which falls through to the ambient page text.
     */

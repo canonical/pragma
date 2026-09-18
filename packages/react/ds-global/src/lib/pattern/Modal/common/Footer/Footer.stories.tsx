@@ -12,7 +12,7 @@ const meta = {
     // A plain div standing in for the dialog the footer composes into.
     (Story) => (
       <div
-        className="ds modal"
+        className="ds modal elevated"
         style={{ display: "flex", flexDirection: "column" }}
       >
         <Story />

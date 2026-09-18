@@ -61,7 +61,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
     "@canonical/biome-config": "^0.38.0",
-    "@canonical/design-tokens": "0.10.0",
+    "@canonical/design-tokens": "0.11.0",
     "@canonical/typescript-config": "^0.38.0",
     "@canonical/webarchitect": "^0.38.0",
     "copyfiles": "^2.4.1",

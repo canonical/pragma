@@ -50,6 +50,7 @@ describe("Modal SSR", () => {
       expect(componentLocator(page).classList).toContain("test-class");
       expect(componentLocator(page).classList).toContain("ds");
       expect(componentLocator(page).classList).toContain("modal");
+      expect(componentLocator(page).classList).toContain("elevated");
     });
 
     it("applies style", () => {

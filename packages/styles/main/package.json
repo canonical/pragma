@@ -45,7 +45,7 @@
     "@canonical/webarchitect": "^0.38.0"
   },
   "dependencies": {
-    "@canonical/design-tokens": "0.10.0",
+    "@canonical/design-tokens": "0.11.0",
     "@canonical/styles-typography": "^0.38.0"
   },
   "peerDependencies": {
