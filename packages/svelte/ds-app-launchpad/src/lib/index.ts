@@ -7,5 +7,5 @@
 
 export * from "./components/index.js";
 export * from "./modifier-families/index.js";
-export * from "./useFunctions/index.js";
 export * from "./transitions/index.js";
+export * from "./useFunctions/index.js";
