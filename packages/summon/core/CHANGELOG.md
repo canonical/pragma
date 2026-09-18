@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/summon-core
+
+
+
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * refactor(components)!: wrap every component stylesheet in ds.components.global (#1123) ([9b43a18](https://github.com/canonical/pragma/commit/9b43a187a675972f464df9d2fb1eb52aa57612ad)), closes [#1123](https://github.com/canonical/pragma/issues/1123)

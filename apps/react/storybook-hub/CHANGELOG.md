@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/storybook-hub
+
+
+
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * feat(templates)!: the root contract and the imports (#1122) ([e7cb864](https://github.com/canonical/pragma/commit/e7cb8643f6d2b12373a218194d45a3177d6105ab)), closes [#1122](https://github.com/canonical/pragma/issues/1122) [#552](https://github.com/canonical/pragma/issues/552)

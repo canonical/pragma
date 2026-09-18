@@ -3,6 +3,72 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+* feat(ds-app)!: rebuild SideNavigation into a single data-driven region shell (#1227), closes [#1227](https://github.com/canonical/pragma/issues/1227) [#main-content](https://github.com/canonical/pragma/issues/main-content)
+
+### Bug Fixes
+
+* **ButtonPrimitive:** Don't set border-color when disabled ([#1336](https://github.com/canonical/pragma/issues/1336)) ([04b67e4](https://github.com/canonical/pragma/commit/04b67e4d1823303e6d12eff6f3c940ac5e85cd25))
+* **react-ds-global:** export TooltipEngine and add ContextualMenu surfaceClassName ([#1225](https://github.com/canonical/pragma/issues/1225)) ([a33a318](https://github.com/canonical/pragma/commit/a33a318b267793261d7401e2d7e2494573c64101))
+
+### Features
+
+* **ds-app:** add SideNavigation's data-driven subcomponents ([#1234](https://github.com/canonical/pragma/issues/1234)) ([78c2314](https://github.com/canonical/pragma/commit/78c23146a723c5a2e39649988634885139264127))
+* **ds-app:** export transitions ([#1337](https://github.com/canonical/pragma/issues/1337)) ([f68039d](https://github.com/canonical/pragma/commit/f68039d422f778881048926a914b8e16271681cd))
+
+### BREAKING CHANGES
+
+* SideNavigation's entire subcomponent surface changes —
+  there are no dot-static or named exports; the sidebar is consumed
+  data-only via root/footerRoot/contextSwitcher props, and the region and
+  row components render exclusively from that data.
+
+  - One navigation landmark: the root is a plain <div>; Content's <nav> is
+    the component's single navigation landmark (aria-label forwarded,
+    default "Main navigation") — branding, the context switcher and the
+    footer's actions sit outside it by design.
+  - A visually hidden "Skip to main content" link is the first focusable
+    element in the DOM order (target via skipTo, default #main-content).
+  - Four regions, all data-driven: Header (branding + collapse toggle), an
+    optional ContextSwitcher region (typed contextSwitcher props — a
+    role="menu" select-like widget is not navigation, so it renders in
+    its own plain-<div> region between Header and Content, outside the
+    landmark, and hides when the rail collapses), Content (the landmark;
+    links, plain labels and expandable disclosures only) and Footer
+    (free-form rows through footerRoot).
+  - Strict content vocabulary: interactive action rows belong to the
+    Footer, so the landmark's contents always read as destinations. There
+    is no JSX escape hatch — the API carries no children props.
+  - Footer vocabulary mirrors the content tree's type split: free-form
+    leaves (LeafFooterItem — label required, optional icon/url/control/
+    slot; action rows via control: "button" + onClick flow through data)
+    and depth-1 expandables (ExpandableFooterItem). Leaf rows render as
+    links (active when matching the current location, LinkComponent
+    integrated); action rows render as buttons.
+  - Rail state keys off data-expanded on the root — the single source of
+    truth. Collapsed: Content and the switcher region hide, the footer
+    degrades to icon-only, and any rendered ItemExpandable discloses its
+    sub-items into a floating popover on the inline-end with visible
+    labels. Where CSS anchor positioning is supported (Baseline 2026),
+    position-try-fallbacks flips the popover above its trigger on viewport
+    overflow — browser-measured, plus the mirrored 0.5rem gap; otherwise
+    it stays top-anchored. Native <details> throughout: no Esc-close or
+    outside-click dismissal by design, Tab navigation stays viable.
+  - A nested sub-item whose url becomes active re-opens its collapsed
+    parent (one-way: manual collapse is respected, never auto-closed) and
+    carries data-active + aria-current under the expanded parent.
+  - The rail-collapse shortcut is Ctrl+B, opt-in via keyboardShortcut and
+    off by default (pending approval).
+  - The sidenav architecture tokens are declared on the component's own
+    stylesheet (rail widths, logo sizing, the unified 0.5rem row inset,
+    the row-background channel), with motion-token durations.
+  - Storybook: data-driven MAAS/LXD stories; a practical
+    "with ContextSwitcher" story routes url'd contexts through the hash
+    router and shows both ItemExpandable flavours side by side; all root
+    fixtures live in storybook/navigation/fixtures.tsx.
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * feat(react-head)!: render head tags so server rendering emits them (#1192) ([76ac99d](https://github.com/canonical/pragma/commit/76ac99dde1d80790d8ac518c485548831a69c26a)), closes [#1192](https://github.com/canonical/pragma/issues/1192)

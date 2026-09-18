@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+### Bug Fixes
+
+* **ButtonPrimitive:** Don't set border-color when disabled ([#1336](https://github.com/canonical/pragma/issues/1336)) ([04b67e4](https://github.com/canonical/pragma/commit/04b67e4d1823303e6d12eff6f3c940ac5e85cd25))
+
+### Features
+
+* **ds-app:** export transitions ([#1337](https://github.com/canonical/pragma/issues/1337)) ([f68039d](https://github.com/canonical/pragma/commit/f68039d422f778881048926a914b8e16271681cd))
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 ### Bug Fixes

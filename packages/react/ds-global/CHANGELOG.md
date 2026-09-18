@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+### Bug Fixes
+
+* **react-ds-global:** export TooltipEngine and add ContextualMenu surfaceClassName ([#1225](https://github.com/canonical/pragma/issues/1225)) ([a33a318](https://github.com/canonical/pragma/commit/a33a318b267793261d7401e2d7e2494573c64101))
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * fix(ds-global)!: a menu separator is presentational, not disabled (#1155) ([d7afbc7](https://github.com/canonical/pragma/commit/d7afbc7c4dc611f45e226c0120e1871370126d99)), closes [#1155](https://github.com/canonical/pragma/issues/1155) [#1150](https://github.com/canonical/pragma/issues/1150)

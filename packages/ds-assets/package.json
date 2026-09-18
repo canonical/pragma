@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ds-assets",
   "description": "Assets for Pragma.",
-  "version": "0.38.0",
+  "version": "0.39.0",
   "type": "module",
   "sideEffects": false,
   "module": "dist/esm/index.js",
@@ -44,9 +44,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
-    "@canonical/biome-config": "^0.38.0",
-    "@canonical/typescript-config": "^0.38.0",
-    "@canonical/webarchitect": "^0.38.0",
+    "@canonical/biome-config": "^0.39.0",
+    "@canonical/typescript-config": "^0.39.0",
+    "@canonical/webarchitect": "^0.39.0",
     "@types/jsdom": "^28.0.0",
     "@types/node": "^26.0.0",
     "jsdom": "^28.1.0",
