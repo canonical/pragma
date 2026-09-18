@@ -10,21 +10,27 @@ const componentCssClassName = "ds footer";
 
 /**
  * Renders one footer leaf row. The Footer is the one place a navigation row
- * may be a button. A navigable item (`url` set, `control` not `"button"`)
- * dispatches to `Item` (a link via `LinkComponent`, active when current);
- * anything else renders as `ItemButton`. Explicit `control` always wins
- * over the `url`-presence inference, so an action item may carry a `url`
- * yet render as a button. Toggle-style rows compose `ItemButton` plus a
- * `slot` — there is no dedicated switch.
+ * may be a button. Three-way dispatch: a navigable item (`url` set,
+ * `control` not `"button"`) renders as `Item` (a link via `LinkComponent`,
+ * active when current); an action item (`control: "button"`, or `onClick`
+ * with no `url`) renders as `ItemButton`; anything else — a label-only row
+ * like a logged-in username — renders as `Item`'s plain label row, NOT an
+ * inert `<button>` announced as an action that does nothing. Explicit
+ * `control` always wins over the `url`-presence inference, so an action
+ * item may carry a `url` yet render as a button. Toggle-style rows compose
+ * `ItemButton` plus a `slot` — there is no dedicated switch.
  */
 const renderFooterItem = (
   item: LeafFooterItem,
   currentUrl: string | undefined,
   LinkComponent: FooterProps["LinkComponent"],
 ): React.ReactElement => {
-  const row = item.url !== undefined && item.url === currentUrl;
-
+  // `label` is the row's identity (required on LeafFooterItem), so it is
+  // the element key — reordering the authored list preserves each row's
+  // state. Two same-labelled rows in one footer collide; that's ambiguous
+  // UI, left to the consumer to avoid.
   if (item.control !== "button" && item.url) {
+    const active = item.url === currentUrl;
     return (
       <Item
         key={item.label}
@@ -32,22 +38,30 @@ const renderFooterItem = (
         icon={item.icon}
         slot={item.slot}
         LinkComponent={LinkComponent}
-        active={row}
+        active={active}
       >
         {item.label}
       </Item>
     );
   }
 
+  if (item.control === "button" || item.onClick) {
+    return (
+      <ItemButton
+        key={item.label}
+        icon={item.icon}
+        slot={item.slot}
+        onClick={item.onClick}
+      >
+        {item.label}
+      </ItemButton>
+    );
+  }
+
   return (
-    <ItemButton
-      key={item.label}
-      icon={item.icon}
-      slot={item.slot}
-      onClick={item.onClick}
-    >
+    <Item key={item.label} icon={item.icon} slot={item.slot}>
       {item.label}
-    </ItemButton>
+    </Item>
   );
 };
 
@@ -87,8 +101,13 @@ const Footer = ({
                 collapseOnChildClick
                 // Seed from whether a child row is the current location;
                 // the disclosure's one-way sync re-opens it on navigation.
+                // The `url !== undefined` guard matters: without it, a
+                // label-only child (no `url`) matches an unset `currentUrl`
+                // (`undefined === undefined`) and the disclosure seeds open
+                // whenever `currentUrl` isn't wired.
                 defaultExpanded={entry.items.some(
-                  (child) => child.url === currentUrl,
+                  (child) =>
+                    child.url !== undefined && child.url === currentUrl,
                 )}
               >
                 {entry.items.map((child) =>

@@ -48,6 +48,35 @@ describe("NavTree", () => {
     consoleError.mockRestore();
   });
 
+  it("does not warn about React keys for keyless label-only entries", () => {
+    // `LeafNavItem` leaves `key`/`url` both optional, so a label-only entry
+    // yields no `getItemId` — the element key must fall back (label, then
+    // index) rather than surface as a missing React key.
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const root: NavRoot = {
+      key: "root",
+      items: [
+        {
+          key: "group",
+          items: [
+            { label: "Anonymous One" },
+            { label: "Anonymous Two" },
+            // A keyed entry alongside the keyless ones — the fallback must
+            // not collide with authored keys either.
+            { url: "/one", label: "One" },
+          ],
+        },
+      ],
+    };
+    render(<NavTree root={root} />);
+    expect(screen.getByText("Anonymous One")).toBeInTheDocument();
+    expect(screen.getByText("Anonymous Two")).toBeInTheDocument();
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
   it("renders an expandable entry as a disclosure with leaf children", () => {
     const root: NavRoot = {
       key: "root",
