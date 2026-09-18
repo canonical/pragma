@@ -77,5 +77,6 @@
 @import url("./pattern/Timeline/common/DateTime/styles.css");
 @import url("./pattern/Timeline/common/Event/styles.css");
 @import url("./pattern/Timeline/common/ExpansionIndicator/styles.css");
+@import url("./pattern/Timeline/common/Marker/styles.css");
 @import url("./pattern/Timeline/styles.css");
 @import url("./subcomponent/Spinner/styles.css");
