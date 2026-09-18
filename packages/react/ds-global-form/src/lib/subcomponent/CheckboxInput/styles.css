@@ -68,8 +68,8 @@
           --surface-color-foreground-checkbox-checkmark,
           var(--color-foreground-checkbox-checkmark)
         );
-        mask-image: url("/icons/checkmark.svg#checkmark");
-        -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
+        mask-image: url("@canonical/ds-assets/icons/checkmark.svg#checkmark");
+        -webkit-mask-image: url("@canonical/ds-assets/icons/checkmark.svg#checkmark");
       }
     }
 
@@ -89,8 +89,8 @@
           --surface-color-foreground-checkbox-checkmark,
           var(--color-foreground-checkbox-checkmark)
         );
-        mask-image: url("/icons/minus.svg#minus");
-        -webkit-mask-image: url("/icons/minus.svg#minus");
+        mask-image: url("@canonical/ds-assets/icons/minus.svg#minus");
+        -webkit-mask-image: url("@canonical/ds-assets/icons/minus.svg#minus");
       }
     }
 

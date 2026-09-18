@@ -47,13 +47,13 @@
         -webkit-mask-size: contain;
 
         &[data-state="masked"] {
-          mask-image: url("/icons/show.svg#show");
-          -webkit-mask-image: url("/icons/show.svg#show");
+          mask-image: url("@canonical/ds-assets/icons/show.svg#show");
+          -webkit-mask-image: url("@canonical/ds-assets/icons/show.svg#show");
         }
 
         &[data-state="revealed"] {
-          mask-image: url("/icons/hide.svg#hide");
-          -webkit-mask-image: url("/icons/hide.svg#hide");
+          mask-image: url("@canonical/ds-assets/icons/hide.svg#hide");
+          -webkit-mask-image: url("@canonical/ds-assets/icons/hide.svg#hide");
         }
       }
 

@@ -1,8 +1,13 @@
+import { setIconRoot } from "@canonical/ds-assets";
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Component from "./Button.js";
 
 describe("Button component", () => {
+  afterEach(() => {
+    setIconRoot("/icons");
+  });
+
   describe("rendering", () => {
     it("renders with children", () => {
       render(<Component>Hello world!</Component>);
@@ -105,6 +110,15 @@ describe("Button component", () => {
 
       const use = container.querySelector("svg.ds.icon use");
       expect(use).toHaveAttribute("href", "/icons/edit.svg#edit");
+    });
+
+    it("resolves its icon from the configured root", () => {
+      setIconRoot("/new_dashboard/icons");
+
+      const { container } = render(<Component icon="edit">Edit</Component>);
+
+      const use = container.querySelector("svg.ds.icon use");
+      expect(use).toHaveAttribute("href", "/new_dashboard/icons/edit.svg#edit");
     });
 
     it("renders the icon decoratively (hidden from assistive technology)", () => {

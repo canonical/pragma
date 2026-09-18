@@ -177,8 +177,8 @@
               --surface-color-foreground-checkbox-checkmark,
               var(--color-foreground-checkbox-checkmark)
             );
-            mask-image: url("/icons/checkmark.svg#checkmark");
-            -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
+            mask-image: url("@canonical/ds-assets/icons/checkmark.svg#checkmark");
+            -webkit-mask-image: url("@canonical/ds-assets/icons/checkmark.svg#checkmark");
           }
         }
 

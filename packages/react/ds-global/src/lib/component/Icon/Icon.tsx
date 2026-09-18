@@ -1,3 +1,4 @@
+import { getIconRoot } from "@canonical/ds-assets";
 import type { ReactElement } from "react";
 import type { IconProps } from "./types.js";
 import "./styles.css";
@@ -20,10 +21,12 @@ const Icon = ({
   viewBox = "0 0 16 16",
   icon,
   className,
-  rootPath = "/icons",
+  rootPath,
   role,
   ...props
 }: IconProps): ReactElement => {
+  const resolvedRootPath = rootPath ?? getIconRoot();
+
   // Icons are decorative by default and hidden from assistive technology.
   // Providing an accessible name (aria-label/aria-labelledby) or an explicit
   // role exposes the icon as a named image instead. An empty label counts as
@@ -42,7 +45,7 @@ const Icon = ({
       aria-hidden={isLabelled || role ? undefined : true}
       {...props}
     >
-      <use href={`${rootPath}/${icon}.svg#${icon}`} />
+      <use href={`${resolvedRootPath}/${icon}.svg#${icon}`} />
     </svg>
   );
 };

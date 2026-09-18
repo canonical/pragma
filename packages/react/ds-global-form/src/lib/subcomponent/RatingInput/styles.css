@@ -37,9 +37,12 @@
     width: 100%;
     height: 100%;
     background-color: var(--rating-color-empty);
-    mask: url("/icons/starred-off.svg#starred-off") no-repeat center / contain;
+    mask:
+      url("@canonical/ds-assets/icons/starred-off.svg#starred-off") no-repeat
+      center / contain;
     -webkit-mask:
-      url("/icons/starred-off.svg#starred-off") no-repeat center / contain;
+      url("@canonical/ds-assets/icons/starred-off.svg#starred-off") no-repeat
+      center / contain;
   }
 
   /* Solid star (fill overlay), clipped to a fill amount that defaults to 0. */
@@ -50,9 +53,12 @@
     width: var(--star-fill, 0%);
     overflow: hidden;
     background-color: var(--rating-color-filled);
-    mask: url("/icons/starred.svg#starred") no-repeat left center / auto 100%;
+    mask:
+      url("@canonical/ds-assets/icons/starred.svg#starred") no-repeat left
+      center / auto 100%;
     -webkit-mask:
-      url("/icons/starred.svg#starred") no-repeat left center / auto 100%;
+      url("@canonical/ds-assets/icons/starred.svg#starred") no-repeat left
+      center / auto 100%;
     /* The mask must stay the full star width so clipping the box reveals a left
        slice of the star, not a squashed star. */
     mask-size: var(--rating-size) 100%;
