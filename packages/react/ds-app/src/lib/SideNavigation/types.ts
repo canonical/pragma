@@ -2,12 +2,7 @@ import type { IconName } from "@canonical/ds-assets";
 // Shared custom-link contract for every link-injecting component
 // (cs:react.component.link_component); re-exported for this module's import sites.
 import type { LinkComponentProps } from "@canonical/react-ds-global";
-import type {
-  ComponentProps,
-  ComponentType,
-  ReactElement,
-  ReactNode,
-} from "react";
+import type { ComponentProps, ComponentType, ReactNode } from "react";
 import type { ContextSwitcherProps } from "./common/ContextSwitcher/types.js";
 
 export type { LinkComponentProps };
@@ -17,7 +12,7 @@ export type { LinkComponentProps };
  * Renders as a link (via `LinkComponent`) when `url` is set, otherwise a
  * plain non-navigable label. The content tree carries links and labels
  * only — interactive rows are Footer-only, so a leaf has no `onClick`
- * (SPEC.md §4.3).
+ * (the 24.04 spec §4.3).
  */
 export interface LeafNavItem {
   /** Unique identifier when no `url` is present (e.g. a non-navigable label). */
@@ -38,9 +33,9 @@ export interface LeafNavItem {
 
 /**
  * A collapsible row that discloses its own children instead of navigating.
- * Cannot have a `url` (SPEC.md §4.3) and depth is exactly one level —
- * children are always `LeafNavItem` and cannot themselves expand. No `slot`
- * either: the end slot is always the disclosure caret.
+ * Cannot have a `url` (the 24.04 spec §4.3) and depth is exactly one
+ * level — children are always `LeafNavItem` and cannot themselves expand.
+ * No `slot` either: the end slot is always the disclosure caret.
  */
 export type ExpandableNavItem = Omit<LeafNavItem, "url" | "slot"> & {
   /** Children revealed on expand. Always leaves — see the depth-1 note above. */
@@ -56,7 +51,7 @@ export type NavItem = LeafNavItem | ExpandableNavItem;
 /**
  * A named collection of `NavItem` entries with an optional header
  * (`SideNavigation.GroupHeader`) — the shape of `root`'s direct children
- * (SPEC.md §4.3).
+ * (the 24.04 spec §4.3).
  */
 export interface NavGroup {
   /**
@@ -188,9 +183,8 @@ type OwnProps = {
   /** Initial expanded (rail) state when uncontrolled. Defaults to `true`. */
   defaultExpanded?: boolean;
   /**
-   * Reserved. Binds the Ctrl+B rail-collapse shortcut when `true`.
-   * **Pending approval** — the key is not ratified, so the shortcut ships
-   * off by default.
+   * Binds the Ctrl+B rail-collapse shortcut. Defaults to `true`;
+   * pass `false` to opt out.
    */
   keyboardShortcut?: boolean;
   /**
@@ -219,11 +213,3 @@ type OwnProps = {
  */
 export type SideNavigationProps = OwnProps &
   Omit<ComponentProps<"div">, keyof OwnProps>;
-
-/**
- * SideNavigation component type. No subcomponents are attached — all are
- * private and render only from data.
- */
-export type SideNavigationComponent = (
-  props: SideNavigationProps,
-) => ReactElement;
