@@ -119,6 +119,10 @@
        box (e.g. bottom: -8px). Any `overflow: auto | hidden | clip` clips it and
        the triangle disappears entirely. */
     overflow: visible;
+    /* Consumed, not defined — the Popover/ContextualMenu pattern. The
+       tooltip must sit above overlay-tier surfaces, hence the higher
+       fallback than the overlays' 100. */
+    z-index: var(--z-index-overlay, 1000);
 
     /* Inner row: optional leading icon before the text, top-aligned with the
        first line (Figma). Without an icon it is just the text. */
