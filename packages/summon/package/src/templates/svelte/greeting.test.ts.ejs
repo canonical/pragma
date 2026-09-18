@@ -1,0 +1,8 @@
+import { describe, expect, it } from "vitest";
+import { greeting } from "./greeting.js";
+
+describe("greeting", () => {
+  it("greets the name it is given", () => {
+    expect(greeting("<%= shortName %>")).toBe("Hello from <%= shortName %>");
+  });
+});
