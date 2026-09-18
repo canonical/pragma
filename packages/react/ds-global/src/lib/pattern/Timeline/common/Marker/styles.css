@@ -1,0 +1,76 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /* Square marker: large 32px (image/initials), medium 24px (icon/initials),
+     small 8px bare outlined box. */
+  .ds.timeline-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: var(--dimension-radius-small);
+    background-color: var(--color-background-layer2);
+    border: var(--dimension-stroke-thickness-medium) solid
+      var(--color-border-muted);
+    font-size: var(--typography-text-secondary-font-size);
+    line-height: var(--typography-text-secondary-line-height);
+    font-weight: var(--typography-weight-semi-bold);
+    color: var(--color-text);
+    aspect-ratio: 1;
+    z-index: 1;
+
+    &.large {
+      inline-size: var(--dimension-400);
+      block-size: var(--dimension-400);
+    }
+
+    &.medium {
+      inline-size: var(--dimension-300);
+      block-size: var(--dimension-300);
+      margin: var(--dimension-050);
+      font-size: var(--typography-text-tertiary-font-size);
+      line-height: var(--typography-text-tertiary-line-height);
+    }
+
+    /* Small: the bare outlined box — no fill, no graphic. */
+    &.small {
+      inline-size: var(--dimension-100);
+      block-size: var(--dimension-100);
+      margin: var(--dimension-150);
+      background-color: var(--color-background);
+    }
+
+    & .image {
+      inline-size: 100%;
+      block-size: 100%;
+      object-fit: cover;
+    }
+
+    & .icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: var(--dimension-200);
+      block-size: var(--dimension-200);
+    }
+
+    & > a.link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: 100%;
+      block-size: 100%;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    & > a.link:focus-visible,
+    &:focus-visible {
+      outline: var(--dimension-stroke-thickness-medium) solid
+        var(--color-focus-ring);
+      outline-offset: var(--dimension-025);
+    }
+  }
+}
