@@ -1,0 +1,70 @@
+---
+# SideNavigation.ContextSwitcher — a dropdown for products that divide into
+# different contexts, projects, users, or similar (the 24.04 spec §4.3, §4.5). Built
+# on the global Popover pattern (native <details>/<summary>).
+node:
+  uri: apps.subcomponent.side-navigation-context-switcher
+  styles:
+    layout.type: stack
+    layout.direction: column
+  edges:
+    - node:
+        role: dropdown field
+        styles:
+          layout.type: flow
+          layout.direction: row
+          layout.align: center
+          interaction.cursor: pointer
+        edges:
+          - node:
+              role: current context name
+              styles:
+                layout.flex: 1
+            relation:
+              cardinality: "1"
+              slotName: label
+          - node:
+              role: caret
+              styles:
+                appearance.color: color/icon
+            relation:
+              cardinality: "1"
+              slotName: end
+      relation:
+        cardinality: "1"
+        slotName: trigger
+    - node:
+        role: context list
+        styles:
+          layout.type: stack
+          layout.direction: column
+        edges:
+          - node:
+              role: context item
+              edges:
+                - node:
+                    role: name
+                  relation:
+                    cardinality: "1"
+                    slotName: name
+                - node:
+                    role: description
+                  relation:
+                    cardinality: "0..1"
+                    slotName: description
+                - node:
+                    role: badge
+                  relation:
+                    cardinality: "0..1"
+                    slotName: badge
+            relation:
+              cardinality: "0..*"
+              slotName: default
+      relation:
+        cardinality: "1"
+        slotName: default
+    - node:
+        role: create context action
+      relation:
+        cardinality: "0..1"
+        slotName: create

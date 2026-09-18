@@ -1,0 +1,32 @@
+---
+# SideNavigation.Group — a named collection of navigation entries, with an
+# optional GroupHeader. A content entry — the 24.04 spec §4.3.
+# Depth-1 aware: its own entries may be SideNavigation.ItemExpandable,
+# but ItemExpandable's OWN children may not (enforced by the LeafNavItem /
+# ExpandableNavItem type split, not the anatomy DSL).
+node:
+  uri: apps.subcomponent.side-navigation-group
+  styles:
+    layout.type: stack
+    layout.direction: column
+    size.width: fill
+    spacing.padding.vertical: dimension/100 dimension/200
+  edges:
+    - node:
+        uri: apps.subcomponent.side-navigation-group-header
+      relation:
+        cardinality: "0..1"
+        slotName: header
+    - node:
+        role: navigation item
+        switch:
+          "on": override
+          cases:
+            # Links, plain labels and expandable disclosures only —
+            # interactive action rows are Footer's job (SPEC.md §1).
+            - uri: apps.subcomponent.side-navigation-item
+            - uri: apps.subcomponent.side-navigation-item-expandable
+            - uri: $custom
+      relation:
+        cardinality: "0..*"
+        slotName: default
