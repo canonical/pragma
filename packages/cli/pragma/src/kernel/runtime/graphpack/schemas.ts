@@ -51,6 +51,7 @@ export const packIndexSchema: z.ZodType<PackIndex> = z.object({
 /** zod schema validating a persisted `manifest.json`. */
 export const manifestSchema: z.ZodType<Manifest> = z.object({
   name: z.string(),
+  /** The CLI version that built the pack — the boot decision compares it. */
   version: z.string(),
   /** The config `packs` ref this pack was built from (verbatim), or a label. */
   sourceRef: z.string(),

@@ -67,6 +67,18 @@ export interface StoreSession {
    * have changed since.
    */
   readonly manifest: import("./graphpack/types.js").Manifest;
+  /**
+   * The project's OWN built pack, when the boot passed over it because an older
+   * CLI built it (see `resolveSources`' upgrade row). Present only on a session
+   * booted from the embedded snapshot in a project that has a pack; absent on
+   * every ordinary boot.
+   *
+   * Carried for the same reason `manifest` is: a read that was answered from
+   * the snapshot instead of the pack this directory built has to be able to say
+   * so, from the session it was answered from, without re-resolving a decision
+   * the caller could have changed since.
+   */
+  readonly ignoredPack?: import("./resolveSources.js").IgnoredPack;
 }
 
 /**

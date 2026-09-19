@@ -46,5 +46,12 @@ export async function loadStoreSession(
     decision.kind === "embedded"
       ? await materializeEmbeddedPack()
       : decision.dir;
-  return readPack(dir);
+  const session = await readPack(dir);
+  // Carry the passed-over pack (the upgrade row of the decision table) onto the
+  // session, so a read can report which pack it did NOT answer from without
+  // re-deriving the decision — the same reason the session already carries the
+  // loaded pack's own manifest.
+  return decision.kind === "embedded" && decision.ignoredPack !== undefined
+    ? { ...session, ignoredPack: decision.ignoredPack }
+    : session;
 }

@@ -34,6 +34,7 @@ import type {
   GlobalFlags,
   InteractionRuntime,
   PragmaRuntime,
+  StoreSession,
 } from "../../runtime/types.js";
 import { kebabCase, type ParamSpec, type VerbSpec } from "../../spec/index.js";
 import { EXIT, mapExitCode } from "./exitCodes.js";
@@ -320,9 +321,9 @@ export async function executeVerb(
   // The lazy-store seam: boot the store (once, memoized) only for verbs that
   // declare they need it. A storeless verb never reaches the store factory, so
   // the storeless guarantee holds by construction (no STORE_SKIP triage).
-  if (verb.capability.needsStore) {
-    await runtime.store.get();
-  }
+  const session = verb.capability.needsStore
+    ? await runtime.store.get()
+    : undefined;
 
   if (verb.capability.mutates) {
     // Tell the verb whether this is a plan-only preview (`--dry-run`) or a real
@@ -468,7 +469,29 @@ export async function executeVerb(
   const data = await Promise.resolve(
     verb.run(params, runtime) as Promise<unknown>,
   );
-  return renderData(verb, flags, data, {});
+  return renderData(verb, flags, data, storeMeta(session));
+}
+
+/**
+ * The envelope facts about the STORE this read was answered from, as data.
+ *
+ * One fact so far: the project's own built pack, when the boot passed over it
+ * because an older CLI built it. An agent that reads `block lookup button` and
+ * gets the snapshot's answer has no way to learn from the payload that this
+ * directory also holds a pack — so the fact rides `meta`, from the session the
+ * answer came from, on every read verb at once.
+ *
+ * `meta` ONLY, deliberately: the read's answer is not wrong (the snapshot is the
+ * current graph, which is the whole point of passing the pack over), so the
+ * plain and llm renderings of every read stay byte for byte what they were, and
+ * the sentence a person reads stays where a person goes for it — `sources
+ * status` and `doctor`.
+ *
+ * @param session - The booted session, or `undefined` for a storeless verb.
+ * @returns The base `meta` for the envelope (empty for an ordinary read).
+ */
+function storeMeta(session: StoreSession | undefined): Record<string, unknown> {
+  return session?.ignoredPack ? { ignoredPack: session.ignoredPack } : {};
 }
 
 /**

@@ -115,6 +115,19 @@ export interface PackIndex {
  */
 export interface Manifest {
   readonly name: string;
+  /**
+   * The version of the CLI that built this pack — `VERSION`, written by
+   * `sources update` and by the bundler for the embedded snapshot.
+   *
+   * Load-bearing, not just provenance: the boot decision compares it with the
+   * running CLI's version, so a pack an older CLI built in a project that
+   * declares no packs of its own yields to the newer CLI's embedded snapshot
+   * (see `resolveSources`). Every pack any released CLI has ever built already
+   * carries it, which is why that rule needed no new field and heals packs built
+   * before it existed. A REUSED pack has it refreshed (see
+   * `build.stampBuilderVersion`) — otherwise `sources update` could not get a
+   * project out of that state.
+   */
   readonly version: string;
   /** The config `packs` ref this pack was built from (verbatim), or a label. */
   readonly sourceRef: string;

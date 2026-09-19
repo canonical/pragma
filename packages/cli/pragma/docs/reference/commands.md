@@ -958,6 +958,27 @@ pragma skill lookup docx
 
 ## sources
 
+### pragma sources reset
+
+Remove this project's built pack.
+
+Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again; a project that declares its own packs cannot answer reads until the next `sources update`. The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built.
+
+```
+pragma sources reset
+```
+
+- Store: storeless.
+- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
+- MCP: exposed as the `sources_reset` tool.
+
+**Examples**
+
+```bash
+pragma sources reset  # drop the built pack and read the shipped snapshot
+pragma sources reset --dry-run  # show what would be removed
+```
+
 ### pragma sources status
 
 Report which pack answers reads, and the packs it was built from.
