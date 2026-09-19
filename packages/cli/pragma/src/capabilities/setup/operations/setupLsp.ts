@@ -167,7 +167,7 @@ interface EditorFacts {
    * Why this editor's extensions directory must not be written, when that is
    * the case. Absent means the folder is fine — which is not the same as "the
    * install can proceed": an editor found only by its user directory has no
-   * CLI to run whatever its folder permits (see {@link installable}).
+   * CLI to run whatever its folder permits (see {@link isInstallable}).
    *
    * A block is carried on the DETECTION rather than discovered by the writer
    * on purpose. The write is what used to discover it, and it discovered it as
@@ -181,7 +181,7 @@ interface EditorFacts {
 /** One detected editor: the facts, plus what found it. */
 export type DetectedEditor = EditorFacts & EditorSource;
 
-/** An editor with a CLI to run — what {@link installable} narrows to. */
+/** An editor with a CLI to run — what {@link isInstallable} narrows to. */
 type RunnableEditor = EditorFacts & Extract<EditorSource, { cliPath: string }>;
 
 /**
@@ -211,12 +211,12 @@ type BlockedEditor =
  * @returns Whether the sideload can run for it.
  * @note Pure — reads the detection record.
  */
-const installable = (e: DetectedEditor): e is RunnableEditor =>
+const isInstallable = (e: DetectedEditor): e is RunnableEditor =>
   e.foundBy !== "user-dir" && e.block === undefined;
 
 /** The editors nothing can be installed into, in registry order. */
 const blockedEditors = (d: LspDetection): readonly BlockedEditor[] =>
-  d.editors.filter((e): e is BlockedEditor => !installable(e));
+  d.editors.filter((e): e is BlockedEditor => !isInstallable(e));
 
 /**
  * The detected LSP state: every editor the three probes found (each with its
@@ -511,12 +511,11 @@ export const selectedEditors = (
   d: LspDetection,
   chosen?: readonly string[],
 ): readonly RunnableEditor[] => {
-  // A BLOCKED editor is never pending. It is not a candidate the user declined
-  // — it is one this command cannot act on, and composing its sideload anyway
-  // is what produced the raw fs failure the block exists to replace.
-  const pending = d.editors.filter(
-    (e): e is RunnableEditor => !e.installed && installable(e),
-  );
+  // The pending set is {@link installableEditors}, not a second copy of its
+  // filter: a BLOCKED editor is never pending — it is not a candidate the user
+  // declined but one this command cannot act on — and that rule belongs in one
+  // place. This function's own job is the SELECTION on top of it.
+  const pending = installableEditors(d);
   return chosen === undefined
     ? pending
     : pending.filter((e) => chosen.includes(e.editor.cli));
@@ -533,11 +532,25 @@ export const selectedEditors = (
 export const installableEditors = (
   d: LspDetection,
 ): readonly RunnableEditor[] =>
-  d.editors.filter((e): e is RunnableEditor => !e.installed && installable(e));
+  d.editors.filter(
+    (e): e is RunnableEditor => !e.installed && isInstallable(e),
+  );
 
-/** The editor names in a detection (for messages/results). */
-export const lspEditorNames = (d: LspDetection): string[] =>
-  d.editors.map((e) => e.editor.name);
+/**
+ * The editors that CARRY the extension, by name — what both surfaces' "this is
+ * in place" headline is about.
+ *
+ * It names the installed ones and nothing else. Naming every editor detection
+ * FOUND made a host with VSCodium carrying the extension and VS Code found by
+ * its user directory alone report `installed in VS Code, VSCodium`, over an
+ * item on the same screen saying VS Code has no copy — a report that reads as
+ * correct while being false about one of the two editors it names.
+ *
+ * @param d - The detection gathered up front.
+ * @returns The installed editors' names, in registry order.
+ */
+export const installedEditorNames = (d: LspDetection): string[] =>
+  d.editors.filter((e) => e.installed).map((e) => e.editor.name);
 
 /**
  * The named-skip reason for a machine with no VS Code-family editor at all. It
@@ -654,7 +667,7 @@ const describeBlock = (
  * @returns The reason, or `undefined` when the editor is actionable.
  */
 export const lspBlockReason = (e: DetectedEditor): string | undefined =>
-  installable(e) ? undefined : describeBlock(e).reason;
+  isInstallable(e) ? undefined : describeBlock(e).reason;
 
 /**
  * The FIRST editor nothing can be installed into, with its row headline and
@@ -780,7 +793,7 @@ export const ownedLspEditors = (d: LspDetection): readonly RunnableEditor[] =>
   // would need a CLI this machine has not got, or a write into a directory
   // pragma must not touch. The row says so rather than composing a reversal
   // that cannot run.
-  d.editors.filter((e): e is RunnableEditor => e.present && installable(e));
+  d.editors.filter((e): e is RunnableEditor => e.present && isInstallable(e));
 
 /**
  * Compose the removal: one `<editor cli> --uninstall-extension <id>` per owned

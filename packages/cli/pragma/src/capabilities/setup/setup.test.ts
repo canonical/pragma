@@ -2759,6 +2759,35 @@ describe("setup mcp — the VS Code family's per-user mcp.json", () => {
     const config = JSON.parse(readFileSync(userMcp("Code"), "utf-8"));
     expect(config.servers?.pragma?.command).toBe("pragma");
   });
+
+  /**
+   * Only the VS Code family earns its per-user file. Every other dual-scope
+   * harness keeps the behaviour it has always had: a checkout carrying its
+   * project directory and an empty home still writes its home config. The
+   * `.vscode/` rule exists because repositories COMMIT that directory for
+   * contributors who may not run the tool at all, which is not true of
+   * `.gemini/` or `.codex/`.
+   */
+  it("a .gemini/ checkout with an empty home still writes ~/.gemini/settings.json", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".gemini"), { recursive: true });
+    const outcome = await executeVerb(
+      verbOf("mcp"),
+      { global: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    const config = JSON.parse(
+      readFileSync(
+        join(process.env.HOME ?? "", ".gemini", "settings.json"),
+        "utf-8",
+      ),
+    );
+    expect(config.mcpServers?.pragma?.command).toBe("pragma");
+    // And the VS Code rows are still absent — nothing detected them.
+    expect(existsSync(userMcp("Code"))).toBe(false);
+  });
 });
 
 /**
@@ -3115,6 +3144,54 @@ describe("setup lsp — how each editor was found", () => {
     expect(row?.children?.[0]?.label).toContain("VS Code");
     // And the row is not offered: there is nothing to select into doing.
     expect(row?.selected).toBe(false);
+  });
+
+  /**
+   * The mixed host: one editor CARRIES the extension, another was found by its
+   * user directory alone, so nothing is installable and the row has no work.
+   *
+   * The headline names only the editors that have a copy. Naming every editor
+   * detection found reported the extension as installed in an editor whose own
+   * child row, on the same screen, said it had none.
+   */
+  it("names ONLY the editor that carries the extension when another was found by its user directory", async () => {
+    const prevPath = process.env.PATH;
+    const stubDir = stubPath();
+    // VSCodium via PATH, carrying the extension…
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+    mkdirSync(
+      join(
+        process.env.HOME ?? "",
+        ".vscode-oss",
+        "extensions",
+        "canonical.terrazzo-lsp-extension-1.2.3",
+      ),
+      { recursive: true },
+    );
+    // …and VS Code found by its user directory alone: no CLI, no copy.
+    mkdirSync(join(process.env.XDG_CONFIG_HOME as string, "Code", "User"), {
+      recursive: true,
+    });
+    try {
+      const rt = bootRuntime(FLAGS, tmp("pragma-setup-proj-"));
+      const detection = await detectLsp(rt.cwd);
+      expect(detection.editors.map((e) => [e.editor.id, e.installed])).toEqual([
+        ["vscode", false],
+        ["vscodium", true],
+      ]);
+      const { plan } = await buildSetupRun(rt, "lsp", "global");
+      const row = plan.rows.find((r) => r.target === "lsp");
+      expect(row?.action).toBe("none");
+      expect(row?.detail).toBe("Terrazzo extension in VSCodium");
+      expect(row?.detail).not.toContain("VS Code");
+      // The editor without a copy is still REPORTED — as its own skip.
+      const code = row?.children?.find((c) => c.key === "code");
+      expect(code?.action).toBe("skip");
+      expect(code?.reason).toContain("no command-line launcher");
+    } finally {
+      process.env.PATH = prevPath;
+    }
   });
 
   it("the palette remedy names the editor's own CLI, and nothing composes", async () => {

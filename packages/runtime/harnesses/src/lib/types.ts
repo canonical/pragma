@@ -69,8 +69,9 @@ export interface HarnessDefinition {
    * It may return `undefined` for a HOST where this harness keeps no per-user
    * location, which is not the same as a row that declares none: the VS Code
    * rows have one everywhere except under WSL, where the file the Linux side
-   * would write is read by nothing. `resolveConfigTarget` reports that as no
-   * target in the global band, so a `both` row falls back to its project file.
+   * would write is read by nothing. `groupConfigTargets` drops such a row from
+   * the global band, so a `both` row falls back to its project file, while a
+   * caller that asked for that one file by name gets an error.
    */
   readonly homeConfigPath?: (platform: PlatformEnv) => string | undefined;
   readonly configFormat: "json" | "jsonc" | "toml";
@@ -86,6 +87,18 @@ export interface HarnessDefinition {
    * idempotence holds per shape.
    */
   readonly mcpEntry?: McpEntrySerializer;
+  /**
+   * Whether this row's per-user config must be EARNED by a user-level match
+   * before the global band writes it — see `hasEarnedGlobalBand`.
+   *
+   * Declared only by the three VS Code products, and only because of the
+   * `.vscode/` directory they detect: it is committed to repositories, so on
+   * its own it would create a per-user file for every contributor who clones,
+   * VS Code installed or not. Every other `both`-scoped row writes its home
+   * file on any match, which is the behaviour they have always had — a row
+   * detected by a project marker alone is still a row this machine uses.
+   */
+  readonly requiresUserSignalForGlobal?: boolean;
 }
 
 /**
@@ -115,17 +128,17 @@ export interface DetectedHarness {
   readonly configExists: boolean;
   readonly configPath: string;
   /**
-   * WHICH of the harness's signals matched — the subset of `harness.detect`
-   * that came back true.
+   * Whether any signal that matched was a USER-LEVEL one — a configuration
+   * directory in the user's home, an installed extension, a binary on `PATH`
+   * — rather than something inside the checkout.
    *
-   * The confidence tier is the strongest of these, and it is not enough on its
-   * own: "a directory in this repository matched" and "a directory in this
-   * user's home matched" both score `high`, and only the second is evidence
-   * about the MACHINE. The global band needs that distinction (see
-   * `listHarnessesForBand`), so detection records the matches rather than
-   * collapsing them to a tier.
+   * The confidence tier cannot answer this: "a directory in this repository
+   * matched" and "a directory in this user's home matched" both score `high`,
+   * and only the second is evidence about the MACHINE. A row that declares
+   * `requiresUserSignalForGlobal` needs that distinction before the global
+   * band writes its per-user file (see `hasEarnedGlobalBand`).
    */
-  readonly matched: readonly DetectionSignal[];
+  readonly matchedUserLevel: boolean;
 }
 
 /**
