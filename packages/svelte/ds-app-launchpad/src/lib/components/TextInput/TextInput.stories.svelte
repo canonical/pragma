@@ -45,13 +45,13 @@
   {/snippet}
 </Story>
 
-<Story name="Severities" argTypes={{ severity: { table: { disable: true } } }}>
-  {#snippet template({ severity: _, ...args })}
+<Story name="Criticalities" argTypes={{ criticality: { table: { disable: true } } }}>
+  {#snippet template({ criticality: _, ...args })}
     <div
       style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;"
     >
-      {#each MODIFIER_FAMILIES["severity"] as severity (severity)}
-        <TextInput {severity} placeholder={severity || "default"} {...args} />
+      {#each MODIFIER_FAMILIES["criticality"] as criticality (criticality)}
+        <TextInput {criticality} placeholder={criticality || "default"} {...args} />
       {/each}
     </div>
   {/snippet}
