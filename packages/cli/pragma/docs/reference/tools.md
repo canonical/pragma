@@ -414,6 +414,19 @@ Read-only.
 | --- | --- | --- | --- |
 | `name` | string | yes | The skill name. |
 
+### sources_reset
+
+Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again; a project that declares its own packs cannot answer reads until the next `sources update`. The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built.
+
+Mutation — plan-first (set `confirm: true` to apply). Marked destructive.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
+| `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
+
 ### sources_status
 
 Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.

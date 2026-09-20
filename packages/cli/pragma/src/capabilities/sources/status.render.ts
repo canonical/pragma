@@ -4,6 +4,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
+import { describeIgnoredPack } from "../../kernel/runtime/resolveSources.js";
 import type { Formatters } from "../../kernel/spec/index.js";
 import type { SourcesStatusData } from "./types.js";
 
@@ -39,6 +40,15 @@ export function renderSourcesStatusPlain(
       `  from: ${data.sourceRef ?? "?"}`,
     );
   }
+  // The pack this project built and is NOT reading. It says so on its own line
+  // rather than in the headline: the headline answers "what is answering", and
+  // the answer (the snapshot) is unchanged — this is the extra fact that the
+  // directory has a pack and it is being passed over.
+  if (data.ignoredPack !== null) {
+    lines.push(
+      `  ${data.ignoredPack.contentHash.slice(0, 12)}: ${describeIgnoredPack(data.ignoredPack)}`,
+    );
+  }
   lines.push("", style.enabled ? style.bold("Sources:") : "Sources:");
   if (data.sources.length === 0) {
     lines.push("  (none configured)");
@@ -63,6 +73,8 @@ export const statusFormatters: Formatters<SourcesStatusData> = {
 
   llm(data) {
     const lines = [`# sources`, `- Store: ${data.store}`];
+    if (data.ignoredPack !== null)
+      lines.push(`- Ignored: ${describeIgnoredPack(data.ignoredPack)}`);
     if (data.sourceRef !== null) lines.push(`- From: ${data.sourceRef}`);
     if (data.entityCount !== null)
       lines.push(`- Entities: ${data.entityCount}`);

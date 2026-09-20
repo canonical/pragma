@@ -23,6 +23,7 @@ import type {
 } from "../../kernel/config/types.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
+import { styleFor } from "../../kernel/render/style.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { createQueryFacade } from "../../kernel/runtime/facade.js";
 import { readManifest } from "../../kernel/runtime/graphpack/manifest.js";
@@ -44,6 +45,7 @@ import { discoverSkills } from "../skill/discover.js";
 import { collectStatus } from "./collectStatus.js";
 import { sourcesModule } from "./index.js";
 import { buildUpdateTask } from "./runUpdate.js";
+import { renderSourcesStatusPlain } from "./status.render.js";
 
 const FLAGS: GlobalFlags = {
   llm: false,
@@ -69,15 +71,25 @@ const tmp = (prefix: string): string => {
   return dir;
 };
 
-/** A runtime whose config is the given pack list (no config files needed). */
-function runtimeFor(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
+/**
+ * A runtime whose config is the given pack list (no config files needed).
+ *
+ * `packsOrigin` is the knob the boot decision reads to tell "this project pinned
+ * its own packs" from "the distribution's defaults" — `"project"` by default,
+ * since that is what a test that BUILDS a pack is describing.
+ */
+function runtimeFor(
+  cwd: string,
+  packs: PackDeclaration[],
+  packsOrigin: "default" | "project" = "project",
+): PragmaRuntime {
   const layers: ConfigLayers = {
     config: { channel: "normal", packs },
     origins: {
       tier: "default",
       channel: "default",
       detail: "default",
-      packs: "project",
+      packs: packsOrigin,
       stories: "default",
       prefixes: "default",
     },
@@ -1253,5 +1265,145 @@ describe("sources status CLI-json == MCP tool (PROTECTED)", () => {
     // Nothing built here, and the packs are the distribution's own — so the
     // embedded snapshot is what answers reads, and status says exactly that.
     expect((cliEnvelope.data as { store: string }).store).toBe("embedded");
+  });
+});
+
+describe("a pack an older CLI built (upgrade healing)", () => {
+  const resetVerb = sourcesModule.verbs[2] as VerbSpec;
+  const REAL = { dryRun: false, undo: false, yes: true };
+  /** Any version below the running CLI's — what an older build recorded. */
+  const OLDER = "0.1.0";
+
+  /** Build a real pack for `cwd`, then rewrite the builder version it records. */
+  async function builtWithVersion(
+    cwd: string,
+    version: string,
+  ): Promise<string> {
+    const pkg = filePackage();
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-old", source: `file://${pkg}` },
+    ]);
+    const result = await runTask(await buildUpdateTask(runtime));
+    const path = join(packDir(result.contentHash), "manifest.json");
+    const manifest = JSON.parse(readFileSync(path, "utf-8"));
+    writeFileSync(path, JSON.stringify({ ...manifest, version }));
+    return result.contentHash;
+  }
+
+  it("status reports the snapshot answering, and names the pack passed over", async () => {
+    const cwd = tmp("pragma-proj-");
+    const hash = await builtWithVersion(cwd, OLDER);
+
+    // The reported install: a pointer to a pack an older CLI built, and a config
+    // that pins no packs of its own (the distribution's defaults).
+    const status = await collectStatus(runtimeFor(cwd, [], "default"));
+    expect(status.store).toBe("embedded");
+    expect(status.ignoredPack).toEqual({
+      contentHash: hash,
+      builtBy: OLDER,
+      builtAt: expect.any(String),
+    });
+    expect(renderSourcesStatusPlain(status, styleFor(false))).toContain(
+      `a pack built by pragma ${OLDER} on`,
+    );
+  });
+
+  it("a project with its OWN packs keeps reading its pack, stale or not", async () => {
+    const cwd = tmp("pragma-proj-");
+    const hash = await builtWithVersion(cwd, OLDER);
+
+    // Byte-identical to the behaviour before the upgrade row existed: its own
+    // packs are its own graph, and the snapshot is not a substitute for them.
+    const status = await collectStatus(
+      runtimeFor(cwd, [{ name: "pkg-old", source: "file:///x" }], "project"),
+    );
+    expect(status.store).toBe("built");
+    expect(status.contentHash).toBe(hash);
+    expect(status.ignoredPack).toBeNull();
+  });
+
+  it("re-running the update makes the pack answer again, and the notice goes", async () => {
+    const cwd = tmp("pragma-proj-");
+    const hash = await builtWithVersion(cwd, OLDER);
+    const pkg = filePackage();
+
+    // The STRICTEST form of this case: the sources have not moved, so the update
+    // reuses the very same content-addressed directory rather than building a
+    // new one. Reuse has to refresh the recorded builder version, or the update
+    // the notice recommends would change nothing and the project would be stuck.
+    const rebuilt = await runTask(
+      await buildUpdateTask(
+        runtimeFor(cwd, [{ name: "pkg-old", source: `file://${pkg}` }]),
+      ),
+    );
+    expect(rebuilt.contentHash).toBe(hash);
+    expect(rebuilt.reused).toBe(true);
+    expect(readManifest(packDir(hash))?.version).toBe(VERSION);
+
+    const status = await collectStatus(runtimeFor(cwd, [], "default"));
+    expect(status.store).toBe("built");
+    expect(status.ignoredPack).toBeNull();
+  });
+
+  it("`sources reset` drops the pointer, and the snapshot answers", async () => {
+    const cwd = tmp("pragma-proj-");
+    const hash = await builtWithVersion(cwd, OLDER);
+
+    const outcome = await executeVerb(
+      resetVerb,
+      {},
+      REAL,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain(hash.slice(0, 12));
+    expect(outcome.stdout).toContain("snapshot shipped with the CLI");
+    // The pointer is gone, so the boot has nothing to pass over any more.
+    expect(readActivePack(cwd)).toBeUndefined();
+    const status = await collectStatus(bootRuntime(FLAGS, cwd));
+    expect(status.store).toBe("embedded");
+    expect(status.ignoredPack).toBeNull();
+    // The pack's own files are left alone: the cache is content-addressed and
+    // shared, so another project reading the same hash is untouched, and the
+    // next update reuses it instead of rebuilding.
+    expect(existsSync(packDir(hash))).toBe(true);
+  });
+
+  it("a second reset is a calm no-op, not a failure", async () => {
+    const cwd = tmp("pragma-proj-");
+    await builtWithVersion(cwd, OLDER);
+    await executeVerb(resetVerb, {}, REAL, bootRuntime(FLAGS, cwd));
+
+    const again = await executeVerb(
+      resetVerb,
+      {},
+      REAL,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(again.exitCode).toBe(0);
+    expect(again.stdout).toContain("nothing to reset");
+  });
+
+  it("MCP sources_reset without confirm plans only, and removes nothing", async () => {
+    const cwd = tmp("pragma-proj-");
+    const hash = await builtWithVersion(cwd, OLDER);
+
+    const mcp = await projectMcp([sourcesModule], cwd);
+    const envelope = await mcp.callTool("sources_reset"); // no confirm
+    expect(envelope.ok).toBe(true);
+    expect(envelope.meta).toMatchObject({
+      planOnly: true,
+      confirmRequired: true,
+    });
+    const plan = (envelope.data as { plan: string[] }).plan;
+    expect(plan.some((line) => line.includes(activePackPath(cwd)))).toBe(true);
+    expect(readActivePack(cwd)).toBe(hash);
+
+    // And with `confirm`, the same call performs it.
+    const done = await mcp.callTool("sources_reset", { confirm: true });
+    await mcp.cleanup();
+    expect(done.ok).toBe(true);
+    expect((done.data as { removed: boolean }).removed).toBe(true);
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 });

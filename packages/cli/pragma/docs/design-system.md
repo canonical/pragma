@@ -29,6 +29,8 @@ pragma sources update
 pragma sources status
 ```
 
+A CLI upgrade brings a new snapshot with it, and it heals a store you built before the upgrade rather than letting it answer quietly: a pack an older CLI built, in a project that pins no packs of its own, is passed over — the new snapshot answers, and `sources status` and `doctor` both name the pack they are not reading and the two ways to change that. Run `pragma sources update` to rebuild it from your packs, or `pragma sources reset` to remove it and stay on the shipped snapshot. `sources reset` removes only the pointer that names the pack this project reads; the cached pack files stay, because the cache is shared with any other project built from the same sources. A project that **does** pin its own packs keeps reading them, upgrade or no upgrade — its graph is not the distribution's, and a snapshot of the distribution's is no substitute for it.
+
 To pin a pack to an exact revision, put the full 40-character commit SHA in its source ref (`git+https://github.com/org/repo.git#<sha>`). An abbreviated SHA is not a valid fetch target, and the update fails naming it.
 
 ## Blocks

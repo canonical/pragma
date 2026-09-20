@@ -72,7 +72,7 @@ export async function collectStatus(
     ref: entrySource(entry),
   }));
   const decision = resolveSources(layers, runtime.cwd);
-  const base = { cwd: runtime.cwd, sources };
+  const base = { cwd: runtime.cwd, sources, ignoredPack: null };
 
   switch (decision.kind) {
     case "embedded": {
@@ -84,6 +84,11 @@ export async function collectStatus(
         sourceRef: manifest.sourceRef,
         builtAt: manifest.createdAt,
         entityCount: manifest.entityCount ?? null,
+        // The upgrade row: this project HAS a pack, built by an older CLI, and
+        // the snapshot is answering in its place. Reported straight off the
+        // decision — status never re-derives which pack answers, and it must
+        // not re-derive which one was passed over either.
+        ignoredPack: decision.ignoredPack ?? null,
       };
     }
     case "pack": {

@@ -29,6 +29,7 @@ import {
   createStoreQueryFn,
   serializeExtraction,
 } from "@canonical/ke-graphql";
+import { packIsOlderThanCli } from "../packVersion.js";
 import { packDir, packsCacheDir } from "../paths.js";
 import { buildIndex } from "./buildIndex.js";
 import { contentHash, hashSources } from "./hash.js";
@@ -53,6 +54,7 @@ export interface BuildPackInput {
 /** Provenance and options for a pack build. */
 export interface BuildPackOptions {
   readonly name: string;
+  /** The building CLI's version, recorded in the manifest (see `Manifest`). */
   readonly version: string;
   /** The config `packs` ref (verbatim) or a label. */
   readonly sourceRef: string;
@@ -104,7 +106,12 @@ export async function buildPack(
   if (packIsComplete(dir)) {
     const cached = readManifest(dir);
     if (cached)
-      return { dir, contentHash: hash, manifest: cached, reused: true };
+      return {
+        dir,
+        contentHash: hash,
+        manifest: stampBuilderVersion(dir, cached, options.version),
+        reused: true,
+      };
   }
 
   mkdirSync(packsCacheDir(), { recursive: true });
@@ -182,6 +189,56 @@ export async function buildPack(
     }
   } finally {
     if (existsSync(temp)) rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Refresh a REUSED pack's recorded builder version to the CLI doing the reuse.
+ *
+ * Without this, `sources update` could not get a project out of the state the
+ * boot decision's upgrade row describes. A pack is content-addressed, so an
+ * update whose sources have not moved resolves to the same hash and reuses the
+ * directory untouched — manifest and all. The manifest would therefore keep
+ * naming the OLD CLI as its builder, the boot would go on passing the pack over,
+ * and the `pragma sources update` the notice recommends would change nothing:
+ * a loop with no way out but `sources reset`.
+ *
+ * Only the version moves. `createdAt` and `sourceRef` describe the build that
+ * produced these bytes and stay as they were — a reuse is not a new build, and
+ * `sources status` reporting today's date for a pack from last month would be
+ * the same kind of lie in the other direction. What the stamp claims is exactly
+ * what happened: THIS CLI resolved these sources and found this pack already
+ * holding what it would have built.
+ *
+ * Best-effort, and deliberately so: the write is a provenance refresh, not part
+ * of the build, so a read-only or racing cache returns the manifest as found
+ * rather than failing an update that otherwise succeeded (the user keeps the
+ * notice, which is recoverable, instead of losing the update, which is worse).
+ *
+ * @param dir - The reused pack directory.
+ * @param cached - Its manifest, as read.
+ * @param version - The running CLI's version.
+ * @returns The manifest as it now stands on disk.
+ * @note Impure — rewrites `manifest.json` in place (temp file + atomic rename,
+ *   so the completeness marker is never observed half-written).
+ */
+function stampBuilderVersion(
+  dir: string,
+  cached: Manifest,
+  version: string,
+): Manifest {
+  // Upward only: the cache directory is shared by every project built from the
+  // same sources, so an older (or dev) CLI reusing it must not make a newer
+  // CLI start passing the pack over.
+  if (!packIsOlderThanCli(cached.version, version)) return cached;
+  const stamped: Manifest = { ...cached, version };
+  try {
+    const temp = join(dir, `.manifest-${process.pid}.json`);
+    writeFileSync(temp, JSON.stringify(stamped));
+    renameSync(temp, join(dir, MANIFEST_FILE));
+    return stamped;
+  } catch {
+    return cached;
   }
 }
 
