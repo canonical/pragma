@@ -24,6 +24,7 @@
     "storybook": "storybook dev -p 6009 --no-open --host 0.0.0.0"
   },
   "dependencies": {
+    "@canonical/ds-assets": "^0.39.0",
     "@canonical/react-ds-global": "^0.39.0",
     "@canonical/react-ds-global-form": "^0.39.0",
     "@canonical/react-ssr": "^0.39.0",

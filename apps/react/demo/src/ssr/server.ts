@@ -11,6 +11,11 @@ const app = express();
 
 app.use(/^\/(assets|public)/, express.static("dist/client/assets"));
 
+// The design-system icons the dsIcons() Vite plugin copies into the client
+// build output. Components fetch them at `/icons/<name>.svg#<name>`, and the
+// mount above only covers `dist/client/assets`.
+app.use("/icons", express.static("dist/client/icons"));
+
 app.get("/stream", async (req, res, next) => {
   const renderer = new JSXRenderer(
     EntryServer,
