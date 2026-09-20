@@ -6,6 +6,40 @@
  * by the unknown-command suggester to turn a typo into "Did you mean: …?".
  */
 
+/** How many suggestions are returned unless a caller asks for fewer or more. */
+export const MAX_SUGGESTIONS = 5;
+
+/** What separates the segments of a path-shaped name (`:` ends a prefix). */
+const SEGMENT_SEPARATOR = /[./:]/;
+
+/** Past this many segments a query is not a name, and its runs are not built. */
+const MAX_RUN_SEGMENTS = 16;
+
+/**
+ * Every contiguous run of whole segments of `query` shorter than the query,
+ * mapped to the number of segments it spans; empty for a query of one segment
+ * or of more than {@link MAX_RUN_SEGMENTS}.
+ */
+function segmentRuns(query: string): ReadonlyMap<string, number> {
+  if (query.split(SEGMENT_SEPARATOR).length > MAX_RUN_SEGMENTS) {
+    return new Map();
+  }
+  const starts = [0];
+  for (const [index, char] of [...query].entries()) {
+    if (SEGMENT_SEPARATOR.test(char)) starts.push(index + 1);
+  }
+  const ends = [...starts.slice(1).map((start) => start - 1), query.length];
+  const runs = new Map<string, number>();
+  for (const [from, start] of starts.entries()) {
+    for (const [to, end] of ends.entries()) {
+      const run = query.slice(start, end);
+      if (to < from || run === "" || run === query) continue;
+      runs.set(run, to - from + 1);
+    }
+  }
+  return runs;
+}
+
 /**
  * Return up to {@link maxResults} candidates most similar to `query`.
  *
@@ -18,6 +52,10 @@
  * the word it just printed. Restating the query is never a useful suggestion —
  * if a candidate really is the query, the miss is the bug and the suggestion
  * would only hide it.
+ *
+ * Ranking, best first: a candidate that is a run of the query's whole segments
+ * (`color.text` for `color.text.primary`), longest first; then a candidate the
+ * query is a prefix of; then edit distance.
  *
  * Scoring reads the same trimmed forms, so padding costs a candidate no edit
  * distance either; what is RETURNED is the candidate verbatim, padding and
@@ -34,7 +72,7 @@ export function suggestNames(
   candidates: readonly string[],
   opts?: { maxResults?: number; threshold?: number },
 ): string[] {
-  const maxResults = opts?.maxResults ?? 5;
+  const maxResults = opts?.maxResults ?? MAX_SUGGESTIONS;
   const threshold = opts?.threshold ?? 0.4;
   const queryLower = query.trim().toLowerCase();
 
@@ -44,11 +82,19 @@ export function suggestNames(
 
   type Scored = { name: string; score: number };
   const scored: Scored[] = [];
+  const runs = segmentRuns(queryLower);
 
   for (const candidate of candidates) {
     const candidateLower = candidate.trim().toLowerCase();
 
     if (candidateLower === queryLower) continue;
+
+    // Below zero: every run outranks a prefix match, the longest run first.
+    const spanned = runs.get(candidateLower);
+    if (spanned !== undefined) {
+      scored.push({ name: candidate, score: -spanned });
+      continue;
+    }
 
     if (candidateLower.startsWith(queryLower)) {
       scored.push({ name: candidate, score: 0 });

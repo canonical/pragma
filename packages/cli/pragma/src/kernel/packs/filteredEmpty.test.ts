@@ -133,10 +133,12 @@ describe("a zero-row answer names the filter and keeps the recovery", () => {
     expect(outcome.exitCode).toBe(0);
     const said = `${outcome.stdout ?? ""}${outcome.stderr ?? ""}`;
     expect(said).toContain("No widget matches `--search zzzznotreal`.");
-    // The filter is the news; the story's account of where widgets come from is
-    // the other half, and a reader who mistyped nothing needs it.
+    // The filter is the news, with how to widen; the story's account of where
+    // widgets come from is kept — and the rebuild is not advised, because a
+    // filter that missed says nothing about the store.
+    expect(said).toContain("drop the argument, or loosen it");
     expect(said).toContain("recorded by the catalogue build");
-    expect(said).toContain("pragma sources update");
+    expect(said).not.toContain("sources update");
   });
 
   it("every filter in force is named", async () => {
@@ -195,7 +197,7 @@ describe("a zero-row answer names the filter and keeps the recovery", () => {
     const said = `${outcome.stderr ?? ""}`;
     expect(said).toContain("No gadget matches `--kind input`.");
     expect(said).toContain("recorded by the catalogue build");
-    expect(said).toContain("pragma sources update");
+    expect(said).not.toContain("sources update");
   });
 
   it("an EMPTY POPULATION unfiltered gets the kernel's own sentence", async () => {
@@ -209,5 +211,20 @@ describe("a zero-row answer names the filter and keeps the recovery", () => {
     expect(outcome.stderr).toContain("No gadget entries found.");
     expect(outcome.stderr).toContain("recorded by the catalogue build");
     expect(outcome.stderr).toContain("pragma sources update");
+  });
+
+  it("a story with no recovery of its own: rebuild unfiltered, never when filtered", async () => {
+    const bare: PackDefinition = {
+      ...GADGET_PACK,
+      list: { ...listShape("ex:Gadget") },
+    };
+    const said = async (params: Record<string, unknown>): Promise<string> =>
+      (await executeVerb(listVerb(bare), params, REAL, as(PLAIN))).stderr ?? "";
+
+    expect(await said({})).toContain("pragma sources update");
+    const filtered = await said({ kind: "input" });
+    expect(filtered).toContain("drop the argument, or loosen it");
+    expect(filtered).not.toContain("sources update");
+    expect(filtered).not.toContain("needs building");
   });
 });

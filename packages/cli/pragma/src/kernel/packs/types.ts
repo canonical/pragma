@@ -689,7 +689,16 @@ export interface PageTierScope {
    * use (the tier IRI's local name), base first and then shallowest first.
    */
   readonly tiers: readonly string[];
+  /**
+   * Rows of the WHOLE filtered answer per tier, keyed by local name: every
+   * in-scope tier (0 when empty), the out-of-scope tiers holding some, and
+   * {@link UNTIERED_KEY} for rows in no tier. First page only.
+   */
+  readonly counts?: Readonly<Record<string, number>>;
 }
+
+/** The `counts` key for rows whose entity is in no tier (no tier is named so). */
+export const UNTIERED_KEY = "no tier";
 
 /** One filter a list read was narrowed by, as the caller spelled it. */
 export interface PackAppliedFilter {

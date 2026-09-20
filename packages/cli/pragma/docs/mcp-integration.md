@@ -74,6 +74,8 @@ Beyond tools, the server exposes three surfaces:
 
   The stated count is always the true total. The two kinds are told apart by fan-in, not by predicate name, so no vocabulary is hardcoded.
 
+  Every lookup tool takes `detail`. A noun that declares no levels of its own (`token`, `variable`, `modifier`, `tier`) answers with its fields alone at `summary` and with everything from `standard`, so for those `standard` equals `detailed`. The first page of a tier-scoped list carries `meta.scope.counts`: the rows of the whole filtered answer per tier, the tiers outside the scope included (and `"no tier"` for rows in none), so a read that finds nothing in scope still says which `tier` holds a match.
+
   A resource read carries no parameters of its own, so it resolves its level from config — `config_set detail detailed` is how an agent asks a resource for more, while `graph inspect` takes `--detail` and the `graph_inspect` tool a `detail` argument. `graph inspect --format json` still returns the structured projection if you need to parse rather than read it.
 
 - **Prompts** — the workflow prompt templates the active pack's graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. The two views project the same entities, addressed by the prompt terms the distribution declares. This distribution's graph carries none today, so both views are empty.

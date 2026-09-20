@@ -136,8 +136,8 @@ export type ParamSpec =
        * A repeatable flag ACCUMULATES: `--category css --category git` is
        * the union, never last-wins (repetition is the sanctioned multi-value
        * form, and silently dropping all but the last value is data loss).
-       * CLI-side only: the MCP arg schema keeps its scalar shape, and the
-       * run body accepts one value or many.
+       * Over MCP the same param is an ARRAY that also takes one bare value
+       * (`spec/wireType.ts`); the run body accepts one value or many.
        */
       repeatable?: true;
     }
@@ -227,7 +227,7 @@ export interface Formatters<T> {
    * `notice` is a sentence, and a sentence is the right shape for a human
    * reading stderr and the wrong shape for an agent deciding what to do next.
    * The standing case is the tier scope: `meta.scope` names the tiers a list
-   * answered from, so a caller that wants the rest can widen the read without
+   * answered from and counts the whole filtered answer per tier, so a caller that wants the rest can widen the read without
    * parsing prose for tier names. Both machine surfaces read this ONE seam, the
    * way they already read one `notice`, so CLI-JSON and MCP stay byte-equal.
    *
