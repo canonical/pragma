@@ -30,7 +30,7 @@ const SET_FILTER: PackFilter = {
 /** The error a filter raises for a value it does not admit. */
 function rejection(
   filter: PackFilter,
-  value: string,
+  value: string | readonly string[],
   vocabulary?: readonly string[],
 ): PragmaError {
   try {
@@ -58,8 +58,8 @@ describe("a refused filter value names its vocabulary once", () => {
     expect(occurrences(plain, "color.text.0,")).toBe(1);
     expect(plain).toContain("Valid options (745), first 40:");
     // The recovery says what to do, and names the flag — without the list.
-    expect(plain).toContain("Pick one of the 745 values --symbol accepts.");
-    expect(renderErrorLlm(error)).toContain("Pick one of the 745 values");
+    expect(plain).toContain("Every value must be one of the 745 accepted.");
+    expect(renderErrorLlm(error)).toContain("must be one of the 745");
     expect(occurrences(renderErrorLlm(error), "color.text.0,")).toBe(1);
   });
 
@@ -75,12 +75,44 @@ describe("a refused filter value names its vocabulary once", () => {
 
     expect(occurrences(plain, "dimension")).toBe(1);
     expect(plain).toContain("Valid options: color, dimension, duration");
-    expect(plain).toContain("Pick one of the 3 values --type accepts.");
+    expect(plain).toContain("Every value must be one of the 3 accepted.");
   });
 
   it("a short vocabulary stays cheap to read", () => {
     const plain = renderErrorPlain(rejection(SET_FILTER, "nope"));
 
     expect(plain.length).toBeLessThan(200);
+  });
+});
+
+describe("a filter handed several values", () => {
+  it("admits them as one union predicate", () => {
+    const predicates = resolveFilterPredicates(
+      [SET_FILTER],
+      { type: ["Color", "duration"] },
+      undefined,
+      "test:story",
+    );
+
+    expect(predicates).toEqual([
+      { variable: "type", match: "exact", terms: ["color", "duration"] },
+    ]);
+  });
+
+  it("names EVERY refused value, not just the first", () => {
+    const error = rejection(
+      FREE_FILTER,
+      ["color.text.1", "nope", "color.text.2", "neither"],
+      VOCABULARY,
+    );
+
+    expect(error.message).toBe('Invalid symbol "nope", "neither".');
+  });
+
+  it("names every refused value of a declared set", () => {
+    const error = rejection(SET_FILTER, ["color", "nope", "neither"]);
+
+    expect(error.message).toBe('Invalid type "nope", "neither".');
+    expect(error.validOptions).toEqual(["color", "dimension", "duration"]);
   });
 });

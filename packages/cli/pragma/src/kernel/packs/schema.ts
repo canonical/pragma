@@ -25,7 +25,7 @@
  */
 
 import { z } from "zod";
-import { DETAIL_LEVELS, RECOVERY_CLI_PREFIX } from "../../constants.js";
+import { DETAIL_LEVELS } from "../../constants.js";
 import { PragmaError } from "../error/index.js";
 import { listShapeIssues, tierScopeIssues } from "./storyRules.js";
 import {
@@ -33,6 +33,7 @@ import {
   type PackList,
   type PackTierScope,
   RESERVED_STORY_PARAMS,
+  VERB_PATH_PATTERN,
 } from "./types.js";
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
@@ -96,8 +97,14 @@ const term = z.string().regex(TERM_PATTERN, "must be a prefixed name or IRI");
 const graphqlName = z.string().regex(GRAPHQL_NAME_PATTERN);
 const fieldName = z.string().regex(FIELD_PATTERN);
 
+const nounName = z.string().regex(NOUN_PATTERN, NOUN_MESSAGE);
+
 const columnSchema = z
-  .object({ field: fieldName, label: z.string().optional() })
+  .object({
+    field: fieldName,
+    label: z.string().optional(),
+    noun: nounName.optional(),
+  })
   .strict();
 
 const vocabularySchema = z
@@ -114,11 +121,21 @@ const filterSchema = z
     values: z.array(z.string()).min(1).optional(),
     match: z.enum(["exact", "set"]).optional(),
     vocabulary: vocabularySchema.optional(),
+    noun: nounName.optional(),
+    entity: fieldName.optional(),
+    via: term.optional(),
     description: z.string().optional(),
   })
   .strict()
   .refine((f) => !RESERVED_PARAMS.has(f.param), {
     message: "filter param is a reserved name",
+  })
+  .refine((f) => !(f.noun && (f.values || f.vocabulary || f.match)), {
+    message:
+      '"noun" is mutually exclusive with "values", "vocabulary" and "match" — the named noun admits the values and the rows are matched by IRI',
+  })
+  .refine((f) => f.noun !== undefined || !(f.entity || f.via), {
+    message: '"entity" and "via" belong to a filter that names a "noun"',
   })
   // A declared `values` set IS the vocabulary — the filter projects it as an
   // enum and canonicalizes against it. A second, graph-read one alongside would
@@ -144,24 +161,43 @@ const searchSchema = z
   })
   .strict();
 
+// A call names a VERB PATH (`sources update`) and a param bag — never a command
+// line. A story is portable only if it names no binary and spells no flags: the
+// consuming distribution's renderer does both, for the surface it prints on.
+const callSchema = z
+  .object({
+    verb: z
+      .string()
+      .regex(
+        VERB_PATH_PATTERN,
+        'a call names a verb path — write "sources update", not a command line',
+      ),
+    params: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
+
 const emptyRecoverySchema = z
   .object({
     message: z.string().min(1),
-    // The command WITHOUT a binary name — the renderer prepends the CONSUMING
-    // distribution's. A story is portable only if it does not name a binary, so
-    // the old prefixed form is rejected rather than accepted and doubled. Named
-    // loudly, in the `packages` → `packs` tradition, because a third-party pack
-    // written against the old grammar is data, not a typo.
+    call: callSchema.optional(),
+    // The retired spelling, named loudly in the `packages` → `packs` tradition:
+    // a third-party pack written against the old grammar is data, not a typo.
     cli: z
-      .string()
-      .min(1)
+      .unknown()
       .refine(
-        (value) => !value.startsWith(RECOVERY_CLI_PREFIX),
-        `emptyRecovery.cli is now the command WITHOUT the binary name — write "sources update", not "${RECOVERY_CLI_PREFIX}sources update"`,
+        (value) => value === undefined,
+        'emptyRecovery.cli is now emptyRecovery.call — write call: { verb: "sources update" }, not cli: "sources update"',
       )
       .optional(),
   })
   .strict();
+
+// What a story half tells a caller choosing between tools. Optional: the schema
+// is strict and third-party packs predate these.
+const guidanceShape = {
+  useWhen: z.string().min(1).optional(),
+  example: z.record(z.string(), z.unknown()).optional(),
+};
 
 const listShape = {
   query: z.string().min(1),
@@ -178,6 +214,7 @@ const verbSchema = z
     verb: z.string().regex(NOUN_PATTERN, NOUN_MESSAGE),
     description: z.string().optional(),
     toolDescription: z.string().optional(),
+    ...guidanceShape,
   })
   .strict();
 
@@ -188,6 +225,7 @@ const fieldSchema = z
     label: z.string().optional(),
     graphqlField: graphqlName.optional(),
     level: z.string().optional(),
+    noun: nounName.optional(),
   })
   .strict();
 
@@ -223,8 +261,14 @@ const expandFieldSchema = z
     label: z.string().optional(),
     graphqlField: graphqlName.optional(),
     blankWhenSelf: z.literal(true).optional(),
+    many: z.literal(true).optional(),
+    noun: nounName.optional(),
   })
-  .strict();
+  .strict()
+  .refine((f) => !(f.many && f.blankWhenSelf), {
+    message:
+      '"many" and "blankWhenSelf" are mutually exclusive — a set of values has no single one to compare with the entity\'s own',
+  });
 
 const expandSchema = z
   .object({
@@ -276,6 +320,7 @@ const sampleSchema = z.union([
       fixedCount: z.boolean().optional(),
       description: z.string().optional(),
       toolDescription: z.string().optional(),
+      ...guidanceShape,
     })
     .strict(),
 ]);
@@ -328,6 +373,7 @@ const lookupSchema = z
     type: term.optional(),
     description: z.string().optional(),
     toolDescription: z.string().optional(),
+    ...guidanceShape,
     types: z.array(term).min(1).optional(),
     weights: z.record(term, z.number().min(0).max(1)).optional(),
     scopeWeight: scopeWeightSchema.optional(),
@@ -346,6 +392,7 @@ const definitionSchema = z
     noun: z.string().regex(NOUN_PATTERN, NOUN_MESSAGE),
     description: z.string().optional(),
     toolDescription: z.string().optional(),
+    ...guidanceShape,
     list: listSchema.optional(),
     verbs: z.array(verbSchema).min(1).optional(),
     lookup: lookupSchema.optional(),
@@ -596,6 +643,24 @@ function refineLookup(
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `expand "${expand.name}" field "${entry.name}" sets "blankWhenSelf", which only the SPARQL lane can express — set the expand's "source" to "sparql".`,
+          path: ["lookup"],
+        });
+      }
+      if ("many" in entry && entry.many && expandSource !== "sparql") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `expand "${expand.name}" field "${entry.name}" sets "many", which only the SPARQL lane can express — set the expand's "source" to "sparql".`,
+          path: ["lookup"],
+        });
+      }
+      if (
+        "many" in entry &&
+        entry.many &&
+        expand.orderBy?.includes(entry.name)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `expand "${expand.name}" orders by "${entry.name}", a "many" field — a set of values has no order to sort on.`,
           path: ["lookup"],
         });
       }

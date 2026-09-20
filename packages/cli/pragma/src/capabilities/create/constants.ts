@@ -2,8 +2,8 @@
  * The command-path ALLOWLIST of the `create` surface — the one list the
  * surface's mechanical copies derive from: the `CreateKind` union
  * (`types.ts`) and the generator lookup (`pickGenerator.ts`). Prose is NOT
- * derived: the verb summaries in `create.verb.ts` and
- * `capabilities/hints.ts` still name the frameworks by hand.
+ * derived: the verb summaries and `useWhen` sentences in `create.verb.ts`
+ * still name the frameworks by hand.
  *
  * This table is the SINGLE authoring point for which generator packages the
  * distribution ships: it binds each `create` noun to the command PATHS it

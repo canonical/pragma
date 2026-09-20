@@ -12,6 +12,7 @@ import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import { PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/types.js";
+import { declareVerbs } from "../spec/call.js";
 import { kebabCase } from "../spec/emitSurface.js";
 import type { VerbSpec } from "../spec/types.js";
 import { compileListable, compilePack, compileStoryModule } from "./compile.js";
@@ -362,19 +363,28 @@ describe("the grammar rejects what the compiler cannot build (PROTECTED)", () =>
     );
   });
 
-  it("rejects an emptyRecovery.cli that names a binary, and names the change", () => {
-    // The hint is rendered as `<consuming distribution> <cli>`, so a story
-    // carrying the old prefixed form would render `pragma pragma sources
-    // update`. Third-party packs are third-party DATA: they get an error that
-    // names the grammar change, not a silently doubled string.
-    const withCli = (cli: string) => ({
+  it("rejects the retired emptyRecovery.cli and a call that is a command line, naming the change", () => {
+    // A recovery names a CALL — a verb path and a param bag — and the consuming
+    // distribution spells it per surface. Third-party packs are third-party
+    // DATA: the old `cli` string gets an error that names the grammar change,
+    // and a command line in `verb` would render `pragma pragma sources update`.
+    const withRecovery = (recovery: Record<string, unknown>) => ({
       noun: "widget",
-      list: { ...listShape, emptyRecovery: { message: "None.", cli } },
+      list: { ...listShape, emptyRecovery: { message: "None.", ...recovery } },
     });
-    expect(parse(withCli(`${RECOVERY_CLI_PREFIX}sources update`))).toThrow(
-      /WITHOUT the binary name/,
+    expect(parse(withRecovery({ cli: "sources update" }))).toThrow(
+      /emptyRecovery\.cli is now emptyRecovery\.call/,
     );
-    expect(parse(withCli("sources update"))).not.toThrow();
+    expect(
+      parse(
+        withRecovery({
+          call: { verb: `${RECOVERY_CLI_PREFIX}sources update` },
+        }),
+      ),
+    ).toThrow(/a call names a verb path/);
+    expect(
+      parse(withRecovery({ call: { verb: "sources update" } })),
+    ).not.toThrow();
   });
 });
 
@@ -387,6 +397,11 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
       prefixes: PREFIXES,
       detail: "detailed",
     }));
+    // A miss recovers to `widget list`; the suite checks every call it renders
+    // against the declared verbs, and a fixture's are not the distribution's.
+    declareVerbs(
+      compilePack(WIDGET_PACK, distributionSource("bundled:widget"), PREFIXES),
+    );
   });
 
   afterAll(async () => {
@@ -563,6 +578,88 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
  * once, for the name resolve, and the resource listing reads that same
  * declaration. Nothing to keep in sync because there is nothing written twice.
  */
+describe("a lookup that declares no disclosure can still be asked for less", () => {
+  /** The widget lookup with every trace of disclosure removed. */
+  const BARE_PACK: PackDefinition = {
+    noun: "widget",
+    lookup: {
+      source: "sparql",
+      by: "ex:name",
+      type: "ex:Widget",
+      fields: [{ name: "description", property: "ex:description" }],
+      expand: [
+        {
+          name: "parts",
+          relation: "ex:hasPart",
+          select: [{ name: "name", property: "ex:name" }],
+        },
+      ],
+    },
+  };
+  const lookupVerb = compilePack(
+    BARE_PACK,
+    distributionSource("bundled:widget"),
+    PREFIXES,
+  ).find((v) => verbKey(v.path) === "widget lookup") as VerbSpec;
+
+  const lookupAt = async (options: {
+    detail?: "summary" | "standard" | "detailed";
+    configDetail?: "summary";
+  }) => {
+    const { rt } = await buildFixtureRuntime({
+      ttl: TTL,
+      prefixes: PREFIXES,
+      ...(options.detail ? { detail: options.detail } : {}),
+      ...(options.configDetail
+        ? { configDetail: options.configDetail, detailOrigin: "project" }
+        : {}),
+    });
+    try {
+      const out = (await lookupVerb.run(
+        { name: ["Button"] },
+        rt,
+      )) as LookupOutput;
+      return out.results.at(0);
+    } finally {
+      (await rt.store.get()).store.dispose();
+    }
+  };
+
+  it("advertises the canonical levels, defaulting to the fullest", () => {
+    expect(lookupVerb.disclosure).toEqual({
+      levels: ["summary", "standard", "detailed"],
+      default: "detailed",
+    });
+  });
+
+  it("answers exactly as before when nothing is asked for", async () => {
+    expect(await lookupAt({})).toEqual(await lookupAt({ detail: "detailed" }));
+    expect((await lookupAt({}))?.parts).toEqual([{ name: "Label" }]);
+  });
+
+  it("is the fields alone at summary, and everything from standard", async () => {
+    const summary = await lookupAt({ detail: "summary" });
+    expect(summary).toMatchObject({ description: "A button." });
+    expect(summary).not.toHaveProperty("parts");
+    expect(await lookupAt({ detail: "standard" })).toHaveProperty("parts");
+  });
+
+  it("follows a configured detail, as a declared disclosure always did", async () => {
+    expect(await lookupAt({ configDetail: "summary" })).not.toHaveProperty(
+      "parts",
+    );
+  });
+
+  it("leaves a declared disclosure exactly as its author wrote it", () => {
+    const declared = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    ).find((v) => verbKey(v.path) === "widget lookup");
+    expect(declared?.disclosure?.default).toBe("summary");
+  });
+});
+
 describe("declared listing (derived from the lookup's types)", () => {
   it("derives one collection per declared type, unweighted types at 1", () => {
     expect(

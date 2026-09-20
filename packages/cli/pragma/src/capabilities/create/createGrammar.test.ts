@@ -286,7 +286,7 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(matchedEnvelope.error.suggestions).toBeUndefined();
     // D5's third route, pinned as the INVARIANT and not only the output:
     // this cli is COMPUTED at the mount (chain[0] = the root program's
-    // name), bypassing cliRecovery and invisible to copy.test.ts's
+    // name), bypassing callRecovery and invisible to copy.test.ts's
     // quoted-literal position rule — so the expectation is COMPOSED from
     // the same constant the derivation must land on. A `startsWith` check
     // behind an exact literal could never fail (the literal throws first

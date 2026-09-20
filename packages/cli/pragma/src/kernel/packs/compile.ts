@@ -14,7 +14,7 @@
  * facade).
  */
 
-import { BIN_NAME } from "../../constants.js";
+import { BIN_NAME, DETAIL_LEVELS } from "../../constants.js";
 import { PragmaError } from "../error/index.js";
 import { compactUri, DEFAULT_PREFIX_MAP } from "../render/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
@@ -42,8 +42,10 @@ import {
 import { storyIssues } from "./storyRules.js";
 import {
   EVERY_TIER,
+  type NounLookups,
   type PackDefinition,
   type PackFilter,
+  type PackGuidance,
   type PackList,
   type PackLookup,
   type PackPage,
@@ -74,17 +76,22 @@ const READ_CAPABILITY = {
  * @param definition - A validated pack definition.
  * @param source - Where the definition came from, for diagnostics.
  * @param prefixes - The merged prefix map used for display compaction.
+ * @param nouns - The other stories' lookups, which a filter naming a noun
+ *   resolves its values through. Read at run time only.
  * @returns The compiled verbs (list, extra verbs, lookup, sample), in order.
  */
 export function compilePack(
   definition: PackDefinition,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  nouns?: NounLookups,
 ): VerbSpec[] {
   const { noun } = definition;
   const verbs: VerbSpec[] = [];
 
   const tierScope = definition.tierScope;
+  // A story may declare a lookup alone; a miss must not point at a `list` it lacks.
+  const hasList = definition.list !== undefined;
 
   if (definition.list) {
     verbs.push(
@@ -93,8 +100,10 @@ export function compilePack(
         verb: "list",
         summary: definition.description ?? `List ${noun} entries.`,
         doc: definition.toolDescription,
+        ...guidanceOf(definition),
         source,
         prefixes,
+        ...(nouns ? { nouns } : {}),
         ...(tierScope ? { tierScope } : {}),
       }),
     );
@@ -107,19 +116,24 @@ export function compilePack(
         verb: verb.verb,
         summary: verb.description ?? `List ${noun} ${verb.verb}.`,
         doc: verb.toolDescription,
+        ...guidanceOf(verb),
         source,
         prefixes,
+        ...(nouns ? { nouns } : {}),
         ...(tierScope ? { tierScope } : {}),
       }),
     );
   }
 
   if (definition.lookup) {
+    // Normalised ONCE, here, so the lookup verb, its run body, both fetch lanes
+    // and the sample all read the same declaration.
+    const lookup = withDisclosure(definition.lookup);
     verbs.push(
-      compileLookupVerb(definition.lookup, noun, source, prefixes, tierScope),
+      compileLookupVerb(lookup, noun, source, prefixes, hasList, tierScope),
     );
-    if (definition.lookup.sample) {
-      verbs.push(compileSampleVerb(definition.lookup, noun, source, prefixes));
+    if (lookup.sample) {
+      verbs.push(compileSampleVerb(lookup, noun, source, prefixes, hasList));
     }
   }
 
@@ -195,6 +209,7 @@ export function compileListable(
  * @param definition - A validated pack definition.
  * @param source - Where the definition came from, for diagnostics.
  * @param prefixes - The merged prefix map used for display compaction.
+ * @param nouns - As {@link compilePack}.
  * @returns The module: the compiled verbs plus the story's module-level data.
  * @throws PragmaError CONFIG_ERROR when the definition cannot be compiled,
  *   naming the field and the rule.
@@ -203,6 +218,7 @@ export function compileStoryModule(
   definition: PackDefinition,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  nouns?: NounLookups,
 ): CapabilityModule {
   const issue = storyIssues(definition)[0];
   if (issue) {
@@ -211,17 +227,47 @@ export function compileStoryModule(
     );
   }
   const listable = compileListable(definition);
-  return {
+  const module: CapabilityModule = {
     name: definition.noun,
     story: true,
-    verbs: compilePack(definition, source, prefixes),
+    verbs: compilePack(definition, source, prefixes, nouns),
     colophon: definition.colophon,
     ...(listable ? { mcpListable: listable } : {}),
+  };
+  compiledFrom.set(module, { definition, source, prefixes });
+  return module;
+}
+
+/** What each story module was compiled from. */
+const compiledFrom = new WeakMap<
+  CapabilityModule,
+  {
+    readonly definition: PackDefinition;
+    readonly source: StorySource;
+    readonly prefixes: Readonly<Record<string, string>>;
+  }
+>();
+
+/**
+ * The story a module was compiled from by {@link compileStoryModule}, with the
+ * source and prefixes it was compiled under; `undefined` for any other module.
+ */
+export function storyOf(
+  module: CapabilityModule,
+): ReturnType<(typeof compiledFrom)["get"]> {
+  return compiledFrom.get(module);
+}
+
+/** Carry a story half's declared guidance onto its verb, omitting what is absent. */
+function guidanceOf(half: PackGuidance): Pick<VerbSpec, "useWhen" | "example"> {
+  return {
+    ...(half.useWhen ? { useWhen: half.useWhen } : {}),
+    ...(half.example ? { example: half.example } : {}),
   };
 }
 
 /** Presentation facts for one compiled list-shaped verb. */
-interface ListVerbMeta {
+interface ListVerbMeta extends PackGuidance {
   readonly noun: string;
   readonly verb: string;
   readonly summary: string;
@@ -229,6 +275,8 @@ interface ListVerbMeta {
   readonly doc?: string;
   readonly source: StorySource;
   readonly prefixes: Readonly<Record<string, string>>;
+  /** The other stories' lookups, for a filter that names a noun. */
+  readonly nouns?: NounLookups;
   /** The noun's declared tier hierarchy, when its entities are tiered. */
   readonly tierScope?: PackTierScope;
 }
@@ -246,6 +294,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
     path: [meta.noun, meta.verb],
     summary: meta.summary,
     ...(meta.doc ? { doc: meta.doc } : {}),
+    ...guidanceOf(meta),
     params,
     output: {
       formatters: listFormatters(shape, {
@@ -272,6 +321,8 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
       runBodies().then((m) =>
         m.makeListRun(shape, {
           source: meta.source,
+          prefixes: meta.prefixes,
+          ...(meta.nouns ? { nouns: meta.nouns } : {}),
           ...(meta.tierScope ? { tierScope: meta.tierScope } : {}),
         })(params, rt),
       ),
@@ -285,6 +336,7 @@ function compileLookupVerb(
   noun: string,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  hasList: boolean,
   tierScope?: PackTierScope,
 ): VerbSpec {
   // Derive-by-default: every lookup completes its `<name>` from the pack index
@@ -319,6 +371,7 @@ function compileLookupVerb(
     summary:
       lookup.description ?? `Look up ${noun} details by name, IRI, or glob.`,
     ...(lookup.toolDescription ? { doc: lookup.toolDescription } : {}),
+    ...guidanceOf(lookup),
     params: [nameParam, ...tierParams(tierScope)],
     output: { formatters: lookupFormatters(lookup, prefixes) },
     examples: [
@@ -332,13 +385,18 @@ function compileLookupVerb(
           ]
         : []),
     ],
-    ...(lookup.disclosure
-      ? { disclosure: disclosureSpec(lookup.disclosure) }
-      : {}),
+    disclosure: disclosureSpec(lookup.disclosure),
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
       runBodies().then((m) =>
-        m.makeLookupRun(lookup, noun, source, prefixes, tierScope)(params, rt),
+        m.makeLookupRun(
+          lookup,
+          noun,
+          source,
+          prefixes,
+          hasList,
+          tierScope,
+        )(params, rt),
       ),
   };
   return asVerb(verb);
@@ -374,6 +432,7 @@ function compileSampleVerb(
   noun: string,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  hasList: boolean,
 ): VerbSpec {
   const defaultCount = sampleDefaultCount(lookup);
   const config = lookup.sample === true ? undefined : lookup.sample;
@@ -396,6 +455,7 @@ function compileSampleVerb(
       config?.description ??
       `Return randomly selected complete ${noun} entries as exemplars.`,
     ...(config?.toolDescription ? { doc: config.toolDescription } : {}),
+    ...guidanceOf(config ?? {}),
     params: countParam,
     output: { formatters: sampleFormatters(lookup, noun, prefixes) },
     examples: [
@@ -411,11 +471,40 @@ function compileSampleVerb(
           source,
           prefixes,
           defaultCount,
+          hasList,
         )(params, rt),
       ),
   };
   return asVerb(verb);
 }
+
+/**
+ * Give a lookup that declares no disclosure the canonical ladder: default
+ * `detailed` (so its default answer is unchanged) and untagged expands from
+ * `standard` (so `summary` is the fields alone, and `standard` equals
+ * `detailed`). A declared disclosure is returned as written.
+ */
+function withDisclosure(lookup: PackLookup): PackLookup {
+  if (lookup.disclosure) return lookup;
+  return {
+    ...lookup,
+    disclosure: { levels: [...DETAIL_LEVELS], default: IMPUTED_DEFAULT_LEVEL },
+    ...(lookup.expand
+      ? {
+          expand: lookup.expand.map((expand) => ({
+            ...expand,
+            level: expand.level ?? IMPUTED_EXPAND_LEVEL,
+          })),
+        }
+      : {}),
+  };
+}
+
+/** The level an imputed disclosure answers at when none is asked for: all of it. */
+const IMPUTED_DEFAULT_LEVEL = "detailed";
+
+/** The level from which an imputed disclosure shows an untagged expand. */
+const IMPUTED_EXPAND_LEVEL = "standard";
 
 /** Normalize a pack disclosure into a {@link DisclosureSpec} (default → base). */
 function disclosureSpec(disclosure: PackLookup["disclosure"]): DisclosureSpec {

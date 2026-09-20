@@ -12,7 +12,28 @@
  */
 
 import type { Effect, Task } from "@canonical/task";
-import type { PragmaRuntime } from "../runtime/types.js";
+import type { InteractionRuntime, PragmaRuntime } from "../runtime/types.js";
+
+/** Where text is about to be printed — the projector driving the run. */
+export type Surface = InteractionRuntime["transport"];
+
+/**
+ * A verb path (`"sources update"`) and the params to call it with — the one
+ * type behind every example and every recovery (`call.ts` spells it).
+ */
+export interface Call {
+  readonly verb: string;
+  readonly params?: Readonly<Record<string, unknown>>;
+  /**
+   * GLOBAL CLI flags the command should carry (`--verbose`). They are not
+   * params of the verb and have no MCP counterpart, so only the CLI spelling
+   * renders them.
+   */
+  readonly cliFlags?: readonly string[];
+}
+
+/** A tool's behavioural category, used for grouping + counts. */
+export type ToolCategory = "read" | "write" | "orientation" | "diagnostic";
 
 /** MCP tool annotations mirrored onto exposed verbs. */
 export type McpAnnotations = {
@@ -115,8 +136,8 @@ export type ParamSpec =
        * A repeatable flag ACCUMULATES: `--category css --category git` is
        * the union, never last-wins (repetition is the sanctioned multi-value
        * form, and silently dropping all but the last value is data loss).
-       * CLI-side only: the MCP arg schema keeps its scalar shape, and the
-       * run body accepts one value or many.
+       * Over MCP the same param is an ARRAY that also takes one bare value
+       * (`spec/wireType.ts`); the run body accepts one value or many.
        */
       repeatable?: true;
     }
@@ -173,8 +194,9 @@ export type ParamSpec =
  *   mutes it (success-path guidance).
  * - `--format json` AND the MCP tool result: it rides the envelope as
  *   `meta.notice` (`project/cli/dispatch.ts#renderData`,
- *   `project/mcp/registerVerb.ts#emptyMeta` — the same key from the same seam,
- *   so the two MACHINE surfaces stay byte-equal). `data` keeps its uniform empty
+ *   `project/mcp/registerVerb.ts#noticeMeta` — the same key from the same
+ *   seam; the sentence differs only in how a next step inside it is spelled
+ *   for its surface). `data` keeps its uniform empty
  *   shape; `[]` stays `[]`. Without it an agent could not tell an unbuilt store,
  *   a mistyped filter and a genuinely empty result apart — all three were
  *   `{"ok":true,"data":[],"meta":{}}`.
@@ -191,7 +213,12 @@ export interface Formatters<T> {
   ) => string;
   readonly llm: (d: T) => string;
   readonly json: (d: T) => string;
-  readonly notice?: (d: T) => string | undefined;
+  /**
+   * `surface` says where the sentence is about to be printed, so a notice that
+   * ends in a next call spells it as a tool call on MCP and a command on the
+   * CLI (the default).
+   */
+  readonly notice?: (d: T, surface?: Surface) => string | undefined;
   /**
    * The MACHINE half of the notice seam: facts about the read that belong in
    * the envelope's `meta` as DATA, merged there by both projectors under the
@@ -200,7 +227,7 @@ export interface Formatters<T> {
    * `notice` is a sentence, and a sentence is the right shape for a human
    * reading stderr and the wrong shape for an agent deciding what to do next.
    * The standing case is the tier scope: `meta.scope` names the tiers a list
-   * answered from, so a caller that wants the rest can widen the read without
+   * answered from and counts the whole filtered answer per tier, so a caller that wants the rest can widen the read without
    * parsing prose for tier names. Both machine surfaces read this ONE seam, the
    * way they already read one `notice`, so CLI-JSON and MCP stay byte-equal.
    *
@@ -248,6 +275,24 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
   readonly path: readonly [noun: string, verb?: string];
   readonly summary: string;
   readonly doc?: string;
+  /**
+   * The question a person would ask that this verb answers, in THEIR words, as
+   * a bare clause ("when asked which components use a token" — prose adds the
+   * "Use" lead, the catalogue's `use_when` field needs none). With {@link example} it is
+   * the one source of guidance: `guidance.ts` builds the MCP tool description,
+   * the `capabilities` catalogue and verb help from it, so none is typed twice.
+   * Optional in the type because a third-party story may omit it; every verb
+   * this distribution registers is held to it by `callRule.test.ts`.
+   */
+  readonly useWhen?: string;
+  /**
+   * One real call's params — the verb is this one, and both spellings derive.
+   * Required of a verb with a required param; a verb callable with no arguments
+   * declares none, because `tool {}` teaches nothing.
+   */
+  readonly example?: Readonly<Record<string, unknown>>;
+  /** The catalogue group, where it is not the default: a mutating verb is a `write`, any other a `read`. */
+  readonly category?: "orientation" | "diagnostic";
   readonly params: readonly ParamSpec[];
   readonly output: {
     schema?: unknown;
@@ -505,6 +550,16 @@ export interface CliProjection {
   ) => ReferenceCliSyntax | undefined;
 }
 
+/**
+ * What a distribution tells an agent at the MCP handshake, as DATA: the words
+ * that name its own tiers and nouns. The kernel adds the generated question →
+ * tool index and holds the whole to a hard length ceiling.
+ */
+export interface McpOrientation {
+  /** The sentences the instructions open with, in order. */
+  readonly conventions: readonly string[];
+}
+
 /** A capability module: a named bundle of verbs with optional boot/resources/prompts hooks. */
 export interface CapabilityModule {
   readonly name: string;
@@ -527,6 +582,8 @@ export interface CapabilityModule {
    */
   readonly story?: true;
   readonly boot?: (rt: PragmaRuntime) => void;
+  /** The handshake orientation (a module hook; one module declares it). */
+  readonly mcpOrientation?: McpOrientation;
   /** An optional MCP resource surface (NOT a VerbSpec field — a module hook). */
   readonly mcpResources?: McpResourceProvider;
   /**

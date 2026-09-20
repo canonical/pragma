@@ -4,12 +4,13 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
-import { emitSurface } from "../../kernel/spec/emitSurface.js";
+import { renderCall } from "../../kernel/spec/call.js";
+import { emitSurface, toolName } from "../../kernel/spec/emitSurface.js";
+import { exampleCall } from "../../kernel/spec/guidance.js";
 import type { GlobalFlags, VerbSpec } from "../../kernel/spec/types.js";
 import { capabilities } from "../index.js";
 import { capabilitiesSelfVerb } from "./capabilities.verb.js";
-import { buildCapabilitiesData, liveTools, mutatingTools } from "./catalog.js";
-import { TOOL_HINTS } from "./hints.js";
+import { buildCapabilitiesData, liveTools } from "./catalog.js";
 import type { CapabilitiesData } from "./types.js";
 
 const NO_MUT = { dryRun: false, undo: false, yes: false };
@@ -23,27 +24,54 @@ const FLAGS: GlobalFlags = {
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-caps-"));
 const tools = liveTools(capabilities);
 const data = buildCapabilitiesData(capabilities);
+/** The tools whose verbs mutate, read straight off the registry. */
+const mutating = new Set(
+  capabilities
+    .flatMap((module) => module.verbs)
+    .filter((verb) => verb.capability.mutates && verb.capability.mcp.expose)
+    .map((verb) => toolName(verb.path)),
+);
 
 describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", () => {
-  it("every live tool has a TOOL_HINTS entry (no missing hint)", () => {
-    const missing = tools.filter((tool) => !(tool in TOOL_HINTS));
-    expect(missing).toEqual([]);
+  // The catalogue has no table of its own to drift: each entry is read off the
+  // tool's verb. That every verb DECLARES its guidance is `callRule.test.ts`.
+  it("every entry is its own verb's guidance: question, category, example", () => {
+    const verbs = new Map(
+      capabilities.flatMap((module) =>
+        module.verbs.map((verb) => [toolName(verb.path), verb] as const),
+      ),
+    );
+    for (const tool of data.tools) {
+      const verb = verbs.get(tool.name) as VerbSpec;
+      expect(tool.use_when, tool.name).toBe(verb.useWhen);
+      const example = exampleCall(verb);
+      expect(tool.example, tool.name).toBe(
+        example ? renderCall(example, "mcp") : undefined,
+      );
+    }
   });
 
-  it("no TOOL_HINTS key is stale (every hint names a live tool)", () => {
-    const live = new Set(tools);
-    const stale = Object.keys(TOOL_HINTS).filter((name) => !live.has(name));
-    expect(stale).toEqual([]);
+  it("a verb declaring no guidance (a third-party story may) degrades to its summary", () => {
+    const {
+      useWhen: _useWhen,
+      example: _example,
+      ...bare
+    } = capabilitiesSelfVerb;
+    const [tool] = buildCapabilitiesData([
+      { name: "capabilities", verbs: [bare as VerbSpec] },
+    ]).tools;
+    expect(tool).toEqual({
+      name: "capabilities",
+      category: "orientation",
+      use_when: capabilitiesSelfVerb.summary,
+    });
   });
 
-  it("hint categories agree with the live surface (write ⟺ mutates)", () => {
-    const mutating = mutatingTools(capabilities);
-    for (const tool of tools) {
-      const isWrite = TOOL_HINTS[tool]?.category === "write";
-      expect(
-        isWrite,
-        `${tool}: hint category "${TOOL_HINTS[tool]?.category}" vs mutates=${mutating.has(tool)}`,
-      ).toBe(mutating.has(tool));
+  it("categories agree with the live surface (write ⟺ mutates)", () => {
+    for (const tool of data.tools) {
+      expect(tool.category === "write", tool.name).toBe(
+        mutating.has(tool.name),
+      );
     }
   });
 
@@ -67,7 +95,7 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
     ).toBe(counts.total);
     expect(counts.orientation).toBe(1); // exactly `capabilities`
     expect(counts.diagnostic).toBe(2); // `doctor` + `info`
-    expect(counts.write).toBe(mutatingTools(capabilities).size);
+    expect(counts.write).toBe(mutating.size);
   });
 
   it("the discovery sequence's sample stage lists the live *_sample tools", () => {

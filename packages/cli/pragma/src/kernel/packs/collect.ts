@@ -28,9 +28,11 @@ import type { ConfigLayers } from "../config/index.js";
 import { PragmaError } from "../error/index.js";
 import type { PackStoryRecord } from "../runtime/graphpack/stories.js";
 import type { CapabilityModule } from "../spec/index.js";
-import { compileStoryModule } from "./compile.js";
+import { compileStoryModule, storyOf } from "./compile.js";
 import { parsePackDefinition } from "./schema.js";
-import type { PackDefinition, PackEntry } from "./types.js";
+import { nounsNamed } from "./storyRules.js";
+import type { NounLookups, PackDefinition, PackEntry } from "./types.js";
+import { VERB_PATH_PATTERN } from "./types.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
 
 /** One package-declared story that could not be used, and why. */
@@ -83,10 +85,14 @@ export function validateStories(
   const problems: StoryProblem[] = [];
   for (const record of records) {
     try {
-      const definition = parsePackDefinition(
-        JSON.parse(record.content),
-        record.source,
-      );
+      const migrated = migrateLegacyRecoveries(JSON.parse(record.content));
+      for (const hint of migrated.dropped) {
+        problems.push({
+          source: record.source,
+          message: `its story is kept, but its emptyRecovery.cli hint "${hint}" is not a verb path and was dropped; the key is now emptyRecovery.call.`,
+        });
+      }
+      const definition = parsePackDefinition(migrated.raw, record.source);
       if (reserved.has(definition.noun)) {
         problems.push({
           source: record.source,
@@ -110,6 +116,55 @@ export function validateStories(
     }
   }
   return { entries: [...byNoun.values()], problems };
+}
+
+/**
+ * Carry a PACKAGE story written against the old grammar forward.
+ *
+ * `emptyRecovery.cli: "sources update"` became `emptyRecovery.call: { verb }`. A
+ * project's own config gets the hard error that names the change — its author
+ * can fix it. A package is third-party data, often already built into a pack on
+ * disk, and refusing the key would cost the user the whole noun for the sake of
+ * a hint. So the old string becomes a call when it IS a verb path, and
+ * otherwise only the hint is dropped, reported once under `doctor`.
+ *
+ * @param raw - The parsed story JSON (untrusted; returned unchanged when it
+ *   carries no legacy key).
+ * @returns The story to validate, and the legacy hints that could not be kept.
+ */
+export function migrateLegacyRecoveries(raw: unknown): {
+  raw: unknown;
+  dropped: string[];
+} {
+  const dropped: string[] = [];
+  const migrateHalf = (half: unknown): unknown => {
+    const recovery = (
+      half as { emptyRecovery?: Record<string, unknown> } | null
+    )?.emptyRecovery;
+    if (typeof recovery?.cli !== "string") return half;
+    const { cli, ...rest } = recovery;
+    const keep = VERB_PATH_PATTERN.test(cli);
+    if (!keep) dropped.push(cli);
+    return {
+      ...(half as object),
+      emptyRecovery:
+        keep && rest.call === undefined
+          ? { ...rest, call: { verb: cli } }
+          : rest,
+    };
+  };
+  if (typeof raw !== "object" || raw === null) return { raw, dropped };
+  const story = raw as { list?: unknown; verbs?: unknown };
+  return {
+    raw: {
+      ...story,
+      ...(story.list === undefined ? {} : { list: migrateHalf(story.list) }),
+      ...(Array.isArray(story.verbs)
+        ? { verbs: story.verbs.map(migrateHalf) }
+        : {}),
+    },
+    dropped,
+  };
 }
 
 /**
@@ -147,8 +202,8 @@ function projectStoryTiers(layers: ConfigLayers): readonly unknown[][] {
  *   carries (see {@link validateStories}); weaker than either config tier.
  * @returns The effective modules, uniqueness-checked.
  * @throws PragmaError CONFIG_ERROR on an invalid CONFIG story, a config story
- *   claiming an authored non-story noun, or a duplicate noun within one config
- *   tier. Package stories were already screened and never throw here.
+ *   claiming an authored non-story noun, a duplicate noun within one config
+ *   tier, or a config or shipped story naming a noun no story declares. Package stories were already screened and never throw here.
  */
 export function assembleEffectiveModules(
   staticModules: readonly CapabilityModule[],
@@ -171,6 +226,19 @@ export function assembleEffectiveModules(
   // Keyed by noun so the stronger tier REPLACES the weaker one — declaring a
   // story both on its pack and at the top level is a refinement, not an error.
   const dynamic = new Map<string, CapabilityModule>();
+  // The EFFECTIVE lookup of a noun, for shipped and project stories alike.
+  // Read at run time, so it sees every tier whatever order they compile in.
+  const nouns: NounLookups = (noun) => {
+    const module =
+      dynamic.get(noun) ?? staticModules.find((m) => m.name === noun);
+    const story = module && storyOf(module);
+    if (story && !story.definition.lookup) {
+      throw PragmaError.configError(
+        `The "${noun}" story in ${story.source.label} declares no lookup, so a filter that takes a ${noun} cannot resolve its value. Add a lookup to that story.`,
+      );
+    }
+    return story?.definition.lookup;
+  };
   for (const entry of packageStories) {
     dynamic.set(
       entry.definition.noun,
@@ -178,6 +246,7 @@ export function assembleEffectiveModules(
         entry.definition,
         { label: entry.source, origin: "package" },
         prefixes,
+        nouns,
       ),
     );
   }
@@ -205,6 +274,7 @@ export function assembleEffectiveModules(
           definition,
           { label: "config", origin: "config" },
           prefixes,
+          nouns,
         ),
       );
     }
@@ -212,10 +282,77 @@ export function assembleEffectiveModules(
 
   // Drop the static module for any noun a config story overrides, then append
   // the dynamic modules.
-  const kept = staticModules.filter((module) => !dynamic.has(module.name));
+  const kept = staticModules
+    .filter((module) => !dynamic.has(module.name))
+    // Recompiled so a shipped filter naming an overridden noun resolves
+    // through the project's lookup, as the project's own stories do.
+    .map((module) => {
+      const story = storyOf(module);
+      return story
+        ? compileStoryModule(
+            story.definition,
+            story.source,
+            story.prefixes,
+            nouns,
+          )
+        : module;
+    });
   const effective = [...kept, ...dynamic.values()];
+  // A noun some story declares without a lookup is refused when a filter on it
+  // is used, not here: only a noun NO story declares is a declaration error.
+  // Package stories never throw; {@link screenPackageStories} drops them.
+  for (const module of effective) {
+    const story = storyOf(module);
+    const unknown =
+      story && story.source.origin !== "package"
+        ? undeclaredNoun(story.definition, effective)
+        : undefined;
+    if (story && unknown) {
+      throw PragmaError.configError(
+        `Invalid story in ${story.source.label}: "${module.name}" names the noun "${unknown}", and no story declares it.`,
+      );
+    }
+  }
   assertUniqueVerbs(effective.flatMap((module) => [...module.verbs]));
   return effective;
+}
+
+/** The first noun a story names that no effective story declares. */
+function undeclaredNoun(
+  definition: PackDefinition,
+  effective: readonly CapabilityModule[],
+): string | undefined {
+  return nounsNamed(definition).find(
+    (noun) => !effective.some((m) => m.name === noun && storyOf(m)),
+  );
+}
+
+/**
+ * Drop each PACKAGE story naming a noun no effective story declares, reporting
+ * it — judged over the assembled set, so the order of declaration is nothing.
+ *
+ * @param effective - The assembled modules.
+ * @returns The modules kept, and one problem per story dropped.
+ */
+export function screenPackageStories(effective: readonly CapabilityModule[]): {
+  readonly modules: readonly CapabilityModule[];
+  readonly problems: readonly StoryProblem[];
+} {
+  const problems: StoryProblem[] = [];
+  const modules = effective.filter((module) => {
+    const story = storyOf(module);
+    const unknown =
+      story?.source.origin === "package"
+        ? undeclaredNoun(story.definition, effective)
+        : undefined;
+    if (!story || unknown === undefined) return true;
+    problems.push({
+      source: story.source.label,
+      message: `it names the noun "${unknown}", and no story declares it.`,
+    });
+    return false;
+  });
+  return { modules: problems.length === 0 ? effective : modules, problems };
 }
 
 /**
@@ -252,8 +389,11 @@ export async function loadEffectiveModules(
     activeStories(resolveSources(layers, cwd)),
     staticModules,
   );
+  const screened = screenPackageStories(
+    assembleEffectiveModules(staticModules, layers, entries),
+  );
   return {
-    modules: assembleEffectiveModules(staticModules, layers, entries),
-    problems,
+    modules: screened.modules,
+    problems: [...problems, ...screened.problems],
   };
 }

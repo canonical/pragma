@@ -46,7 +46,7 @@ ex:slider a ex:Widget ; ex:name "Slider" ; ex:kind "input" .
 /** The recovery a story authors for an EMPTY POPULATION — never for a filter. */
 const EMPTY_RECOVERY = {
   message: "No widgets in the store.",
-  cli: "sources update",
+  call: { verb: "sources update" },
 } as const;
 
 const WIDGET_LIST = {

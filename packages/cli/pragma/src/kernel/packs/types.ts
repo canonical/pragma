@@ -93,8 +93,22 @@ export const TIER_PARAM = "tier";
  */
 export const ENTITY_VARIABLE = "uri";
 
+/**
+ * What a cell may say about the values it prints, on a list column, a lookup
+ * field or an expand field alike.
+ */
+export interface PackCellLink {
+  /**
+   * The noun whose entities this cell NAMES: every value it prints is a name
+   * that noun's lookup resolves, so a reader can take the cell to
+   * `<noun> lookup` verbatim. On a list column it also promises a filter of
+   * the same `noun` over that column.
+   */
+  readonly noun?: string;
+}
+
 /** A list column: a SELECT variable to display. */
-export interface PackColumn {
+export interface PackColumn extends PackCellLink {
   /** SELECT variable name (without `?`). */
   readonly field: string;
   /** Column heading (defaults to the field name). */
@@ -102,7 +116,7 @@ export interface PackColumn {
 }
 
 /** A looked-up value: an output name bound to a property of the entity. */
-export interface PackField {
+export interface PackField extends PackCellLink {
   /** Output field name on the looked-up entity. */
   readonly name: string;
   /** Property to read — a prefixed name (`ds:tier`) or absolute IRI. */
@@ -141,7 +155,7 @@ export interface PackSection extends PackField {
 }
 
 /** A field read from each child node of a {@link PackExpand}. */
-export interface PackExpandField {
+export interface PackExpandField extends PackCellLink {
   /** Output field name on the child record. */
   readonly name: string;
   /** Property to read on the child node — prefixed name, IRI, or path. */
@@ -166,6 +180,15 @@ export interface PackExpandField {
    * and filter against it, and a GraphQL document cannot.
    */
   readonly blankWhenSelf?: true;
+  /**
+   * The property reaches SEVERAL values per child, and the cell is all of them:
+   * distinct, sorted, space-separated, one row per child. Without it each value is a
+   * row of its own, repeating every other cell.
+   *
+   * SPARQL lane only. Not combinable with {@link blankWhenSelf}, and not a
+   * name an expand may order by — a set has no order to sort on.
+   */
+  readonly many?: true;
 }
 
 /**
@@ -365,6 +388,23 @@ export interface PackFilter {
    * names neither is refused where it is declared.
    */
   readonly vocabulary?: PackFilterVocabulary;
+  /**
+   * In place of {@link values} or a {@link vocabulary}: a value is a literal
+   * name or IRI of that noun (never a pattern), resolved as `<noun> lookup`
+   * resolves one, and rows are kept by the IRIs it reaches, matched against
+   * {@link entity}.
+   */
+  readonly noun?: string;
+  /**
+   * The projected SELECT variable holding the IRI a {@link noun} filter
+   * constrains. Left out of the rows unless a column displays it.
+   */
+  readonly entity?: string;
+  /**
+   * The path from {@link entity} to the named entity when they are different
+   * nodes (`^ex:madeBy` from a row's maker to its widgets); absent, they are one.
+   */
+  readonly via?: string;
   /** Help text (defaults to a generated description). */
   readonly description?: string;
 }
@@ -393,16 +433,41 @@ export interface PackSearch {
   readonly description?: string;
 }
 
+/** The shape of a verb path (`sources update`): a noun, optionally a verb — never a command line. */
+export const VERB_PATH_PATTERN = /^[a-z][a-z0-9-]*( [a-z][a-z0-9-]*)?$/;
+
+/**
+ * A call as a story writes it: a verb path and the params to make it with.
+ * Structurally the kernel's `Call` (`spec/types.ts`), restated here because this
+ * file is on the distribution config's import graph and may import nothing.
+ */
+export interface PackCall {
+  readonly verb: string;
+  readonly params?: Readonly<Record<string, unknown>>;
+}
+
 /** Opt-in empty-result recovery for a list story. */
 export interface PackEmptyRecovery {
   /** Human-readable cause + fix (e.g. which packages provide the data). */
   readonly message: string;
   /**
-   * The command that fixes the emptiness, WITHOUT the binary name
-   * (`sources update`). The consuming distribution's renderer prepends its own
-   * name, so a story stays portable across distributions.
+   * The call that fixes the emptiness (`{ verb: "sources update" }`). A verb
+   * path, never a binary name: the consuming distribution's renderer spells it
+   * for the surface it prints on, so a story stays portable across both.
    */
-  readonly cli?: string;
+  readonly call?: PackCall;
+}
+
+/**
+ * What a story half tells a caller choosing between tools. Optional in the
+ * grammar, because third-party packs predate it; the distribution's own stories
+ * are held to declaring both (`callRule.test.ts`).
+ */
+export interface PackGuidance {
+  /** The question a person would ask, in their words, as a bare clause ("when asked …"). */
+  readonly useWhen?: string;
+  /** One real call's params (never empty) — the verb is implied, and both spellings derive. */
+  readonly example?: Readonly<Record<string, unknown>>;
 }
 
 /** The list half of a pack (always SPARQL-sourced). */
@@ -424,7 +489,7 @@ export interface PackList {
  * machinery as `list` (e.g. standard's `categories`). May not collide with the
  * compiled `list`/`lookup`/`sample` verbs.
  */
-export interface PackVerb extends PackList {
+export interface PackVerb extends PackList, PackGuidance {
   /** Verb name (kebab-case), e.g. `"categories"`. */
   readonly verb: string;
   /** CLI description for the command. */
@@ -437,7 +502,7 @@ export interface PackVerb extends PackList {
  * The sample capability: `<noun> sample [count]` returns 1–5 randomly selected
  * complete entities (resolved through the lookup path at the HIGHEST level).
  */
-export interface PackSample {
+export interface PackSample extends PackGuidance {
   /** Default sample count when none is requested (1–5; default 2). */
   readonly count?: number;
   /**
@@ -516,7 +581,7 @@ export interface PackScopeWeight {
  * ALWAYS generated SPARQL regardless of source (an implementation detail, not a
  * second declared source).
  */
-export interface PackLookup {
+export interface PackLookup extends PackGuidance {
   /**
    * Field-fetch strategy (default `"sparql"`). `"graphql"` keeps the SPARQL
    * name→URI resolve, then fetches all fields/sections/expands in ONE generated
@@ -604,6 +669,14 @@ export interface PackLookup {
   readonly completion?: PackCompletion;
 }
 
+/**
+ * The lookup another story's noun declares, by noun — how a {@link PackFilter}
+ * naming a `noun` reaches that noun's resolver. A story is compiled alone, so
+ * whoever compiles it supplies this over the stories it knows. It may throw a
+ * CONFIG_ERROR of its own when it knows why a noun has no lookup.
+ */
+export type NounLookups = (noun: string) => PackLookup | undefined;
+
 /** A pack list row / flat lookup base: variable name → string value. */
 export type PackRow = Record<string, string>;
 
@@ -664,7 +737,16 @@ export interface PageTierScope {
    * use (the tier IRI's local name), base first and then shallowest first.
    */
   readonly tiers: readonly string[];
+  /**
+   * Rows of the WHOLE filtered answer per tier, keyed by local name: every
+   * in-scope tier (0 when empty), the out-of-scope tiers holding some, and
+   * {@link UNTIERED_KEY} for rows in no tier. First page only.
+   */
+  readonly counts?: Readonly<Record<string, number>>;
 }
+
+/** The `counts` key for rows whose entity is in no tier (no tier is named so). */
+export const UNTIERED_KEY = "no tier";
 
 /** One filter a list read was narrowed by, as the caller spelled it. */
 export interface PackAppliedFilter {
@@ -692,7 +774,7 @@ export type PackChildRow = Record<
 export type PackEntity = Record<string, string | readonly PackChildRow[]>;
 
 /** One declarative read story: a noun with its preferred queries. */
-export interface PackDefinition {
+export interface PackDefinition extends PackGuidance {
   /** Command noun (kebab-case), e.g. `"standard"` → `pragma standard list`. */
   readonly noun: string;
   /** CLI description for the list command. */

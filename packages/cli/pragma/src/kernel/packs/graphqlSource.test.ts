@@ -14,6 +14,7 @@ import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import type { PragmaRuntime, StoreSession } from "../runtime/types.js";
 import { compilePack } from "./compile.js";
 import { buildLookupDocument } from "./graphql/buildLookupDocument.js";
+import { fetchGraphqlLookup } from "./graphql/fetchGraphqlLookup.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition, PackLookup } from "./types.js";
@@ -319,6 +320,47 @@ describe("GraphQL engine — against the compiled fixture schema (PROTECTED)", (
   });
 
   const lookup = GBLOCK.lookup as PackLookup;
+
+  /** The fixture runtime with its GraphQL executor replaced by a canned answer. */
+  const answering = (answer: unknown): PragmaRuntime =>
+    ({
+      ...rt,
+      query: { ...rt.query, graphql: async () => answer },
+    }) as PragmaRuntime;
+  const fetchWith = (answer: unknown) =>
+    fetchGraphqlLookup(
+      answering(answer),
+      lookup,
+      "https://ds.canonical.com/x",
+      "X",
+      "t",
+      BLOCK_PREFIXES,
+    );
+
+  it("an execution error recovers to the namespace list, in both spellings", async () => {
+    await expect(
+      fetchWith({ errors: [{ message: "boom" }] }),
+    ).rejects.toMatchObject({
+      code: "STORE_UNAVAILABLE",
+      recovery: {
+        cli: "pragma ontology list",
+        mcp: { tool: "ontology_list", params: {} },
+      },
+    });
+  });
+
+  it("a resolved IRI with no typed node recovers to inspecting THAT entity", async () => {
+    await expect(fetchWith({ data: { node: null } })).rejects.toMatchObject({
+      code: "ENTITY_NOT_FOUND",
+      recovery: {
+        cli: "pragma graph inspect https://ds.canonical.com/x",
+        mcp: {
+          tool: "graph_inspect",
+          params: { uri: "https://ds.canonical.com/x" },
+        },
+      },
+    });
+  });
 
   it("generates one document with derived names, Relay envelopes, subtype scoping", () => {
     const plan = buildLookupDocument(lookup, schema, "t");

@@ -10,7 +10,9 @@ Global flags apply to every command: `--format <plain|llm|json>` (auto-detected 
 
 List all design system blocks.
 
-List all design system blocks with their type, tier, and modifier families. Use when browsing which blocks exist. Example: block_list {}.
+List all design system blocks with their type, tier, and modifier families.
+
+Use when asked which components, patterns, layouts or subcomponents exist — all four are blocks, and every one of them is read through the block tools.
 
 ```
 pragma block list [options]
@@ -38,7 +40,9 @@ pragma block list --format llm
 
 Look up block details by name, IRI, or glob.
 
-Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { name: ["Button"] }.
+Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. `detail: "summary"` trims to the base view.
+
+Use when asked about one component, pattern or layout by name — its anatomy, properties, variants, or when to use it.
 
 ```
 pragma block lookup <name...> [options]
@@ -70,7 +74,9 @@ pragma block lookup --tier all <name>  # every tier, not just the ones in scope
 
 Return randomly selected complete block entries as exemplars.
 
-Return randomly selected complete design-system blocks as exemplars. Use BEFORE writing queries to see actual data shapes, anatomy, and property names. Example: block_sample {}.
+Return randomly selected complete design-system blocks as exemplars.
+
+Use before your first block query, to see what a real block record looks like instead of guessing field names.
 
 ```
 pragma block sample
@@ -92,6 +98,8 @@ pragma block sample
 Discover pragma conventions, the annotated tool catalog, and the discovery sequence.
 
 Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.
+
+Use when unsure which tool answers a question.
 
 ```
 pragma capabilities
@@ -115,6 +123,8 @@ Narrate how the active domain is made.
 
 Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
+Use when asked which packs the data comes from.
+
 ```
 pragma colophon
 ```
@@ -135,7 +145,9 @@ pragma colophon --format llm  # condensed Markdown for agents
 
 List design-system concepts.
 
-List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: "Explanation" }.
+List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.
+
+Use when asked for design guidance that is not about one component — foundations, how-to guides, decision guides.
 
 ```
 pragma concept list [options]
@@ -165,7 +177,9 @@ pragma concept list --format llm
 
 Look up a concept's full documentation by name, IRI, or glob.
 
-Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Grid"] }.
+Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob.
+
+Use when asked to read one guide or foundation in full.
 
 ```
 pragma concept lookup <name...> [options]
@@ -201,6 +215,8 @@ Print one resolved config value.
 
 Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell.
 
+Use when asked for the value of one setting.
+
 ```
 pragma config get <key>
 ```
@@ -226,6 +242,8 @@ pragma config get channel --format json
 Set a config field by name.
 
 Write a global config field by name. `key` is one of `tier`, `channel`, or `detail`; clearing a field is `config unset <key>`'s job, and the values that used to double as clear-markers are refused. Written to the global layer only — project configs are authored by hand.
+
+Use when asked to change a setting, such as making one product's tier the default for every read.
 
 ```
 pragma config set <key> <value>
@@ -256,6 +274,8 @@ Show the resolved config and per-field provenance.
 
 Merges built-in defaults, the global XDG config, and the nearest pragma.config.ts, marking which layer supplied each value.
 
+Use when asked how the tool is configured and which file set each value.
+
 ```
 pragma config show
 ```
@@ -275,6 +295,8 @@ pragma config show --format json
 Clear a config field by name.
 
 Removes a field from the global config so the built-in default (or a project config) applies again. The counterpart of `config set` — setting writes a value, unsetting removes one; no value doubles as a remove-marker.
+
+Use when asked to put a setting back to its built-in default.
 
 ```
 pragma config unset <key>
@@ -304,6 +326,8 @@ The `create` surface is a PROJECTION of the summon generator tree: `pragma creat
 ### pragma create application
 
 Scaffold a full React application with routing, and either server-side rendering or a client-only SPA.
+
+Use when asked to start a new React application, server-rendered or client-only.
 
 ```
 pragma create application react [app-path] [options]
@@ -341,6 +365,8 @@ pragma create application react my-app --rendering spa
 
 Scaffold a React, Svelte, or Lit component.
 
+Use when asked to start a new React, Svelte or Lit component with its tests, stories and styles.
+
 ```
 pragma create component <framework> [component-path] [options]
 ```
@@ -375,6 +401,8 @@ pragma create component svelte src/lib/Card --dry-run  # preview the files witho
 ### pragma create package
 
 Scaffold a new npm package for the monorepo.
+
+Use when asked to start a new npm package inside the monorepo.
 
 ```
 pragma create package [options]
@@ -412,6 +440,8 @@ Check your environment and every setup target, globally and in this project.
 
 Reports the environment checks first, then one row per setup target — once for your home directory, once for this project. Each row is pass, fail, available (an optional integration you have not set up yet), or skip (nothing to do here, and the row says why), with the next step printed inline. Every row is named after the setup target that repairs it, except `harnesses`: a listing, per scope, of the AI harnesses found on this machine and whether this CLI's MCP server is registered in each — the ones actually found, or every harness it knows about under the verbose global flag. Needs no store; the store check boots lazily and never fails the run.
 
+Use when something is not working, to find out what.
+
 ```
 pragma doctor
 ```
@@ -433,6 +463,8 @@ pragma doctor --format json  # machine-readable checks
 Show the shortest relation paths between two entities.
 
 Finds every shortest path of RELATION edges between two entities, and says which kind of nothing it found when there is no path. An edge counts as a relation only where it does not fan out into a roster — membership of a class, a tier or a family is answered by that noun's list verb, not by a path — so most pairs are correctly reported as unconnected. Address each endpoint by prefixed name (ds:global.component.button) or absolute IRI. Every answer states the hop limit, the fan-in threshold, and the packs searched.
+
+Use when asked whether and how two things are related.
 
 ```
 pragma graph connect <a> <b> [options]
@@ -468,6 +500,8 @@ Show every triple where a URI is the subject, grouped by predicate.
 
 Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.
 
+Use when asked for everything recorded about one identifier.
+
 ```
 pragma graph inspect <uri>
 ```
@@ -493,6 +527,8 @@ pragma graph inspect https://ds.canonical.com/global.component.button
 Run a raw SPARQL query against the loaded graph.
 
 Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes.
+
+Use only when no other tool answers: SPARQL joins or counts.
 
 ```
 pragma graph query <sparql>
@@ -520,7 +556,9 @@ pragma graph query "ASK { <https://ds.canonical.com/global.component.button> a d
 
 List the implementation libraries.
 
-List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
+List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements.
+
+Use when asked which component libraries exist and what each covers.
 
 ```
 pragma implementation libraries [options]
@@ -547,7 +585,9 @@ pragma implementation libraries --format llm
 
 List which library implements which design-system block.
 
-List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.
+List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search.
+
+Use when asked whether a component is implemented in React, Svelte or another library, or where its source code lives.
 
 ```
 pragma implementation list [options]
@@ -581,6 +621,8 @@ Show version, resolved config, provenance, and update status.
 
 Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available.
 
+Use when asked which version is installed or whether an update exists.
+
 ```
 pragma info
 ```
@@ -601,6 +643,8 @@ pragma info --format json  # the full {ok,data,meta} envelope
 
 Start the MCP server over stdio.
 
+Use when an MCP client needs to launch this server; people rarely run it by hand.
+
 ```
 pragma mcp serve
 ```
@@ -614,7 +658,9 @@ pragma mcp serve
 
 List all modifier families.
 
-List all modifier families with their values. Use when browsing which modifier families exist and the values each allows. Example: modifier_list {}.
+List all modifier families with their values.
+
+Use when asked which variants or options components can take — importance, size, density and the like — and the values each allows.
 
 ```
 pragma modifier list [options]
@@ -642,7 +688,9 @@ pragma modifier list --format llm
 
 Look up modifier details by name, IRI, or glob.
 
-Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { name: ["importance"] }.
+Get values and usage details for one or more modifier families by name.
+
+Use when asked which values one option allows, such as the levels of importance.
 
 ```
 pragma modifier lookup <name...> [options]
@@ -674,7 +722,9 @@ pragma modifier lookup --tier all <name>  # every tier, not just the ones in sco
 
 Return randomly selected complete modifier entries as exemplars.
 
-Return randomly selected complete modifier families (with value lists) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: modifier_sample {}.
+Return randomly selected complete modifier families (with value lists) as exemplars.
+
+Use before your first modifier query, to see what a real modifier family record looks like.
 
 ```
 pragma modifier sample
@@ -695,6 +745,8 @@ pragma modifier sample
 
 List loaded ontology namespaces with class and property counts.
 
+Use when asked which vocabularies (namespaces and their prefixes) the data uses — the first step before writing a raw query.
+
 ```
 pragma ontology list
 ```
@@ -711,6 +763,8 @@ pragma ontology list
 ### pragma ontology lookup
 
 Look up a namespace's classes (hierarchy + counts) and properties.
+
+Use before writing a raw query, to find the real class and property names under one prefix.
 
 ```
 pragma ontology lookup <prefix> [options]
@@ -749,6 +803,8 @@ List the workflow prompt templates the design system offers.
 
 Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
 
+Use when asked which ready-made workflow prompts the design system offers.
+
 ```
 pragma prompt list
 ```
@@ -768,6 +824,8 @@ Show one workflow prompt template's body and arguments by name.
 
 Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.
 
+Use when asked to read or run one workflow prompt by the name prompt_list gave.
+
 ```
 pragma prompt lookup <name>
 ```
@@ -786,6 +844,8 @@ pragma prompt lookup <name>
 ### pragma setup completions
 
 Install TAB completion for the shell you are running.
+
+Use when asked to install only TAB completion for the shell.
 
 ```
 pragma setup completions [options]
@@ -807,6 +867,8 @@ pragma setup completions [options]
 
 Create your global config file, filled in with the defaults.
 
+Use when asked to create only the global config file.
+
 ```
 pragma setup config [options]
 ```
@@ -827,6 +889,8 @@ pragma setup config [options]
 
 Install the Terrazzo design-token extension into the VS Code-family editors on this machine (on PATH, under /Applications or ~/Applications, or by its user directory).
 
+Use when asked to install only the design-token editor extension.
+
 ```
 pragma setup lsp [options]
 ```
@@ -846,6 +910,8 @@ pragma setup lsp [options]
 ### pragma setup mcp
 
 Register the pragma MCP server with the AI harnesses on this machine.
+
+Use when asked to connect only the MCP server to the AI tools on this machine.
 
 ```
 pragma setup mcp [options]
@@ -868,6 +934,8 @@ pragma setup mcp [options]
 Set up your config file, TAB completion, the editor extension, MCP, and skills.
 
 Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.
+
+Use when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension.
 
 ```
 pragma setup [options]
@@ -898,6 +966,8 @@ pragma setup mcp  # only register the MCP server
 
 Link the skills you have installed into every AI harness that reads them.
 
+Use when asked to make only the installed skills visible to the AI tools on this machine.
+
 ```
 pragma setup skills [options]
 ```
@@ -920,6 +990,8 @@ pragma setup skills [options]
 
 List discovered skills (SKILL.md files under the skill roots).
 
+Use when asked which agent skills (guided workflows) are available.
+
 ```
 pragma skill list
 ```
@@ -936,6 +1008,8 @@ pragma skill list
 ### pragma skill lookup
 
 Show a skill's metadata and instructions by name.
+
+Use when asked to follow one skill.
 
 ```
 pragma skill lookup <name>
@@ -964,6 +1038,8 @@ Remove this project's built pack.
 
 Deletes the pointer that names the pack this project reads, so reads answer from the snapshot shipped with the CLI again; a project that declares its own packs cannot answer reads until the next `sources update`. The cached pack files are left alone — they are shared with any other project built from the same sources, and a later update reuses them. Reports calmly when nothing is built.
 
+Use to discard locally built data and return to the data shipped with the tool.
+
 ```
 pragma sources reset
 ```
@@ -985,6 +1061,8 @@ Report which pack answers reads, and the packs it was built from.
 
 Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.
 
+Use when results look empty or stale, to see which data pack is answering.
+
 ```
 pragma sources status
 ```
@@ -1004,6 +1082,8 @@ pragma sources status --format json  # the full envelope
 Resolve configured packs and build the local store from them.
 
 Resolves each configured pack (git, file, or npm) and builds one local pack from them, which every later run reads without touching the network. Put a commit SHA in a pack source ref to pin it to that revision.
+
+Use when asked to fetch or rebuild the design-system data, or when a read reports that the store is unavailable.
 
 ```
 pragma sources update [options]
@@ -1032,7 +1112,9 @@ pragma sources update --skip-invalid  # build from the sources that parse, and n
 
 List all standard categories with counts (a parent counts its whole branch).
 
-List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.
+List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering.
+
+Use when asked which areas the code standards cover.
 
 ```
 pragma standard categories [options]
@@ -1059,7 +1141,9 @@ pragma standard categories --format llm
 
 List all code standards.
 
-List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term. Example: standard_list { category: "react" }.
+List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term.
+
+Use when asked which coding rules or conventions apply — for React, CSS, testing, documentation and so on.
 
 ```
 pragma standard list [options]
@@ -1088,7 +1172,9 @@ pragma standard list --format llm
 
 Look up one or more standards by name, IRI, or glob. --detail standard adds the dos, --detail detailed adds the don'ts.
 
-Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.
+Get one or more code standards in full, with dos and don'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those.
+
+Use when asked how code should be written under one rule.
 
 ```
 pragma standard lookup <name...>
@@ -1113,7 +1199,9 @@ pragma standard lookup <name>
 
 Return randomly selected complete standard instances as exemplars for shape discovery.
 
-Return 1–5 randomly selected complete code standard instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances. Example: standard_sample { count: 2 }.
+Return 1–5 randomly selected complete code standard instances as exemplars. Each call returns different instances.
+
+Use before your first standards query, to see what a real code standard record looks like.
 
 ```
 pragma standard sample [count]
@@ -1141,7 +1229,9 @@ pragma standard sample 3
 
 List all tiers in the design system ontology.
 
-List all tiers in the design-system ontology. Use when picking the tier to read with: the `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself. Example: tier_list {}.
+List all tiers in the design-system ontology. The `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself.
+
+Use when asked which tiers the design system has — global, apps, a single product — or before passing `tier` to another tool.
 
 ```
 pragma tier list [options]
@@ -1168,7 +1258,9 @@ pragma tier list --format llm
 
 Show tiers by name, with the blocks scoped to each.
 
-Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { name: ["apps/lxd"] }.
+Get one or more tiers by name, with the blocks scoped directly to each.
+
+Use when asked which components belong to one tier or product.
 
 ```
 pragma tier lookup <name...>
@@ -1195,7 +1287,9 @@ pragma tier lookup <name>
 
 List which blocks consume which token symbol, at which style key, state and rank.
 
-List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.
+List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable); narrow to the components a name reaches, or to one by IRI, with block. Answers empty until the packs record bindings.
+
+Use when asked which components use a token, or what changing one affects.
 
 ```
 pragma token consumers [options]
@@ -1205,6 +1299,7 @@ pragma token consumers [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
+| `--block` | `<string>` | Filter to the blocks a name reaches (every tier), or to one block by IRI. |
 | `--symbol` | `<string>` | Filter to one symbol. |
 | `--variable` | `<string>` | A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ. |
 | `--key` | `<string>` | Filter to one style key. |
@@ -1227,7 +1322,9 @@ pragma token consumers --format llm
 
 List the design-token symbols.
 
-List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.
+List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list.
+
+Use when asked which design tokens exist — colours, spacing, typography — or to find a token's exact name.
 
 ```
 pragma token list [options]
@@ -1257,7 +1354,9 @@ pragma token list --format llm
 
 Look up one or more token symbols by dotted name, IRI, or glob.
 
-Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.
+Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob.
+
+Use when asked everything about one token by name: where it is defined, what can change it, and its values.
 
 ```
 pragma token lookup <name...>
@@ -1282,7 +1381,9 @@ pragma token lookup <name>
 
 Return randomly selected complete token entries as exemplars.
 
-Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Use BEFORE writing queries to see real data shapes. Example: token_sample {}.
+Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars.
+
+Use before your first token query, to see what a real token record looks like.
 
 ```
 pragma token sample
@@ -1301,7 +1402,9 @@ pragma token sample
 
 List the value each symbol resolves to at each position, with its chain or its derivation.
 
-List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.
+List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell.
+
+Use when asked what value a token has, in light, dark or any other mode.
 
 ```
 pragma token values [options]
@@ -1335,6 +1438,8 @@ Upgrade the pragma CLI to the latest version.
 
 Checks the registry for the active channel's latest release and runs your package manager's global-update command. Preview the update before applying it.
 
+Use when asked to update the CLI itself to the latest release.
+
 ```
 pragma upgrade
 ```
@@ -1356,7 +1461,9 @@ pragma upgrade --dry-run  # show the delta and the command
 
 List the walk from a variable to every symbol it reaches, through every variable in between.
 
-List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.
+List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs.
+
+Use when asked which tokens a CSS variable ends up referring to.
 
 ```
 pragma variable chain [options]
@@ -1385,7 +1492,9 @@ pragma variable chain --format llm
 
 List the platform variables the design tokens are emitted as.
 
-List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.
+List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`).
+
+Use when asked which CSS custom properties (variables) exist, or which CSS variable stands for a token.
 
 ```
 pragma variable list [options]
@@ -1418,7 +1527,9 @@ pragma variable list --format llm
 
 Look up one or more platform variables by name (without the leading dashes), IRI, or glob.
 
-Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.
+Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`).
+
+Use when asked about one CSS variable by name: what it stands for and everywhere it is declared.
 
 ```
 pragma variable lookup <name...>
@@ -1443,7 +1554,9 @@ pragma variable lookup <name>
 
 Return randomly selected complete variable entries as exemplars.
 
-Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see real data shapes. Example: variable_sample {}.
+Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars.
+
+Use before your first variable query, to see what a real CSS variable record looks like.
 
 ```
 pragma variable sample
@@ -1465,6 +1578,8 @@ pragma variable sample
 Print the CLI version.
 
 Prints the version `--version` prints — one value, two spellings of the same read.
+
+Use when asked only for the installed version number.
 
 ```
 pragma version

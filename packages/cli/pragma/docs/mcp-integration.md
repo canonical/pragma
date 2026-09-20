@@ -31,7 +31,9 @@ On `initialize`, the server sends an `instructions` string **once** — not per 
 
 - what pragma is — `pragma — <the distribution's one-line help> (a CLI and MCP server over a knowledge graph).`, projected from the distribution config rather than written out,
 - the conventions (the knowledge-graph model, the tier scope a read of a tiered entity answers under and the `tier` parameter that widens it, the channel that scopes nothing, the SPARQL escape hatch),
-- and a short discovery sequence naming the first tools to call.
+- a generated **question → tool index**: one line per read tool that is not part of a noun's list/lookup/sample trio (`token_consumers — which components use a token, or what changing one affects`), the trio explained once with its nouns, and the write tools on one plan-first line. It is built from the same `useWhen` each tool's description opens with, because a client may defer tools and show an agent only their names plus these instructions.
+
+The whole text is fitted to 2,000 characters, which is about what clients keep. If a project's packs add enough tools to overflow it, index lines are dropped from the end, the last line says how many and points at `capabilities`, and the server notes it once on stderr.
 
 Live numbers (entity totals, the active tier) are deliberately left out of the handshake so it needs no store boot; an agent fetches those with the `info`, `config_show`, and `sources_status` tools.
 
@@ -71,6 +73,8 @@ Beyond tools, the server exposes three surfaces:
   ```
 
   The stated count is always the true total. The two kinds are told apart by fan-in, not by predicate name, so no vocabulary is hardcoded.
+
+  Every lookup tool takes `detail`. A noun that declares no levels of its own (`token`, `variable`, `modifier`, `tier`) answers with its fields alone at `summary` and with everything from `standard`, so for those `standard` equals `detailed`. The first page of a tier-scoped list carries `meta.scope.counts`: the rows of the whole filtered answer per tier, the tiers outside the scope included (and `"no tier"` for rows in none), so a read that finds nothing in scope still says which `tier` holds a match.
 
   A resource read carries no parameters of its own, so it resolves its level from config — `config_set detail detailed` is how an agent asks a resource for more, while `graph inspect` takes `--detail` and the `graph_inspect` tool a `detail` argument. `graph inspect --format json` still returns the structured projection if you need to parse rather than read it.
 

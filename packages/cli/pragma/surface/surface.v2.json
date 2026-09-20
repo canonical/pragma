@@ -82,6 +82,7 @@
         {
           "v": "consumers",
           "flags": [
+            "--block",
             "--symbol",
             "--variable",
             "--key",
@@ -510,6 +511,6 @@
     "projectConfigLoad": "<10ms",
     "warmStoreVerb": "<300ms",
     "mcpP95Warm": "<100ms",
-    "condensedSDL": "<=8000 tokens"
+    "condensedSDL": "<=9600 tokens"
   }
 }

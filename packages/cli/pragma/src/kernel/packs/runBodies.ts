@@ -10,7 +10,7 @@
  * (lazy), so these factories carry no heavy static import.
  */
 
-import { cliRecovery, PragmaError } from "../error/index.js";
+import { PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
 import { encodeCursor, pageFingerprint, readCursor } from "./cursor.js";
 import { resolvePackDetail } from "./disclosure.js";
@@ -20,10 +20,17 @@ import {
   type LookupOutput,
   type LookupScope,
   listEntityNames,
+  listRecovery,
+  resolveEntityIris,
   resolveLookup,
 } from "./resolveEntity.js";
 import { parseSampleCount, pickRandom } from "./sample.js";
-import { buildListQuery } from "./sparql/buildListQuery.js";
+import {
+  buildListQuery,
+  buildTierCountQuery,
+  type ListPredicate,
+  type ListTierScope,
+} from "./sparql/buildListQuery.js";
 import {
   type FilterVocabularies,
   resolveFilterPredicates,
@@ -31,6 +38,7 @@ import {
 import { runSelect } from "./sparql/runSelect.js";
 import { readSearchTerm } from "./sparql/searchTerm.js";
 import {
+  localName,
   resolveReadScope,
   scopeIris,
   scopeLabel,
@@ -38,33 +46,20 @@ import {
 } from "./tierScope.js";
 import {
   ENTITY_VARIABLE,
+  type NounLookups,
   type PackAppliedFilter,
   type PackFilter,
   type PackList,
   type PackLookup,
   type PackPage,
   type PackTierScope,
+  type PageTierScope,
   type StorySource,
+  UNTIERED_KEY,
 } from "./types.js";
 
 /** The highest canonical level — sample fetches everything for shape discovery. */
 const HIGHEST_LEVEL = "detailed";
-
-/**
- * The recovery every lookup-shaped miss carries: browse the noun's list.
- *
- * `mcp.params` is populated rather than left off. A bare tool NAME is only half
- * an instruction to an agent — it still has to guess an argument bag, and a
- * guess that misses returns `-32602 Invalid arguments`, which reads like the
- * recovery itself was wrong. `{}` is the concrete, valid call: every compiled
- * list verb's params are optional, so the recovery is now copy-pasteable.
- */
-function listRecovery(noun: string) {
-  return cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
-    tool: `${noun}_list`,
-    params: {},
-  });
-}
 
 /** Facts a list-shaped run body needs beyond its `shape`. */
 export interface ListRunMeta {
@@ -75,6 +70,10 @@ export interface ListRunMeta {
    * are. Absent leaves the read exactly as it was.
    */
   readonly tierScope?: PackTierScope;
+  /** The prefix map a prefixed IRI handed to a noun filter expands against. */
+  readonly prefixes: Readonly<Record<string, string>>;
+  /** The other stories' lookups, for a filter that names a noun. */
+  readonly nouns?: NounLookups;
 }
 
 /**
@@ -104,12 +103,20 @@ export function makeListRun(
       params,
       meta.source,
     );
-    const predicates = resolveFilterPredicates(
-      shape.filters,
-      params,
-      vocabularies,
-      meta.source.label,
-    );
+    const predicates = [
+      ...resolveFilterPredicates(
+        shape.filters?.filter((filter) => filter.noun === undefined),
+        params,
+        vocabularies,
+        meta.source.label,
+      ),
+      ...(await resolveNounPredicates(rt, shape.filters, params, meta)),
+    ];
+    // Left out of the rows: over the shipped pack the IRIs a noun filter
+    // constrains took the largest list past its payload budget (108 KB).
+    const omit = (shape.filters ?? [])
+      .flatMap((filter) => (filter.entity ? [filter.entity] : []))
+      .filter((name) => !shape.columns.some((column) => column.field === name));
     const search = readSearchTerm(shape.search, params);
     const scope = await resolveReadScope(
       rt,
@@ -142,18 +149,31 @@ export function makeListRun(
       ...(listScope ? [JSON.stringify(tiers)] : []),
     ]);
     const offset = readCursor(params.after, fingerprint);
+    const read = {
+      query: shape.query,
+      predicates,
+      ...(search ? { search } : {}),
+      label: meta.source.label,
+    };
     const rows = await runSelect(
       rt,
       buildListQuery({
-        query: shape.query,
-        predicates,
-        ...(search ? { search } : {}),
+        ...read,
         ...(listScope ? { scope: listScope } : {}),
+        omit,
         window: { limit: limit + 1, offset },
-        label: meta.source.label,
       }),
       meta.source,
     );
+    // First page only, and never the reason a list fails.
+    const counts =
+      scope?.kind === "tiers" && listScope && params.after === undefined
+        ? await readTierCounts(
+            rt,
+            { ...read, scope: listScope },
+            meta.source,
+          ).catch(() => undefined)
+        : undefined;
     const hasMore = rows.length > limit;
     const applied = appliedFilters(shape, params, search?.term, scope);
     return {
@@ -163,11 +183,43 @@ export function makeListRun(
         : {}),
       ...(applied.length > 0 ? { filters: applied } : {}),
       ...(scope?.kind === "tiers"
-        ? { scope: { tiers: scope.tiers.map((tier) => tier.local) } }
+        ? {
+            scope: {
+              tiers: scope.tiers.map((tier) => tier.local),
+              ...(counts ? { counts } : {}),
+            },
+          }
         : {}),
       limit,
     };
   };
+}
+
+/**
+ * Count the whole filtered answer's rows per tier: every in-scope tier (0 when
+ * it holds none), then the out-of-scope tiers that hold some, then
+ * {@link UNTIERED_KEY} when any row's entity is in no tier.
+ */
+async function readTierCounts(
+  rt: PragmaRuntime,
+  read: Parameters<typeof buildTierCountQuery>[0] & { scope: ListTierScope },
+  source: StorySource,
+): Promise<NonNullable<PageTierScope["counts"]>> {
+  const query = buildTierCountQuery(read);
+  const byIri = query.read(await runSelect(rt, query.text, source));
+  const inScope = read.scope.tiers.map(
+    (iri) => [localName(iri), byIri.get(iri) ?? 0] as const,
+  );
+  const outside = [...byIri]
+    .filter(([iri]) => iri !== "" && !read.scope.tiers.includes(iri))
+    .map(([iri, count]) => [localName(iri), count] as const)
+    .sort(([a], [b]) => a.localeCompare(b));
+  const untiered = byIri.get("");
+  return Object.fromEntries([
+    ...inScope,
+    ...outside,
+    ...(untiered ? [[UNTIERED_KEY, untiered] as const] : []),
+  ]);
 }
 
 /**
@@ -260,6 +312,52 @@ async function readFilterVocabularies(
 }
 
 /**
+ * Turn the values a caller supplied for each NOUN filter into a constraint on
+ * the entities they name.
+ *
+ * @returns One `"iri"` predicate per noun filter the caller used, over the
+ *   IRIs its values reached. Against a store holding none of that noun's
+ *   entities the predicate names no IRI and the list answers empty.
+ * @throws PragmaError INVALID_INPUT when a value reaches no entity of the noun;
+ *   CONFIG_ERROR when no story known to this one declares a lookup for it.
+ */
+async function resolveNounPredicates(
+  rt: PragmaRuntime,
+  filters: readonly PackFilter[] | undefined,
+  params: Record<string, unknown>,
+  meta: ListRunMeta,
+): Promise<ListPredicate[]> {
+  const predicates: ListPredicate[] = [];
+  for (const filter of filters ?? []) {
+    const provided = params[filter.param];
+    if (!filter.noun || !filter.entity || provided === undefined) continue;
+    const occurrences = Array.isArray(provided) ? provided : [provided];
+    if (occurrences.length === 0) continue;
+    const lookup = meta.nouns?.(filter.noun);
+    if (!lookup) {
+      throw PragmaError.configError(
+        `Filter "--${filter.param}" in ${meta.source.label} names the noun "${filter.noun}", and no story declares a lookup for it.`,
+      );
+    }
+    const terms = await resolveEntityIris(
+      rt,
+      lookup,
+      filter.noun,
+      occurrences.map((value) => String(value).trim().normalize("NFC")),
+      meta.source,
+      meta.prefixes,
+    );
+    predicates.push({
+      variable: filter.entity,
+      match: "iri",
+      terms,
+      ...(filter.via ? { via: filter.via } : {}),
+    });
+  }
+  return predicates;
+}
+
+/**
  * Build the run body for a lookup verb (variadic names → resolved entities).
  *
  * A TIERED noun's lookup carries the scope too, and it is the same scope its
@@ -274,6 +372,7 @@ export function makeLookupRun(
   noun: string,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  hasList: boolean,
   tierScope?: PackTierScope,
 ): (
   params: Record<string, unknown>,
@@ -291,6 +390,7 @@ export function makeLookupRun(
       source,
       prefixes,
       level,
+      hasList,
       lookupScope(tierScope, scope),
     );
     // A total miss (single or all-miss) exits non-zero; a partial batch renders
@@ -302,7 +402,7 @@ export function makeLookupRun(
           code: first.code as PragmaError["code"],
           message: first.message,
           suggestions: first.suggestions ? [...first.suggestions] : undefined,
-          recovery: listRecovery(noun),
+          recovery: listRecovery(noun, hasList),
         });
       }
     }
@@ -346,6 +446,7 @@ export function makeSampleRun(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   defaultCount: number,
+  hasList: boolean,
 ): (
   params: Record<string, unknown>,
   rt: PragmaRuntime,
@@ -358,7 +459,7 @@ export function makeSampleRun(
     if (names.length === 0) {
       throw PragmaError.emptyResults(noun, {
         message: `No ${noun} entries to sample.`,
-        recovery: listRecovery(noun),
+        recovery: listRecovery(noun, hasList),
       });
     }
     const selected = pickRandom(names, count);
@@ -370,6 +471,7 @@ export function makeSampleRun(
       source,
       prefixes,
       HIGHEST_LEVEL,
+      hasList,
     );
     return {
       samples: output.results,
