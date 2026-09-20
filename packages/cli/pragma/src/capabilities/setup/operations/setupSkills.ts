@@ -338,7 +338,9 @@ function linkState(linkPath: string): LinkState {
  * `stat`, not `lstat`, per entry: a skill root that is itself a symlink (an
  * installed skill is one, into the ref cache) and a file linked into place both
  * count by what they resolve to, since that is what a harness reads. A tree
- * that cannot be read digests to `undefined`, which matches nothing.
+ * that cannot be read digests to `undefined`. Every comparison below puts the
+ * SHIPPED skill on one side, and that side is readable by construction —
+ * discovery has just read its `SKILL.md` — so `undefined` never matches.
  *
  * @param dir - The directory to digest.
  * @returns The hex digest, or `undefined` when the tree is unreadable.
@@ -423,15 +425,8 @@ function staleReason(
 ): string | undefined {
   if (destination === skillPath) return undefined;
   if (!existsSync(destination)) return "its target is missing";
-  try {
-    if (realpathSync(destination) === realpathSync(skillPath)) return undefined;
-  } catch {
-    // An unresolvable side falls through to the digest, which is authoritative.
-  }
-  const shipped = treeDigest(skillPath);
-  if (shipped !== undefined && treeDigest(destination) === shipped) {
-    return undefined;
-  }
+  if (realpathSync(destination) === realpathSync(skillPath)) return undefined;
+  if (treeDigest(destination) === treeDigest(skillPath)) return undefined;
   const version = shippedVersionOf(destination);
   return version !== undefined && version !== VERSION
     ? `links to the copy shipped with ${BIN_NAME} ${version}; the running CLI is ${VERSION}`
@@ -672,9 +667,7 @@ export async function detectSkills(
       // content still matches. It is never this command's to delete either
       // way; the reason is carried so the doctor row can say which it is.
       if (state.kind === "other") {
-        const shipped = treeDigest(skill.sourcePath);
-        const matches =
-          shipped !== undefined && treeDigest(linkPath) === shipped;
+        const matches = treeDigest(linkPath) === treeDigest(skill.sourcePath);
         actions.push({
           skillName: skill.name,
           target: skill.sourcePath,

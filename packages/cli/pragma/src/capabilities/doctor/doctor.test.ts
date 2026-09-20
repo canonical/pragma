@@ -10,14 +10,18 @@
 
 import {
   chmodSync,
+  copyFileSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
+import { runTask } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { VERSION } from "../../constants.js";
 import type { ConfigLayers } from "../../kernel/config/types.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -36,6 +40,10 @@ import {
 import { bootFixtureRuntime } from "../../testing/helpers/fixtureGraph.js";
 import { storeProbe } from "../../testing/helpers/fsProbe.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
+import {
+  composeSkills,
+  detectSkills,
+} from "../setup/operations/setupSkills.js";
 import type { FsProbe } from "../setup/operations/writability.js";
 import { checkPackageRefs } from "./checks/checkPackageRefs.js";
 import { scopedChecks } from "./checks/targetHealth.js";
@@ -590,6 +598,120 @@ describe("doctor — a blocked skill link path is never reported as current", ()
     expect(row?.detail).toContain("real directory");
     // And the remedy is the one that settles it — rerunning setup skips it.
     expect(row?.remedy).toMatch(/Move or delete/);
+  });
+});
+
+describe("doctor — a skill link that no longer matches what the CLI ships is stale", () => {
+  it("lists each stale link with its reason under the setup command, and passes once relinked", async () => {
+    // A link into a PREVIOUS release's directory resolves and reads fine, so
+    // the row said "links current" over a skill the running CLI no longer
+    // ships. It is `available` — setup replaces it — never a `fail`.
+    const cwd = tmp("pragma-doctor-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\nCurrent.\n",
+    );
+    const old = join(
+      cwd,
+      "node_modules",
+      "pragma-cli@0.36.0",
+      "bundled-skills",
+      "my-skill",
+    );
+    mkdirSync(old, { recursive: true });
+    writeFileSync(
+      join(old, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\nOld.\n",
+    );
+    writeFileSync(
+      join(dirname(dirname(old)), "package.json"),
+      JSON.stringify({ version: "0.36.0" }),
+    );
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    symlinkSync(old, join(linkDir, "my-skill"));
+
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const row = rows.find((r) => r.name === "skills" && r.scope === "project");
+    expect(row?.status).toBe("available");
+    expect(row?.detail).toBe("1 of 1 links is stale");
+    expect(row?.remedy).toBe("pragma setup skills --local");
+    expect(row?.items).toEqual([
+      {
+        label: `.${sep}${join(".agents", "skills", "my-skill")}`,
+        status: "available",
+        detail: `links to the copy shipped with pragma 0.36.0; the running CLI is ${VERSION}`,
+      },
+    ]);
+
+    // Setup's row reads the same detection, so running it settles doctor's.
+    await runTask(
+      composeSkills(await detectSkills(bootRuntime(FLAGS, cwd), "project")),
+    );
+    const after = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const fixed = after.find(
+      (r) => r.name === "skills" && r.scope === "project",
+    );
+    expect(fixed?.status).toBe("pass");
+    expect(fixed?.detail).toBe("1 links current");
+  });
+
+  it("a copied skill that has drifted is named as such beside the real-directory remedy", async () => {
+    const cwd = tmp("pragma-doctor-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\nCurrent.\n",
+    );
+    const copy = join(cwd, ".agents", "skills", "my-skill");
+    mkdirSync(copy, { recursive: true });
+    writeFileSync(join(copy, "SKILL.md"), "an older copy\n");
+
+    const rows = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const row = rows.find((r) => r.name === "skills" && r.scope === "project");
+    expect(row?.status).toBe("available");
+    expect(row?.detail).toContain("real directory");
+    expect(row?.items?.[0]?.detail).toBe(
+      "a copy whose content differs from the shipped skill",
+    );
+    expect(row?.remedy).toMatch(/Move or delete/);
+  });
+
+  it("a foreign link is reported only while its content differs", async () => {
+    // The user's own link into their own checkout. Identical content is
+    // current, whoever made the link; drifted content is theirs to settle.
+    const cwd = tmp("pragma-doctor-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\nCurrent.\n",
+    );
+    const mine = join(cwd, "work", "my-skill");
+    mkdirSync(mine, { recursive: true });
+    copyFileSync(join(skillDir, "SKILL.md"), join(mine, "SKILL.md"));
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    symlinkSync(mine, join(linkDir, "my-skill"));
+
+    const same = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    expect(
+      same.find((r) => r.name === "skills" && r.scope === "project")?.status,
+    ).toBe("pass");
+
+    writeFileSync(join(mine, "SKILL.md"), "my own edits\n");
+    const drifted = await scopedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const row = drifted.find(
+      (r) => r.name === "skills" && r.scope === "project",
+    );
+    expect(row?.status).toBe("available");
+    expect(row?.detail).toContain("does not own");
+    expect(row?.items?.[0]?.detail).toBe(
+      "content differs from the shipped skill",
+    );
   });
 });
 
