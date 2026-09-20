@@ -176,9 +176,10 @@ function renderData(
     // is distinguishable from an unbuilt store or a mistyped filter, and an
     // ambiguous lookup hit from an unambiguous one. `data` keeps its uniform
     // shape, and MCP builds the same key from the same seam
-    // (`mcp/registerVerb.ts#noticeMeta`) — the two machine surfaces stay
-    // byte-equal.
-    const notice = verb.output.formatters.notice?.(data);
+    // (`mcp/registerVerb.ts#noticeMeta`). The two envelopes are equal EXCEPT
+    // for spelling inside this sentence: a next step reads as a command here
+    // and as a tool call there, because each is printed where it will be used.
+    const notice = verb.output.formatters.notice?.(data, "cli");
     // The machine half of the same seam: facts the read wants to hand an agent
     // as data rather than prose (`meta.scope`). MCP merges the same seam into
     // the same keys (`mcp/registerVerb.ts#readMeta`).
@@ -205,7 +206,9 @@ function renderData(
   const text = verb.output.formatters.plain(data, context);
   // The calm notice is success-path guidance — `--quiet` mutes it.
   const notice =
-    flags.quiet === true ? undefined : verb.output.formatters.notice?.(data);
+    flags.quiet === true
+      ? undefined
+      : verb.output.formatters.notice?.(data, "cli");
   return {
     stdout: text ? `${text}\n` : "",
     ...(notice ? { stderr: `${notice}\n` } : {}),

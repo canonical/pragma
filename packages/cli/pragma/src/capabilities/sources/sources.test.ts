@@ -574,6 +574,9 @@ describe("sources update — data-failure classification (U6)", () => {
     expect(err.recovery?.message ?? "").not.toContain("report this issue");
     // The recovery points the user at a runnable, useful next step.
     expect(err.recovery?.cli).toBe("pragma sources update --verbose");
+    // `--verbose` is a global CLI flag with no MCP counterpart, and a hint
+    // never carries `confirm`: the plan the tool returns says how to proceed.
+    expect(err.recovery?.mcp).toEqual({ tool: "sources_update", params: {} });
     // Nothing was pointed at on failure.
     expect(readActivePack(cwd)).toBeUndefined();
   });

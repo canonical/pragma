@@ -438,7 +438,7 @@ describe("capability commands (PROTECTED)", () => {
   it("no command quoted in capability prose is a bare literal", () => {
     // The other half of the same promise, and the half the position rule cannot
     // reach: an empty-state hint, a recovery MESSAGE (the second argument to
-    // `cliRecovery`, beside a first argument the position rule already covers),
+    // `callRecovery`, beside a first argument the position rule already covers),
     // a `sources status` headline, a wizard step's title. They reach the same
     // user with the same instruction, and seven of them named this distribution
     // while the rule above reported zero exemptions.

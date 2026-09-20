@@ -10,7 +10,7 @@
  * (lazy), so these factories carry no heavy static import.
  */
 
-import { cliRecovery, PragmaError } from "../error/index.js";
+import { PragmaError } from "../error/index.js";
 import type { PragmaRuntime } from "../runtime/index.js";
 import { encodeCursor, pageFingerprint, readCursor } from "./cursor.js";
 import { resolvePackDetail } from "./disclosure.js";
@@ -20,6 +20,7 @@ import {
   type LookupOutput,
   type LookupScope,
   listEntityNames,
+  listRecovery,
   resolveLookup,
 } from "./resolveEntity.js";
 import { parseSampleCount, pickRandom } from "./sample.js";
@@ -49,22 +50,6 @@ import {
 
 /** The highest canonical level — sample fetches everything for shape discovery. */
 const HIGHEST_LEVEL = "detailed";
-
-/**
- * The recovery every lookup-shaped miss carries: browse the noun's list.
- *
- * `mcp.params` is populated rather than left off. A bare tool NAME is only half
- * an instruction to an agent — it still has to guess an argument bag, and a
- * guess that misses returns `-32602 Invalid arguments`, which reads like the
- * recovery itself was wrong. `{}` is the concrete, valid call: every compiled
- * list verb's params are optional, so the recovery is now copy-pasteable.
- */
-function listRecovery(noun: string) {
-  return cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
-    tool: `${noun}_list`,
-    params: {},
-  });
-}
 
 /** Facts a list-shaped run body needs beyond its `shape`. */
 export interface ListRunMeta {
@@ -274,6 +259,7 @@ export function makeLookupRun(
   noun: string,
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
+  hasList: boolean,
   tierScope?: PackTierScope,
 ): (
   params: Record<string, unknown>,
@@ -291,6 +277,7 @@ export function makeLookupRun(
       source,
       prefixes,
       level,
+      hasList,
       lookupScope(tierScope, scope),
     );
     // A total miss (single or all-miss) exits non-zero; a partial batch renders
@@ -302,7 +289,7 @@ export function makeLookupRun(
           code: first.code as PragmaError["code"],
           message: first.message,
           suggestions: first.suggestions ? [...first.suggestions] : undefined,
-          recovery: listRecovery(noun),
+          recovery: listRecovery(noun, hasList),
         });
       }
     }
@@ -346,6 +333,7 @@ export function makeSampleRun(
   source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   defaultCount: number,
+  hasList: boolean,
 ): (
   params: Record<string, unknown>,
   rt: PragmaRuntime,
@@ -358,7 +346,7 @@ export function makeSampleRun(
     if (names.length === 0) {
       throw PragmaError.emptyResults(noun, {
         message: `No ${noun} entries to sample.`,
-        recovery: listRecovery(noun),
+        recovery: listRecovery(noun, hasList),
       });
     }
     const selected = pickRandom(names, count);
@@ -370,6 +358,7 @@ export function makeSampleRun(
       source,
       prefixes,
       HIGHEST_LEVEL,
+      hasList,
     );
     return {
       samples: output.results,

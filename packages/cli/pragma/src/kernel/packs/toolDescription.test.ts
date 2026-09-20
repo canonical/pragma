@@ -1,21 +1,31 @@
 /**
- * PROTECTED — the pack `toolDescription` → MCP tool description wiring.
+ * PROTECTED — the pack guidance → MCP tool description wiring.
  *
- * A pack authors `toolDescription` FOR the agent-facing MCP tool description
- * (see kernel/packs/types.ts, "MCP tool description"). The compiler routes it
- * into `VerbSpec.doc`, the MCP projector emits `doc ?? summary` as the tool
- * description, and the CLI projector renders `doc` in verb help WITHOUT the
- * MCP tool-call example (`noun_verb {…}` is MCP-transport syntax).
+ * A story half authors three things for a caller choosing a tool:
+ * `toolDescription` (what the tool returns), `useWhen` (the question it
+ * answers) and `example` (one call's params). The compiler routes them onto
+ * the verb, and ONE generator (`kernel/spec/guidance.ts`) builds the MCP
+ * description from them; verb help renders the same example as a COMMAND.
  *
  * This pins representative text on BOTH surfaces so the routing can't silently
- * regress: the rich description must reach MCP, and the MCP tool-call example
- * must never leak into CLI `--help`.
+ * regress: the question, the prose and the generated example must reach MCP,
+ * and MCP tool-call syntax must never leak into CLI `--help`.
+ *
+ * These cases used to regex-match a hand-typed `Example: tool {…}` suffix in
+ * the authored prose. The suffix is gone — the example is declared as data and
+ * rendered — so they assert the GENERATED description instead, and whether an
+ * example's params are ones the tool accepts is no longer sampled by regex
+ * here: `capabilities/callRule.test.ts` validates every example against its
+ * verb's whole input schema.
  */
 
 import { describe, expect, it } from "vitest";
 import { storyModules } from "../../capabilities/distribution.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { formatVerbHelp } from "../project/cli/verbHelp.js";
+import { renderCall } from "../spec/call.js";
+import { describeTool, exampleCall } from "../spec/guidance.js";
+import { toolName } from "../spec/index.js";
 import type { VerbSpec } from "../spec/types.js";
 
 const standardModule = storyModules.get("standard");
@@ -51,8 +61,8 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     )?.description;
     await mcp.cleanup();
     expect(desc).toContain("Get one design-token symbol in full");
-    // The authored MCP tool-call example survives on the MCP surface.
-    expect(desc).toContain('Example: token_lookup { name: ["color.text"] }');
+    // The declared example reaches MCP, rendered as a tool call.
+    expect(desc).toContain('Example: token_lookup { name: ["color.text"] }.');
   });
 
   it("routes the definition-level toolDescription to the MCP list tool", async () => {
@@ -62,9 +72,10 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     )?.description;
     await mcp.cleanup();
     // The rich description reaches MCP (was previously dropped — only `summary`
-    // reached the tool), including the authored call example.
+    // reached the tool), behind the question it answers and before its example.
+    expect(desc).toMatch(/^Use when asked which design tokens exist/);
     expect(desc).toContain("List the design-token SYMBOLS");
-    expect(desc).toContain('Example: token_list { type: "color" }');
+    expect(desc).toContain('Example: token_list { type: "color" }.');
   });
 
   it("routes an extra-verb toolDescription to its MCP tool", async () => {
@@ -77,12 +88,16 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     // fragment rather than by exact string: the wiring is what this pins, and
     // tool descriptions are explicitly not frozen (`registerVerb.ts:324-326`).
     expect(desc).toContain("List all code standard categories");
-    expect(desc).toContain("Example: standard_categories {}");
+    // Callable with no arguments, so there is no example to show.
+    expect(desc).not.toContain("Example:");
   });
 
-  it("CLI --help shows the rich prose but NEVER the MCP tool-call syntax", () => {
+  it("CLI --help shows the prose and the example as a COMMAND, never as a tool call", () => {
     const lookupHelp = formatVerbHelp("pragma", verb(tokenModule, "lookup"));
     expect(lookupHelp).toContain("Get one design-token symbol in full");
+    expect(lookupHelp).toContain("Use when asked everything about one token");
+    // The same declared example, spelled for this surface.
+    expect(lookupHelp).toContain("pragma token lookup color.text");
     // No-leaks: the `token_lookup {…}` MCP call shape must not reach CLI help.
     expect(lookupHelp).not.toContain("token_lookup {");
     expect(lookupHelp).not.toContain("Example:");
@@ -93,71 +108,37 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
   });
 });
 
-describe("a tool-call example names a parameter the tool ACCEPTS (PROTECTED)", () => {
-  // Four `*_lookup` descriptions taught agents `{ names: [...] }` while every
-  // schema required `name`. An agent copying the example — which is what an
-  // example is for — got `-32602 Invalid arguments`, and the description is
-  // the only instruction it has. Prose that contradicts the schema beside it
-  // is worse than no prose: it is a documented wrong answer.
-  it("every `Example: tool { key: … }` uses a declared property", async () => {
-    const mcp = await projectMcp([...storyModules.values()]);
+describe("every story tool's description is GENERATED from its verb (PROTECTED)", () => {
+  // Four `*_lookup` descriptions once taught agents `{ names: [...] }` while
+  // every schema required `name`, and `standard` once shipped no example at
+  // all. Both were failures of hand-typed prose. The description is now built
+  // from what the verb declares, so this asserts the build — for EVERY story
+  // tool, against the one generator — rather than pattern-matching the prose.
+  it("is the question, then the prose, then the verb's own example as a tool call", async () => {
+    const modules = [...storyModules.values()];
+    const mcp = await projectMcp(modules);
     try {
       const tools = await mcp.listTools();
-      const offenders: string[] = [];
-
-      for (const tool of tools) {
-        const example = /Example:\s*\w+\s*\{\s*([A-Za-z_$][\w$]*)\s*:/.exec(
-          tool.description ?? "",
-        );
-        const key = example?.[1];
-        if (key === undefined) continue; // No call example to check.
-        const properties = Object.keys(
-          (tool.inputSchema as { properties?: Record<string, unknown> })
-            ?.properties ?? {},
-        );
-        if (!properties.includes(key)) {
-          offenders.push(
-            `${tool.name}: example says \`${key}\`, schema declares ${properties.join(", ")}`,
+      const verbs = modules.flatMap((module) => module.verbs);
+      expect(tools.length).toBe(verbs.length);
+      for (const storyVerb of verbs) {
+        const name = toolName(storyVerb.path);
+        const desc = tools.find((tool) => tool.name === name)?.description;
+        expect(desc, name).toBe(describeTool(storyVerb));
+        expect(desc, name).toMatch(/^Use /);
+        expect(desc, name).toContain(storyVerb.useWhen);
+        // Spelled with its OWN name and its declared params, so an example
+        // cannot be copied from a sibling tool and left stale. A verb callable
+        // with no arguments declares none, and shows none.
+        const example = exampleCall(storyVerb);
+        if (example) {
+          expect(desc, name).toContain(
+            `Example: ${renderCall(example, "mcp")}.`,
           );
+        } else {
+          expect(desc, name).not.toContain("Example:");
         }
       }
-
-      expect(offenders).toEqual([]);
-      // Guard against a vacuous pass: some tool must actually carry an example.
-      expect(
-        tools.filter((t) => /Example:\s*\w+\s*\{/.test(t.description ?? ""))
-          .length,
-      ).toBeGreaterThan(0);
-    } finally {
-      await mcp.cleanup();
-    }
-  });
-});
-
-describe("every story tool CARRIES a call example (PROTECTED)", () => {
-  // The check above only polices examples that exist. `standard` authored NONE,
-  // and the auto-generated one fires only for a filter declaring `values` —
-  // which the category filter deliberately does not, because the graph is the
-  // vocabulary. So the four `standard_*` tools shipped with no worked call at
-  // all, and the model that could not form one had nothing to copy.
-  //
-  // This asserts the gap cannot reappear on a future story: a compiled story
-  // tool must show an agent one call it can make, spelled with its OWN name so
-  // the example cannot be copied from a sibling tool and left stale.
-  it("names its own tool in an `Example: <tool_name> {…}` fragment", async () => {
-    const mcp = await projectMcp([...storyModules.values()]);
-    try {
-      const tools = await mcp.listTools();
-      expect(tools.length).toBeGreaterThan(0);
-      const missing = tools
-        .filter(
-          (tool) =>
-            !new RegExp(`Example:\\s*${tool.name}\\s*\\{`).test(
-              tool.description ?? "",
-            ),
-        )
-        .map((tool) => tool.name);
-      expect(missing).toEqual([]);
     } finally {
       await mcp.cleanup();
     }

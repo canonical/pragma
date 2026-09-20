@@ -37,6 +37,7 @@ import {
   assertCliMcpParity,
   JSON_FLAGS,
   NO_MUTATION,
+  noticeOf,
 } from "../helpers/parity.js";
 import { projectMcp } from "../helpers/projectMcp.js";
 import { listVerbs, liveVerbs, lookupVerbs } from "./liveReadSurface.js";
@@ -76,6 +77,39 @@ describe("assertCliMcpParity — the shared helper, over stable-now nouns (A5)",
     });
     expect(envelope.ok).toBe(true);
   });
+});
+
+describe("the one place the envelopes differ: the spelling inside meta.notice", () => {
+  it("an empty list is equal on both surfaces but for how its next step is spelled", async () => {
+    // A filter that matches nothing: the empty answer names the filter, then
+    // carries the story's empty-state recovery and its next calls.
+    const tokenModule = capabilities.find((module) => module.name === "token");
+    const verb = tokenModule?.verbs.find(
+      (v) => v.path[1] === "consumers",
+    ) as VerbSpec;
+    const cwd = freshCwd();
+    const params = { search: "zzz-nothing-matches-this" };
+    const cliEnvelope = await assertCliMcpParity({
+      modules: capabilities,
+      verb,
+      tool: "token_consumers",
+      cwd,
+      params,
+    });
+    expect(cliEnvelope.data).toEqual([]);
+    const cliNotice = noticeOf(cliEnvelope) as string;
+    expect(cliNotice).toContain("`--search zzz-nothing-matches-this`");
+    expect(cliNotice).toContain("Run `pragma sources update`.");
+
+    const mcp = await projectMcp(capabilities, cwd);
+    const mcpNotice = noticeOf(await mcp.callTool("token_consumers", params));
+    await mcp.cleanup();
+    expect(mcpNotice).toContain('`search: "zzz-nothing-matches-this"`');
+    // Never `confirm`: a next step does not skip the plan.
+    expect(mcpNotice).toContain("Call `sources_update {}`.");
+    expect(mcpNotice).not.toContain("pragma ");
+    // Two full-registry MCP servers and a CLI dispatch: slow on a busy machine.
+  }, 30_000);
 });
 
 describe("plan-first is uniform across surfaces (A6)", () => {
