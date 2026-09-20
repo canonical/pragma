@@ -290,8 +290,14 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
             effects,
             runtime.globalFlags.verbose === true,
           ).map(describeEffect);
+          // A verb that stashed a structured plan (`setup`'s target rows,
+          // each with its compact `summary` and its per-file `children`)
+          // carries it beside the effects under the same key the CLI's
+          // `--format json` dry run uses, so an agent reads the rows as data
+          // rather than parsing the effect strings for them.
+          const planData = mutationRuntime.planData;
           return toolSuccess(
-            { plan },
+            planData === undefined ? { plan } : { plan, targets: planData },
             { planOnly: true, confirmRequired: true },
           );
         } finally {
