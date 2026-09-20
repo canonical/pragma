@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/styles-typography
+
+
+
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * feat(styles)!: tokens, elements and layout entries (#1146) ([3c5bd8c](https://github.com/canonical/pragma/commit/3c5bd8c2cbe7d530d4bc3d2718a92ea1ba510c9e)), closes [#1146](https://github.com/canonical/pragma/issues/1146)

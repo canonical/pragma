@@ -50,6 +50,8 @@ type ItemIdentity =
   | {
       /**
        * Unique identifier for the item, required when no URL is provided.
+       * Unique within the whole tree; a collision leaves only the later
+       * item in the index (warned in development).
        * This is the answer for a non-navigable node,
        * e.g. 'section-header' for a grouping item.
        */
@@ -69,6 +71,8 @@ type ItemIdentity =
        * Navigation URL for the item, used for navigable links.
        * e.g. '/dashboard' for directing to the dashboard page.
        * Doubles as the item's identity, taking precedence over `key`.
+       * Unique within the whole tree; a collision leaves only the later
+       * item in the index (warned in development).
        */
       url: string;
     };

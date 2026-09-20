@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/styles
+
+
+
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * feat(styles)!: the component-tier layers follow the tier tree (#1153) ([dd99204](https://github.com/canonical/pragma/commit/dd99204020714c35752fb71f5d64715778a694c4)), closes [#1153](https://github.com/canonical/pragma/issues/1153)

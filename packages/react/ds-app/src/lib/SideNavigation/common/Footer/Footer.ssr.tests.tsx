@@ -6,8 +6,20 @@ import Footer from "./Footer.js";
 
 describe("Footer SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(<Footer>Test content</Footer>);
-    expect(html).toContain("Test content");
+    const html = renderToString(
+      <Footer
+        root={{
+          key: "footer",
+          items: [{ label: "Log out", control: "button" }],
+        }}
+      />,
+    );
+    expect(html).toContain("Log out");
+    expect(html).toContain("ds footer");
+  });
+
+  it("renders an empty region with no data", () => {
+    const html = renderToString(<Footer />);
     expect(html).toContain("ds footer");
   });
 });

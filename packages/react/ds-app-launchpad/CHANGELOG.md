@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/react-ds-app-launchpad
+
+
+
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * refactor(react-ds-app)!: wrap the app-tier component stylesheets in their tier layers (#1125) ([0eacf5e](https://github.com/canonical/pragma/commit/0eacf5e6949acbb09618206748164e4c8d48f404)), closes [#1125](https://github.com/canonical/pragma/issues/1125)

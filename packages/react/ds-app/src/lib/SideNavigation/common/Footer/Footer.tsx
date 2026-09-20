@@ -1,14 +1,78 @@
 import type React from "react";
-import { NavTree } from "../NavTree/index.js";
+import type { FooterItem, LeafFooterItem } from "../../types.js";
+import { Item } from "../Item/index.js";
+import { ItemButton } from "../ItemButton/index.js";
+import { ItemExpandable } from "../ItemExpandable/index.js";
 import type { FooterProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds footer";
 
 /**
- * SideNavigation.Footer — optional region pinned to the bottom, holding
- * account-level or global actions. Drives its own useNavigationTree over its
- * `root` (independent of Content). Falls back to `children` when no `root`.
+ * Renders one footer leaf row. The Footer is the one place a navigation row
+ * may be a button. Three-way dispatch: a navigable item (`url` set,
+ * `control` not `"button"`) renders as `Item` (a link via `LinkComponent`,
+ * active when current); an action item (`control: "button"`, or `onClick`
+ * with no `url`) renders as `ItemButton`; anything else — a label-only row
+ * like a logged-in username — renders as `Item`'s plain label row, NOT an
+ * inert `<button>` announced as an action that does nothing. Explicit
+ * `control` always wins over the `url`-presence inference, so an action
+ * item may carry a `url` yet render as a button. Toggle-style rows compose
+ * `ItemButton` plus a `slot` — there is no dedicated switch.
+ */
+const renderFooterItem = (
+  item: LeafFooterItem,
+  currentUrl: string | undefined,
+  LinkComponent: FooterProps["LinkComponent"],
+): React.ReactElement => {
+  // `label` is the row's identity (required on LeafFooterItem), so it is
+  // the element key — reordering the authored list preserves each row's
+  // state. Two same-labelled rows in one footer collide; that's ambiguous
+  // UI, left to the consumer to avoid.
+  if (item.control !== "button" && item.url) {
+    const active = item.url === currentUrl;
+    return (
+      <Item
+        key={item.label}
+        url={item.url}
+        icon={item.icon}
+        slot={item.slot}
+        LinkComponent={LinkComponent}
+        active={active}
+      >
+        {item.label}
+      </Item>
+    );
+  }
+
+  if (item.control === "button" || item.onClick) {
+    return (
+      <ItemButton
+        key={item.label}
+        icon={item.icon}
+        slot={item.slot}
+        onClick={item.onClick}
+      >
+        {item.label}
+      </ItemButton>
+    );
+  }
+
+  return (
+    <Item key={item.label} icon={item.icon} slot={item.slot}>
+      {item.label}
+    </Item>
+  );
+};
+
+/**
+ * SideNavigation.Footer — optional region pinned to the bottom, reserved
+ * for user-related content. Data-only: `root` is the footer's only data
+ * surface — free-form leaves (`LeafFooterItem`, buttons via
+ * `control`/`onClick`) and depth-1 expandables (`ExpandableFooterItem`,
+ * whose children disclose through the same native `<details>` disclosure
+ * the content tree uses). A certificate-user application, for instance,
+ * composes the `certificate` icon and omits the logout item itself.
  *
  * @implements ds:apps.subcomponent.side-navigation-footer
  */
@@ -17,24 +81,46 @@ const Footer = ({
   root,
   LinkComponent = "a",
   currentUrl,
-  children,
   ...props
 }: FooterProps): React.ReactElement => {
+  const list = root?.items ?? [];
+
   return (
-    <div
+    <footer
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
-      {root ? (
-        <NavTree
-          root={root}
-          currentUrl={currentUrl}
-          LinkComponent={LinkComponent}
-        />
-      ) : (
-        children
-      )}
-    </div>
+      {list.length > 0 ? (
+        <ul className="list">
+          {list.map((entry: FooterItem) =>
+            "items" in entry && entry.items.length > 0 ? (
+              <ItemExpandable
+                key={entry.label}
+                heading={entry.label}
+                icon={entry.icon}
+                collapseOnChildClick
+                // Seed from whether a child row is the current location;
+                // the disclosure's one-way sync re-opens it on navigation.
+                // The `url !== undefined` guard matters: without it, a
+                // label-only child (no `url`) matches an unset `currentUrl`
+                // (`undefined === undefined`) and the disclosure seeds open
+                // whenever `currentUrl` isn't wired.
+                defaultExpanded={entry.items.some(
+                  (child) =>
+                    child.url !== undefined && child.url === currentUrl,
+                )}
+              >
+                {entry.items.map((child) =>
+                  renderFooterItem(child, currentUrl, LinkComponent),
+                )}
+              </ItemExpandable>
+            ) : (
+              renderFooterItem(entry, currentUrl, LinkComponent)
+            ),
+          )}
+        </ul>
+      ) : null}
+    </footer>
   );
 };
 

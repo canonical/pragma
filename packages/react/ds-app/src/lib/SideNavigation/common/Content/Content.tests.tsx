@@ -5,20 +5,22 @@ import { describe, expect, it } from "vitest";
 import Content from "./Content.js";
 
 describe("Content", () => {
-  it("renders children", () => {
-    render(<Content>Test content</Content>);
-    expect(screen.getByText("Test content")).toBeInTheDocument();
-  });
-
   it("applies custom className", () => {
-    render(<Content className="custom-class">Content</Content>);
-    const element = screen.getByText("Content");
+    render(<Content className="custom-class" />);
+    const element = screen.getByRole("navigation");
     expect(element.className).toContain("ds content");
     expect(element.className).toContain("custom-class");
   });
 
   it("passes through additional props", () => {
-    render(<Content data-testid="test-component">Content</Content>);
+    render(<Content data-testid="test-component" />);
     expect(screen.getByTestId("test-component")).toBeInTheDocument();
+  });
+
+  it("renders an empty landmark with no root (the landmark contract stays stable)", () => {
+    render(<Content />);
+    const nav = screen.getByRole("navigation");
+    expect(nav).toBeInTheDocument();
+    expect(nav).toBeEmptyDOMElement();
   });
 });
