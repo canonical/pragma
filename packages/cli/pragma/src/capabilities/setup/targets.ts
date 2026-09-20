@@ -72,12 +72,14 @@ import {
   detectSkills,
   ownedSkillLinks,
   type SkillsDetection,
+  type SymlinkAction,
   skillsSkipReason,
   skillsSkipRemedy,
   staleSkillLinks,
 } from "./operations/setupSkills.js";
 import type { FsProbe } from "./operations/writability.js";
 import {
+  type ChildNoun,
   type PlanAction,
   type PlanChildRow,
   type Roots,
@@ -106,6 +108,12 @@ export interface TargetDefinition<D> {
   readonly id: TargetId;
   /** Human title, used where a sentence needs one; the id is the row name. */
   readonly title: string;
+  /**
+   * What the row's children are, for the plan's compact line: the summary
+   * counts them by state (`6 config files: 4 to add, 2 already set up`), so a
+   * row authors this one word and gets its summary derived.
+   */
+  readonly noun: ChildNoun;
   readonly scopes: readonly Scope[];
   /**
    * Real reads, up front, once per (target, scope) per invocation.
@@ -144,19 +152,42 @@ const defineTarget = <D>(target: TargetDefinition<D>): AnyTarget =>
 // The rows
 // =============================================================================
 
+/**
+ * The one child a single-file row has — the file, carrying its own state —
+ * so the compact line counts it like any other child and the path appears
+ * only in the breakdown.
+ */
+const fileChild = (
+  key: string,
+  label: string,
+  action: PlanChildRow["action"],
+): readonly PlanChildRow[] => [{ key, label, action }];
+
 const configTarget = defineTarget<ConfigDetection>({
   id: "config",
   title: "Global configuration",
+  noun: ["config file", "config files"],
   scopes: ["global"],
   detect: () => detectConfigFile(),
   plan: (d, _scope, roots) => {
     const path = shortenPath(d.path, roots);
-    if (!d.exists) return { action: "install", detail: path };
-    return { action: "none", detail: `${path} — present` };
+    if (!d.exists) {
+      return {
+        action: "install",
+        detail: path,
+        children: fileChild(d.path, path, "add"),
+      };
+    }
+    return {
+      action: "none",
+      detail: `${path} — present`,
+      children: fileChild(d.path, `${path} — present`, "unchanged"),
+    };
   },
   removalPlan: (d, _scope, roots) => {
     const path = shortenPath(d.path, roots);
-    if (!d.exists) return { action: "none", detail: `${path} — absent` };
+    if (!d.exists)
+      return { action: "none", detail: "no config file to remove" };
     if (!d.isSeed) {
       return {
         action: "skip",
@@ -164,7 +195,11 @@ const configTarget = defineTarget<ConfigDetection>({
         reason: `it holds your own settings, so ${path} stays`,
       };
     }
-    return { action: "remove", detail: path };
+    return {
+      action: "remove",
+      detail: path,
+      children: fileChild(d.path, path, "update"),
+    };
   },
   compose: (d) => composeConfigFile(d),
   composeRemoval: (d, undoKey) => composeConfigRemoval(d, undoKey),
@@ -173,6 +208,7 @@ const configTarget = defineTarget<ConfigDetection>({
 const completionsTarget = defineTarget<CompletionsDetection>({
   id: "completions",
   title: "Shell completions",
+  noun: ["completion script", "completion scripts"],
   scopes: ["global"],
   detect: (rt) => detectCompletions(rt.cwd),
   plan: (d, _scope, roots) => {
@@ -210,18 +246,30 @@ const completionsTarget = defineTarget<CompletionsDetection>({
     // beside a bare path leaves the reader to guess whether the script is
     // there and current or missing and unreachable.
     if (d.state === "installed") {
-      return { action: "none", detail: `${where} — already up to date` };
+      const detail = `${where} — already up to date`;
+      return {
+        action: "none",
+        detail,
+        children: fileChild(d.path, detail, "unchanged"),
+      };
     }
+    const stale = d.state === "stale";
     return {
-      action: d.state === "stale" ? "update" : "install",
+      action: stale ? "update" : "install",
       detail: where,
+      children: fileChild(d.path, where, stale ? "update" : "add"),
     };
   },
   removalPlan: (d, _scope, roots) => {
     if (d.path === null || d.state === "absent") {
       return { action: "none", detail: "no script installed" };
     }
-    return { action: "remove", detail: shortenPath(d.path, roots) };
+    const path = shortenPath(d.path, roots);
+    return {
+      action: "remove",
+      detail: path,
+      children: fileChild(d.path, path, "update"),
+    };
   },
   compose: (d) => composeCompletions(d),
   composeRemoval: (d, undoKey) => composeCompletionsRemoval(d, undoKey),
@@ -296,6 +344,7 @@ const draftLspRowBlock = (
 const lspTarget = defineTarget<LspDetection>({
   id: "lsp",
   title: "Terrazzo LSP extension",
+  noun: ["editor", "editors"],
   scopes: ["global"],
   detect: (rt, _scope, probe) => detectLsp(rt.cwd, undefined, probe),
   plan: (d, _scope, roots) => {
@@ -401,6 +450,7 @@ const mcpChild = (
 const mcpTarget = defineTarget<McpDetection>({
   id: "mcp",
   title: "MCP server registration",
+  noun: ["config file", "config files"],
   scopes: ["global", "project"],
   detect: (rt, scope, probe) => detectMcp(rt, scope, probe),
   plan: (d, scope, roots) => {
@@ -458,9 +508,36 @@ const mcpTarget = defineTarget<McpDetection>({
   composeRemoval: (d, undoKey) => composeMcpRemoval(d, undoKey),
 });
 
+/**
+ * One child per folder the links go into, its state read off the links
+ * inside it: a folder with a link to create is `add`, one with only links to
+ * replace or stale links to retire is `update`, one whose every link is
+ * already correct is `unchanged`. The folders, not the links — the forward
+ * detail already counts links by the folder, and eighteen link rows under
+ * the row the plan calls `9 skills → 2 folders` is the wall the summary is
+ * there to avoid.
+ */
+const skillFolderChildren = (
+  d: SkillsDetection,
+  stale: readonly SymlinkAction[],
+  roots: Roots,
+): readonly PlanChildRow[] =>
+  d.targets.map((t): PlanChildRow => {
+    const inside = (link: SymlinkAction): boolean =>
+      dirname(link.linkPath) === t.dir;
+    const links = d.actions.filter(inside);
+    const action = links.some((a) => a.action === "created")
+      ? "add"
+      : links.some((a) => a.action === "replaced") || stale.some(inside)
+        ? "update"
+        : "unchanged";
+    return { key: t.dir, label: shortenPath(t.dir, roots), action };
+  });
+
 const skillsTarget = defineTarget<SkillsDetection>({
   id: "skills",
   title: "Skill symlinks",
+  noun: ["skill folder", "skill folders"],
   scopes: ["global", "project"],
   detect: (rt, scope) => detectSkills(rt, scope),
   plan: (d, scope, roots) => {
@@ -489,12 +566,13 @@ const skillsTarget = defineTarget<SkillsDetection>({
       stale.length === 0
         ? where
         : `${where}, ${stale.length} stale ${stale.length === 1 ? "link" : "links"} to remove`;
+    const children = skillFolderChildren(d, stale, roots);
     const pending = d.actions.filter((a) => a.action !== "skipped");
-    if (pending.length > 0) return { action: "link", detail };
+    if (pending.length > 0) return { action: "link", detail, children };
     // Nothing to link, but something to retire: `update` is the table's word
     // for "this row has work that is not a fresh install".
-    if (stale.length > 0) return { action: "update", detail };
-    return { action: "none", detail };
+    if (stale.length > 0) return { action: "update", detail, children };
+    return { action: "none", detail, children };
   },
   removalPlan: (d, _scope, roots) => {
     const owned = ownedSkillLinks(d);

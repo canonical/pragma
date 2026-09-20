@@ -92,7 +92,14 @@ export interface PlanRow {
   readonly target: TargetId;
   readonly scope: Scope;
   readonly action: PlanAction;
-  /** Right-hand column: what and where, rendered root-relative. */
+  /**
+   * The compact right-hand column: one line, no paths — how many of the
+   * row's targets change and how many are already set up, or the reason a
+   * skip skips. The renderers print it by default; {@link detail} and
+   * {@link children} are the breakdown shown under `--verbose`.
+   */
+  readonly summary: string;
+  /** The full right-hand column: what and where, rendered root-relative. */
   readonly detail: string;
   /** REQUIRED when the action is `skip` — the named reason. */
   readonly reason?: string;
@@ -237,6 +244,56 @@ export function shortenPath(path: string, roots: SetupPlan["roots"]): string {
     return `${marker}${sep}${rel}`;
   }
   return path;
+}
+
+/** The word a row counts its children in, singular and plural. */
+export type ChildNoun = readonly [one: string, many: string];
+
+/** `config file` for one, `6 config files` for more — the number only when it says something. */
+const countNoun = (count: number, noun: ChildNoun): string =>
+  count === 1 ? noun[0] : `${count} ${noun[1]}`;
+
+/**
+ * The compact line a row's children add up to — the default right-hand
+ * column, derived from the children so every target (and any target added
+ * later) gets one without authoring it.
+ *
+ * When every child does the same thing the count and noun are the whole
+ * sentence: the action column beside it already says `install` or `remove`,
+ * so `6 config files` needs no verb, and the one state worth naming is the
+ * quiet one (`config file already set up`). When the children disagree the
+ * line carries one count per state.
+ *
+ * @param noun - The row's child noun.
+ * @param children - The row's children.
+ * @returns The line, or `undefined` when the row has no children to count.
+ */
+export function summarizeChildren(
+  noun: ChildNoun,
+  children: readonly PlanChildRow[],
+): string | undefined {
+  if (children.length === 0) return undefined;
+  const states: readonly [PlanChildRow["action"], string][] = [
+    ["add", "to add"],
+    ["update", "to update"],
+    ["unchanged", "already set up"],
+    ["skip", "skipped"],
+  ];
+  const parts = states
+    .map(([action, word]) => ({
+      action,
+      word,
+      count: children.filter((child) => child.action === action).length,
+    }))
+    .filter(({ count }) => count > 0);
+  const whole = countNoun(children.length, noun);
+  const only = parts.length === 1 ? parts.at(0) : undefined;
+  if (only === undefined) {
+    return `${whole}: ${parts.map(({ count, word }) => `${count} ${word}`).join(", ")}`;
+  }
+  return only.action === "add" || only.action === "update"
+    ? whole
+    : `${whole} ${only.word}`;
 }
 
 /** Replace a row's outcome, leaving every other field untouched. */

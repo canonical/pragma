@@ -140,7 +140,7 @@ describe("bundled skills — a fresh install, through the shipped entry", () => 
       env: freshInstallEnv(),
     });
     expect(outcome.exitCode).toBe(0);
-    expect(outcome.stdout).toMatch(/skills\s+link\s+\d+ skills? →/);
+    expect(outcome.stdout).toMatch(/skills\s+link\s+\d+ skill folders?/);
     expect(outcome.stdout).not.toContain("no skills installed");
   });
 });

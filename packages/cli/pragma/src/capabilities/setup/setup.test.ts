@@ -273,11 +273,13 @@ describe("setup completions", () => {
     "--dry-run previews the write against the detected shell, writing nothing",
     async () => {
       const path = completionScriptPath(SHELL as ShellId);
+      // `--verbose`: the script path is the row's breakdown, and the default
+      // line says only `completion script`.
       const outcome = await executeVerb(
         completionsVerb,
         {},
         DRY,
-        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+        bootRuntime({ ...FLAGS, verbose: true }, tmp("pragma-setup-proj-")),
       );
       // The dry-run renders the PLAN through the verb's formatPlan seam, not the
       // kernel's raw effect dump: one row, the shell it detected, and the script
@@ -1191,7 +1193,7 @@ describe("setup (run-all wizard) — scope threading", () => {
       setupSelfVerb,
       { local: true },
       DRY,
-      bootRuntime(FLAGS, cwd),
+      bootRuntime({ ...FLAGS, verbose: true }, cwd), // paths are the breakdown
     );
     expect(outcome.exitCode).toBe(0);
     const plan = outcome.stdout ?? "";
@@ -1216,7 +1218,7 @@ describe("setup (run-all wizard) — scope threading", () => {
         setupSelfVerb,
         { global: true },
         DRY,
-        bootRuntime(FLAGS, cwd),
+        bootRuntime({ ...FLAGS, verbose: true }, cwd), // paths are the breakdown
       );
       expect(outcome.exitCode).toBe(0);
       const plan = outcome.stdout ?? "";
@@ -2244,7 +2246,7 @@ describe("setup (run-all wizard)", () => {
       for (const id of ["config", "completions", "lsp", "mcp", "skills"]) {
         expect(plan).toContain(id);
       }
-      expect(plan).toContain(`${SHELL} →`); // completions row
+      expect(plan).toContain("completion script"); // completions row, compact
       expect(plan).not.toContain("Prompt"); // recap gate / multiselects filtered
       // Nothing is written by a preview.
       expect(existsSync(completionScriptPath(SHELL as ShellId))).toBe(false);
@@ -2611,6 +2613,169 @@ describe("setup — mixed-noun wiring & MCP surface", () => {
     expect(plan.ok).toBe(true);
     expect(plan.meta).toMatchObject({ planOnly: true, confirmRequired: true });
     expect(Array.isArray((plan.data as { plan: unknown }).plan)).toBe(true);
+  });
+});
+
+describe("setup — one line per row by default, the breakdown under --verbose", () => {
+  // A `code` CLI on PATH so the lsp row has an editor child, and a Cursor
+  // project so the mcp row has a file child: rows WITH children are the ones
+  // whose default line used to be a wall of paths.
+  let prevPath: string | undefined;
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    const dir = stubPath();
+    writeFileSync(join(dir, "code"), "");
+    process.env.PATH = dir;
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  /** The plan's row lines — everything under the header and its blank line. */
+  const rowsOf = (stdout: string | undefined): string[] =>
+    (stdout ?? "")
+      .split("\n")
+      .slice(2)
+      .filter((line) => line.startsWith("  "));
+
+  const withCursor = (): string => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    return cwd;
+  };
+
+  it("--dry-run prints one path-free line per row; --verbose prints every file with its state", async () => {
+    const cwd = withCursor();
+    const compact = await executeVerb(
+      setupSelfVerb,
+      { scope: "both" },
+      DRY,
+      bootRuntime(FLAGS, cwd),
+    );
+    const rows = rowsOf(compact.stdout);
+    // One line per row, and none of them names a file: the header names the
+    // roots, the rows say what happens.
+    expect(rows.length).toBeGreaterThanOrEqual(5);
+    // (A skip's reason may still name the directory it looked in — that is
+    // the reason, not a breakdown.)
+    for (const row of rows.filter((r) => !r.includes("nothing to do"))) {
+      expect(row).not.toMatch(/[~.]\//);
+      expect(row).not.toContain(" · ");
+    }
+    expect(compact.stdout).toMatch(
+      /^ {2}mcp\s+install\s+(\d+ )?config files?$/m,
+    );
+    expect(compact.stdout).toMatch(/^ {2}lsp\s+install\s+editor$/m);
+
+    const verbose = await executeVerb(
+      setupSelfVerb,
+      { scope: "both" },
+      DRY,
+      bootRuntime({ ...FLAGS, verbose: true }, cwd),
+    );
+    expect(verbose.stdout).toContain("./.cursor/mcp.json");
+    expect(verbose.stdout).toContain("code — VS Code");
+    expect(verbose.stdout).toContain("pragma/config.json"); // XDG-isolated
+  });
+
+  it("--undo --dry-run follows the same rule", async () => {
+    const cwd = withCursor();
+    await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    const undo = { dryRun: true, undo: true, yes: false };
+    const compact = await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      undo,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(compact.stdout).toMatch(
+      /^ {2}mcp {2}remove {2}(\d+ )?config files?$/m,
+    );
+    expect(compact.stdout).not.toContain("mcp.json");
+    const verbose = await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      undo,
+      bootRuntime({ ...FLAGS, verbose: true }, cwd),
+    );
+    expect(verbose.stdout).toContain("  mcp  remove  ./.cursor/mcp.json");
+  });
+
+  it("the progress lines and the recap follow it too", async () => {
+    const cwd = withCursor();
+    const chunks: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: unknown): boolean => {
+        chunks.push(String(chunk));
+        return true;
+      });
+    try {
+      await executeVerb(
+        verbOf("mcp"),
+        { local: true },
+        YES,
+        bootRuntime(FLAGS, cwd),
+      );
+    } finally {
+      spy.mockRestore();
+    }
+    // The progress line, on stderr: the compact line, then what happened.
+    expect(chunks.join("")).toMatch(
+      /✓ mcp {2}(\d+ )?config files? — \d+ added/,
+    );
+
+    // The converged re-run's recap, on stdout, in each register.
+    const compact = await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(compact.stdout).toMatch(
+      /✓ mcp {2}(\d+ )?config files? already set up — unchanged/,
+    );
+    const verbose = await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      YES,
+      bootRuntime({ ...FLAGS, verbose: true }, cwd),
+    );
+    expect(verbose.stdout).toMatch(/✓ mcp {2}\d+ config files? — unchanged/);
+  });
+
+  it("the machine surfaces carry the compact line AND the breakdown as data", async () => {
+    const cwd = withCursor();
+    const json = await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      DRY,
+      bootRuntime({ ...FLAGS, format: "json" }, cwd),
+    );
+    const cli = JSON.parse(json.stdout ?? "") as {
+      data: { plan: string[]; targets: { rows: Record<string, unknown>[] } };
+    };
+    const row = cli.data.targets.rows.find((r) => r.target === "mcp");
+    expect(row?.summary).toMatch(/^(\d+ )?config files?$/);
+    expect(Array.isArray(row?.children)).toBe(true);
+
+    // The MCP tool's plan used to carry the described effects alone; it now
+    // carries the same `targets` the CLI's JSON dry run does, so an agent
+    // reads the rows rather than parsing effect strings for them.
+    const mcp = await projectMcp([setupModule], cwd);
+    const plan = (await mcp.callTool("setup", { scope: "project" })) as {
+      data: { plan: string[]; targets: { rows: Record<string, unknown>[] } };
+    };
+    await mcp.cleanup();
+    expect(plan.data.plan).toEqual(cli.data.plan);
+    expect(
+      plan.data.targets.rows.find((r) => r.target === "mcp")?.summary,
+    ).toBe(row?.summary);
   });
 });
 

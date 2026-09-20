@@ -219,16 +219,21 @@ async function runSetup(
   // outcomes, and `appliedUndo` projects them onto the rows through the SAME
   // sink + `applied` path the forward run reports through. One outcome
   // model, both directions.
+  // One register for everything this verb says aloud: the compact line per
+  // row, or the per-file breakdown under `--verbose` — the same flag that
+  // already widens the detection summary and the wizard's transcript below.
+  const verbose = rt.globalFlags.verbose === true;
+
   if (!previewing && input.undo) {
     rt.undoReport = (outcomes) => {
       const applied = run.appliedUndo(outcomes);
       const width = Math.max(...applied.rows.map((row) => row.target.length));
       for (const row of applied.rows) {
         if (row.outcome === undefined) continue;
-        rt.report?.(renderProgressLine(row, width));
+        rt.report?.(renderProgressLine(row, width, undefined, verbose));
       }
       if (planExitFailed(applied)) {
-        rt.report?.(renderRecap(applied, "Removed"));
+        rt.report?.(renderRecap(applied, "Removed", undefined, verbose));
         raiseFailedRows(applied, true);
       }
     };
@@ -274,9 +279,7 @@ async function runSetup(
   // silences it and it is a no-op over MCP — so no React is loaded to print it.
   // A preview says nothing here: the plan table IS its output.
   if (!previewing) {
-    const summary = renderDetectionSummary(run.plan, {
-      verbose: rt.globalFlags.verbose,
-    });
+    const summary = renderDetectionSummary(run.plan, { verbose });
     if (summary !== undefined) rt.report?.(summary);
   }
 
@@ -306,7 +309,7 @@ async function runSetup(
     // listener, which falls the wizard back to the full effect transcript —
     // the same detected-only-unless-verbose rule the detection summary and
     // doctor already follow.
-    if (rt.globalFlags.verbose !== true) {
+    if (!verbose) {
       run.setRowListener((event) => session.reportStep(event));
     }
     rt.exec = {
@@ -358,7 +361,7 @@ async function runSetup(
       const width = Math.max(...applied.rows.map((row) => row.target.length));
       for (const row of applied.rows) {
         if (row.outcome === undefined) continue;
-        rt.report?.(renderProgressLine(row, width));
+        rt.report?.(renderProgressLine(row, width, undefined, verbose));
       }
     }
 
@@ -367,7 +370,7 @@ async function runSetup(
     // not happen. The recap goes to stderr here because the error renderer owns
     // stdout on a failing run.
     if (planExitFailed(applied)) {
-      rt.report?.(renderRecap(applied));
+      rt.report?.(renderRecap(applied, "Setup", undefined, verbose));
       raiseFailedRows(applied);
     }
     return applied;
@@ -440,7 +443,8 @@ function setupVerb(
       // The kernel's dry-run branch renders the plan through this seam instead
       // of dumping raw effects. Absent on every other verb, so nothing else
       // changes shape.
-      formatPlan: (planData) => renderDryRun(planData as SetupPlan),
+      formatPlan: (planData, _effects, verbose) =>
+        renderDryRun(planData as SetupPlan, verbose),
     },
     capability,
     ...extras,
