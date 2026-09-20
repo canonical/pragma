@@ -3,6 +3,124 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+* refactor!: answer the SideNavigation stack's review threads (#1285) ([57096e6](https://github.com/canonical/pragma/commit/57096e694b18cbbacf74819a1465e0609f019e3d)), closes [#1285](https://github.com/canonical/pragma/issues/1285)
+
+### Bug Fixes
+
+* **ds-app:** harden the SideNavigation rail-collapse behaviour ([#1228](https://github.com/canonical/pragma/issues/1228)) ([f3d6279](https://github.com/canonical/pragma/commit/f3d6279676ad07ed230dff86f95a829a9f08beda)), closes [#1227](https://github.com/canonical/pragma/issues/1227) [#main-content](https://github.com/canonical/pragma/issues/main-content)
+* **ds-app:** render non-action footer rows as labels and stabilise element keys ([#1229](https://github.com/canonical/pragma/issues/1229)) ([0bebcd2](https://github.com/canonical/pragma/commit/0bebcd21042fd51ad84de92d494f16923aa0d3cb)), closes [canonical/pragma#1208](https://github.com/canonical/pragma/issues/1208) [#1208](https://github.com/canonical/pragma/issues/1208)
+
+### BREAKING CHANGES
+
+* pass the trigger content as ContextualMenu's children
+  (`<ContextualMenu items={…}>Actions</ContextualMenu>`) instead of the
+  `trigger` prop.
+
+  * refactor(ds-app): restructure ContextSwitcher around a real wrapper element
+
+  The component returned a Fragment pairing an optional GroupHeader with
+  the ContextualMenu — a root a consumer cannot address (no className, id,
+  or data attribute lands anywhere). The root is now the component's own
+  wrapper div carrying the DS class and the spread rest props; the
+  caption and the dropdown field are its children.
+
+  One renderer now serves both entry shapes (a context and the
+  create-context action), branching on renderLabel — the second
+  single-use content component folds away, and with it the
+  create-context row's layout moves onto a class only this component's
+  renderer emits (.create-context), replacing the surface-scoped selector
+  the surfaceClassName removal had orphaned.
+
+  The ContextualMenu passthrough props (open/onOpenChange/positioning)
+  are forwarded explicitly now that the rest spread lands on the wrapper,
+  and the dropdown's default max width stays the rail width minus its
+  row insets, overridable per instance.
+
+  * refactor(ds-app): let ItemExpandable's details element own its open state
+
+  The disclosure mirrored <details>'s native state into React and drove
+  the attribute back — a controlled circuit around an element that
+  already manages itself, with a toggle handler whose only job was to
+  keep the mirror in step. The element is now uncontrolled: the open
+  attribute is seeded from a mount-only snapshot of defaultExpanded
+  (SSR renders it, and a seed flipping back to false never force-closes
+  an open branch), and the two behaviours that genuinely need JS reach
+  the DOM through a ref instead of state — the one-way re-open when
+  navigation makes this branch the selected one, and the footer's
+  collapse-on-child-activation. Every existing behaviour test passes
+  unchanged.
+
+  * refactor(ds-app): move useCollapseShortcut into its domain and default-export it
+
+  The hook lived under common/hooks — a grab-bag nesting level below the
+  component it serves. It moves to SideNavigation/hooks/useCollapseShortcut,
+  the hooks folder of its domain, where the code standards place custom
+  hooks.
+
+  The module now has a single default export (the hook); COLLAPSE_SHORTCUT
+  was its only other consumer-facing name and is single-use, so it stays
+  as an unexported module constant. The boolean gate renames from
+  `enabled` to `condition` — the prop names the state it represents
+  (the keyboardShortcut prop SideNavigation feeds it), not a bare
+  on/off switch.
+
+  * chore(ds-app): trim the vitest setup's ResizeObserver comment
+
+  * chore(deps): regenerate the lockfile after the 0.39.0 bump
+
+  ---------
+* **ds-app:** SideNavigation's entire subcomponent surface changes —
+  there are no dot-static or named exports; the sidebar is consumed
+  data-only via root/footerRoot/contextSwitcher props, and the region and
+  row components render exclusively from that data.
+
+  - One navigation landmark: the root is a plain <div>; Content's <nav> is
+    the component's single navigation landmark (aria-label forwarded,
+    default "Main navigation") — branding, the context switcher and the
+    footer's actions sit outside it by design.
+  - A visually hidden "Skip to main content" link is the first focusable
+    element in the DOM order (target via skipTo, default #main-content).
+  - Four regions, all data-driven: Header (branding + collapse toggle), an
+    optional ContextSwitcher region (typed contextSwitcher props — a
+    role="menu" select-like widget is not navigation, so it renders in
+    its own plain-<div> region between Header and Content, outside the
+    landmark, and hides when the rail collapses), Content (the landmark;
+    links, plain labels and expandable disclosures only) and Footer
+    (free-form rows through footerRoot).
+  - Strict content vocabulary: interactive action rows belong to the
+    Footer, so the landmark's contents always read as destinations. There
+    is no JSX escape hatch — the API carries no children props.
+  - Footer vocabulary mirrors the content tree's type split: free-form
+    leaves (LeafFooterItem — label required, optional icon/url/control/
+    slot; action rows via control: "button" + onClick flow through data)
+    and depth-1 expandables (ExpandableFooterItem). Leaf rows render as
+    links (active when matching the current location, LinkComponent
+    integrated); action rows render as buttons.
+  - Rail state keys off data-expanded on the root — the single source of
+    truth. Collapsed: Content and the switcher region hide, the footer
+    degrades to icon-only, and any rendered ItemExpandable discloses its
+    sub-items into a floating popover on the inline-end with visible
+    labels. Where CSS anchor positioning is supported (Baseline 2026),
+    position-try-fallbacks flips the popover above its trigger on viewport
+    overflow — browser-measured, plus the mirrored 0.5rem gap; otherwise
+    it stays top-anchored. Native <details> throughout: no Esc-close or
+    outside-click dismissal by design, Tab navigation stays viable.
+  - A nested sub-item whose url becomes active re-opens its collapsed
+    parent (one-way: manual collapse is respected, never auto-closed) and
+    carries data-active + aria-current under the expanded parent.
+  - The rail-collapse shortcut is Ctrl+B, opt-in via keyboardShortcut and
+    off by default (pending approval).
+  - The sidenav architecture tokens are declared on the component's own
+    stylesheet (rail widths, logo sizing, the unified 0.5rem row inset,
+    the row-background channel), with motion-token durations.
+  - Storybook: data-driven MAAS/LXD stories; a practical
+    "with ContextSwitcher" story routes url'd contexts through the hash
+    router and shows both ItemExpandable flavours side by side; all root
+    fixtures live in storybook/navigation/fixtures.tsx.
+
+
 # [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
 
 * feat(ds-app)!: rebuild SideNavigation into a single data-driven region shell (#1227), closes [#1227](https://github.com/canonical/pragma/issues/1227) [#main-content](https://github.com/canonical/pragma/issues/main-content)

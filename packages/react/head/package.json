@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-head",
   "description": "Declarative head management for React that renders head tags on the server and the client",
-  "version": "0.39.0",
+  "version": "0.40.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -48,10 +48,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
-    "@canonical/biome-config": "^0.39.0",
-    "@canonical/typescript-config-react": "^0.39.0",
-    "@canonical/vitest-config-react": "^0.39.0",
-    "@canonical/webarchitect": "^0.39.0",
+    "@canonical/biome-config": "^0.40.0",
+    "@canonical/typescript-config-react": "^0.40.0",
+    "@canonical/vitest-config-react": "^0.40.0",
+    "@canonical/webarchitect": "^0.40.0",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^26.0.0",
