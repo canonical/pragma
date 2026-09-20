@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+**Note:** Version bump only for package @canonical/storybook-addon-shell-theme
+
+
+
+
+
 # [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
 
 **Note:** Version bump only for package @canonical/storybook-addon-shell-theme
