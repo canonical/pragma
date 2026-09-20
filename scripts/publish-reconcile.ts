@@ -25,7 +25,9 @@
  *   bun scripts/publish-reconcile.ts            # report the delta; exit 0
  *   bun scripts/publish-reconcile.ts --verify   # exit 1 while any public
  *                                               # package is missing from the
- *                                               # registry
+ *                                               # registry (a hand check; the
+ *                                               # release job no longer gates
+ *                                               # on it, see tag.yml)
  *
  * `--verify` re-reads the registry a bounded number of times before failing,
  * because a packument read immediately after a publish can lag the write.
