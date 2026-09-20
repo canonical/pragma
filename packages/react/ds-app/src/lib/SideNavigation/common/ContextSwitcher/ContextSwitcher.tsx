@@ -6,13 +6,13 @@ import type { ContextSwitcherItem, ContextSwitcherProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds side-navigation-context-switcher";
-const surfaceCssClassName = "ds side-navigation-context-switcher-surface";
 
 /**
- * A context or "create context" entry under construction —
- * `description`/`badge`/`isCurrent`/`renderLabel` extend the public
- * `MenuItem` shape; this local type, not casts at each read site, carries
- * them through construction and both custom renderers below.
+ * One renderer for both entry shapes the switcher puts in the menu: a
+ * context (name, optional description/badge, the current one marked) and
+ * the "create context" action (icon + label). `MenuItem` carries none of
+ * those fields; this local type, not casts at each read site, carries
+ * them through construction and the renderer.
  */
 type ContextMenuItem = MenuItem & {
   description?: ContextSwitcherItem["description"];
@@ -23,17 +23,26 @@ type ContextMenuItem = MenuItem & {
 };
 
 /**
- * A context in the dropdown list — rendered custom so it can stack a
- * description line under the name and mark the current context, matching
- * the Figma source. `isCurrent`/`description`/`badge` are not part of
- * `MenuItem`; only this module constructs one.
+ * A context or "create context" entry — see {@link ContextMenuItem}.
  */
 const ContextItemContent = ({
   item,
 }: {
   item: MenuItem;
 }): React.ReactElement => {
-  const { description, badge, isCurrent } = item as ContextMenuItem;
+  const { description, badge, isCurrent, renderLabel } =
+    item as ContextMenuItem;
+
+  // The "create context" action: a plain icon + label row.
+  if (renderLabel != null) {
+    return (
+      <span className="create-context">
+        <Icon icon="plus" />
+        <span className="label">{renderLabel}</span>
+      </span>
+    );
+  }
+
   return (
     <span
       className={["content", isCurrent && "current"].filter(Boolean).join(" ")}
@@ -46,39 +55,16 @@ const ContextItemContent = ({
 };
 
 /**
- * The "create context" action's content — icon+label, but a custom renderer
- * because `createContextLabel` is a `ReactNode` and `MenuItem.label` is a
- * plain `string`.
- */
-const CreateContextContent = ({
-  item,
-}: {
-  item: MenuItem;
-}): React.ReactElement => {
-  const { renderLabel } = item as ContextMenuItem;
-  return (
-    <>
-      <Icon icon="plus" />
-      <span className="label">{renderLabel}</span>
-    </>
-  );
-};
-
-/**
- * SideNavigation.ContextSwitcher — a dropdown for products that divide into
- * contexts, projects, users, or similar (the 24.04 spec §4.3, §4.5).
- * Renders via `ContextualMenu` — a real `<button>` trigger
+ * SideNavigation.ContextSwitcher — a dropdown for products that divide
+ * into contexts, projects, users, or similar. Renders via
+ * `ContextualMenu`: a real `<button>` trigger
  * (`aria-haspopup="menu"`/`aria-expanded`) and a `role="menu"` popup with
- * full roving-focus keyboard navigation — a "select"-like widget, not a
- * bare `<details>` disclosure (the 24.04 spec §9.21; this used to render
- * via `Popover`, which is exactly that). `title`, when given, renders via
- * `SideNavigation.GroupHeader` as a real sibling above the dropdown field,
- * matching the Figma source.
+ * full roving-focus keyboard navigation. `title`, when given, renders via
+ * `SideNavigation.GroupHeader` as a sibling above the dropdown field.
  *
- * Not part of the `NavRoot`/`NavGroup` content-tree data model — the
- * 24.04 spec §4.5's "content-defined position" is realised by composing
- * this component directly where the consumer wants it. See SPEC.md's
- * known issues.
+ * Not part of the `NavRoot`/`NavGroup` content-tree data model — its
+ * position is content-defined: compose this component directly where
+ * the consumer wants it. See SPEC.md's known issues.
  *
  * @implements ds:apps.subcomponent.side-navigation-context-switcher
  */
@@ -90,6 +76,13 @@ const ContextSwitcher = ({
   onCreateContext,
   createContextLabel = "Create context",
   className,
+  open,
+  onOpenChange,
+  preferredDirections,
+  distance,
+  gutter,
+  maxWidth,
+  autoFit,
   ...props
 }: ContextSwitcherProps): React.ReactElement => {
   const contextItems: ContextMenuItem[] = contexts.map((context) => ({
@@ -108,14 +101,14 @@ const ContextSwitcher = ({
     const createContextItem: ContextMenuItem = {
       key: "create-context",
       // A plain string for type-ahead bookkeeping — the visible (possibly
-      // rich) content renders via `renderLabel` in CreateContextContent.
+      // rich) content renders via `renderLabel` in ContextItemContent.
       label:
         typeof createContextLabel === "string"
           ? createContextLabel
           : "Create context",
       renderLabel: createContextLabel,
       displayItemsType: "custom",
-      Component: CreateContextContent,
+      Component: ContextItemContent,
     };
     items.push({ type: "separator", key: "create-context-separator" });
     items.push(createContextItem);
@@ -131,22 +124,31 @@ const ContextSwitcher = ({
   };
 
   return (
-    <>
+    <div
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      {...props}
+    >
       {title != null && <GroupHeader>{title}</GroupHeader>}
       <ContextualMenu
-        className={[componentCssClassName, className].filter(Boolean).join(" ")}
-        surfaceClassName={surfaceCssClassName}
-        trigger={
-          <span className="row">
-            <span className="label">{currentContext.name}</span>
-            <Icon icon="chevron-down" className="end caret" />
-          </span>
+        open={open}
+        onOpenChange={onOpenChange}
+        preferredDirections={preferredDirections}
+        distance={distance}
+        gutter={gutter}
+        maxWidth={
+          maxWidth ??
+          "calc(var(--sidenav-rail-inline-size) - 2 * var(--sidenav-inset-inline))"
         }
+        autoFit={autoFit}
         items={items}
         onSelect={handleSelect}
-        {...props}
-      />
-    </>
+      >
+        <span className="row">
+          <span className="label">{currentContext.name}</span>
+          <Icon icon="chevron-down" className="end caret" />
+        </span>
+      </ContextualMenu>
+    </div>
   );
 };
 

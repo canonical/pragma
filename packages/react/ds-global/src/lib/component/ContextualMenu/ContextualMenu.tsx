@@ -25,11 +25,10 @@ const componentCssClassName = "ds contextual-menu";
  * @implements ds:global.component.contextual_menu
  */
 const ContextualMenu = ({
-  trigger,
+  children,
   items,
   label,
   className,
-  surfaceClassName,
   preferredDirections,
   distance,
   gutter,
@@ -143,9 +142,7 @@ const ContextualMenu = ({
         // constant keeping its "ds " prefix. SubMenu.tsx does the same.
         "ds",
         "contextual-menu__surface",
-        "modal",
         bestPosition?.positionName,
-        surfaceClassName,
       ]
         .filter(Boolean)
         .join(" ")}
@@ -182,7 +179,7 @@ const ContextualMenu = ({
           ref={targetRef as React.Ref<HTMLButtonElement>}
           {...triggerProps}
         >
-          {trigger}
+          {children}
         </button>
         {mounted ? createPortal(menuElement, document.body) : menuElement}
       </div>

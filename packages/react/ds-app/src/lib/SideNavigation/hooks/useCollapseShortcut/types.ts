@@ -1,10 +1,11 @@
 export interface UseCollapseShortcutProps {
   /**
-   * Whether the shortcut listener is attached. Defaults to `false` at the
-   * hook level; `SideNavigation` passes its own `keyboardShortcut` prop
-   * (default `true`).
+   * The condition that activates the shortcut's listener — named for the
+   * state it represents, not a bare on/off switch. Defaults to `false`;
+   * `SideNavigation` passes its own `keyboardShortcut` prop (default
+   * `true`).
    */
-  enabled?: boolean;
+  condition?: boolean;
   /** Called when the shortcut is triggered. */
   onTrigger: () => void;
 }

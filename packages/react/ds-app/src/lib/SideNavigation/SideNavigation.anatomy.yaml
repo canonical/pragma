@@ -18,7 +18,7 @@ node:
     size.height: fill
     # Semantic token color.foreground.navigation.primary. Consumed in CSS via
     # its surface CHANNEL (--surface-color-foreground-navigation-primary) so the
-    # `.surface` nesting auto-selects layer2/layer3 for nested lists. See ADR-T01.
+    # `.surface` nesting auto-selects layer2/layer3 for nested lists.
     appearance.background: color/foreground/navigation/primary
   edges:
     - node:
