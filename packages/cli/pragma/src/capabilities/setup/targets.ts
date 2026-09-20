@@ -485,15 +485,34 @@ const skillsTarget = defineTarget<SkillsDetection>({
     }
     const dirs = d.targets.map((t) => shortenPath(t.dir, roots)).join(", ");
     const where = `${d.skillCount} ${d.skillCount === 1 ? "skill" : "skills"} → ${d.targets.length} ${d.targets.length === 1 ? "folder" : "folders"} (${dirs})`;
-    const detail =
-      stale.length === 0
-        ? where
-        : `${where}, ${stale.length} stale ${stale.length === 1 ? "link" : "links"} to remove`;
-    const pending = d.actions.filter((a) => a.action !== "skipped");
-    if (pending.length > 0) return { action: "link", detail };
-    // Nothing to link, but something to retire: `update` is the table's word
-    // for "this row has work that is not a fresh install".
-    if (stale.length > 0) return { action: "update", detail };
+    // A stale link is replaced, and the row says WHY — by distinct reason, so
+    // eighteen links into one old release read as one cause, not eighteen.
+    // Without the reason a user who has just upgraded sees `link` over a tree
+    // that looked converged a minute ago and has no way to tell whether the
+    // run is repairing something or churning.
+    const replaced = d.actions.filter((a) => a.action === "replaced");
+    const reasons = [...new Set(replaced.map((a) => a.stale))].join("; ");
+    const detail = [
+      where,
+      ...(replaced.length === 0
+        ? []
+        : [
+            `${replaced.length} stale ${replaced.length === 1 ? "link" : "links"} to replace: ${reasons}`,
+          ]),
+      ...(stale.length === 0
+        ? []
+        : [
+            `${stale.length} stale ${stale.length === 1 ? "link" : "links"} to remove`,
+          ]),
+    ].join(", ");
+    if (d.actions.some((a) => a.action === "created")) {
+      return { action: "link", detail };
+    }
+    // Nothing new to link, but something to replace or retire: `update` is the
+    // table's word for "this row has work that is not a fresh install".
+    if (replaced.length > 0 || stale.length > 0) {
+      return { action: "update", detail };
+    }
     return { action: "none", detail };
   },
   removalPlan: (d, _scope, roots) => {
