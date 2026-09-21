@@ -56,6 +56,16 @@
     var(--typography-heading-5-font-family);
 }
 
+@layer ds.modifiers {
+  .dense {
+    --density-padding-block: 0;
+  }
+
+  .comfortable {
+    --density-padding-block: var(--dimension-050);
+  }
+}
+
 /* The criticality modifier exposes every color channel except the solid fill
  * and the on-surface text pairing, so a component painting a solid criticality
  * surface has nothing to read.
