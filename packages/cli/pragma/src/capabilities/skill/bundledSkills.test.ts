@@ -304,8 +304,13 @@ describe("bundled skills — the upgrade hazard", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pragma-upgrade-doctor-"));
     const rows = await scopedChecks(bootRuntime(FLAGS, cwd), BIN_NAME);
     const row = rows.find((r) => r.name === "skills" && r.scope === "global");
-    expect(row?.status).toBe("fail");
-    expect(row?.detail).toContain("point elsewhere");
+    // `available`, not `fail`: setup repairs it, and the row names the link
+    // and the reason rather than a count.
+    expect(row?.status).toBe("available");
+    expect(row?.detail).toContain("stale");
+    expect(row?.items?.map((item) => item.detail)).toEqual([
+      "its target is missing",
+    ]);
     // No AUTHORED remedy on this branch: the row takes the derived one, which
     // is exactly the command proven to repair it in the cell above.
     expect(row?.remedy).toBe(`${BIN_NAME} setup skills`);
