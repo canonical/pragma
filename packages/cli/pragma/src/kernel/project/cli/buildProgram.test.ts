@@ -632,7 +632,7 @@ describe("formatRootHelp — grouping", () => {
         --detail <level>           Progressive-disclosure level (summary, standard, detailed)
         --no-headers               Hide the table header row in plain output
         --quiet                    Suppress success and progress output (errors still print)
-        --verbose                  Diagnostic output on stderr (sources update); the per-file breakdown in setup and doctor
+        --verbose                  Diagnostic output on stderr (sources update); the full breakdown in setup and doctor
         --help                     Show help (works on any command)
         --version                  Show the CLI version
 

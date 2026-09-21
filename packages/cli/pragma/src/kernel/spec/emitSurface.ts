@@ -92,7 +92,7 @@ export const FIXED_SURFACE = {
     },
     {
       flag: "--verbose",
-      doc: "Diagnostic output on stderr (sources update); the per-file breakdown in setup and doctor",
+      doc: "Diagnostic output on stderr (sources update); the full breakdown in setup and doctor",
     },
     {
       flag: "--detail <level>",

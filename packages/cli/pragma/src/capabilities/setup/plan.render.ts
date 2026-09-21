@@ -123,13 +123,7 @@ const detailCell = (row: PlanRow): string =>
       ? (row.reason ?? row.detail)
       : row.detail;
 
-/**
- * The right column. The compact `summary` by default — a newcomer reading the
- * plan wants one line per row saying what will happen, not eight config
- * paths with a state after each — and the per-file breakdown under
- * `--verbose`, the flag that already widens the detection summary and the
- * wizard's transcript.
- */
+/** The right column: the compact `summary`, or the breakdown under `--verbose`. */
 const rightCell = (row: PlanRow, verbose: boolean): string =>
   verbose ? detailCell(row) : row.summary;
 
@@ -248,6 +242,14 @@ export function renderDetectionSummary(
   return lines.join("\n");
 }
 
+/** How a progress line or a recap is rendered: which register, and the styler. */
+export interface RowRenderOptions {
+  /** Print each row's full detail instead of its compact line. */
+  readonly verbose?: boolean;
+  /** Injected for tests; defaults to the shared TTY seam. */
+  readonly style?: RenderStyle;
+}
+
 /**
  * One progress line, emitted as a row's outcome lands. Same columns as the
  * recap, so a reader watching the run and a reader reading the recap afterwards
@@ -255,18 +257,17 @@ export function renderDetectionSummary(
  *
  * @param row - The row, with its outcome filled in.
  * @param idWidth - The shared id column width.
- * @param style - Injected for tests.
- * @param verbose - Print the row's full detail instead of its compact line.
+ * @param options - The register and the styler.
  * @returns The line.
  */
 export function renderProgressLine(
   row: PlanRow,
   idWidth: number,
-  style: RenderStyle = defaultStyle(),
-  verbose = false,
+  options: RowRenderOptions = {},
 ): string {
+  const style = options.style ?? defaultStyle();
   const outcome = row.outcome;
-  const body = rowBody(row, verbose);
+  const body = rowBody(row, options.verbose === true);
 
   // No outcome at all: the row was offered and left unselected. It is neither a
   // success nor a skip-for-cause, and painting it green would claim work that
@@ -304,17 +305,16 @@ export function renderProgressLine(
  * vanishing from a sentence that claims completeness.
  *
  * @param plan - The plan, with outcomes filled in.
- * @param lead - The headline's first word (`Setup` / `Removed`).
- * @param style - Injected for tests.
- * @param verbose - Print each row's full detail instead of its compact line.
+ * @param options - `lead` is the headline's first word (`Setup` / `Removed`),
+ *   plus the register and the styler.
  * @returns The rendered recap.
  */
 export function renderRecap(
   plan: SetupPlan,
-  lead = "Setup",
-  style: RenderStyle = defaultStyle(),
-  verbose = false,
+  options: RowRenderOptions & { readonly lead?: string } = {},
 ): string {
+  const lead = options.lead ?? "Setup";
+  const style = options.style ?? defaultStyle();
   const { configured, accountable } = planTally(plan);
   const idWidth = widthOf(plan.rows, (row) => row.target);
   const lines = [
@@ -326,7 +326,7 @@ export function renderRecap(
     if (plan.scope === "both")
       lines.push(style.bold(`  ${SCOPE_LABELS[scope]}`));
     for (const row of rows) {
-      lines.push(`  ${renderProgressLine(row, idWidth, style, verbose)}`);
+      lines.push(`  ${renderProgressLine(row, idWidth, options)}`);
       const remedy = row.outcome?.remedy;
       if (remedy) lines.push(`      ${style.dim(remedy)}`);
     }

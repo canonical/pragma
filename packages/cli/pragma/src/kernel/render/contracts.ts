@@ -29,8 +29,7 @@ export interface RenderContext {
   readonly stdoutIsTty: boolean;
   /**
    * True under `--verbose`: a formatter with a compact and a full register
-   * (setup's one line per row versus its per-file breakdown) picks the full
-   * one. Absent reads as compact.
+   * picks the full one. Absent reads as compact.
    */
   readonly verbose?: boolean;
 }

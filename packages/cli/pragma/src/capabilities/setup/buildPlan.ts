@@ -201,14 +201,17 @@ export function draftFor(
 
 /**
  * The compact line of a drafted row. A skip's line is its reason — the one
- * thing a reader needs from a row that does nothing; every other row counts
- * its children in the target's noun, and a row that has none to count keeps
- * its own detail (the removal's `no entry to remove`).
+ * thing a reader needs from a row that does nothing; a row that authored its
+ * own line keeps it; every other row counts its children in the target's
+ * noun, and a row with none to count keeps its detail (the removal's `no
+ * entry to remove`).
  */
 const summarizeDraft = (target: AnyTarget, draft: TargetDraft): string =>
   draft.action === "skip"
     ? (draft.reason ?? draft.detail)
-    : (summarizeChildren(target.noun, draft.children ?? []) ?? draft.detail);
+    : (draft.summary ??
+      summarizeChildren(target.noun, draft.children ?? []) ??
+      draft.detail);
 
 /**
  * Project detections into plan rows.

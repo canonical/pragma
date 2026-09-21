@@ -230,10 +230,10 @@ async function runSetup(
       const width = Math.max(...applied.rows.map((row) => row.target.length));
       for (const row of applied.rows) {
         if (row.outcome === undefined) continue;
-        rt.report?.(renderProgressLine(row, width, undefined, verbose));
+        rt.report?.(renderProgressLine(row, width, { verbose }));
       }
       if (planExitFailed(applied)) {
-        rt.report?.(renderRecap(applied, "Removed", undefined, verbose));
+        rt.report?.(renderRecap(applied, { lead: "Removed", verbose }));
         raiseFailedRows(applied, true);
       }
     };
@@ -361,7 +361,7 @@ async function runSetup(
       const width = Math.max(...applied.rows.map((row) => row.target.length));
       for (const row of applied.rows) {
         if (row.outcome === undefined) continue;
-        rt.report?.(renderProgressLine(row, width, undefined, verbose));
+        rt.report?.(renderProgressLine(row, width, { verbose }));
       }
     }
 
@@ -370,7 +370,7 @@ async function runSetup(
     // not happen. The recap goes to stderr here because the error renderer owns
     // stdout on a failing run.
     if (planExitFailed(applied)) {
-      rt.report?.(renderRecap(applied, "Setup", undefined, verbose));
+      rt.report?.(renderRecap(applied, { verbose }));
       raiseFailedRows(applied);
     }
     return applied;

@@ -59,7 +59,7 @@ export const setupFormatters: Formatters<SetupPlan> = {
     if (!wasApplied(data)) {
       return renderPlanTable(data, { lead: "Setup plan", verbose });
     }
-    return renderRecap(data, "Setup", undefined, verbose);
+    return renderRecap(data, { verbose });
   },
   llm(data) {
     return renderPlanLlm(data, data.preview === true ? "Setup plan" : "Setup");

@@ -274,7 +274,9 @@ const buildRowsPrompt = (
   const choices = plan.rows
     .filter((row) => row.action !== "skip")
     .map((row) => ({
-      label: `${row.target} — ${rowLine(row, verbose)}${row.action === "none" ? " (already configured)" : ""}`,
+      // The compact line already says `already set up`; the suffix is for
+      // the breakdown, which names the file and not its state.
+      label: `${row.target} — ${rowLine(row, verbose)}${verbose && row.action === "none" ? " (already configured)" : ""}`,
       value: rowKey(row.scope, row.target),
     }));
   return {
@@ -471,10 +473,14 @@ export async function buildSetupRun(
     answers: Record<string, unknown>,
   ): string | undefined => {
     if (removal) return ACTION_NOTES[row.action];
+    // Only a row the wizard can NARROW counts its children: the count is what
+    // the narrowing did. A single-file row's one child is not a count worth
+    // a sentence — `config file — 1 added` says less than `installed`.
     const childKey = CHILD_ANSWER[row.target];
-    const kept =
-      childKey === undefined ? undefined : readList(answers, childKey);
-    return childNote(row, kept) ?? ACTION_NOTES[row.action];
+    if (childKey === undefined) return ACTION_NOTES[row.action];
+    return (
+      childNote(row, readList(answers, childKey)) ?? ACTION_NOTES[row.action]
+    );
   };
 
   /** The live row listener, when a wizard is watching. See {@link SetupRun}. */

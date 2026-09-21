@@ -2161,12 +2161,22 @@ describe("setup skills — a link is current only when it reaches the shipped sk
       bootRuntime(FLAGS, cwd),
     );
     expect(outcome.exitCode).toBe(0);
-    // Nothing new to create: the row's verb is `update`, and its detail says
-    // how many links are stale and why.
-    expect(outcome.stdout).toMatch(/skills\s+update\s+1 skill → 1 folder/);
-    expect(outcome.stdout).toContain(
-      `1 stale link to replace: links to the copy shipped with ${BIN_NAME} 0.36.0; the running CLI is ${VERSION}`,
+    // Nothing new to create: the row's verb is `update`, and its line says
+    // how many links are stale and why — in the compact register and, with
+    // the folder path, in the verbose one.
+    const reason = `1 stale link to replace: links to the copy shipped with ${BIN_NAME} 0.36.0; the running CLI is ${VERSION}`;
+    expect(outcome.stdout).toMatch(
+      /skills\s+update\s+1 skill linked into 1 folder/,
     );
+    expect(outcome.stdout).toContain(reason);
+    const verbose = await executeVerb(
+      verbOf("skills"),
+      { local: true },
+      DRY,
+      bootRuntime({ ...FLAGS, verbose: true }, cwd),
+    );
+    expect(verbose.stdout).toMatch(/skills\s+update\s+1 skill → 1 folder \(/);
+    expect(verbose.stdout).toContain(reason);
     expect(readlinkSync(linkPath)).toBe(old);
   });
 
@@ -3146,13 +3156,16 @@ describe("setup — one line per row by default, the breakdown under --verbose",
         YES,
         bootRuntime(FLAGS, cwd),
       );
+      await executeVerb(verbOf("config"), {}, YES, bootRuntime(FLAGS, cwd));
     } finally {
       spy.mockRestore();
     }
-    // The progress line, on stderr: the compact line, then what happened.
-    expect(chunks.join("")).toMatch(
-      /✓ mcp {2}(\d+ )?config files? — \d+ added/,
-    );
+    // The progress line, on stderr: the compact line, then what happened. A
+    // row the wizard can narrow counts the files it kept; a single-file row
+    // says what it did, not `1 added` over a file nobody chose between.
+    const progress = chunks.join("");
+    expect(progress).toMatch(/✓ mcp {2}(\d+ )?config files? — \d+ added/);
+    expect(progress).toContain("✓ config  config file — installed");
 
     // The converged re-run's recap, on stdout, in each register.
     const compact = await executeVerb(
@@ -3171,6 +3184,29 @@ describe("setup — one line per row by default, the breakdown under --verbose",
       bootRuntime({ ...FLAGS, verbose: true }, cwd),
     );
     expect(verbose.stdout).toMatch(/✓ mcp {2}\d+ config files? — unchanged/);
+  });
+
+  it("the wizard's row choices read the same register, and say `already configured` only over a path", async () => {
+    const cwd = withCursor();
+    await executeVerb(verbOf("config"), {}, YES, bootRuntime(FLAGS, cwd));
+    const rows = async (flags: GlobalFlags) => {
+      const { generator } = await buildSetupRun(
+        bootRuntime(flags, cwd),
+        "all",
+        "global",
+      );
+      const prompt = generator.prompts.find((p) => p.name === "targets");
+      return (prompt?.choices ?? []).map((c) => c.label);
+    };
+    const compact = await rows(FLAGS);
+    // The compact line already says `already set up`; the suffix would say
+    // it twice.
+    expect(compact).toContain("config — config file already set up");
+    expect(compact.join("\n")).not.toContain("already configured");
+    const verbose = await rows({ ...FLAGS, verbose: true });
+    expect(verbose.join("\n")).toMatch(
+      /config — .*config\.json — present \(already configured\)/,
+    );
   });
 
   it("the machine surfaces carry the compact line AND the breakdown as data", async () => {
