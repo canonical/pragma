@@ -138,6 +138,10 @@ sibling package/domain and match its layout, naming, error handling, and test
 placement — rather than inventing a new pattern. Match the surrounding code's idioms;
 a new file should be indistinguishable in style from its neighbours.
 
+- **Comments explain the code, not where it came from.** Never leave provenance
+  markers tracing a file back to the spec, DSL, graph, or plan it was generated
+  from — e.g. `{/* DSL edges[0]: content (cardinality: 1) */}`.
+
 ### The documentation site depends on the runtime, never the reverse
 
 `packages/prism/*` and the documentation-site app are the site layer. They may
