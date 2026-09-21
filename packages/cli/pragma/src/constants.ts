@@ -42,6 +42,14 @@ const ISSUES_URL = identity.issuesUrl;
 const VERSION: string = pkg.version;
 
 /**
+ * The published package name, read from package.json — what another copy of
+ * THIS package on disk identifies itself as, so a manifest found beside a
+ * skill directory can be told apart from any other package that happens to
+ * ship a directory of the same name.
+ */
+const PACKAGE_NAME: string = pkg.name;
+
+/**
  * The Node.js range this distribution supports, read from `engines.node` in
  * package.json so the manifest stays the single statement of the floor. The
  * doctor check quotes it, and `isSupportedNodeVersion` is pinned to it by test.
@@ -119,6 +127,7 @@ export {
   ISSUES_URL,
   MCP_SERVER_NAME,
   OUTPUT_FORMATS,
+  PACKAGE_NAME,
   PROGRAM_DESCRIPTION,
   PROGRAM_LOGO,
   PROJECT_CONFIG_FILENAME,

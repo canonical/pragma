@@ -34,7 +34,7 @@ import { execute } from "@canonical/summon-core";
 import { collectUndos, dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BIN_NAME, VERSION } from "../../constants.js";
+import { BIN_NAME, PACKAGE_NAME, VERSION } from "../../constants.js";
 import { emitScripts } from "../../kernel/completion/emitScripts.js";
 import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
@@ -1808,7 +1808,7 @@ describe("setup skills — a link is current only when it reaches the shipped sk
     cwd: string,
     name: string,
     version: string,
-    manifest: string | null = JSON.stringify({ version }),
+    manifest: string | null = JSON.stringify({ name: PACKAGE_NAME, version }),
   ): string => {
     const pkg = join(cwd, "node_modules", `pragma-cli@${version}`);
     const skill = join(pkg, "bundled-skills", name);
@@ -1932,19 +1932,38 @@ describe("setup skills — a link is current only when it reaches the shipped sk
   });
 
   it("a link whose content differs with no release to name says so plainly", async () => {
-    // Three shapes that carry no version: outside any package directory, a
-    // package directory with no manifest, and one whose manifest names no
-    // version — plus the running version itself (a dev build with edits).
+    // Shapes that carry no version of OURS to name: outside any package
+    // directory, a package directory with no manifest, one whose manifest
+    // names no version, another package's `bundled-skills` altogether, the
+    // running version itself (a dev build with edits), and a same-sized file
+    // that differs by one byte.
     const cwd = tmp("pragma-setup-proj-");
     const linkDir = linkDirOf(cwd);
     const shapes: readonly [string, string][] = [
       ["elsewhere", join(cwd, "elsewhere", "elsewhere")],
       ["no-manifest", oldRelease(cwd, "no-manifest", "0.2.0", null)],
       ["no-version", oldRelease(cwd, "no-version", "0.3.0", "{}")],
+      [
+        "other-package",
+        oldRelease(
+          cwd,
+          "other-package",
+          "0.5.0",
+          JSON.stringify({ name: "@other/cli", version: "0.5.0" }),
+        ),
+      ],
       ["same-version", oldRelease(cwd, "same-version", VERSION)],
+      ["one-byte", join(cwd, "one-byte", "one-byte")],
     ];
     mkdirSync(shapes[0]?.[1] as string, { recursive: true });
     writeFileSync(join(shapes[0]?.[1] as string, "SKILL.md"), "other\n");
+    cpSync(seed(cwd, "one-byte"), shapes[5]?.[1] as string, {
+      recursive: true,
+    });
+    writeFileSync(
+      join(shapes[5]?.[1] as string, "references", "notes.md"),
+      "Notes\n",
+    );
     for (const [name, target] of shapes) {
       seed(cwd, name);
       symlinkSync(target, join(linkDir, name));
@@ -2010,6 +2029,120 @@ describe("setup skills — a link is current only when it reaches the shipped sk
     expect(
       file.actions.find((a) => a.linkPath.endsWith("copied"))?.stale,
     ).toBeDefined();
+  });
+
+  it("an unreadable SHIPPED skill never vouches for anything", async () => {
+    // "Current" is a positive finding. If the shipped tree cannot be read (a
+    // dangling link inside it), nothing may match it — not a junk file at the
+    // link path, and not a byte-for-byte copy of the same broken tree.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = seed(cwd, "broken");
+    symlinkSync(join(cwd, "nowhere"), join(skillDir, "extra.md"));
+    seed(cwd, "junked");
+    const linkDir = linkDirOf(cwd);
+    const junk = join(cwd, "junk-file");
+    writeFileSync(junk, "not a directory\n");
+    symlinkSync(junk, join(linkDir, "junked"));
+    cpSync(skillDir, join(linkDir, "broken"), { recursive: true });
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(detected.actions.map((a) => [a.skillName, a.stale])).toEqual([
+      ["broken", "a copy whose content differs from the shipped skill"],
+      ["junked", "content differs from the shipped skill"],
+    ]);
+  });
+
+  it("never opens more of a foreign tree than the shipped skill's shape", async () => {
+    // A user's own link may sit over anything: a checkout with a
+    // `node_modules` of thousands of files, or a FIFO that blocks any reader
+    // until something writes. The comparison is driven by the shipped side —
+    // listings first, regular files only — so neither is ever opened.
+    const cwd = tmp("pragma-setup-proj-");
+    const linkDir = linkDirOf(cwd);
+    const shipped = seed(cwd, "piped");
+    const piped = join(cwd, "work", "piped");
+    cpSync(shipped, piped, { recursive: true });
+    rmSync(join(piped, "SKILL.md"));
+    expect(
+      spawnSync("mkfifo", [join(piped, "SKILL.md")], {
+        env: { PATH: HOST_PATH },
+      }).status,
+    ).toBe(0);
+    symlinkSync(piped, join(linkDir, "piped"));
+    // Same names, a file where the shipped skill has a directory.
+    const shaped = join(cwd, "work", "shaped");
+    cpSync(seed(cwd, "shaped"), shaped, { recursive: true });
+    rmSync(join(shaped, "references"), { recursive: true });
+    writeFileSync(join(shaped, "references"), "");
+    symlinkSync(shaped, join(linkDir, "shaped"));
+    // Extra entries: the listing differs, so nothing below it is read.
+    const bulky = join(cwd, "work", "bulky");
+    cpSync(seed(cwd, "bulky"), bulky, { recursive: true });
+    mkdirSync(join(bulky, "node_modules", "dep"), { recursive: true });
+    writeFileSync(join(bulky, "node_modules", "dep", "index.js"), "");
+    symlinkSync(bulky, join(linkDir, "bulky"));
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    for (const name of ["piped", "shaped", "bulky"]) {
+      const action = detected.actions.find((a) => a.skillName === name);
+      expect(action?.action).toBe("skipped");
+      expect(action?.stale).toBe("content differs from the shipped skill");
+    }
+  });
+
+  it("the plan names a drifted copy, and still leaves it alone", async () => {
+    // Doctor reports a drifted copy; the plan row said `none` over it, so the
+    // two surfaces disagreed about the same directory.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = seed(cwd, "copied");
+    const copy = join(linkDirOf(cwd), "copied");
+    cpSync(skillDir, copy, { recursive: true });
+    writeFileSync(join(copy, "SKILL.md"), "drifted\n");
+
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, cwd),
+      "skills",
+      "project",
+    );
+    const row = plan.rows.find((r) => r.target === "skills");
+    expect(row?.action).toBe("none");
+    expect(row?.detail).toContain("1 copy differs, left alone");
+    expect(readFileSync(join(copy, "SKILL.md"), "utf-8")).toBe("drifted\n");
+  });
+
+  it("a harness link whose INSTALLED copy is gone says what restores it", async () => {
+    // The pack cache the installed root points into was cleared. Discovery
+    // falls through to the bundled snapshot and setup relinks onto it — and
+    // the reason says so, naming `sources update` as what brings the
+    // installed copy back. The installed root itself is not touched.
+    const prevData = process.env.XDG_DATA_HOME;
+    const dataHome = tmp("pragma-skills-data-");
+    process.env.XDG_DATA_HOME = dataHome;
+    try {
+      const cwd = tmp("pragma-setup-proj-");
+      const home = process.env.HOME as string;
+      const installed = join(dataHome, BIN_NAME, "skills");
+      mkdirSync(installed, { recursive: true });
+      const gone = join(cwd, "cleared-cache", "design-auditor");
+      symlinkSync(gone, join(installed, "design-auditor"));
+      const linkPath = join(linkDirOf(home), "design-auditor");
+      symlinkSync(join(installed, "design-auditor"), linkPath);
+
+      const detected = await detectSkills(bootRuntime(FLAGS, cwd), "global");
+      const action = detected.actions.find((a) => a.linkPath === linkPath);
+      expect(action?.action).toBe("replaced");
+      expect(action?.stale).toBe(
+        `its installed copy is gone — \`${BIN_NAME} sources update\` restores it; the shipped copy is linked meanwhile`,
+      );
+      expect(action?.target).toContain(`${sep}bundled-skills${sep}`);
+
+      await runTask(composeSkills(detected));
+      expect(readlinkSync(linkPath)).toBe(action?.target);
+      expect(readlinkSync(join(installed, "design-auditor"))).toBe(gone);
+    } finally {
+      if (prevData === undefined) delete process.env.XDG_DATA_HOME;
+      else process.env.XDG_DATA_HOME = prevData;
+    }
   });
 
   it("--dry-run plans the replacement with its reason and writes nothing", async () => {

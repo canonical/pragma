@@ -492,6 +492,10 @@ const skillsTarget = defineTarget<SkillsDetection>({
     // run is repairing something or churning.
     const replaced = d.actions.filter((a) => a.action === "replaced");
     const reasons = [...new Set(replaced.map((a) => a.stale))].join("; ");
+    // A hand-placed copy that has drifted is named here too, so this row and
+    // the doctor row agree — but it is never replaced: it is not this
+    // command's to delete.
+    const copies = d.actions.filter((a) => a.blocked && a.stale !== undefined);
     const detail = [
       where,
       ...(replaced.length === 0
@@ -503,6 +507,11 @@ const skillsTarget = defineTarget<SkillsDetection>({
         ? []
         : [
             `${stale.length} stale ${stale.length === 1 ? "link" : "links"} to remove`,
+          ]),
+      ...(copies.length === 0
+        ? []
+        : [
+            `${copies.length} ${copies.length === 1 ? "copy differs" : "copies differ"}, left alone`,
           ]),
     ].join(", ");
     if (d.actions.some((a) => a.action === "created")) {

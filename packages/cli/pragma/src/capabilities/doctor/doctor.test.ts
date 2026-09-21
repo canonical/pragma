@@ -21,7 +21,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, sep } from "node:path";
 import { runTask } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { VERSION } from "../../constants.js";
+import { PACKAGE_NAME, VERSION } from "../../constants.js";
 import type { ConfigLayers } from "../../kernel/config/types.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -627,7 +627,7 @@ describe("doctor — a skill link that no longer matches what the CLI ships is s
     );
     writeFileSync(
       join(dirname(dirname(old)), "package.json"),
-      JSON.stringify({ version: "0.36.0" }),
+      JSON.stringify({ name: PACKAGE_NAME, version: "0.36.0" }),
     );
     const linkDir = join(cwd, ".agents", "skills");
     mkdirSync(linkDir, { recursive: true });
