@@ -16,13 +16,13 @@
 
 <Story name="Default" args={{ placeholder: "Enter number..." }} />
 
-<Story name="Severities" argTypes={{ severity: { table: { disable: true } } }}>
-  {#snippet template({ severity: _, ...args })}
+<Story name="Criticalities" argTypes={{ criticality: { table: { disable: true } } }}>
+  {#snippet template({ criticality: _, ...args })}
     <div
       style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;"
     >
-      {#each MODIFIER_FAMILIES.severity as severity (severity)}
-        <NumberInput {severity} placeholder={severity || "default"} {...args} />
+      {#each MODIFIER_FAMILIES.criticality as criticality (criticality)}
+        <NumberInput {criticality} placeholder={criticality || "default"} {...args} />
       {/each}
     </div>
   {/snippet}
