@@ -56,14 +56,14 @@
   {/snippet}
 </Story>
 
-<Story name="Severities" argTypes={{ severity: { control: false } }}>
-  {#snippet template({ children: _, severity: __, ...args })}
+<Story name="Criticalities" argTypes={{ criticality: { control: false } }}>
+  {#snippet template({ children: _, criticality: __, ...args })}
     <div
       style="display: grid; grid-template-columns: min-content; gap: 0.5rem;"
     >
-      {#each [...MODIFIER_FAMILIES.severity, "base"] as const as severity (severity)}
-        <Select {...args} {severity}>
-          <option value="" disabled selected>{severity || "base"}</option>
+      {#each [...MODIFIER_FAMILIES.criticality, "base"] as const as criticality (criticality)}
+        <Select {...args} {criticality}>
+          <option value="" disabled selected>{criticality || "base"}</option>
           <option value="cosmic-cuttlefish">Cosmic Cuttlefish</option>
           <option value="bionic-beaver">Bionic Beaver</option>
           <option value="xenial-xerus">Xenial Xerus</option>
