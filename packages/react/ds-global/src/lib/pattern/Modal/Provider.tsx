@@ -7,7 +7,11 @@ import useModalState from "./hooks/useModalState.js";
 import type { ModalProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds modal elevated";
+const componentCssClassName = "ds modal";
+// The dialog sits on the `elevated` surface so its content reads base-depth
+// surface channels rather than inheriting the depth the modal happens to be
+// opened from (@canonical/design-tokens `modifiers.surfaces.css`).
+const surfaceClassName = "elevated";
 
 /**
  * A modal is a focused container that sits on top of the main view, requiring
@@ -110,7 +114,7 @@ const Provider = ({
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: the click handler only identifies clicks landing on the backdrop, which has no keyboard equivalent; keyboard dismissal is Escape, handled natively by the dialog's cancel event */}
       <dialog
         ref={attachDialog}
-        className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        className={[componentCssClassName, surfaceClassName, className].filter(Boolean).join(" ")}
         // The composed Header sets this id on its title, which names the dialog.
         // `aria-labelledby` beats `aria-label` in the accessible-name
         // computation, so pointing at the title unconditionally would silence

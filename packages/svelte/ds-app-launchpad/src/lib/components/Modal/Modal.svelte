@@ -7,11 +7,12 @@
   import "./styles.css";
 
   const componentCssClassNameBase = "modal";
+  const componentCssClassName = `ds ${componentCssClassNameBase}`;
   // `elevated` is the token layer's surface opt-in (@canonical/design-tokens
   // `modifiers.surfaces.css`), kept separate from the component's own name so
   // content inside the dialog reads base-depth surface channels rather than
   // inheriting the depth the dialog happens to be nested in.
-  const componentCssClassName = `ds ${componentCssClassNameBase} elevated`;
+  const surfaceClassName = "elevated";
   const componentCssClassNameNonModalBackdrop = `ds ${componentCssClassNameBase}-non-modal-backdrop`;
 
   let {
@@ -73,7 +74,7 @@
 {/if}
 <dialog
   {id}
-  class={[componentCssClassName, className]}
+  class={[componentCssClassName, surfaceClassName, className]}
   closedby={closeOnOutsideClick ? "any" : "closerequest"}
   onclick={isClosedByFallbackNeeded ? fallbackOnclick : onclick}
   {ontoggle}
