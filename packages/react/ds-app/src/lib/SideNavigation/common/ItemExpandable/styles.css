@@ -105,7 +105,7 @@
     }
 
     /* Children — always leaves, indented past the parent's icon column so
-     they read as nested. */
+      they read as nested. */
     & > .details > .children {
       display: flex;
       flex-direction: column;
@@ -115,6 +115,75 @@
 
       & .row {
         margin-inline-start: var(--sidenav-icon-column-inline-size);
+      }
+    }
+  }
+
+  /* Collapsed rail: sub-items degrade into a floating popover on the
+     inline-end; the expanded state keeps its inline disclosure. */
+  .ds.side-navigation[data-expanded="false"]
+  .ds.side-navigation-item-expandable {
+    position: relative;
+
+    .children {
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-start: calc(100% + var(--dimension-100));
+      z-index: var(--z-index-overlay, 100);
+
+      display: none;
+      inline-size: max-content;
+      min-inline-size: calc(var(--sidenav-rail-inline-size) / 2);
+      margin: 0;
+
+      background: var(--color-background-default, #fff);
+      border: var(--dimension-stroke-thickness-medium) solid
+        var(--color-border-muted);
+      border-radius: var(--dimension-radius-small);
+      box-shadow: var(--sidenav-popover-shadow);
+    }
+
+    .details[open] .children {
+      display: block;
+
+      /* Full grid and visible titles inside the panel. */
+      .row {
+        margin: 0;
+        grid-template-columns: var(--sidenav-icon-column-inline-size) 1fr auto;
+        padding-inline: var(--sidenav-inset-inline);
+      }
+
+      .label {
+        display: inline-block;
+      }
+
+      .end {
+        display: flex;
+      }
+    }
+
+    /* Anchor-positioned popover (Baseline 2026; ~86% support): fixed against
+      the summary's anchor, flipped above the trigger on viewport overflow.
+      anchor(), not position-area — position-area strips reach the viewport
+      edges, which would pin the panel to a corner. Browsers without the
+      feature keep the absolute popover above. */
+    @supports (anchor-name: --a) and (position-try-fallbacks: flip-block) {
+      .children {
+        position: fixed;
+
+        /* Top-left at the summary's top-right, growing down/right. */
+        inset-block-start: anchor(top);
+        inset-inline-start: anchor(right);
+        inset-block-end: auto;
+        inset-inline-end: auto;
+
+        margin-inline-start: var(--dimension-100);
+
+        position-try-fallbacks: flip-block;
+
+        /* Taller than the viewport: cap and scroll internally. */
+        max-block-size: 100dvh;
+        overflow-y: auto;
       }
     }
   }
