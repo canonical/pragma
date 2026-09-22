@@ -130,7 +130,7 @@
       inline-size: var(--sidenav-rail-inline-size-collapsed);
       justify-content: space-between;
 
-      & > .ds.content {
+      & > .ds.side-navigation-content {
         display: none;
       }
 
@@ -164,7 +164,7 @@
         inline-size: 100%;
 
         /* Overrides the desktop icon-only footer: hidden entirely on mobile. */
-        & > .ds.footer {
+        & > .ds.side-navigation-footer {
           display: none;
         }
       }

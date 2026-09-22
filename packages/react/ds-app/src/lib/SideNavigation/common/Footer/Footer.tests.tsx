@@ -9,7 +9,7 @@ describe("Footer", () => {
   it("applies custom className", () => {
     render(<Footer className="custom-class" />);
     const element = document.querySelector("footer");
-    expect(element?.className).toContain("ds footer");
+    expect(element?.className).toContain("ds side-navigation-footer");
     expect(element?.className).toContain("custom-class");
   });
 

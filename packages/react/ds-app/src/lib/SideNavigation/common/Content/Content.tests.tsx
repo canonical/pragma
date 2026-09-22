@@ -8,7 +8,7 @@ describe("Content", () => {
   it("applies custom className", () => {
     render(<Content className="custom-class" />);
     const element = screen.getByRole("navigation");
-    expect(element.className).toContain("ds content");
+    expect(element.className).toContain("ds side-navigation-content");
     expect(element.className).toContain("custom-class");
   });
 

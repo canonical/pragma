@@ -6,7 +6,7 @@ import { ItemExpandable } from "../ItemExpandable/index.js";
 import type { FooterProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds footer";
+const componentCssClassName = "ds side-navigation-footer";
 
 type FooterRowProps = {
   item: LeafFooterItem;
