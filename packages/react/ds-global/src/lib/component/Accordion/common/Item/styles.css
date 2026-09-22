@@ -71,6 +71,8 @@
   }
 
   .ds.accordion-item {
+    box-sizing: border-box;
+
     /* Inline (side) borders — off by default, see the token above. */
     border-inline: var(--accordion-item-border-inline);
 
@@ -84,6 +86,7 @@
      chevron column keeps all headings left-aligned; align-items:center centres
      the fixed chevron on the header line. */
   .ds.accordion-item > .header {
+    box-sizing: border-box;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -228,11 +231,19 @@
     }
   }
 
+  /* Chromium 131+ wraps non-<summary> children in an internal ::details-content
+     pseudo-element. Seal its box model so child elements inheriting box-sizing
+     (e.g. Vanilla components or host resets) receive border-box. */
+  .ds.accordion-item::details-content {
+    box-sizing: border-box;
+  }
+
   /* Content panel. Uses `.editorial` (a prose context) rather than `.p`, so the
      wrapper doesn't add baseline padding that would double up with content that
      is already `.p`. The wrapper owns its own vertical padding in baseline
      multiples, and is indented inline to align under the heading. */
   .ds.accordion-item > .content {
+    box-sizing: border-box;
     color: var(--accordion-item-color-text);
 
     padding-block: var(--accordion-item-content-padding-block);
