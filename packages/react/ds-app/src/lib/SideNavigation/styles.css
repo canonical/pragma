@@ -128,7 +128,7 @@
       }
 
       /* Label-driven rows — nothing survives icon-only degradation. */
-      & > .ds.side-navigation-context-switcher-region {
+      & > .ds.side-navigation-context-switcher {
         display: none;
       }
 

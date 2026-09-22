@@ -114,14 +114,10 @@ const SideNavigation = ({
         collapseControls={contentId}
       />
       {contextSwitcher ? (
-        // Own plain <div> region — a select-like widget is not navigation,
-        // so it sits outside the <nav> landmark. Hidden when collapsed:
-        // its rows are label-driven, unviable icon-only (the collapsed CSS
-        // hides the region via the root's data-expanded, so the region
-        // carries no state of its own).
-        <div className="ds side-navigation-context-switcher-region">
-          <ContextSwitcher {...contextSwitcher} />
-        </div>
+        // Own region between Header and Content — a select-like widget is
+        // not navigation, so it sits outside the <nav> landmark. The root's
+        // collapsed CSS hides it: label-driven rows are unviable icon-only.
+        <ContextSwitcher {...contextSwitcher} />
       ) : null}
       <Content
         id={contentId}

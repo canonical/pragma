@@ -268,7 +268,7 @@ describe("SideNavigation", () => {
     ]);
   });
 
-  it("renders the ContextSwitcher region between Header and Content, outside the nav landmark", () => {
+  it("renders the ContextSwitcher between Header and Content, outside the nav landmark", () => {
     render(
       <SideNavigation
         root={root}
@@ -281,22 +281,22 @@ describe("SideNavigation", () => {
         }}
       />,
     );
-    const region = document.querySelector(
-      ".ds.side-navigation-context-switcher-region",
+    const switcher = document.querySelector(
+      ".ds.side-navigation-context-switcher",
     );
-    expect(region).toBeInTheDocument();
-    // Own region: skip link, header, region, nav — and outside the <nav>
+    expect(switcher).toBeInTheDocument();
+    // Skip link, header, switcher, nav — and outside the <nav>
     // landmark (a select-like widget is not navigation).
     const root_ = document.querySelector(".ds.side-navigation");
     expect(root_?.children).toHaveLength(4);
     const nav = screen.getByRole("navigation", { name: "Main navigation" });
-    expect(nav).not.toContainElement(region as HTMLElement);
+    expect(nav).not.toContainElement(switcher as HTMLElement);
   });
 
-  it("hides the ContextSwitcher region when collapsed", () => {
-    // CSS hides the region when collapsed via the ROOT's data-expanded (the
-    // region carries no state of its own); this asserts the DOM contract
-    // the collapsed stylesheet keys on — the region is a direct child of a
+  it("hides the ContextSwitcher when collapsed", () => {
+    // CSS hides the switcher when collapsed via the ROOT's data-expanded (it
+    // carries no state of its own); this asserts the DOM contract the
+    // collapsed stylesheet keys on — the switcher is a direct child of a
     // data-expanded="false" root, and the root alone flips.
     const { container } = render(
       <SideNavigation
@@ -310,10 +310,10 @@ describe("SideNavigation", () => {
     );
     const rootEl = container.firstElementChild as HTMLElement;
     expect(rootEl.dataset.expanded).toBe("false");
-    const region = container.querySelector(
-      ".ds.side-navigation-context-switcher-region",
+    const switcher = container.querySelector(
+      ".ds.side-navigation-context-switcher",
     );
-    expect(region).not.toHaveAttribute("data-expanded");
-    expect(region?.parentElement).toBe(rootEl);
+    expect(switcher).not.toHaveAttribute("data-expanded");
+    expect(switcher?.parentElement).toBe(rootEl);
   });
 });
