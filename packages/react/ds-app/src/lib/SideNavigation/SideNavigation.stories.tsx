@@ -12,8 +12,8 @@ import {
 import {
   CanonicalLogo,
   navDecorators,
+  withApplicationShellLayout,
   withNavigationRouterProps,
-  withNavLayout,
 } from "../../storybook/navigation/story-utils.js";
 import SideNavigation from "./SideNavigation.js";
 
@@ -66,9 +66,13 @@ nav; use \`<nav>\` directly or Breadcrumbs there.
   },
   // withNavigationRouterProps injects currentUrl + LinkComponent from the
   // live router (self-contained: owns its RouterProvider, so decorator
-  // order isn't load-bearing); withNavLayout frames it in a page grid.
+  // order isn't load-bearing); withApplicationShellLayout frames it in a page grid.
   // Stories supply only data (root / footerRoot).
-  decorators: [...navDecorators, withNavigationRouterProps, withNavLayout],
+  decorators: [
+    ...navDecorators,
+    withNavigationRouterProps,
+    withApplicationShellLayout,
+  ],
   args: {
     brand: <CanonicalLogo />,
     applicationName: "Canonical",

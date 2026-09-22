@@ -105,7 +105,7 @@ export const withSideNavShell: Decorator = (Story) => (
  * mobile breakpoint (Vanilla's $breakpoint-small, 620px) so the grid
  * stacks exactly when the rail stops being a rail.
  */
-export const withNavLayout: Decorator = (Story) => (
+export const withApplicationShellLayout: Decorator = (Story) => (
   <>
     <style>{`
       .app-shell-layout {
