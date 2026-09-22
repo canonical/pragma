@@ -138,26 +138,3 @@ export const withApplicationShellLayout: Decorator = (Story) => (
     </div>
   </>
 );
-
-/**
- * Mock Badge for stories — there is no real Badge component yet. Passed as a
- * leaf item's `slot` to exercise the Item end slot. Swap for the real component
- * once it lands.
- */
-export const MockBadge = ({ children }: { children: ReactNode }): ReactNode => (
-  <span
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minInlineSize: "1.25rem",
-      paddingInline: "0.375rem",
-      borderRadius: "0.625rem",
-      fontSize: "0.75rem",
-      lineHeight: 1.4,
-      background: "var(--color-icon-warning-disabled)",
-    }}
-  >
-    {children}
-  </span>
-);
