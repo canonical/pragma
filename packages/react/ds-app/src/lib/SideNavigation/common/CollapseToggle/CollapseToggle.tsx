@@ -26,7 +26,7 @@ const CollapseToggleButton = ({
           "Menu"/"Close menu" replaces it — CSS-toggled siblings (see
           styles.css), no media-query read in JS, so it stays SSR-identical. */}
       <Icon icon={expanded ? "collapse-side-nav" : "expand-side-nav"} />
-      <span className="p">{expanded ? "Close menu" : "Menu"}</span>
+      <span>{expanded ? "Close menu" : "Menu"}</span>
     </button>
   );
 };
