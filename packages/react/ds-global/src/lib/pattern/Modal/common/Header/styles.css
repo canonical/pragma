@@ -15,7 +15,6 @@
    *   the rule to the inline padding)
    */
 
-  /* Component tokens — sourced from @canonical/design-tokens */
   :root {
     /* The rules are quiet boundaries, not structural edges: `muted` is the
        palest border token (gray-100 vs gray-520 for `--color-border`). */
@@ -24,11 +23,37 @@
     --modal-header-padding-block: var(--dimension-200);
     --modal-header-padding-inline: var(--modal-padding-inline);
     --modal-header-gap: var(--dimension-200);
-    --modal-header-font-size: var(--typography-text-primary-font-size);
-    --modal-header-font-weight: var(--typography-weight-semiBold);
   }
 
   .ds.modal-header {
+    /*
+ 
+      The title is a `span`, not an `h2`: a modal opens from anywhere in the
+      document, so no heading level would be right everywhere, and the dialog is
+      named through `aria-labelledby` instead. Only the type scale is borrowed
+      here, never the outline semantics.
+    */
+    --modal-header-font-family: var(--typography-heading-2-font-family);
+    --modal-header-font-size: var(--typography-heading-2-font-size);
+    --modal-header-font-weight: var(--typography-heading-2-font-weight);
+    --modal-header-letter-spacing: var(--typography-heading-2-letter-spacing);
+    /*
+      The exact dimension takes precedence; the round() path is the
+      design-tokens 0.8.1 compatibility fallback, and is retained only so long
+      as the `h2` element rule carries it.
+    */
+    --modal-header-line-height: var(
+      --typography-heading-2-line-height-dimension,
+      round(
+        up,
+        calc(
+          var(--typography-heading-2-font-size) *
+          var(--typography-heading-2-line-height)
+        ),
+        var(--baseline-height)
+      )
+    );
+
     /* layout.type: flow, direction horizontal, align center, justify space-between */
     display: flex;
     flex-direction: row;
@@ -61,8 +86,11 @@
 
     > .title {
       flex: 1;
+      font-family: var(--modal-header-font-family);
       font-size: var(--modal-header-font-size);
       font-weight: var(--modal-header-font-weight);
+      letter-spacing: var(--modal-header-letter-spacing);
+      line-height: var(--modal-header-line-height);
     }
 
     > .close {
