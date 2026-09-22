@@ -14,9 +14,9 @@ const componentCssClassName = "ds side-navigation";
  * region it controls.
  *
  * Four regions: Header (branding, collapse toggle), the optional
- * ContextSwitcher region (a `role="menu"` select-like widget — not
- * navigation, so it sits outside the landmark in a plain `<div>` between
- * Header and Content; hidden when collapsed, where labels are unviable),
+ * ContextSwitcher (a `role="menu"` select-like widget — not navigation,
+ * so it sits outside the landmark between Header and Content; hidden
+ * when collapsed, where labels are unviable),
  * Content (the main `<nav>` landmark) and Footer (user profile, settings
  * and non-navigational actions). The root element is a plain `<div>` and
  * the component's single *navigation* landmark is Content's `<nav>`, so
@@ -50,10 +50,7 @@ const SideNavigation = ({
   LinkComponent = "a",
   currentUrl,
   skipTo = "#main-content",
-  // Controlled circuit — not official yet.
-  // expanded: expandedProp,
   defaultExpanded: defaultExpandedProp,
-  // onExpandedChange,
   keyboardShortcut = true,
   "aria-label": ariaLabel,
   ...props
@@ -81,19 +78,6 @@ const SideNavigation = ({
   // Ctrl+B rail-collapse shortcut — on unless
   // `keyboardShortcut` opts out. See hooks/useCollapseShortcut.
   useCollapseShortcut({ condition: keyboardShortcut, onTrigger: handleToggle });
-
-  // --- Controlled circuit (not official yet) -------------------------------
-  // const [uncontrolledExpanded, setUncontrolledExpanded] =
-  //   useState(defaultExpanded);
-  // const isControlled = expandedProp !== undefined;
-  // const expanded = isControlled ? expandedProp : uncontrolledExpanded;
-  //
-  // const handleToggle = useCallback(() => {
-  //   const next = !expanded;
-  //   if (!isControlled) setUncontrolledExpanded(next);
-  //   onExpandedChange?.(next);
-  // }, [expanded, isControlled, onExpandedChange]);
-  // -------------------------------------------------------------------------
 
   return (
     <div
