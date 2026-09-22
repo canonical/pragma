@@ -8,61 +8,59 @@ import "./styles.css";
 
 const componentCssClassName = "ds footer";
 
+type FooterRowProps = {
+  item: LeafFooterItem;
+  currentUrl?: string;
+  LinkComponent: FooterProps["LinkComponent"];
+};
+
 /**
- * Renders one footer leaf row. The Footer is the one place a navigation row
- * may be a button. Three-way dispatch: a navigable item (`url` set,
- * `control` not `"button"`) renders as `Item` (a link via `LinkComponent`,
- * active when current); an action item (`control: "button"`, or `onClick`
- * with no `url`) renders as `ItemButton`; anything else — a label-only row
- * like a logged-in username — renders as `Item`'s plain label row, NOT an
- * inert `<button>` announced as an action that does nothing. Explicit
- * `control` always wins over the `url`-presence inference, so an action
- * item may carry a `url` yet render as a button. Toggle-style rows compose
- * `ItemButton` plus a `slot` — there is no dedicated switch.
+ * One footer leaf row, dispatched by kind. The Footer is the one place a
+ * navigation row may be a button: a link (`url` set, `control` not
+ * `"button"`) renders as `Item`; an action (`control: "button"`, or
+ * `onClick` with no `url`) as `ItemButton`; anything else — a label-only
+ * row like a logged-in username — as `Item`'s plain label, not an inert
+ * `<button>` announced as an action that does nothing. Explicit `control`
+ * always wins over the `url`-presence inference, so an action item may
+ * carry a `url` yet render as a button. Toggle-style rows compose
+ * `ItemButton` plus a `slot` — there is no dedicated toggle component.
  */
-const renderFooterItem = (
-  item: LeafFooterItem,
-  currentUrl: string | undefined,
-  LinkComponent: FooterProps["LinkComponent"],
-): React.ReactElement => {
-  // `label` is the row's identity (required on LeafFooterItem), so it is
-  // the element key — reordering the authored list preserves each row's
-  // state. Two same-labelled rows in one footer collide; that's ambiguous
-  // UI, left to the consumer to avoid.
-  if (item.control !== "button" && item.url) {
-    const active = item.url === currentUrl;
-    return (
-      <Item
-        key={item.label}
-        url={item.url}
-        icon={item.icon}
-        slot={item.slot}
-        LinkComponent={LinkComponent}
-        active={active}
-      >
-        {item.label}
-      </Item>
-    );
-  }
+const FooterRow = ({
+  item,
+  currentUrl,
+  LinkComponent,
+}: FooterRowProps): React.ReactElement => {
+  // Shared row props — each switch case complements its kind-specific ones.
+  const shared = { icon: item.icon, slot: item.slot };
 
-  if (item.control === "button" || item.onClick) {
-    return (
-      <ItemButton
-        key={item.label}
-        icon={item.icon}
-        slot={item.slot}
-        onClick={item.onClick}
-      >
-        {item.label}
-      </ItemButton>
-    );
-  }
+  const kind =
+    item.control === "button" || (!item.url && item.onClick)
+      ? "action"
+      : item.url
+        ? "link"
+        : "label";
 
-  return (
-    <Item key={item.label} icon={item.icon} slot={item.slot}>
-      {item.label}
-    </Item>
-  );
+  switch (kind) {
+    case "link":
+      return (
+        <Item
+          {...shared}
+          url={item.url}
+          LinkComponent={LinkComponent}
+          active={item.url === currentUrl}
+        >
+          {item.label}
+        </Item>
+      );
+    case "action":
+      return (
+        <ItemButton {...shared} onClick={item.onClick}>
+          {item.label}
+        </ItemButton>
+      );
+    default:
+      return <Item {...shared}>{item.label}</Item>;
+  }
 };
 
 /**
@@ -90,6 +88,9 @@ const Footer = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
+      {/* `label` keys every row (required on LeafFooterItem, so it is the
+          row's identity): list reorders preserve row state. Two
+          same-labelled rows collide — ambiguous UI, left to the consumer. */}
       {list.length > 0 ? (
         <ul className="list">
           {list.map((entry: FooterItem) =>
@@ -110,12 +111,22 @@ const Footer = ({
                     child.url !== undefined && child.url === currentUrl,
                 )}
               >
-                {entry.items.map((child) =>
-                  renderFooterItem(child, currentUrl, LinkComponent),
-                )}
+                {entry.items.map((child) => (
+                  <FooterRow
+                    key={child.label}
+                    item={child}
+                    currentUrl={currentUrl}
+                    LinkComponent={LinkComponent}
+                  />
+                ))}
               </ItemExpandable>
             ) : (
-              renderFooterItem(entry, currentUrl, LinkComponent)
+              <FooterRow
+                key={entry.label}
+                item={entry}
+                currentUrl={currentUrl}
+                LinkComponent={LinkComponent}
+              />
             ),
           )}
         </ul>
