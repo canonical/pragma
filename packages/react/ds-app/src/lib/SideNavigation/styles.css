@@ -53,6 +53,13 @@
     /* No token names an elevated-popover shadow; scoped here so any
      ancestor can override. */
     --sidenav-popover-shadow: 0 0.25rem 0.5rem rgb(0 0 0 / 20%);
+
+    /* ── CollapseToggle ─────────────────────────────────────────────── */
+    /* Hit target: icon square (2rem) plus 0.25rem breathing room. */
+    --sidenav-collapse-toggle-inline-size: calc(
+      var(--dimension-400) +
+      var(--dimension-050)
+    );
   }
 
   .ds.side-navigation {
