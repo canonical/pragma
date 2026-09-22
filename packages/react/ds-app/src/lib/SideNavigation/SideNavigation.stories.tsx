@@ -1,14 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import {
-  contextSwitcherContentRoot,
-  contextSwitcherFooterRoot,
-  lxdContentRoot,
-  lxdFooterRoot,
-  lxdProjectContexts,
-  maasContentRoot,
-  maasFooterRoot,
-} from "../../storybook/navigation/fixtures.js";
+import * as fixtures from "../../storybook/navigation/fixtures.js";
 import {
   CanonicalLogo,
   navDecorators,
@@ -86,8 +78,8 @@ type Story = StoryObj<typeof SideNavigation>;
 export const MAAS: Story = {
   args: {
     applicationName: "MAAS",
-    root: maasContentRoot,
-    footerRoot: maasFooterRoot,
+    root: fixtures.maasContentRoot,
+    footerRoot: fixtures.maasFooterRoot,
   },
 };
 
@@ -95,8 +87,8 @@ export const MAAS: Story = {
 export const LXD: Story = {
   args: {
     applicationName: "LXD",
-    root: lxdContentRoot,
-    footerRoot: lxdFooterRoot,
+    root: fixtures.lxdContentRoot,
+    footerRoot: fixtures.lxdFooterRoot,
   },
 };
 
@@ -105,8 +97,8 @@ export const Collapsed: Story = {
   args: {
     defaultExpanded: false,
     applicationName: "MAAS",
-    root: maasContentRoot,
-    footerRoot: maasFooterRoot,
+    root: fixtures.maasContentRoot,
+    footerRoot: fixtures.maasFooterRoot,
   },
 };
 
@@ -118,7 +110,7 @@ export const Collapsed: Story = {
 export const CertificateUser: Story = {
   args: {
     applicationName: "LXD",
-    root: lxdContentRoot,
+    root: fixtures.lxdContentRoot,
     footerRoot: {
       key: "certificate-user-footer",
       items: [
@@ -142,8 +134,8 @@ export const CertificateUser: Story = {
 export const Mobile: Story = {
   args: {
     applicationName: "MAAS",
-    root: maasContentRoot,
-    footerRoot: maasFooterRoot,
+    root: fixtures.maasContentRoot,
+    footerRoot: fixtures.maasFooterRoot,
   },
 };
 
@@ -167,14 +159,14 @@ export const WithContextSwitcher: Story = {
     applicationName: "Canonical",
     contextSwitcher: {
       title: "Project",
-      currentContext: lxdProjectContexts[0],
-      contexts: lxdProjectContexts,
+      currentContext: fixtures.lxdProjectContexts[0],
+      contexts: fixtures.lxdProjectContexts,
       onContextChange: (context) => {
         if (context.url) window.location.hash = context.url;
       },
       onCreateContext: fn(),
     },
-    root: contextSwitcherContentRoot,
-    footerRoot: contextSwitcherFooterRoot,
+    root: fixtures.contextSwitcherContentRoot,
+    footerRoot: fixtures.contextSwitcherFooterRoot,
   },
 };
