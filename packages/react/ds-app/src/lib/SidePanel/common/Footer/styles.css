@@ -2,24 +2,15 @@
 
 @layer ds.components.apps {
   .ds.side-panel-footer {
-    /* Never shrinks, and stays visible: the panel scrolls beneath it. */
-    flex: none;
-    position: sticky;
-    inset-block-end: 0;
-    /* Above the in-flow content, whatever it contains. */
-    z-index: 1;
     /*
-      Opaque, so scrolling content passes behind rather than through. `inherit`
-      picks up whichever surface colour the panel resolved, so the two cannot
-      drift apart.
+      Never shrinks. It stays visible because only the content pane scrolls —
+      the footer sits beside it in the panel's flex column, not over it.
     */
-    background-color: inherit;
+    flex: none;
 
     /*
-      Closes the scroll region. It lives here rather than on the content pane
-      because the panel is the scroller now: a border on the content would scroll
-      away with it, whereas this one is pinned by the sticky footer. The panel's
-      inline padding already insets it, so it stops short of both panel edges.
+      Closes the scroll region, marking where the content pane ends and the
+      actions begin.
 
       The colour is the panel's to own, and is read without a local fallback so
       the two cannot state different defaults: `--side-panel-color-border` is
@@ -27,6 +18,12 @@
     */
     border-block-start: var(--dimension-stroke-thickness-medium) solid
       var(--side-panel-color-border);
+    /*
+      Inset by margin rather than padding: a border spans the padding box, so
+      padding would run the hairline edge to edge. The margin keeps it stopping
+      short of both panel edges, in line with the text column.
+    */
+    margin-inline: var(--side-panel-padding-inline);
 
     display: flex;
     justify-content: flex-end;

@@ -47,6 +47,9 @@
     --side-panel-header-gap: var(--dimension-200);
     /* Space between the footer's actions. */
     --side-panel-footer-gap: var(--dimension-200);
+    /* Keyboard focus ring of the scrollable content pane, drawn inside it. */
+    --side-panel-focus-ring-width: var(--dimension-stroke-thickness-large);
+    --side-panel-color-focus-ring: var(--color-focus-ring);
     --side-panel-transition-duration: var(--motion-duration-medium);
     --side-panel-transition-easing-enter: var(--motion-easing-decelerate);
     --side-panel-transition-easing-exit: var(--motion-easing-accelerate);
@@ -64,15 +67,12 @@
     inset-inline-end: 0;
     inset-inline-start: auto;
     margin: 0;
-    padding-block: 0;
     /*
-      The inline padding lives here rather than on the header, content and footer,
-      so all three sit inside one text column — and so the content pane's own
-      border box stops short of the panel edges, letting its closing hairline be
-      inset. Trade-off: the content pane is narrower than the panel, so its
-      scrollbar sits inside the padding rather than hugging the panel edge.
+      No padding of its own. The inline padding lives on the header, content and
+      footer instead, so the content pane spans the full panel width and its
+      scrollbar hugs the panel edge rather than sitting inside the padding.
     */
-    padding-inline: var(--side-panel-padding-inline);
+    padding: 0;
     border: none;
     max-inline-size: none;
     max-block-size: none;
@@ -102,26 +102,22 @@
     }
 
     /*
-      The dialog itself is the scroller, not the content pane. That puts the
-      scrollbar at the panel's edge — a scroll container's scrollbar sits inside
-      the border box, so the inline padding stays between it and the text — and
-      keeps the content column free of a scrollbar of its own. The header and
-      footer stay visible by sticking to this scrollport.
+      The panel does not scroll; the content pane does. The panel is a
+      full-height flex column (see `[open]` below): the header and footer keep
+      their size and the content pane takes what is left, scrolling within it.
+      So nothing overflows the panel itself, and anything that would is clipped.
     */
-    overflow-y: auto;
-    overflow-x: hidden;
-    /* Don't hand the scroll to the page behind once the panel bottoms out. */
-    overscroll-behavior: contain;
+    overflow: hidden;
 
     /*
-      Two consequences worth knowing, both from this file: a scroll container
-      clips its descendants, and the `transform` below makes the panel the
+      Two consequences worth knowing: the content pane is a scroll container,
+      so it clips its descendants, and the `transform` below makes the panel the
       containing block for any `position: fixed` descendant. So an overlay that
-      escapes the panel's box — ds-global's Popover and ContextualMenu position
-      their content with `position: fixed` — is both clipped at the panel edge
-      and anchored to the panel instead of the viewport. Documented in
-      Provider.tsx; the fix belongs upstream, in overlays that use the top
-      layer rather than fixed positioning.
+      escapes its box — ds-global's Popover and ContextualMenu position their
+      content with `position: fixed` — is both clipped and anchored to the
+      panel instead of the viewport. Documented in Provider.tsx; the fix belongs
+      upstream, in overlays that use the top layer rather than fixed
+      positioning.
     */
 
     /*
@@ -155,6 +151,10 @@
       A closed <dialog> is `display: none` by user-agent rule. Declaring display
       unconditionally would beat that and leave the panel permanently visible, so
       the stack layout is scoped to the open state.
+
+      Header, content, footer, top to bottom. The header and footer are
+      `flex: none`; the content pane shrinks to fit and scrolls, so the two
+      pinned regions stay visible without sticky positioning.
     */
     &[open] {
       display: flex;

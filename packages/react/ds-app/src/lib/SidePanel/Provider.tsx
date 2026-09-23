@@ -24,7 +24,11 @@ const componentCssClassName = "ds side-panel";
  * caused it.
  *
  * Compose the body from `SidePanel.Header`, `SidePanel.Content` and
- * `SidePanel.Footer`. Header and footer stay put; only the content scrolls.
+ * `SidePanel.Footer`. The panel lays them out as a flex column: header and
+ * footer keep their size, and the content pane takes the rest and scrolls
+ * within it. The content pane is a tab stop, so keyboard users can scroll it;
+ * opening the panel still focuses the panel itself, so from there Tab reaches
+ * the close button, then the content, then the footer's actions.
  *
  * There are two consumption patterns, `withSidePanel` and `SidePanel`.
  * `withSidePanel` is meant for static content: the call belongs at module
@@ -42,12 +46,13 @@ const componentCssClassName = "ds side-panel";
  * The panel is `position: fixed` and therefore out of the document flow: an
  * `overflow: hidden` ancestor does not clip it
  *
- * Because the panel is its own scroll container and is offset with a
- * transform, it both clips and re-anchors its descendants: an overlay that
- * needs to escape the panel's box — a `Popover` or `ContextualMenu`, whose
- * content is `position: fixed` — is cut off at the panel edge and positioned
- * against the panel rather than the viewport. Keep such overlays inside the
- * panel's bounds, or render them outside it.
+ * Because the content pane is a scroll container, the panel clips its own
+ * overflow, and the panel is offset with a transform, the panel both clips and
+ * re-anchors its descendants: an overlay that needs to escape its box — a
+ * `Popover` or `ContextualMenu`, whose content is `position: fixed` — is cut
+ * off at the content pane's edge and positioned against the panel rather than
+ * the viewport. Keep such overlays inside the content pane's bounds, or render
+ * them outside the panel.
  *
  * `import { SidePanel } from "@canonical/react-ds-app";`
  *
