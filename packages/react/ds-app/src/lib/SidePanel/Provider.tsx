@@ -149,6 +149,48 @@ const Provider = ({
     };
   }, []);
 
+  /**
+   * A non-modal dialog gets no `cancel` event, so Escape is handled here.
+   * Bound to the dialog rather than the document on purpose: Escape while
+   * focus is out in the application belongs to the application.
+   */
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDialogElement>) => {
+      onKeyDown?.(event);
+      if (
+        !disableEscapeClose &&
+        event.key === "Escape" &&
+        !event.defaultPrevented
+      ) {
+        close();
+      }
+    },
+    [onKeyDown, disableEscapeClose, close],
+  );
+
+  /**
+   * Every close funnels through the platform's `close` event — the handle's
+   * `close()`, a dismissal gesture, or a path the component did not drive at
+   * all (a `<form method="dialog">` submits one). Tidy up the open state, hand
+   * focus back, and report it, in that one place.
+   */
+  const handleClose = useCallback(
+    (event: React.SyntheticEvent<HTMLDialogElement>) => {
+      onClose?.(event);
+      openRef.current = false;
+      const dialog = dialogRef.current;
+      // Hand focus back only if it is still inside the panel; the user may
+      // have moved on to the application, and stealing focus back would be
+      // rude.
+      if (dialog?.contains(document.activeElement)) {
+        previouslyFocusedRef.current?.focus();
+      }
+      previouslyFocusedRef.current = null;
+      onOpenChange?.(false);
+    },
+    [onClose, onOpenChange],
+  );
+
   return (
     <Context.Provider value={contextValue}>
       <dialog
@@ -161,36 +203,8 @@ const Provider = ({
         aria-labelledby={ariaLabel === undefined ? titleId : undefined}
         // Focusable so that opening can place focus on the panel itself.
         tabIndex={-1}
-        // A non-modal dialog gets no `cancel` event, so Escape is handled here.
-        // Bound to the dialog rather than the document on purpose: Escape while
-        // focus is out in the application belongs to the application.
-        onKeyDown={(event) => {
-          onKeyDown?.(event);
-          if (
-            !disableEscapeClose &&
-            event.key === "Escape" &&
-            !event.defaultPrevented
-          ) {
-            close();
-          }
-        }}
-        // Every close funnels through the platform's `close` event — the
-        // handle's `close()`, a dismissal gesture, or a path the component did
-        // not drive at all (a `<form method="dialog">` submits one). Tidy up the
-        // open state, hand focus back, and report it, in that one place.
-        onClose={(event) => {
-          onClose?.(event);
-          openRef.current = false;
-          const dialog = dialogRef.current;
-          // Hand focus back only if it is still inside the panel; the user may
-          // have moved on to the application, and stealing focus back would be
-          // rude.
-          if (dialog?.contains(document.activeElement)) {
-            previouslyFocusedRef.current?.focus();
-          }
-          previouslyFocusedRef.current = null;
-          onOpenChange?.(false);
-        }}
+        onKeyDown={handleKeyDown}
+        onClose={handleClose}
         {...props}
       >
         {children}
