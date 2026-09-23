@@ -2,8 +2,17 @@
 
 @layer ds.components.apps {
   .ds.side-panel-content {
-    /* Takes the space the header and footer leave, so a short panel still fills. */
-    flex: 1 1 auto;
+    /*
+      Natural height by default: the footer follows the content, so its actions
+      stay next to the text they refer to instead of being pushed to the bottom
+      edge of a short panel. Still shrinkable, like any flex item.
+    */
+    flex: 0 1 auto;
+
+    /* Opt-in: take the space the header and footer leave, so a short panel fills. */
+    &.fill {
+      flex-grow: 1;
+    }
 
     /*
       No scroller here: overflow spills to the panel, which scrolls. That is what

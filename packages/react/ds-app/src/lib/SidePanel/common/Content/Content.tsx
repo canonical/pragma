@@ -13,11 +13,14 @@ const componentCssClassName = "ds side-panel-content";
 const Content = ({
   children,
   className,
+  fill = false,
   ...props
 }: ContentProps): React.ReactElement => {
   return (
     <div
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[componentCssClassName, fill && "fill", className]
+        .filter(Boolean)
+        .join(" ")}
       {...props}
     >
       {children}
