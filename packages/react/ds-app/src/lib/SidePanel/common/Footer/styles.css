@@ -34,6 +34,6 @@
     gap: var(--dimension-200);
     flex-wrap: wrap;
 
-    padding-block: var(--side-panel-footer-padding-block, var(--dimension-200));
+    padding-block: var(--side-panel-footer-padding-block);
   }
 }
