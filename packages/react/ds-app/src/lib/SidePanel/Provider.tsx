@@ -2,7 +2,7 @@ import type React from "react";
 import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import Context from "./Context.js";
 import { Content, Footer, Header } from "./common/index.js";
-import useSidePanelState from "./hooks/useSidePanelState.js";
+import useSidePanelContextValue from "./hooks/useSidePanelContextValue.js";
 import type { SidePanelHandle, SidePanelProps } from "./types.js";
 import "./styles.css";
 
@@ -65,9 +65,12 @@ const Provider = ({
   ...props
 }: SidePanelProps): React.ReactElement => {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  // The id that names the panel and the dismissal the header's close button
-  // calls — the provider state, centralised in its own hook.
-  const { close, titleId } = useSidePanelState(dialogRef);
+  // What the subcomponents read from context: the id that names the panel and
+  // the `close` action the header's close button calls. The provider also
+  // uses both itself — `close` for the handle and Escape, `titleId` for
+  // `aria-labelledby`.
+  const contextValue = useSidePanelContextValue(dialogRef);
+  const { close, titleId } = contextValue;
   /** Where focus was before the panel opened, so it can be handed back. */
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   /**
@@ -147,7 +150,7 @@ const Provider = ({
   }, []);
 
   return (
-    <Context.Provider value={{ close, titleId }}>
+    <Context.Provider value={contextValue}>
       <dialog
         ref={dialogRef}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
