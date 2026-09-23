@@ -55,7 +55,7 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.13",
+    "@biomejs/biome": "2.5.14",
     "@canonical/biome-config": "^0.40.0",
     "@canonical/design-tokens": "0.10.0",
     "@canonical/storybook-helpers": "^0.40.0",
