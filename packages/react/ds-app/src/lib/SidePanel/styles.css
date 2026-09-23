@@ -43,6 +43,10 @@
     --side-panel-header-padding-block: var(--dimension-200);
     --side-panel-footer-padding-block: var(--dimension-200);
     --side-panel-content-padding-block: var(--dimension-200);
+    /* Space between the header's title and close button. */
+    --side-panel-header-gap: var(--dimension-200);
+    /* Space between the footer's actions. */
+    --side-panel-footer-gap: var(--dimension-200);
     --side-panel-transition-duration: var(--motion-duration-medium);
     --side-panel-transition-easing-enter: var(--motion-easing-decelerate);
     --side-panel-transition-easing-exit: var(--motion-easing-accelerate);

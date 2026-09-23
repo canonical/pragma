@@ -17,7 +17,7 @@
 
     display: flex;
     align-items: center;
-    gap: var(--dimension-200);
+    gap: var(--side-panel-header-gap);
 
     padding-block: var(--side-panel-header-padding-block);
 
