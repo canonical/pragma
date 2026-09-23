@@ -85,6 +85,18 @@ const BASE_COVERAGE_EXCLUDE = [
   "**/types.ts",
 ] as const;
 
+/** Local fork-pool cap; see the root package.json `test` script. */
+const LOCAL_MAX_FORKS = 2;
+
+const forkCap = () =>
+  process.env.CI
+    ? {}
+    : {
+        poolOptions: {
+          forks: { maxForks: LOCAL_MAX_FORKS, minForks: 1 },
+        },
+      };
+
 const FULL_THRESHOLDS = {
   branches: 100,
   functions: 100,
@@ -176,7 +188,7 @@ export const reactTestConfig = ({
     // The client project's identity (`name`) is only meaningful in a split, so
     // a flat config omits it to match the hand-written single-project shape.
     const { name: _name, ...flat } = clientTest;
-    return { ...flat, ...coverageBlock };
+    return { ...flat, ...forkCap(), ...coverageBlock };
   }
 
   // Split: a jsdom/node client project plus a node ssr project that runs only
@@ -188,6 +200,7 @@ export const reactTestConfig = ({
   };
 
   return {
+    ...forkCap(),
     ...coverageBlock,
     projects: [
       { ...(plugins ? { plugins } : {}), test: clientTest },
