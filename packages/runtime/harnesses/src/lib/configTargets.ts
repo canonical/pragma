@@ -9,9 +9,8 @@
  * selection) lives here too, since it decides which targets are grouped.
  */
 
-import { resolveConfigTarget } from "./config.js";
+import { resolveConfigTargetOrNone } from "./config.js";
 import type { PlatformEnv } from "./platformPaths.js";
-import { isProjectRelativeSignal } from "./signals.js";
 import type {
   ConfigTarget,
   DetectedHarness,
@@ -71,31 +70,30 @@ export const isHarnessInBand = (
 };
 
 /**
- * Whether a dual-scope harness has EARNED the global band on this machine.
+ * Whether a harness that ASKS to earn the global band has earned it on this
+ * machine.
  *
  * `isHarnessInBand` answers "can this row write here", which is a fact about
- * the registry. This answers "should it", which is a fact about the evidence:
- * a `both` row detected only by something inside the checkout has said nothing
- * about the machine. A committed `.vscode/` directory is the case that forced
- * the question — it travels with the repository, so on its own it would have
- * created `<config>/Code/User/mcp.json` for every contributor who clones,
- * whether or not they have VS Code. The project band is the right home for
- * project evidence, and a `both` row always keeps it.
+ * the registry. This answers "should it", which is a fact about the evidence —
+ * but only for a row that declares `requiresUserSignalForGlobal`, and only
+ * three do. The `.vscode/` directory is what forced the question: it is
+ * committed to repositories, so on its own it would have created
+ * `<config>/Code/User/mcp.json` for every contributor who clones, whether or
+ * not they have VS Code. The project band is the right home for project
+ * evidence, and a `both` row always keeps it.
  *
- * A row whose EVERY declared signal is project-relative (`cursor`) has nothing
- * to earn the band with, so the rule does not apply to it: it keeps the
- * documented global location it has always written. The rule bites exactly
- * where a row declares user-level probes and none of them matched.
+ * Every other row is left exactly as it was. A `.gemini/` or `.codex/`
+ * directory in a checkout has always been enough for `setup mcp` to write
+ * `~/.gemini/settings.json` or `~/.codex/config.toml`, and those rows are not
+ * detected by a file a repository ships to people who do not run the tool.
  *
- * @param d - One detected harness, carrying the signals that matched.
+ * @param d - One detected harness, carrying whether a user-level signal
+ *   matched.
  * @returns Whether it belongs in the global band.
- * @note Pure — reads the detection record and the row's own signals.
+ * @note Pure — reads the detection record and the row's own declaration.
  */
-const earnedGlobalBand = (d: DetectedHarness): boolean => {
-  if (d.harness.scope !== "both") return true;
-  if (d.harness.detect.every(isProjectRelativeSignal)) return true;
-  return d.matched.some((signal) => !isProjectRelativeSignal(signal));
-};
+const hasEarnedGlobalBand = (d: DetectedHarness): boolean =>
+  d.harness.requiresUserSignalForGlobal !== true || d.matchedUserLevel;
 
 /** The detected harnesses that participate in `band` under the `scope` selection. */
 export const listHarnessesForBand = (
@@ -106,7 +104,7 @@ export const listHarnessesForBand = (
   detected.filter(
     (d) =>
       isHarnessInBand(d.harness.scope, scope, band) &&
-      (band === "project" || earnedGlobalBand(d)),
+      (band === "project" || hasEarnedGlobalBand(d)),
   );
 
 /**
@@ -133,7 +131,12 @@ export const groupConfigTargets = (
   >();
 
   for (const d of detected) {
-    const target = resolveConfigTarget(d.harness, projectRoot, band, platform);
+    const target = resolveConfigTargetOrNone(
+      d.harness,
+      projectRoot,
+      band,
+      platform,
+    );
     // No location in this band on THIS host (the VS Code rows under WSL, whose
     // Linux-side per-user file no editor reads) — so no group, and a `both` row
     // is reached by its project file alone.

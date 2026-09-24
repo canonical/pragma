@@ -342,8 +342,8 @@ export const mcpGroupBlock = (
  * Why one BLOCKED group's file cannot be written — one line, as the renderer
  * prints one.
  *
- * @param d - The detection gathered up front.
- * @param group - A group whose file is blocked.
+ * @param block - The block on the file.
+ * @param path - The blocked config file's path.
  * @param roots - The two roots the path renders relative to.
  * @returns The reason.
  */
@@ -396,14 +396,18 @@ export function mcpBlockReason(
  * `[mcp_servers.pragma]` table holds, in the one-line form a remedy can print
  * (the renderer gives it one dim line).
  *
- * Every write in the group is included, keyed by its own `mcpKey`: a shared
- * `.vscode/mcp.json` holds two independent entries, and half the answer is
- * not an answer.
+ * In JSON, every write in the group is included, keyed by its own `mcpKey`: a
+ * shared `.vscode/mcp.json` holds two independent entries, and half the answer
+ * is not an answer. In TOML it is the ONE entry — a group is per path and
+ * `codex` is the only TOML row, so there is exactly one write, and TOML needs
+ * a newline between key/value pairs that a one-line remedy has no room for.
+ * Joining several would print a line that does not parse.
  *
- * The line does NOT restate the path or the cause. The reason line directly
- * above it has said both ({@link mcpBlockReason}), and a remedy that repeats
- * them is the duplication the LSP remedies beside it dropped: a remedy states
- * the action.
+ * The line does NOT restate the CAUSE — the reason line directly above it has
+ * said that ({@link mcpBlockReason}), and a remedy that repeats it is the
+ * duplication the LSP remedies beside it dropped. It does name the path, once:
+ * a scope can have several blocked files and the remedy has to say which one
+ * this entry belongs in.
  *
  * @param d - The detection gathered up front.
  * @param group - The group whose file is blocked.
@@ -417,25 +421,22 @@ function blockedMcpRemedy(
 ): string {
   const want = pragmaMcpEntry(d.cwd, group.scope);
   const where = shortenPath(group.path, roots);
-  const toml = group.writes[0]?.configFormat === "toml";
-  const body = toml
-    ? group.writes
-        .map((write) =>
-          d.serializeTomlInlineEntry(
-            write.mcpKey,
-            MCP_SERVER_NAME,
-            write.serializeEntry(want),
-          ),
+  const first = group.writes.at(0);
+  const body =
+    first?.configFormat === "toml"
+      ? d.serializeTomlInlineEntry(
+          first.mcpKey,
+          MCP_SERVER_NAME,
+          first.serializeEntry(want),
         )
-        .join(" ")
-    : JSON.stringify(
-        Object.fromEntries(
-          group.writes.map((write) => [
-            write.mcpKey,
-            { [MCP_SERVER_NAME]: write.serializeEntry(want) },
-          ]),
-        ),
-      );
+      : JSON.stringify(
+          Object.fromEntries(
+            group.writes.map((write) => [
+              write.mcpKey,
+              { [MCP_SERVER_NAME]: write.serializeEntry(want) },
+            ]),
+          ),
+        );
   return `put this entry in the config that owns ${where}: ${body}`;
 }
 

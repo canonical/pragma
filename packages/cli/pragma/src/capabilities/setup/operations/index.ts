@@ -26,10 +26,14 @@
  * path — a consumer that routes it through this barrel statically would undo
  * that, and the setup guard test would say so.
  *
- * Every line here has an importer that goes THROUGH it. The modules also
- * import each other directly (`targets.ts` reaches `setupLsp.js`, and its
- * siblings reach `writability.js`), and re-exporting those edges as well would
- * make this file a second, wider surface that nothing asked for.
+ * A line here is for an importer that goes THROUGH it — that is the test a
+ * new one has to pass, and three that did not (`mcpGroupBlock`,
+ * `lspUninstallRemedy`, `withinRoot`) are gone. Nothing enforces it, so it is
+ * an intent rather than an invariant: check it when you add a line. The
+ * modules also import each other directly (`targets.ts` reaches
+ * `setupLsp.js`, and its siblings reach `writability.js`), and re-exporting
+ * those edges as well would make this file a second, wider surface that
+ * nothing asked for.
  *
  * Deliberately internal: the config seed literal, the per-target message
  * builders, and the MCP entry writer. They are inputs to the composers above,
@@ -58,11 +62,10 @@ export {
   detectLsp,
   firstLspBlock,
   installableEditors,
+  installedEditorNames,
   LSP_SKIP_REMEDY,
   lspBlockReason,
-  lspEditorNames,
   lspSkipReason,
-  lspUninstallRemedy,
   ownedLspEditors,
 } from "./setupLsp.js";
 export type { McpDetection } from "./setupMcp.js";
@@ -73,7 +76,6 @@ export {
   detectMcp,
   firstMcpBlock,
   mcpBlockReason,
-  mcpGroupBlock,
   mcpGroupState,
   mcpWriteState,
   ownedMcpGroups,
@@ -88,6 +90,5 @@ export {
   skillsSkipReason,
   skillsSkipRemedy,
   staleSkillLinks,
-  withinRoot,
 } from "./setupSkills.js";
 export type { FsProbe } from "./writability.js";

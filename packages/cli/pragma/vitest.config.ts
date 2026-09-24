@@ -37,16 +37,20 @@ export default defineConfig({
         "**/bin.ts",
         "src/testing/**",
       ],
-      // Ratcheted to the measured floor, rounded down. The gate sat at 50
+      // Ratcheted to ONE POINT under the measured floor. The gate sat at 50
       // while the suite really covered ~90, so forty points of headroom meant
       // any amount of new code could arrive uncovered and CI would say
-      // nothing. These numbers move UP when a run beats them; they are not a
-      // target to code down to.
+      // nothing. One point is the deliberate remainder: at the floor itself a
+      // handful of uncovered lines in an unrelated change fails CI on
+      // coverage rather than on a test, and a run that skips a
+      // host-dependent case (the Nix snippet needs `nix-instantiate`) reads
+      // as a coverage regression. These numbers move UP when a run beats
+      // them; they are not a target to code down to.
       thresholds: {
-        statements: 90,
-        branches: 81,
-        functions: 92,
-        lines: 91,
+        statements: 89,
+        branches: 80,
+        functions: 91,
+        lines: 90,
       },
     },
   },

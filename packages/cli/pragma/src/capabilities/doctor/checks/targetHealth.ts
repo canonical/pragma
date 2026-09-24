@@ -44,10 +44,10 @@ import {
   firstLspBlock,
   firstMcpBlock,
   installableEditors,
+  installedEditorNames,
   LSP_SKIP_REMEDY,
   type LspDetection,
   lspBlockReason,
-  lspEditorNames,
   lspSkipReason,
   type McpDetection,
   mcpBlockReason,
@@ -164,9 +164,12 @@ const lspHealth = (d: LspDetection, roots: Roots): Health => {
       remedy: block.remedy,
     };
   }
+  // Only the editors that CARRY it. Nothing installable does not mean every
+  // found editor is installed: one found by its user directory alone is
+  // neither, and naming it here contradicted its own item a line below.
   return {
     status: "pass",
-    detail: `installed in ${lspEditorNames(d).join(", ")}`,
+    detail: `installed in ${installedEditorNames(d).join(", ")}`,
     items,
   };
 };

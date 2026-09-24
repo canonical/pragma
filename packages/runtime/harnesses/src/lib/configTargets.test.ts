@@ -10,7 +10,6 @@ import findHarnessById from "./findHarnessById.js";
 import type { PlatformEnv } from "./platformPaths.js";
 import type {
   DetectedHarness,
-  DetectionSignal,
   HarnessDefinition,
   HarnessScope,
 } from "./types.js";
@@ -37,19 +36,20 @@ const harness = (overrides: Partial<HarnessDefinition>): HarnessDefinition => ({
 });
 
 /**
- * Wrap a harness definition as a (high-confidence) detection. `matched`
- * defaults to EVERY signal, which is the "this machine really has it" case;
- * a case about the global band passes the subset it means.
+ * Wrap a harness definition as a (high-confidence) detection.
+ * `matchedUserLevel` defaults to true, which is the "this machine really has
+ * it" case; a case about the global band passes false to mean "found by the
+ * checkout alone".
  */
 const detected = (
   h: HarnessDefinition,
-  matched: readonly DetectionSignal[] = h.detect,
+  matchedUserLevel = true,
 ): DetectedHarness => ({
   harness: h,
   confidence: "high",
   configExists: false,
   configPath: h.configPath("/project"),
-  matched,
+  matchedUserLevel,
 });
 
 /** Look up a registered harness, asserting it exists. */
@@ -113,15 +113,14 @@ describe("listHarnessesForBand", () => {
   });
 
   /**
-   * The global band has to be EARNED. A committed `.vscode/` travels with the
-   * repository and says nothing about the machine, so on its own it must not
-   * create a per-user VS Code config for every contributor who clones.
+   * The global band has to be EARNED by the rows that ask for it. A committed
+   * `.vscode/` travels with the repository and says nothing about the machine,
+   * so on its own it must not create a per-user VS Code config for every
+   * contributor who clones.
    */
   it("drops a both harness the global band was not earned for", () => {
-    // Only the project-relative signal matched: `.vscode/` is in the checkout.
-    const projectOnly = detected(requireHarness("vscode"), [
-      { type: "directory", path: ".vscode" },
-    ]);
+    // Found by the checkout alone: `.vscode/` is in the repository.
+    const projectOnly = detected(requireHarness("vscode"), false);
     expect(
       listHarnessesForBand([projectOnly], "global", "global"),
     ).toHaveLength(0);
@@ -133,32 +132,40 @@ describe("listHarnessesForBand", () => {
     ).toEqual(["vscode"]);
   });
 
-  it("keeps a both harness one of whose USER-LEVEL signals matched", () => {
-    const installed = detected(requireHarness("vscode"), [
-      { type: "directory", path: ".vscode" },
-      { type: "process", name: "code" },
-    ]);
-    expect(
-      listHarnessesForBand([installed], "global", "global").map(
-        (d) => d.harness.id,
-      ),
-    ).toEqual(["vscode"]);
-  });
+  it.each(["vscode", "vscode-insiders", "vscodium"])(
+    "keeps %s in the global band once a user-level signal matched",
+    (id) => {
+      expect(requireHarness(id).requiresUserSignalForGlobal).toBe(true);
+      expect(
+        listHarnessesForBand(
+          [detected(requireHarness(id), true)],
+          "global",
+          "global",
+        ).map((d) => d.harness.id),
+      ).toEqual([id]);
+    },
+  );
 
-  it("exempts a both harness that declares no user-level signal at all", () => {
-    // Cursor's whole `detect` is the project-relative `.cursor`, so it has
-    // nothing to earn the band WITH — the rule would silence its documented
-    // `~/.cursor/mcp.json` forever rather than gate it.
-    const cursor = detected(requireHarness("cursor"));
-    expect(cursor.harness.detect).toEqual([
-      { type: "directory", path: ".cursor" },
-    ]);
-    expect(
-      listHarnessesForBand([cursor], "global", "global").map(
-        (d) => d.harness.id,
-      ),
-    ).toEqual(["cursor"]);
-  });
+  /**
+   * Every OTHER `both`-scoped row is untouched by the rule: it does not
+   * declare `requiresUserSignalForGlobal`, so a checkout carrying only its
+   * project marker still writes its home file, exactly as it always has. The
+   * `.vscode/` problem is specific to a directory repositories commit for
+   * people who may not run the tool at all.
+   */
+  it.each(["gemini-cli", "codex", "cursor", "claude-code", "opencode"])(
+    "keeps %s in the global band on a project-only match",
+    (id) => {
+      const h = requireHarness(id);
+      expect(h.scope).toBe("both");
+      expect(h.requiresUserSignalForGlobal).toBeUndefined();
+      expect(
+        listHarnessesForBand([detected(h, false)], "global", "global").map(
+          (d) => d.harness.id,
+        ),
+      ).toEqual([id]);
+    },
+  );
 });
 
 describe("groupConfigTargets", () => {

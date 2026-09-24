@@ -51,9 +51,9 @@ A location that differs by platform is declared as one signal per platform, sinc
 
 A row should carry both project-relative *and* user-level signals where the harness has them. Project-relative signals alone answer only "does this repo carry a committed config", which misses the common case of an installed editor with the config directory gitignored.
 
-The distinction also decides the GLOBAL band. `listHarnessesForBand` admits a `both`-scoped row into the global band only when one of its own user-level signals matched: a committed `.vscode/` travels with the repository, so on its own it must not create a per-user config for every contributor who clones. A row whose every declared signal is project-relative (`cursor`) has nothing to earn the band with, so the rule leaves it alone. `DetectedHarness.matched` is what detection records for this — a tier cannot tell a project directory from one in the user's home, since both score `high`.
+The distinction also decides the GLOBAL band, for the rows that ask it to. A row may declare `requiresUserSignalForGlobal`, and `listHarnessesForBand` then admits it to the global band only when one of its own user-level signals matched. The three VS Code products are the only rows that declare it, and `.vscode/` is why: that directory is committed to repositories, so on its own it must not create a per-user config for every contributor who clones. Every other `both`-scoped row writes its home file on any match, which is the behaviour it has always had. `DetectedHarness.matchedUserLevel` is what detection records for this — a tier cannot tell a project directory from one in the user's home, since both score `high`.
 
-`homeConfigPath` may return `undefined`, which means "this harness has no per-user location ON THIS HOST" — not the same as a row that declares none, which is a registry error. The VS Code rows return it under WSL: the editor a WSL user drives is the Windows one, reading `%APPDATA%\Code\User\mcp.json` on the Windows side, so the Linux-side file is read by nothing. `resolveConfigTarget` reports that as no target and `groupConfigTargets` drops it, leaving the project file as the row's only band.
+`homeConfigPath` may return `undefined`, which means "this harness has no per-user location ON THIS HOST" — not the same as a row that declares none, which is a registry error. The VS Code rows return it under WSL: the editor a WSL user drives is the Windows one, reading `%APPDATA%\Code\User\mcp.json` on the Windows side, so the Linux-side file is read by nothing. `groupConfigTargets` drops such a row from the band it is surveying, leaving the project file as the row's only band; `resolveConfigTarget`, which answers for one named harness and band, throws instead.
 
 Multiple harnesses can be detected simultaneously — a developer may use both Claude Code and Cursor, and a VS Code install with a Cline extension detects **both** `vscode` and `cline` (they share `.vscode/mcp.json` under two different `mcpKey`s).
 
@@ -108,7 +108,7 @@ The three VS Code products share the project file under one `servers` key, so th
 
 Each entry includes a `version` field (semver range) to support config format changes across harness versions. Multiple entries can exist for the same harness ID with different version ranges.
 
-Codex uses TOML config — config read/write operations are not yet supported for TOML-based harnesses.
+Codex keeps its config in TOML. Reads, writes and removals work the same way there as for the JSON rows: the entry goes into a `[mcp_servers.pragma]` table rather than a JSON object, serialized by `serializeTomlSection`.
 
 ```typescript
 import { harnesses, findHarnessById } from "@canonical/harnesses";
