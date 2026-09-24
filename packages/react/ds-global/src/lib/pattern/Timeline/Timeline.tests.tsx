@@ -2,13 +2,25 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import Timeline from "./Timeline.js";
 
+const dateTime = {
+  format: (iso: string) => ({ display: iso, alternate: iso }),
+  toggleable: false,
+  tooltip: false,
+  pressed: false,
+  onToggle: () => {},
+};
+
 describe("Timeline", () => {
   it("renders children", () => {
     render(
       <Timeline>
         <Timeline.Content>
-          <Timeline.Event>Event 1</Timeline.Event>
-          <Timeline.Event>Event 2</Timeline.Event>
+          <Timeline.Event
+            item={{ id: "e1", dateTime: "2024-01-15", description: "Event 1" }}
+          />
+          <Timeline.Event
+            item={{ id: "e2", dateTime: "2024-01-16", description: "Event 2" }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
@@ -20,7 +32,9 @@ describe("Timeline", () => {
     render(
       <Timeline data-testid="timeline">
         <Timeline.Content>
-          <Timeline.Event>Event</Timeline.Event>
+          <Timeline.Event
+            item={{ id: "e1", dateTime: "2024-01-15", description: "Event" }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
@@ -31,7 +45,9 @@ describe("Timeline", () => {
     render(
       <Timeline className="custom" data-testid="timeline">
         <Timeline.Content>
-          <Timeline.Event>Event</Timeline.Event>
+          <Timeline.Event
+            item={{ id: "e1", dateTime: "2024-01-15", description: "Event" }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
@@ -46,7 +62,9 @@ describe("Timeline", () => {
     render(
       <Timeline>
         <Timeline.Content data-testid="content">
-          <Timeline.Event>Event</Timeline.Event>
+          <Timeline.Event
+            item={{ id: "e1", dateTime: "2024-01-15", description: "Event" }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
@@ -57,7 +75,10 @@ describe("Timeline", () => {
     render(
       <Timeline>
         <Timeline.Content>
-          <Timeline.Event data-testid="event">Event</Timeline.Event>
+          <Timeline.Event
+            data-testid="event"
+            item={{ id: "e1", dateTime: "2024-01-15", description: "Event" }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
@@ -68,7 +89,14 @@ describe("Timeline", () => {
     render(
       <Timeline>
         <Timeline.Content>
-          <Timeline.Event actor="John Doe">Did something</Timeline.Event>
+          <Timeline.Event
+            item={{
+              id: "e1",
+              dateTime: "2024-01-15",
+              actorName: "John Doe",
+              description: "Did something",
+            }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
@@ -79,7 +107,15 @@ describe("Timeline", () => {
     render(
       <Timeline>
         <Timeline.Content>
-          <Timeline.Event datetime="2024-01-15">Event</Timeline.Event>
+          <Timeline.Event
+            data-testid="event"
+            dateTime={dateTime}
+            item={{
+              id: "e1",
+              dateTime: "2024-01-15",
+              description: "Event",
+            }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
@@ -90,34 +126,42 @@ describe("Timeline", () => {
     render(
       <Timeline>
         <Timeline.Content>
-          <Timeline.Event data-testid="event" criticality="warning">
-            Warning event
-          </Timeline.Event>
+          <Timeline.Event
+            data-testid="event"
+            item={{
+              id: "e1",
+              dateTime: "2024-01-15",
+              description: "Warning event",
+              criticality: "warning",
+            }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
     expect(screen.getByTestId("event")).toHaveClass("warning");
   });
 
-  it("maintains DOM order: actor, datetime, payload", () => {
+  it("maintains DOM order: actor, payload, trailing datetime", () => {
     render(
       <Timeline>
         <Timeline.Content>
           <Timeline.Event
             data-testid="event"
-            actor="Actor"
-            datetime="2024-01-01"
-          >
-            Payload
-          </Timeline.Event>
+            dateTime={dateTime}
+            item={{
+              id: "e1",
+              dateTime: "2024-01-01",
+              actorName: "Actor",
+              description: "Payload",
+            }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
-    const event = screen.getByTestId("event");
-    const content = event.querySelector(".content");
-    const children = content?.children;
+    const row = screen.getByTestId("event").querySelector(".default-row");
+    const children = row?.children;
     expect(children?.[0]).toHaveClass("actor");
-    expect(children?.[1]).toHaveClass("datetime");
-    expect(children?.[2]).toHaveClass("payload");
+    expect(children?.[1]).toHaveClass("payload");
+    expect(children?.[2]).toHaveClass("ds", "timeline-datetime");
   });
 });

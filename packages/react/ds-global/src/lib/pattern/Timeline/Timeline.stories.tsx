@@ -10,107 +10,170 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/**
- * Default timeline with multiple events showing actor, datetime, and description.
- */
+const dateTime = {
+  format: (iso: string) => ({ display: iso, alternate: iso }),
+  toggleable: false,
+  tooltip: false,
+  pressed: false,
+  onToggle: () => {},
+};
+
+/** Default timeline with multiple events showing actor, datetime, and description. */
 export const Default: Story = {
   args: {
     children: (
       <Timeline.Content>
-        <Timeline.Event actor="John Doe" datetime="January 15, 2024">
-          Created the initial document draft
-        </Timeline.Event>
-        <Timeline.Event actor="Jane Smith" datetime="January 16, 2024">
-          Reviewed and added comments
-        </Timeline.Event>
-        <Timeline.Event actor="John Doe" datetime="January 17, 2024">
-          Addressed feedback and updated content
-        </Timeline.Event>
-        <Timeline.Event actor="Jane Smith" datetime="January 18, 2024">
-          Approved the final version
-        </Timeline.Event>
+        <Timeline.Event
+          dateTime={dateTime}
+          item={{
+            id: "e1",
+            dateTime: "January 15, 2024",
+            actorName: "John Doe",
+            description: "Created the initial document draft",
+          }}
+        />
+        <Timeline.Event
+          dateTime={dateTime}
+          item={{
+            id: "e2",
+            dateTime: "January 16, 2024",
+            actorName: "Jane Smith",
+            description: "Reviewed and added comments",
+          }}
+        />
+        <Timeline.Event
+          dateTime={dateTime}
+          item={{
+            id: "e3",
+            dateTime: "January 17, 2024",
+            actorName: "John Doe",
+            description: "Addressed feedback and updated content",
+          }}
+        />
+        <Timeline.Event
+          dateTime={dateTime}
+          item={{
+            id: "e4",
+            dateTime: "January 18, 2024",
+            actorName: "Jane Smith",
+            description: "Approved the final version",
+          }}
+        />
       </Timeline.Content>
     ),
   },
 };
 
-/**
- * Timeline events with criticality levels for status indication.
- */
+/** Timeline events with criticality levels for status indication. */
 export const WithCriticality: Story = {
   args: {
     children: (
       <Timeline.Content>
         <Timeline.Event
-          actor="System"
-          datetime="10:00 AM"
-          criticality="information"
-        >
-          Deployment started
-        </Timeline.Event>
+          dateTime={dateTime}
+          item={{
+            id: "e1",
+            dateTime: "10:00 AM",
+            actorName: "System",
+            description: "Deployment started",
+            criticality: "information",
+          }}
+        />
         <Timeline.Event
-          actor="System"
-          datetime="10:05 AM"
-          criticality="success"
-        >
-          Build completed successfully
-        </Timeline.Event>
+          dateTime={dateTime}
+          item={{
+            id: "e2",
+            dateTime: "10:05 AM",
+            actorName: "System",
+            description: "Build completed successfully",
+            criticality: "success",
+          }}
+        />
         <Timeline.Event
-          actor="System"
-          datetime="10:10 AM"
-          criticality="warning"
-        >
-          Performance degradation detected
-        </Timeline.Event>
-        <Timeline.Event actor="System" datetime="10:15 AM" criticality="error">
-          Service unavailable - rollback initiated
-        </Timeline.Event>
+          dateTime={dateTime}
+          item={{
+            id: "e3",
+            dateTime: "10:10 AM",
+            actorName: "System",
+            description: "Performance degradation detected",
+            criticality: "warning",
+          }}
+        />
+        <Timeline.Event
+          dateTime={dateTime}
+          item={{
+            id: "e4",
+            dateTime: "10:15 AM",
+            actorName: "System",
+            description: "Service unavailable - rollback initiated",
+            criticality: "error",
+          }}
+        />
       </Timeline.Content>
     ),
   },
 };
 
-/**
- * Minimal timeline events without actor or datetime metadata.
- */
+/** Minimal timeline events without actor or datetime metadata. */
 export const MinimalEvents: Story = {
   args: {
     children: (
       <Timeline.Content>
-        <Timeline.Event>First event happened</Timeline.Event>
-        <Timeline.Event>Second event occurred</Timeline.Event>
-        <Timeline.Event>Third event completed</Timeline.Event>
+        <Timeline.Event
+          item={{
+            id: "e1",
+            dateTime: "2024-01-01",
+            description: "First event happened",
+          }}
+        />
+        <Timeline.Event
+          item={{
+            id: "e2",
+            dateTime: "2024-01-02",
+            description: "Second event occurred",
+          }}
+        />
+        <Timeline.Event
+          item={{
+            id: "e3",
+            dateTime: "2024-01-03",
+            description: "Third event completed",
+          }}
+        />
       </Timeline.Content>
     ),
   },
 };
 
-/**
- * Timeline events with datetime but no actor.
- */
+/** Timeline events with datetime but no actor. */
 export const WithDatetimeOnly: Story = {
   args: {
     children: (
       <Timeline.Content>
-        <Timeline.Event datetime="9:00 AM">Morning standup</Timeline.Event>
-        <Timeline.Event datetime="12:00 PM">Lunch break</Timeline.Event>
-        <Timeline.Event datetime="2:00 PM">Code review</Timeline.Event>
-        <Timeline.Event datetime="5:00 PM">End of day wrap-up</Timeline.Event>
-      </Timeline.Content>
-    ),
-  },
-};
-
-/**
- * Timeline with a single event.
- */
-export const SingleEvent: Story = {
-  args: {
-    children: (
-      <Timeline.Content>
-        <Timeline.Event actor="Admin" datetime="Today">
-          Account created
-        </Timeline.Event>
+        <Timeline.Event
+          dateTime={dateTime}
+          item={{
+            id: "e1",
+            dateTime: "9:00 AM",
+            description: "Morning standup",
+          }}
+        />
+        <Timeline.Event
+          dateTime={dateTime}
+          item={{ id: "e2", dateTime: "12:00 PM", description: "Lunch break" }}
+        />
+        <Timeline.Event
+          dateTime={dateTime}
+          item={{ id: "e3", dateTime: "2:00 PM", description: "Code review" }}
+        />
+        <Timeline.Event
+          dateTime={dateTime}
+          item={{
+            id: "e4",
+            dateTime: "5:00 PM",
+            description: "End of day wrap-up",
+          }}
+        />
       </Timeline.Content>
     ),
   },
