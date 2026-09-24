@@ -45,10 +45,10 @@
   let values = $state<string[]>([]);
 </script>
 
-<Story name="Default">
+<Story name="Default" args={{ value: ""}}>
   {#snippet template(args)}
     <Select {...args}>
-      <option value="" disabled selected>Select an option</option>
+      <option value="" disabled>Select an option</option>
       <option value="cosmic-cuttlefish">Cosmic Cuttlefish</option>
       <option value="bionic-beaver">Bionic Beaver</option>
       <option value="xenial-xerus">Xenial Xerus</option>
@@ -56,14 +56,14 @@
   {/snippet}
 </Story>
 
-<Story name="Criticalities" argTypes={{ criticality: { control: false } }}>
+<Story name="Criticalities" args={{ value: ""}} argTypes={{ criticality: { control: false } }}>
   {#snippet template({ children: _, criticality: __, ...args })}
     <div
       style="display: grid; grid-template-columns: min-content; gap: 0.5rem;"
     >
-      {#each [...MODIFIER_FAMILIES.criticality, "base"] as const as criticality (criticality)}
-        <Select {...args} {criticality}>
-          <option value="" disabled selected>{criticality || "base"}</option>
+      {#each [...MODIFIER_FAMILIES.criticality] as const as criticality (criticality)}
+      <Select {...args} {criticality}>
+          <option value="" disabled>{criticality}</option>
           <option value="cosmic-cuttlefish">Cosmic Cuttlefish</option>
           <option value="bionic-beaver">Bionic Beaver</option>
           <option value="xenial-xerus">Xenial Xerus</option>
@@ -94,28 +94,28 @@
   {/snippet}
 </Story>
 
-<Story name="Disabled" args={{ disabled: true }}>
+<Story name="Disabled" args={{ disabled: true, value: ""}}>
   {#snippet template(args)}
     <Select {...args}>
-      <option value="" disabled selected>Select an option</option>
+      <option value="" disabled >Select an option</option>
       <option value="cosmic-cuttlefish">Cosmic Cuttlefish</option>
     </Select>
   {/snippet}
 </Story>
 
-<Story name="Invalid" args={{ "aria-invalid": true }}>
+<Story name="Invalid" args={{ "aria-invalid": true, value: "" }}>
   {#snippet template(args)}
     <Select {...args}>
-      <option value="" disabled selected>Select an option</option>
+      <option value="" disabled >Select an option</option>
       <option value="cosmic-cuttlefish">Cosmic Cuttlefish</option>
     </Select>
   {/snippet}
 </Story>
 
-<Story name="With group options">
+<Story name="With group options" args={{ value: "" }}>
   {#snippet template(args)}
     <Select {...args}>
-      <option value="" disabled selected>Select an option</option>
+      <option value="" disabled>Select an option</option>
       <optgroup label="Ubuntu Linux">
         <option value="cosmic-cuttlefish">Cosmic Cuttlefish</option>
         <option value="bionic-beaver">Bionic Beaver</option>
