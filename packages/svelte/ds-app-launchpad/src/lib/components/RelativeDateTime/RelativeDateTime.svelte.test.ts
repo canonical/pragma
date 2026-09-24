@@ -6,20 +6,7 @@ import type { Locator } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
 import Component from "./RelativeDateTime.svelte";
-
-vi.mock("./utils/formatters.js", () => {
-  return {
-    dateTimeFormatter: new Intl.DateTimeFormat("en-US", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: "UTC",
-    }),
-    relativeTimeFormatter: new Intl.RelativeTimeFormat("en-US", {
-      numeric: "auto",
-      style: "long",
-    }),
-  };
-});
+import { dateTimeFormatter } from "./utils/formatters.js";
 
 const date = new Date("2024-01-01T12:00:00Z");
 const timestamp = date.getTime();
@@ -166,9 +153,11 @@ describe("RelativeDateTime component", () => {
   describe("title attribute", () => {
     it("applies formatted date as title", async () => {
       const page = render(Component, baseProps);
+      // The suite pins TZ in the vite config, so the real formatter is
+      // deterministic; assert its output rather than a hard-coded string.
       await expect
         .element(componentLocator(page))
-        .toHaveAttribute("title", "1/1/24, 12:00 PM");
+        .toHaveAttribute("title", dateTimeFormatter.format(date));
     });
   });
 });

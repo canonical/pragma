@@ -8,6 +8,12 @@ export default defineConfig({
   plugins: [svelte({})],
   test: {
     environment: "node",
+    // Worker + iframe reuse across files; the setup files unmount between
+    // tests, and fileParallelism:false caps each project's RAM peak. The
+    // suites no longer mock source modules, which is what the shared
+    // registry cannot host.
+    isolate: false,
+    fileParallelism: false,
     env: {
       TZ: TIME_ZONE,
     },
@@ -33,11 +39,6 @@ export default defineConfig({
           },
           include: ["src/**/*.svelte.test.{js,ts}"],
           exclude: ["src/lib/server/**"],
-          // All files share one iframe, run sequentially (isolate:false): the
-          // browser process is per-engine either way; this removes the
-          // per-file iframe spawn and module re-import. vitest-browser-svelte
-          // unmounts components between tests, so the DOM does not accumulate.
-          isolate: false,
           setupFiles: ["./vitest-setup-client.ts"],
         },
       },
@@ -46,9 +47,6 @@ export default defineConfig({
         test: {
           name: "ssr",
           environment: "node",
-          // Worker reuse across files; the per-file fork respawn is pure
-          // overhead. Browser projects stay isolated (see the client project).
-          isolate: false,
           include: ["src/**/*.ssr.test.{js,ts}"],
         },
       },
@@ -57,9 +55,6 @@ export default defineConfig({
         test: {
           name: "server",
           environment: "node",
-          // Worker reuse across files; the per-file fork respawn is pure
-          // overhead. Browser projects stay isolated (see the client project).
-          isolate: false,
           include: ["src/**/*.test.{js,ts}"],
           exclude: [
             "src/**/*.svelte.test.{js,ts}",

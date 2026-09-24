@@ -155,22 +155,26 @@ describe("Breadcrumbs component", () => {
       await expectAreCollapsed(page);
 
       // Make sure the collapsed segments are not accessible and all links are in the document
-      expect(page.getByRole("link").elements()).toHaveLength(
-        collapseProps.segments.length,
-      );
+      // (the collapse lands over several resize rounds, so the counts are polled)
+      await expect
+        .poll(() => page.getByRole("link").elements())
+        .toHaveLength(collapseProps.segments.length);
       // Make sure that all of the segments are collapsed
-      expect(
-        collapsedLocator(page).getByRole("listitem").elements(),
-      ).toHaveLength(collapseProps.segments.length);
+      await expect
+        .poll(() => collapsedLocator(page).getByRole("listitem").elements())
+        .toHaveLength(collapseProps.segments.length);
 
       // Expand the container
       pageContext.viewport(1000, 800);
 
       // Check that no segments are collapsed again
       await expectNoCollapsed(page);
-      expect(page.getByRole("link").elements()).toHaveLength(
-        collapseProps.segments.length,
-      );
+      await expect
+        .poll(() => page.getByRole("link").elements())
+        .toHaveLength(collapseProps.segments.length);
+
+      // The page is shared across files; put the default viewport back.
+      pageContext.viewport(1280, 720);
     });
 
     it("properly works with the numeric collapse value", async () => {
@@ -185,9 +189,12 @@ describe("Breadcrumbs component", () => {
 
       // Check that maxNumCollapsed segments are collapsed
       await expectAreCollapsed(page);
-      expect(
-        collapsedLocator(page).getByRole("listitem").elements(),
-      ).toHaveLength(collapseProps.segments.length - minNumExpanded);
+      await expect
+        .poll(() => collapsedLocator(page).getByRole("listitem").elements())
+        .toHaveLength(collapseProps.segments.length - minNumExpanded);
+
+      // The page is shared across files; put the default viewport back.
+      pageContext.viewport(1280, 720);
     });
 
     describe("edge cases", () => {
@@ -214,9 +221,12 @@ describe("Breadcrumbs component", () => {
         pageContext.viewport(100, 800);
 
         await expectAreCollapsed(page);
-        expect(
-          collapsedLocator(page).getByRole("listitem").elements(),
-        ).toHaveLength(collapseProps.segments.length);
+        await expect
+          .poll(() => collapsedLocator(page).getByRole("listitem").elements())
+          .toHaveLength(collapseProps.segments.length);
+
+        // The page is shared across files; put the default viewport back.
+        pageContext.viewport(1280, 720);
       });
     });
   });
@@ -253,9 +263,12 @@ describe("Breadcrumbs component", () => {
         pageContext.viewport(100, 800);
 
         await expectAreCollapsed(page);
-        expect(
-          page.getByRole("list").getByRole("listitem").elements(),
-        ).toHaveLength(segments.length);
+        await expect
+          .poll(() => page.getByRole("list").getByRole("listitem").elements())
+          .toHaveLength(segments.length);
+
+        // The page is shared across files; put the default viewport back.
+        pageContext.viewport(1280, 720);
       });
     });
 
@@ -313,6 +326,9 @@ describe("Breadcrumbs component", () => {
             }),
           )
           .toHaveFocus();
+
+        // The page is shared across files; put the default viewport back.
+        pageContext.viewport(1280, 720);
       });
     });
   });
