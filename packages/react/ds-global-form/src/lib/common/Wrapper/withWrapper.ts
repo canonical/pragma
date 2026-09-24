@@ -33,8 +33,9 @@ const withWrapper = <
     WrapperComponent = Wrapper,
     ...props
   }: WrappedComponentPropsInternal<ComponentProps>): React.ReactElement {
-    // We apply the middleware to the component in reverse orderso
-    // so that the first middleware in the array is the first to be applied to the component
+    // We apply the middleware to the component in reverse array order: the LAST
+    // entry is applied to the component first, so it ends up innermost (closest
+    // to the input), and the FIRST entry is applied last, so it ends up outermost.
 
     const ExtendedComponent = useMemo(
       () =>
