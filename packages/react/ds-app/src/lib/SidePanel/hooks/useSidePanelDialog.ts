@@ -19,10 +19,8 @@ import type {
  * class name, the remaining native attributes, and the event wiring.
  */
 const useSidePanelDialog = ({
-  disableEscapeClose = false,
   onKeyDown,
   onClose,
-  onOpenChange,
   ref,
   className,
   ...dialogProps
@@ -56,8 +54,7 @@ const useSidePanelDialog = ({
     dialog.show();
     openRef.current = true;
     dialog.focus();
-    onOpenChange?.(true);
-  }, [onOpenChange]);
+  }, []);
 
   // The provider keeps its own dialog ref (show()/close() run through it)
   // and exposes the imperative handle — not the raw element — to a consumer
@@ -119,22 +116,18 @@ const useSidePanelDialog = ({
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDialogElement>) => {
       onKeyDown?.(event);
-      if (
-        !disableEscapeClose &&
-        event.key === "Escape" &&
-        !event.defaultPrevented
-      ) {
+      if (event.key === "Escape" && !event.defaultPrevented) {
         close();
       }
     },
-    [onKeyDown, disableEscapeClose, close],
+    [onKeyDown, close],
   );
 
   /**
    * Every close funnels through the platform's `close` event — the handle's
    * `close()`, a dismissal gesture, or a path the component did not drive at
-   * all (a `<form method="dialog">` submits one). Tidy up the open state, hand
-   * focus back, and report it, in that one place.
+   * all (a `<form method="dialog">` submits one). Tidy up the open state and
+   * hand focus back in that one place.
    */
   const handleClose = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
@@ -148,9 +141,8 @@ const useSidePanelDialog = ({
         previouslyFocusedRef.current?.focus();
       }
       previouslyFocusedRef.current = null;
-      onOpenChange?.(false);
     },
-    [onClose, onOpenChange],
+    [onClose],
   );
 
   return { className, dialogProps, dialogRef, handleKeyDown, handleClose };

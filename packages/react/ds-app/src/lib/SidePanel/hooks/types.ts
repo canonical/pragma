@@ -19,12 +19,7 @@ export type UseSidePanelDialogResult = {
   /** Every remaining native dialog attribute, spread onto the element. */
   dialogProps: Omit<
     UseSidePanelDialogProps,
-    | "disableEscapeClose"
-    | "onKeyDown"
-    | "onClose"
-    | "onOpenChange"
-    | "ref"
-    | "className"
+    "onKeyDown" | "onClose" | "ref" | "className"
   >;
   /** The dialog the provider renders; open/close run through it. */
   dialogRef: RefObject<HTMLDialogElement | null>;

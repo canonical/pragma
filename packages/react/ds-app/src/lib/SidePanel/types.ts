@@ -29,20 +29,6 @@ export interface SidePanelHandle {
 
 type OwnProps = {
   /**
-   * Called whenever the panel's open state changes, in either direction and
-   * from any cause — the handle, the header's close button, Escape, or the
-   * platform itself. Informational: the panel reports what happened, it does
-   * not ask permission. Consumers who mirror the state (a toggle button's
-   * pressed state, say) follow this; the panel never reads it back.
-   */
-  onOpenChange?: (open: boolean) => void;
-  /**
-   * Stop Escape from closing the panel. Defaults to false, so Escape closes
-   * the panel while focus is inside it. Focus outside the panel belongs to the
-   * application, so Escape there is deliberately not intercepted.
-   */
-  disableEscapeClose?: boolean;
-  /**
    * Panel contents. Compose from `SidePanel.Header`, `SidePanel.Content` and
    * `SidePanel.Footer`; the header and footer stay put while the content
    * scrolls. The header is required: its title names the panel, and the
@@ -66,10 +52,9 @@ type OwnProps = {
  * Props for the SidePanel provider.
  *
  * The panel is opened and closed through the imperative `ref` handle, not an
- * `open` prop: the dialog's native open state is the single source of truth,
- * and every change is reported through `onOpenChange`. Do not set the native
- * `open` attribute — it is omitted from the surface precisely so the panel's
- * bookkeeping (focus, reporting) cannot be bypassed.
+ * `open` prop: the dialog's native open state is the single source of truth.
+ * Do not set the native `open` attribute — it is omitted from the surface
+ * precisely so the panel's bookkeeping (focus handoff) cannot be bypassed.
  *
  * Props extend the native props of the `<dialog>` root, so every attribute it
  * accepts (data-*, aria-*, event handlers, …) reaches the DOM.
