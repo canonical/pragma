@@ -44,6 +44,9 @@ const Header = ({
           className="close"
           icon="close"
           importance="tertiary"
+          // A typeless <button> is type="submit": inside a <form> the panel
+          // would submit it. This control only closes the panel.
+          type="button"
           onClick={context.close}
           // Icon-only, so the accessible name has to come from here — Button
           // warns in development when it is missing.
