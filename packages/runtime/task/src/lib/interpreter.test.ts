@@ -14,7 +14,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { parallel, sequence_ } from "./combinators.js";
 import {
   executeEffect,
@@ -1986,6 +1986,12 @@ describe("matchesPattern — the fallback glob matcher", () => {
 
 describe("WriteFile lands atomically", () => {
   const tmpRoot = mkdtempSync(join(tmpdir(), "task-atomic-"));
+  // Every root this suite creates, removed after the run: the effects write
+  // for real, and nothing else sweeps the temp dir.
+  const roots = [tmpRoot];
+  afterAll(() => {
+    for (const root of roots) rmSync(root, { recursive: true, force: true });
+  });
 
   it("writes through a symlink instead of replacing it", async () => {
     // Dotfile setups symlink a config into a checked-out repository. A rename
@@ -2031,6 +2037,7 @@ describe("WriteFile lands atomically", () => {
 
   it("leaves no temp file beside the target", async () => {
     const dir = mkdtempSync(join(tmpdir(), "task-atomic-clean-"));
+    roots.push(dir);
     await runTask(writeFile(join(dir, "a.json"), "{}\n"));
     expect(readdirSync(dir)).toEqual(["a.json"]);
   });
@@ -2041,6 +2048,7 @@ describe("WriteFile lands atomically", () => {
     // A directory standing where the file should go makes the rename fail
     // after the temp file exists — the one ordering that can leave one.
     const dir = mkdtempSync(join(tmpdir(), "task-atomic-fail-"));
+    roots.push(dir);
     const occupied = join(dir, "taken.json");
     mkdirSync(occupied);
     writeFileSync(join(occupied, "keep.txt"), "untouched\n");

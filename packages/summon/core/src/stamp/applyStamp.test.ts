@@ -1,5 +1,8 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { type Effect, mkdir, pure, task, writeFile } from "@canonical/task";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import type StampConfig from "../types/StampConfig.js";
 import applyStamp from "./applyStamp.js";
 import runTaskWithStamp from "./runTaskWithStamp.js";
@@ -257,6 +260,11 @@ describe("applyStamp", () => {
 // =============================================================================
 
 describe("runTaskWithStamp", () => {
+  // Unique per run and removed afterwards: fixed /tmp paths survived crashed
+  // runs and leaked state into the next one.
+  const tempRoot = mkdtempSync(join(tmpdir(), "summon-stamp-"));
+  afterAll(() => rmSync(tempRoot, { recursive: true, force: true }));
+
   it("runs a pure task without stamp option", async () => {
     const result = await runTaskWithStamp(pure(42));
     expect(result).toBe(42);
@@ -271,7 +279,7 @@ describe("runTaskWithStamp", () => {
 
   it("stamps WriteFile effect content when stamp is provided", async () => {
     const captured: Effect[] = [];
-    const task = writeFile("/tmp/test-stamp-output.ts", "const x = 1;");
+    const task = writeFile(join(tempRoot, "output.ts"), "const x = 1;");
 
     await runTaskWithStamp(task, {
       stamp,
@@ -290,7 +298,7 @@ describe("runTaskWithStamp", () => {
 
   it("calls user-provided onEffectStart after stamping", async () => {
     const userCallback = vi.fn();
-    const task = writeFile("/tmp/test-stamp-cb.ts", "hello");
+    const task = writeFile(join(tempRoot, "cb.ts"), "hello");
 
     await runTaskWithStamp(task, {
       stamp,
@@ -305,8 +313,8 @@ describe("runTaskWithStamp", () => {
   it("does not modify non-WriteFile effects", async () => {
     const captured: Effect[] = [];
     // mkdir produces a MakeDir effect, not WriteFile
-    const mkdirTask = task(mkdir("/tmp/test-stamp-dir"))
-      .chain(() => task(writeFile("/tmp/test-stamp-dir/out.ts", "code")))
+    const mkdirTask = task(mkdir(join(tempRoot, "dir")))
+      .chain(() => task(writeFile(join(tempRoot, "dir", "out.ts"), "code")))
       .unwrap();
 
     await runTaskWithStamp(mkdirTask, {

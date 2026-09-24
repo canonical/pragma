@@ -14,7 +14,7 @@
  * and nothing would notice.
  */
 
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import execute from "../../execute/execute.js";
@@ -46,11 +46,13 @@ function freshCwd(): string {
  *
  * @param run - The generator, its answers, and an optional target directory.
  * @returns The generated tree, snapshotted.
- * @note Impure — writes files and reads them back.
+ * @note Impure — writes files and reads them back. A directory it created
+ *   itself is removed once snapshotted; a caller-supplied one is left alone.
  */
 export async function produceReference(
   run: ReferenceRun,
 ): Promise<TreeSnapshot> {
+  const ownsCwd = run.cwd === undefined;
   const cwd = run.cwd ?? freshCwd();
   const answers = { ...run.answers };
   await runGeneratorTask(
@@ -64,5 +66,7 @@ export async function produceReference(
       onLog: () => {},
     },
   );
-  return snapshotTree(cwd);
+  const snapshot = snapshotTree(cwd);
+  if (ownsCwd) rmSync(cwd, { recursive: true, force: true });
+  return snapshot;
 }

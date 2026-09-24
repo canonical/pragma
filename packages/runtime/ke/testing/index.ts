@@ -1,4 +1,7 @@
-export { default as createTestStore } from "./createTestStore.js";
+export {
+  default as createTestStore,
+  removeTestStoreDirs,
+} from "./createTestStore.js";
 export {
   COMPONENTS_TTL,
   EMPTY_TTL,

@@ -1,12 +1,23 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { loadTemplate, loadTemplateSync } from "./loadTemplate.js";
+
+// Every temp dir this file creates, removed after the run.
+const tempRoots: string[] = [];
+const tempDir = (prefix: string): string => {
+  const dir = mkdtempSync(path.join(tmpdir(), prefix));
+  tempRoots.push(dir);
+  return dir;
+};
+afterAll(() => {
+  for (const dir of tempRoots) rmSync(dir, { recursive: true, force: true });
+});
 
 /** A real file on disk, since that is the only thing this loader reads. */
 function writeTemplate(content: string): string {
-  const dir = mkdtempSync(path.join(tmpdir(), "load-template-"));
+  const dir = tempDir("load-template-");
   const file = path.join(dir, "component.ts.ejs");
   writeFileSync(file, content);
   return file;

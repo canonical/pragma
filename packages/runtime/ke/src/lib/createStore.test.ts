@@ -2,7 +2,9 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import createTestStore from "../../testing/createTestStore.js";
+import createTestStore, {
+  removeTestStoreDirs,
+} from "../../testing/createTestStore.js";
 import {
   MINIMAL_TTL,
   ORGANIZATIONS_TTL,
@@ -1257,5 +1259,39 @@ describe("PluginContext.load() — default graph", () => {
       sparql`ASK { <http://example.org/defaultLoaded> <http://example.org/via> "ctx.load-no-graph" }`,
     );
     expect((result as AskResult).result).toBe(true);
+  });
+});
+
+describe("createTestStore temp-dir bookkeeping", () => {
+  it("removes every handed-out dir on removeTestStoreDirs, then no-ops", async () => {
+    const abandoned = await createTestStore();
+    const cleaned = await createTestStore();
+    cleaned.cleanup();
+
+    removeTestStoreDirs();
+
+    expect(existsSync(abandoned.tmpDir)).toBe(false);
+    expect(existsSync(cleaned.tmpDir)).toBe(false);
+
+    // The set is drained, so a second drain is a no-op — this is the shape
+    // the process-exit hook relies on when cleanup() already ran.
+    expect(() => removeTestStoreDirs()).not.toThrow();
+  });
+
+  it("leaves no dir behind when the store boot rejects", async () => {
+    const failing = definePlugin({
+      name: "failing-boot",
+      onReady(): void {
+        throw new Error("boot refused");
+      },
+    });
+
+    // The dir is written before the boot is attempted, but a rejected call
+    // hands back no cleanup — the helper must remove it itself. The
+    // rejection (not a global /tmp scan: workers run in parallel) is the
+    // observable contract of that path.
+    await expect(createTestStore({ plugins: [failing] })).rejects.toThrow(
+      "boot refused",
+    );
   });
 });
