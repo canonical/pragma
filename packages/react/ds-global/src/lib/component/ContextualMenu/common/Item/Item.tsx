@@ -28,11 +28,13 @@ const Item = ({
     displayItemsType,
     Component,
     items,
+    dialog,
     "aria-label": ariaLabel,
   } = item;
 
-  // An item with children is a submenu trigger; it shows a trailing caret.
+  // Both submenu and dialog launchers reveal another anchored surface.
   const hasSubmenu = !!items?.length;
+  const hasAttachedSurface = hasSubmenu || !!dialog;
 
   // A submenu parent is NOT selectable — activating it opens its submenu
   // (handled by the navigation hook's ArrowRight/click), it does not fire
@@ -81,10 +83,9 @@ const Item = ({
       {icon ? <span className="icon">{icon}</span> : null}
       <span className="label">{label}</span>
       {slot ? <span className="slot">{slot}</span> : null}
-      {/* Submenu items show a trailing caret (Canonical chevron-right icon; a
-            plain slot and a submenu caret are mutually exclusive in the Figma
-            spec). It is mirrored to point left in RTL via CSS. */}
-      {hasSubmenu ? (
+      {/* A chevron signals that activating this item opens another surface.
+          The dialog launcher keeps aria-haspopup="dialog", not "menu". */}
+      {hasAttachedSurface ? (
         <span className="caret" aria-hidden="true">
           <Icon icon="chevron-right" />
         </span>

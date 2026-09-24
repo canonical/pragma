@@ -102,7 +102,7 @@
       color: var(--contextual-menu-item-slot-color);
     }
 
-    /* The submenu caret sits on the trailing edge in a fixed icon box (Figma:
+    /* The submenu/dialog chevron sits on the trailing edge in a fixed icon box (Figma:
        16px chevron in a 24px-tall wrapper). It always follows the reading
        direction — chevron-right in LTR, mirrored to point left in RTL — rather
        than flipping per-item with the side the submenu opens on, so sibling carets

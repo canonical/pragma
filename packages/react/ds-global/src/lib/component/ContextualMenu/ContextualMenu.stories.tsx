@@ -247,7 +247,8 @@ const StatusDialog = ({ close }: { close: () => void }) => {
 
 /**
  * An aggregate Filters menu launches a separate non-modal dialog anchored to
- * each category item. The search and checkboxes are not children of role=menu.
+ * each category item. Their chevrons signal the attached surface, while the
+ * search and checkboxes remain outside role=menu.
  * Escape first closes the dialog and returns to Status; a second closes Filters.
  */
 export const MenuItemDialog: Story = {

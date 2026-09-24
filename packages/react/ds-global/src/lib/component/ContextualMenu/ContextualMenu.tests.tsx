@@ -644,6 +644,22 @@ describe("ContextualMenu", () => {
       { key: "refresh", label: "Refresh" },
     ];
 
+    it("shows a trailing chevron for a dialog launcher but not a command", () => {
+      render(<ContextualMenu items={dialogItems}>Filters</ContextualMenu>);
+      fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+      const launcher = screen.getByRole("menuitem", { name: "Status" });
+      expect(launcher.querySelector(".caret use")).toHaveAttribute(
+        "href",
+        "/icons/chevron-right.svg#chevron-right",
+      );
+      expect(
+        screen
+          .getByRole("menuitem", { name: "Refresh" })
+          .querySelector(".caret"),
+      ).toBeNull();
+      expect(launcher).toHaveAttribute("aria-haspopup", "dialog");
+    });
+
     it("keeps controls outside menu semantics and closes in Escape order", async () => {
       render(<ContextualMenu items={dialogItems}>Filters</ContextualMenu>);
       const trigger = screen.getByRole("button", { name: "Filters" });
