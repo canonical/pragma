@@ -22,7 +22,7 @@ const componentCssClassName = "ds cards subgrid";
  * tracks. See `styles.css` for the full model.
  *
  * **`cardSpan`** is the number of master columns each card spans (not a pixel
- * width) — use multiples of 2/4 so cards tile evenly into the 4/8/12-column
+ * width) — use multiples of 2/4 so cards tile evenly into the 4/8/16-column
  * responsive grid.
  *
  * @example

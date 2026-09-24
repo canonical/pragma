@@ -3,7 +3,7 @@
  * ┌─────────────────────────────────────────────────────────────┐
  * │  Three grid modes                                           │
  * ├──────────────┬──────────────────────────────────────────────┤
- * │ .responsive  │ Breakpoint-driven: 4-col / 8-col / 12-col   │
+ * │ .responsive  │ Breakpoint-driven: 4-col / 8-col / 16-col    │
  * │ .intrinsic   │ Fluid auto-fill, groups of 4 columns         │
  * │ (bare)       │ No preset — bring your own columns            │
  * └──────────────┴──────────────────────────────────────────────┘
@@ -25,7 +25,7 @@
  * Breakpoints (responsive mode):
  *   < 768px          4 columns  (mobile)
  *   768px – 1279px   8 columns  (tablet)
- *   ≥ 1280px         12 columns (desktop)
+ *   ≥ 1280px         16 columns (desktop)
  *
  * Relationship to spacing architecture:
  *   The grid provides horizontal structure. Vertical spacing between
@@ -36,9 +36,9 @@
  *
  * Usage examples:
  *
- *   <!-- Responsive 12-column layout -->
+ *   <!-- Responsive 16-column layout -->
  *   <div class="grid responsive">
- *     <main style="grid-column: span 8">Content</main>
+ *     <main style="grid-column: span 12">Content</main>
  *     <aside style="grid-column: span 4">Sidebar</aside>
  *   </div>
  *
@@ -51,7 +51,7 @@
  *   <!-- Subgrid for aligned form fields -->
  *   <div class="grid responsive">
  *     <form class="subgrid">
- *       <div class="subgrid" style="grid-column: span 6">
+ *       <div class="subgrid" style="grid-column: span 8">
  *         <label>Name</label>
  *         <input />
  *       </div>
@@ -112,7 +112,7 @@
     }
 
     @media (min-width: 1280px) {
-      --modifier-grid-template: repeat(12, 1fr);
+      --modifier-grid-template: repeat(16, 1fr);
     }
   }
 

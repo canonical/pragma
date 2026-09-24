@@ -28,10 +28,10 @@ export const ResponsiveGrid: Story = {
   render: () => (
     <div className="grid responsive" style={{ padding: "var(--grid-margin)" }}>
       {cell("span 4", "span 4")}
+      {cell("span 12", "span 12")}
       {cell("span 8", "span 8")}
-      {cell("span 6", "span 6")}
-      {cell("span 6", "span 6")}
-      {cell("span 12", "1 / -1")}
+      {cell("span 8", "span 8")}
+      {cell("span 16", "1 / -1")}
     </div>
   ),
 };
@@ -80,8 +80,8 @@ export const SubgridLayout: Story = {
   render: () => (
     <div className="grid responsive" style={{ padding: "var(--grid-margin)" }}>
       <section style={{ gridColumn: "1 / -1" }} className="subgrid">
-        <h2 style={{ gridColumn: "1 / 4" }}>Section title</h2>
-        <div style={{ gridColumn: "4 / -1" }}>
+        <h2 style={{ gridColumn: "1 / 5" }}>Section title</h2>
+        <div style={{ gridColumn: "5 / -1" }}>
           Content aligned to the same column tracks as the parent grid.
         </div>
       </section>
@@ -102,7 +102,7 @@ export const SingleGridSubgridEverywhere: Story = {
 
       <nav
         style={{
-          gridColumn: "1 / 4",
+          gridColumn: "1 / 5",
           display: "grid",
           gap: "var(--space-050)",
           alignContent: "start",
@@ -113,7 +113,7 @@ export const SingleGridSubgridEverywhere: Story = {
         <Button importance="tertiary">Networks</Button>
       </nav>
 
-      <main style={{ gridColumn: "4 / -1" }} className="subgrid">
+      <main style={{ gridColumn: "5 / -1" }} className="subgrid">
         <section style={{ gridColumn: "1 / -1" }} className="subgrid">
           <h2 style={{ gridColumn: "1 / -1", margin: 0 }}>Machines</h2>
           <div
