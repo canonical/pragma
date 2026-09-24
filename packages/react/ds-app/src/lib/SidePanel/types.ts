@@ -63,7 +63,7 @@ type OwnProps = {
 };
 
 /**
- * Props for SidePanel.
+ * Props for the SidePanel provider.
  *
  * The panel is opened and closed through the imperative `ref` handle, not an
  * `open` prop: the dialog's native open state is the single source of truth,
@@ -77,5 +77,5 @@ type OwnProps = {
  * The panel is always named by its header's title, so `children` must include
  * a `SidePanel.Header` — the provider warns in development when it does not.
  */
-export type SidePanelProps = OwnProps &
+export type SidePanelProviderProps = OwnProps &
   Omit<ComponentProps<"dialog">, keyof OwnProps | "open">;

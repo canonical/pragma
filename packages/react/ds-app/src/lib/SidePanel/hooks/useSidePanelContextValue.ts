@@ -5,7 +5,8 @@ import type { SidePanelContextValue } from "../types.js";
 /**
  * Build the value the provider puts on its context for the composed
  * subcomponents: the id the header's title carries so it can name the panel,
- * and the `close` action the header's close button calls.
+ * and the `close` action the header's close button calls. Metadata only —
+ * the panel's behaviour lives in `useSidePanelDialog`.
  *
  * It holds no state of its own — the dialog's native open state stays the
  * only source of truth. The value is memoised so consumers of the context do
