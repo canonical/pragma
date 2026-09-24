@@ -91,14 +91,22 @@
     box-shadow: var(--side-panel-box-shadow);
 
     /*
-      The panel is focused when it opens so that reading starts inside it, but it
-      is a container rather than a control: a focus ring drawn around the whole
-      panel reads as a border. Suppressed for pointer focus only — a keyboard
-      user must still be able to see where focus landed, so `:focus-visible`
-      keeps its ring. Its focusable children keep their own either way.
+      The panel is focused when it opens so that reading starts inside it, but
+      it is a container rather than a control: a ring drawn for a pointer
+      click would read as a border, so pointer focus gets none. A keyboard
+      user must still see where focus landed, so `:focus-visible` draws the
+      panel's own ring — the same tokens as the content pane, and inset for
+      the same reason: the panel spans the viewport edges, so an outset ring
+      would be clipped. Its focusable children keep their own either way.
     */
-    &:focus {
+    &:focus:not(:focus-visible) {
       outline: none;
+    }
+
+    &:focus-visible {
+      outline: var(--side-panel-focus-ring-width) solid
+        var(--side-panel-color-focus-ring);
+      outline-offset: calc(-1 * var(--side-panel-focus-ring-width));
     }
 
     /*
