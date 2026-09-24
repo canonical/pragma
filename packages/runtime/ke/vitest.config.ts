@@ -5,6 +5,8 @@ export default defineConfig({
     globals: true,
     include: ["src/**/*.test.ts"],
     environment: "node",
+    // Worker reuse across files; the per-file fork respawn is pure overhead.
+    isolate: false,
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts", "testing/**/*.ts"],

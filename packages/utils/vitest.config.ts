@@ -6,6 +6,8 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     test: {
+      // Worker reuse across files; the per-file fork respawn is pure overhead.
+      isolate: false,
       projects: [
         {
           test: {

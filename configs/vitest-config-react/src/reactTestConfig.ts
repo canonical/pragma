@@ -68,6 +68,14 @@ export interface ReactTestConfigOptions {
    * threshold.
    */
   coverage?: CoverageOption;
+  /**
+   * Per-file worker isolation. Defaults to `false` (worker reuse): these
+   * suites are side-effect free per test and re-run their setup files per
+   * file, so forking a fresh worker per file was pure spawn overhead. Pass
+   * `true` for a package whose files leak DOM or module state into whichever
+   * file the shared worker runs next.
+   */
+  isolate?: boolean;
   /** Setup files (e.g. `["./vitest.setup.ts"]`); omitted when empty. */
   setupFiles?: string[];
   /**
@@ -149,6 +157,7 @@ export const reactTestConfig = ({
   environment = "jsdom",
   ssr = false,
   coverage = false,
+  isolate = false,
   setupFiles,
   plugins,
 }: ReactTestConfigOptions): TestConfig => {
@@ -163,6 +172,9 @@ export const reactTestConfig = ({
     name: "client",
     environment,
     globals: true,
+    // Worker reuse across test files unless the package opts back into
+    // per-file isolation (see the `isolate` option).
+    isolate,
     ...(hasSetup ? { setupFiles } : {}),
     include: globs.flatMap((g) => [`src/**/*.${g}.ts`, `src/**/*.${g}.tsx`]),
     ...(ssr ? { exclude: globs.map((g) => `src/**/*.ssr.${g}.tsx`) } : {}),
@@ -184,6 +196,8 @@ export const reactTestConfig = ({
   const ssrTest: TestConfig = {
     name: "ssr",
     environment: "node",
+    // Worker reuse, as in the client project above.
+    isolate,
     include: globs.map((g) => `src/**/*.ssr.${g}.tsx`),
   };
 

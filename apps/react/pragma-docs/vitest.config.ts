@@ -15,6 +15,9 @@ export default mergeConfig(
       setupFiles: ["./vitest.setup.ts"],
       // Repo convention: test files are named *.tests.ts(x)
       include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
+      // Worker reuse across files; the per-file fork respawn is pure overhead
+      // across a suite of this size (the app's ~100 test files).
+      isolate: false,
       coverage: {
         provider: "v8",
         // The denominator is the SOURCE TREE, not the import graph. Without

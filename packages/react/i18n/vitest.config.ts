@@ -10,6 +10,9 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   test: {
+    // Worker reuse across files; the per-file fork respawn is pure overhead.
+    // Inherited by both the client and the ssr project below.
+    isolate: false,
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],

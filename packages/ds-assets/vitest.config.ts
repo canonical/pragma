@@ -9,6 +9,8 @@ export default mergeConfig(
       environment: "jsdom",
       globals: true,
       include: ["src/**/*.test.ts"],
+      // Worker reuse across files; the per-file fork respawn is pure overhead.
+      isolate: false,
     },
   }),
 );

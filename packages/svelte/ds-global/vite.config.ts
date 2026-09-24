@@ -29,6 +29,9 @@ export default defineConfig({
         test: {
           name: "ssr",
           environment: "node",
+          // Worker reuse across files; the per-file fork respawn is pure
+          // overhead. Browser projects stay isolated (see the client project).
+          isolate: false,
           include: ["src/**/*.ssr.test.{js,ts}"],
         },
       },
@@ -37,6 +40,9 @@ export default defineConfig({
         test: {
           name: "server",
           environment: "node",
+          // Worker reuse across files; the per-file fork respawn is pure
+          // overhead. Browser projects stay isolated (see the client project).
+          isolate: false,
           include: ["src/**/*.test.{js,ts}"],
           exclude: [
             "src/**/*.svelte.test.{js,ts}",
