@@ -2,15 +2,14 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import createTestStore, {
-  removeTestStoreDirs,
-} from "../../testing/createTestStore.js";
+import createTestStore from "../../testing/createTestStore.js";
 import {
   MINIMAL_TTL,
   ORGANIZATIONS_TTL,
   PEOPLE_TTL,
 } from "../../testing/fixtures.js";
 import { registerMatchers } from "../../testing/registerMatchers.js";
+import { removeTestStoreDirs } from "../../testing/storeTempDirs.js";
 import type { TestStoreResult } from "../../testing/types.js";
 import createStore from "./createStore.js";
 import definePlugin from "./definePlugin.js";

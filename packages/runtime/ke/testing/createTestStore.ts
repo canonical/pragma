@@ -4,31 +4,8 @@ import { join } from "node:path";
 import createStore from "../src/lib/createStore.js";
 import type { SourceSpec, StoreConfig } from "../src/lib/types.js";
 import { PEOPLE_TTL } from "./fixtures.js";
+import { trackTestStoreDir, untrackTestStoreDir } from "./storeTempDirs.js";
 import type { TestStoreOptions, TestStoreResult } from "./types.js";
-
-// Every temp dir this module hands out. Removed at process exit so a caller
-// that forgets cleanup() cannot leak; cleanup() drops its dir from the set.
-const createdDirs = new Set<string>();
-
-/**
- * Remove every temp dir this module has handed out and clear the set.
- *
- * Registered as a process-exit hook by {@link createTestStore}, so a caller
- * that forgets `cleanup()` cannot leak its dir; also exported so a process
- * that manages its own lifecycle (or a test) can drain the set on demand.
- */
-export function removeTestStoreDirs(): void {
-  for (const dir of createdDirs) {
-    try {
-      rmSync(dir, { recursive: true, force: true });
-    } catch {
-      // Best effort — a caller's cleanup() may have raced us to it.
-    }
-  }
-  createdDirs.clear();
-}
-
-process.on("exit", removeTestStoreDirs);
 
 /**
  * Create a test store from TTL string(s), optionally with named graphs.
@@ -61,7 +38,7 @@ export default async function createTestStore(
     `ke-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   );
   mkdirSync(tmpDir, { recursive: true });
-  createdDirs.add(tmpDir);
+  trackTestStoreDir(tmpDir);
 
   const sources: SourceSpec[] = [];
   let fileIndex = 0;
@@ -107,14 +84,14 @@ export default async function createTestStore(
     // The dir was written before the store was attempted; a boot that
     // rejects (e.g. a failing plugin) must not strand it — no cleanup
     // function escapes a rejected call.
-    createdDirs.delete(tmpDir);
+    untrackTestStoreDir(tmpDir);
     rmSync(tmpDir, { recursive: true, force: true });
     throw error;
   }
 
   const cleanup = () => {
     store.dispose();
-    createdDirs.delete(tmpDir);
+    untrackTestStoreDir(tmpDir);
     try {
       rmSync(tmpDir, { recursive: true, force: true });
     } catch {

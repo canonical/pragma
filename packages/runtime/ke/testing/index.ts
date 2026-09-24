@@ -1,7 +1,4 @@
-export {
-  default as createTestStore,
-  removeTestStoreDirs,
-} from "./createTestStore.js";
+export { default as createTestStore } from "./createTestStore.js";
 export {
   COMPONENTS_TTL,
   EMPTY_TTL,
@@ -13,6 +10,7 @@ export {
   STANDARDS_TTL,
 } from "./fixtures.js";
 export { registerMatchers } from "./registerMatchers.js";
+export { removeTestStoreDirs } from "./storeTempDirs.js";
 export type {
   GraphSource,
   TestStoreOptions,

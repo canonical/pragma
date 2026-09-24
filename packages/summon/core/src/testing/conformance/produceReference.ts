@@ -47,7 +47,8 @@ function freshCwd(): string {
  * @param run - The generator, its answers, and an optional target directory.
  * @returns The generated tree, snapshotted.
  * @note Impure — writes files and reads them back. A directory it created
- *   itself is removed once snapshotted; a caller-supplied one is left alone.
+ *   itself is removed after the run, even if the run throws; a
+ *   caller-supplied one is left alone.
  */
 export async function produceReference(
   run: ReferenceRun,
@@ -55,18 +56,21 @@ export async function produceReference(
   const ownsCwd = run.cwd === undefined;
   const cwd = run.cwd ?? freshCwd();
   const answers = { ...run.answers };
-  await runGeneratorTask(
-    execute(run.generator, { prompt: autoPrompt(answers), params: answers }),
-    {
-      cwd,
-      promptHandler: autoPrompt(answers),
-      onEffectStart: createStampOnEffectStart(
-        createGeneratorStamp(run.generator),
-      ),
-      onLog: () => {},
-    },
-  );
-  const snapshot = snapshotTree(cwd);
-  if (ownsCwd) rmSync(cwd, { recursive: true, force: true });
-  return snapshot;
+  try {
+    await runGeneratorTask(
+      execute(run.generator, { prompt: autoPrompt(answers), params: answers }),
+      {
+        cwd,
+        promptHandler: autoPrompt(answers),
+        onEffectStart: createStampOnEffectStart(
+          createGeneratorStamp(run.generator),
+        ),
+        onLog: () => {},
+      },
+    );
+    return snapshotTree(cwd);
+  } finally {
+    // A run or snapshot that throws must not strand the dir it owns.
+    if (ownsCwd) rmSync(cwd, { recursive: true, force: true });
+  }
 }
