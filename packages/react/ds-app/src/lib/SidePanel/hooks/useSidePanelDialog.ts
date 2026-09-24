@@ -132,6 +132,9 @@ const useSidePanelDialog = ({
   const handleClose = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       onClose?.(event);
+      // A consumer may synchronously reopen from onClose: openPanel has then already re-recorded the
+      // open state and focus origin, so leave its bookkeeping untouched.
+      if (dialogRef.current?.open) return;
       openRef.current = false;
       const dialog = dialogRef.current;
       // Hand focus back only if it is still inside the panel; the user may
