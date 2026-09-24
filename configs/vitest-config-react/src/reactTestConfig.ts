@@ -173,6 +173,9 @@ export const reactTestConfig = ({
     // Worker reuse across test files unless the package opts back into
     // per-file isolation (see the `isolate` option).
     isolate,
+    // ~15 jsdom workers on a 16-core host ≈ 5 GB peak; half the cores
+    // bounds it without costing these small suites their wall clock.
+    maxWorkers: "50%",
     ...(hasSetup ? { setupFiles } : {}),
     include: globs.flatMap((g) => [`src/**/*.${g}.ts`, `src/**/*.${g}.tsx`]),
     ...(ssr ? { exclude: globs.map((g) => `src/**/*.ssr.${g}.tsx`) } : {}),
@@ -196,6 +199,7 @@ export const reactTestConfig = ({
     environment: "node",
     // Worker reuse, as in the client project above.
     isolate,
+    maxWorkers: "50%",
     include: globs.map((g) => `src/**/*.ssr.${g}.tsx`),
   };
 
