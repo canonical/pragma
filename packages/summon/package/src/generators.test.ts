@@ -392,7 +392,10 @@ describe("generated Storybook preview", () => {
 // =============================================================================
 
 /** Render the CSS entry template the way the generator does. */
-const renderIndexCss = (name: string): string =>
+const renderIndexCss = (
+  name: string,
+  layer: { componentLayer?: string; layerOrderFrom?: string } = {},
+): string =>
   renderString(
     readFileSync(
       new URL("./templates/index.css.ejs", import.meta.url),
@@ -408,35 +411,44 @@ const renderIndexCss = (name: string): string =>
         withCli: false,
         withPrTemplate: false,
         runInstall: false,
+        ...layer,
       },
       { isMonorepo: false },
     ),
   );
 
-describe("component tier layer in the CSS entry", () => {
-  it("declares its own layer for a sub-tier package", () => {
-    // The styles package's order statement names the five second-level tiers
-    // and cannot know a product's name, so the product declares it, first rule.
-    const css = renderIndexCss("@canonical/react-ds-app-lxd");
+describe("the cascade layer in the CSS entry", () => {
+  it("declares the layer the caller states", () => {
+    const css = renderIndexCss("@acme/widgets", {
+      componentLayer: "acme.widgets",
+    });
 
-    expect(css).toContain("@layer ds.components.apps-lxd;");
     expect(css.replace(/\/\*[\s\S]*?\*\//g, "").trim()).toBe(
-      "@layer ds.components.apps-lxd;",
+      "@layer acme.widgets;",
     );
   });
 
-  it("declares nothing for a second-level tier, which the statement names", () => {
-    for (const name of [
-      "@canonical/react-ds-app",
-      "@canonical/react-ds-docs",
-      "@canonical/react-ds-global",
-      "@canonical/react-ds-global-form",
-    ]) {
-      expect(renderIndexCss(name)).not.toContain("@layer");
-    }
+  it("reads the order first when the caller says where it lives", () => {
+    // A layer takes its place when a browser first meets its name, so a name
+    // met before the order is read sorts below the layers that order declares.
+    const css = renderIndexCss("@acme/widgets", {
+      componentLayer: "acme.widgets",
+      layerOrderFrom: "@acme/styles/layers.css",
+    });
+
+    expect(css.replace(/\/\*[\s\S]*?\*\//g, "").trim()).toBe(
+      ['@import url("@acme/styles/layers.css");', "@layer acme.widgets;"].join(
+        "\n",
+      ),
+    );
   });
 
-  it("declares nothing for a package outside the tier tree", () => {
-    expect(renderIndexCss("@canonical/my-styles")).not.toContain("@layer");
+  it("declares nothing when the caller states no layer", () => {
+    // The generator has no tier tree and no default: a package that says
+    // nothing about layers gets an entry that says nothing about them either.
+    expect(renderIndexCss("@canonical/react-ds-app-lxd")).not.toContain(
+      "@layer",
+    );
+    expect(renderIndexCss("@acme/widgets")).not.toContain("@layer");
   });
 });
