@@ -269,10 +269,13 @@ export const pragmaPage = (
 });
 
 /** The Vanilla-only page: Vanilla alone, in its layer, as the site was before pragma. */
-export const vanillaPage = (vanilla: VanillaVersion): PageSpec => ({
+export const vanillaPage = (
+  vanilla: VanillaVersion,
+  body: string = VANILLA_BLOCK,
+): PageSpec => ({
   root: "",
   styles: [vanillaCss[vanilla]],
-  body: VANILLA_BLOCK,
+  body,
 });
 
 /**

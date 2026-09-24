@@ -47,11 +47,13 @@ Pragma's own statement, the same list without `vanilla.escapes`, `vanilla`, `bou
 /* abridged: the shipped file lists every WebKit form part Vanilla styles,
    then each Gecko form part in a rule of its own */
 @layer boundary {
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a),
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::before,
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::after,
-  :where(.ds, .ds *)::placeholder {
-    all: revert;
+  @scope (.ds) to (:scope.ds-permeable > *) {
+    :where(:scope, :scope *):where(:not(svg, svg *), svg a),
+    :where(:scope, :scope *):where(:not(svg, svg *), svg a)::before,
+    :where(:scope, :scope *):where(:not(svg, svg *), svg a)::after,
+    :where(:scope, :scope *)::placeholder {
+      all: revert;
+    }
   }
 }
 ```
@@ -79,6 +81,24 @@ The mode bridge lives in the same file. Pragma resolves every colour against `co
 ```
 
 Under a light or paper ancestor that computes to `light`, under a dark ancestor to `dark`, and where no Vanilla mode is set at all to `light dark`, which is pragma's own default.
+
+### Permeable components
+
+Both the boundary and the confined copy answer to the same class, `.ds`, and by default both read it the same way: an island's territory is the root and everything inside it. `ds-permeable` is a second class a root can carry to change what "everything inside it" means for that one root, without touching what `.ds` means anywhere else.
+
+The mechanism is `@scope`'s own donut scope, the same feature described in `@scope`'s own explainer for excluding a nested subtree from an otherwise page-wide scope. Every `@scope (.ds)` block, in `adapter.css`'s boundary and its second boundary, and in each of the three layers `elements.css` confines, carries the same limit:
+
+```css
+@scope (.ds) to (:scope.ds-permeable > *) {
+  …
+}
+```
+
+`:scope.ds-permeable` only matches the scope root, and only when that root itself carries `ds-permeable`; an ordinary island, `.ds` alone, never matches it, so the limit never fires and the block behaves exactly as it did before this existed. Where it does match, `> *` makes the limit every one of the root's own children, and a scope's lower bound is exclusive: a matched limit and everything below it fall outside the scope. Nothing below the root is confined or reverted, while the root itself still is, because a scope's upper bound is always inclusive regardless of what the limit matches.
+
+A pragma component nested inside a `ds-permeable` root is unaffected, and needs no class of its own to say so. It carries `.ds` in its own right, so `@scope (.ds)` opens a second, independent scope rooted at it — the same reopening a nested `.light-scheme` inside a `.dark-scheme` gets in `@scope`'s own docs. That inner scope carries no limit unless the nested component is itself marked `ds-permeable`, so it is a full island exactly as it would be anywhere else.
+
+What this does not do: stop inheritance. The root still declares pragma's font, colour and line height for itself, as any island root does, and those are ordinary inherited CSS properties that reach a plain Vanilla child the same way any parent's declaration reaches any element inside it — `@scope` narrows which rules match an element, not what an element inherits from its ancestors. The README names the practical size of that: content that sets its own typography, which is most Vanilla content, is unaffected; bare text relying on inheritance from further up the page is not what this is for.
 
 ## The confined copy
 
