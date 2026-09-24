@@ -137,7 +137,8 @@ describe.each(VANILLA_VERSIONS)("ds-permeable (Vanilla %s)", (version) => {
           `#${id}`,
           computed(mixed, id),
           computed(vanilla, id),
-          (property) => isLayoutOutput(property) || isPermeableInheritance(property),
+          (property) =>
+            isLayoutOutput(property) || isPermeableInheritance(property),
         ),
       );
     }
@@ -160,7 +161,8 @@ describe.each(VANILLA_VERSIONS)("ds-permeable (Vanilla %s)", (version) => {
           `#${id}`,
           computed(mixed, id),
           computed(vanilla, id),
-          (property) => isLayoutOutput(property) || isPermeableInheritance(property),
+          (property) =>
+            isLayoutOutput(property) || isPermeableInheritance(property),
         ),
       );
     expect(failures).toEqual([]);
