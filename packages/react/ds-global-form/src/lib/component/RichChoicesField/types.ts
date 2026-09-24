@@ -1,15 +1,14 @@
-import type React from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { InputProps } from "../../common/types.js";
-import type { BaseProps } from "../../subcomponent/types.js";
 
 export type RichChoiceOption = {
   value: string;
   /** Freely-shaped label content (text, card, icon, etc.) */
-  label: React.ReactNode;
+  label: ReactNode;
   disabled?: boolean;
 };
 
-type AdditionalRichChoicesProps = {
+type OwnProps = {
   /** Field name shared by every option input in the group */
   name: string;
 
@@ -29,9 +28,10 @@ type AdditionalRichChoicesProps = {
   onChange?: (value: string | string[]) => void;
 };
 
-/** Props for the presentational RichChoices (controlled, no react-hook-form). */
-export type RichChoicesPresentationProps = BaseProps &
-  AdditionalRichChoicesProps;
+/** Props for the presentational RichChoices (controlled, no react-hook-form).
+ * Renders a `<fieldset class="ds form-rich-choices">` as its root. */
+export type RichChoicesPresentationProps = OwnProps &
+  Omit<ComponentProps<"fieldset">, keyof OwnProps>;
 
 /** Props for the react-hook-form-bound RichChoices field. */
 export type RichChoicesFieldProps = InputProps<RichChoicesPresentationProps>;
