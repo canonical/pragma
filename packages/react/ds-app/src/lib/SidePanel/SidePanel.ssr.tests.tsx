@@ -31,6 +31,7 @@ describe("SidePanel SSR", () => {
   it("never paints an open dialog on the server", () => {
     const html = renderToString(
       <SidePanel ref={createRef<SidePanelHandle>()}>
+        <SidePanel.Header>Panel title</SidePanel.Header>
         <SidePanel.Content>Test content</SidePanel.Content>
       </SidePanel>,
     );
@@ -49,7 +50,8 @@ describe("SidePanel SSR", () => {
 
   it("does not claim to be modal", () => {
     const html = renderToString(
-      <SidePanel ref={createRef<SidePanelHandle>()} aria-label="Filters">
+      <SidePanel ref={createRef<SidePanelHandle>()}>
+        <SidePanel.Header>Panel title</SidePanel.Header>
         <SidePanel.Content>Test content</SidePanel.Content>
       </SidePanel>,
     );

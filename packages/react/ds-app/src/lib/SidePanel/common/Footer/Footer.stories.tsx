@@ -1,141 +1,99 @@
 import { Button } from "@canonical/react-ds-global";
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryFn } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import SidePanel from "../../Provider.js";
-import type { SidePanelHandle } from "../../types.js";
+// The stand-in below is a div, not a real <SidePanel>, so it does not pull
+// the panel's own positioning — import its styles here to define the shared
+// tokens and the panel's box.
+import "../../styles.css";
 import Component from "./Footer.js";
 
-/*
-  The story source shown in docs: the footer renders in a real panel, and the
-  callback ref opens it on mount because a story is a static fixture — in an
-  application the open comes from an event handler instead.
-*/
-const openOnMount = `
-  ref={(handle: SidePanelHandle | null) => {
-    handle?.open();
-  }}
-`;
-
-const meta: Meta<typeof Component> = {
+const meta = {
   title: "Components/SidePanel/Footer",
   component: Component,
+  decorators: [
+    (Story) => (
+      /*
+        A plain div standing in for the open panel: the stack layout is
+        scoped to `[open]`, and the panel's fixed positioning and closed
+        transform are undone, so all of it is supplied inline here. The
+        panel's width is what insets the footer's hairline, so the stand-in
+        keeps it.
+      */
+      <div
+        className="ds side-panel"
+        style={{
+          position: "static",
+          transform: "none",
+          display: "flex",
+          flexDirection: "column",
+          // Docked to the inline-end edge like the real panel.
+          marginInlineStart: "auto",
+        }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
   parameters: {
     docs: {
-      story: {
-        // The footer's panel is `position: fixed`: inside its own iframe it
-        // fills the frame and stays contained in the docs page.
-        inline: false,
-        iframeHeight: "12rem",
-      },
+      // The consumer composes the sections on a `SidePanel`, so serve the
+      // consumer-facing snippet explicitly instead of the story's own source.
+      source: { type: "code", language: "tsx" },
     },
   },
-  // The footer renders in a real panel, where its hairline is inset by the
-  // panel's gutter. Header-less, so the panel is named with `aria-label`.
-  render: (args) => (
-    <SidePanel
-      aria-label="Ubuntu Pro subscription"
-      ref={(handle: SidePanelHandle | null) => {
-        handle?.open();
-      }}
-    >
-      <Component {...args} />
-    </SidePanel>
-  ),
-};
+} satisfies Meta<typeof Component>;
 
 export default meta;
-type Story = StoryObj<typeof Component>;
 
 /**
  * Actions align to the end edge. Only the confirming action is
  * `constructive`: the modifier means "this creates or confirms", so a green
  * Cancel would misread.
  */
-export const Default: Story = {
-  args: {
-    children: (
-      <>
-        <Button onClick={fn()}>Cancel</Button>
-        <Button importance="primary" anticipation="constructive" onClick={fn()}>
-          Subscribe
-        </Button>
-      </>
-    ),
-  },
-  parameters: {
-    docs: {
-      source: {
-        code: `
-<SidePanel
-  aria-label="Ubuntu Pro subscription"${openOnMount}
->
-  <SidePanel.Footer>
-    <Button>Cancel</Button>
-    <Button importance="primary" anticipation="constructive">
+export const Default: StoryFn = () => (
+  <Component>
+    <Button onClick={fn()}>Cancel</Button>
+    <Button importance="primary" anticipation="constructive" onClick={fn()}>
       Subscribe
     </Button>
-  </SidePanel.Footer>
-</SidePanel>
-        `,
-      },
+  </Component>
+);
+Default.parameters = {
+  docs: {
+    source: {
+      code: `<SidePanel.Footer>
+  <Button>Cancel</Button>
+  <Button importance="primary" anticipation="constructive">
+    Subscribe
+  </Button>
+</SidePanel.Footer>`,
     },
   },
 };
 
-/** A single action sits at the end edge like any other. */
-export const SingleAction: Story = {
-  args: {
-    children: <Button onClick={fn()}>Close</Button>,
-  },
-  parameters: {
-    docs: {
-      source: {
-        code: `
-<SidePanel
-  aria-label="Ubuntu Pro subscription"${openOnMount}
->
-  <SidePanel.Footer>
-    <Button>Close</Button>
-  </SidePanel.Footer>
-</SidePanel>
-        `,
-      },
-    },
-  },
-};
 
 /** More actions than fit on one line wrap rather than overflow. */
-export const Wrapping: Story = {
-  args: {
-    children: (
-      <>
-        <Button onClick={fn()}>Reset to defaults</Button>
-        <Button onClick={fn()}>Save as draft</Button>
-        <Button onClick={fn()}>Cancel</Button>
-        <Button importance="primary" anticipation="constructive" onClick={fn()}>
-          Save and apply
-        </Button>
-      </>
-    ),
-  },
-  parameters: {
-    docs: {
-      source: {
-        code: `
-<SidePanel
-  aria-label="Ubuntu Pro subscription"${openOnMount}
->
-  <SidePanel.Footer>
-    <Button>Reset to defaults</Button>
-    <Button>Save as draft</Button>
-    <Button>Cancel</Button>
-    <Button importance="primary" anticipation="constructive">
+export const Wrapping: StoryFn = () => (
+  <Component>
+    <Button onClick={fn()}>Reset to defaults</Button>
+    <Button onClick={fn()}>Save as draft</Button>
+    <Button onClick={fn()}>Cancel</Button>
+    <Button importance="primary" anticipation="constructive" onClick={fn()}>
       Save and apply
     </Button>
-  </SidePanel.Footer>
-</SidePanel>
-        `,
-      },
+  </Component>
+);
+Wrapping.parameters = {
+  docs: {
+    source: {
+      code: `<SidePanel.Footer>
+  <Button>Reset to defaults</Button>
+  <Button>Save as draft</Button>
+  <Button>Cancel</Button>
+  <Button importance="primary" anticipation="constructive">
+    Save and apply
+  </Button>
+</SidePanel.Footer>`,
     },
   },
 };

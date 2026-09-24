@@ -15,6 +15,16 @@ describe("SidePanel.Content", () => {
     expect(element.className).toContain("custom-class");
   });
 
+  it("adds the fill class when fill is set", () => {
+    render(<Content fill>Body</Content>);
+    expect(screen.getByText("Body").className).toContain("fill");
+  });
+
+  it("keeps its natural height by default", () => {
+    render(<Content>Body</Content>);
+    expect(screen.getByText("Body").className).not.toContain("fill");
+  });
+
   it("passes through additional props", () => {
     render(<Content data-testid="test-component">Body</Content>);
     expect(screen.getByTestId("test-component")).toBeInTheDocument();

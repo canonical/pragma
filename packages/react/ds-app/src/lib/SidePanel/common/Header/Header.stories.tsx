@@ -1,54 +1,54 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
-import SidePanel from "../../Provider.js";
-import type { SidePanelHandle } from "../../types.js";
+import type { Meta, StoryFn } from "@storybook/react-vite";
+import Context from "../../Context.js";
+// The stand-in below is a div, not a real <SidePanel>, so it does not pull
+// the panel's own positioning — import its styles here to define the shared
+// tokens and the panel's box.
+import "../../styles.css";
 import Component from "./Header.js";
 
-/*
-  The story source shown in docs: the header renders in a real panel, and the
-  callback ref opens it on mount because a story is a static fixture — in an
-  application the open comes from an event handler instead.
-*/
-const openOnMount = `
-  ref={(handle: SidePanelHandle | null) => {
-    handle?.open();
-  }}
-`;
-
-const meta: Meta<typeof Component> = {
+const meta = {
   title: "Components/SidePanel/Header",
   component: Component,
-  args: {
-    children: "Ubuntu Pro",
-  },
+  decorators: [
+    (Story) => (
+      <Context.Provider
+        value={{ close: () => {}, titleId: "side-panel-header-story-title" }}
+      >
+        {/*
+          A plain div standing in for the open panel: the stack layout is
+          scoped to `[open]`, and the panel's fixed positioning and closed
+          transform are undone, so all of it is supplied inline here.
+        */}
+        <div
+          className="ds side-panel"
+          style={{
+            position: "static",
+            transform: "none",
+            display: "flex",
+            blockSize: "24rem",
+            flexDirection: "column",
+            // Docked to the inline-end edge like the real panel.
+            marginInlineStart: "auto",
+          }}
+        >
+          <Story />
+        </div>
+      </Context.Provider>
+    ),
+  ],
   parameters: {
     docs: {
-      story: {
-        // The header's panel is `position: fixed`: inside its own iframe it
-        // fills the frame and stays contained in the docs page.
-        inline: false,
-        iframeHeight: "12rem",
-      },
+      // The consumer composes the sections on a `SidePanel`, so serve the
+      // consumer-facing snippet explicitly instead of the story's own source.
+      source: { type: "code", language: "tsx" },
     },
   },
-  // The header renders in a real panel — its close button is wired through the
-  // real panel context and sits in the panel's own geometry. No scaffolding
-  // around it.
-  render: (args) => (
-    <SidePanel
-      ref={(handle: SidePanelHandle | null) => {
-        handle?.open();
-      }}
-    >
-      <Component {...args} />
-    </SidePanel>
-  ),
-};
+} satisfies Meta<typeof Component>;
 
 export default meta;
-type Story = StoryObj<typeof Component>;
 
 /**
- * Heading at the start, close button at the end.
+ * Title at the start, close button at the end.
  *
  * The title is a `<span>`, not a heading element: headings structure the
  * page's document outline, and a panel opens from anywhere in it, so no
@@ -56,34 +56,23 @@ type Story = StoryObj<typeof Component>;
  * `aria-labelledby` instead, which is what a screen reader announces when the
  * panel opens.
  */
-export const Default: Story = {
-  parameters: {
-    docs: {
-      source: {
-        code: `
-<SidePanel${openOnMount}>
-  <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
-</SidePanel>
-        `,
-      },
+export const Default: StoryFn = () => <Component>Ubuntu Pro</Component>;
+Default.parameters = {
+  docs: {
+    source: {
+      code: `<SidePanel.Header>Ubuntu Pro</SidePanel.Header>`,
     },
   },
 };
 
 /** A panel dismissed only from its footer omits the close button. */
-export const NotDismissible: Story = {
-  args: {
-    undismissible: true,
-  },
-  parameters: {
-    docs: {
-      source: {
-        code: `
-<SidePanel${openOnMount}>
-  <SidePanel.Header undismissible>Ubuntu Pro</SidePanel.Header>
-</SidePanel>
-        `,
-      },
+export const NotDismissible: StoryFn = () => (
+  <Component undismissible>Ubuntu Pro</Component>
+);
+NotDismissible.parameters = {
+  docs: {
+    source: {
+      code: `<SidePanel.Header undismissible>Ubuntu Pro</SidePanel.Header>`,
     },
   },
 };
