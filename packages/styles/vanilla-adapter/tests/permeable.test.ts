@@ -36,6 +36,23 @@ const PERMEABLE_VANILLA_ONLY = `
 </div>`;
 
 /**
+ * A permeable root nested inside an ordinary `.ds` ancestor: the case a
+ * `:scope`-anchored limit misses, because the ancestor's own scope instance
+ * never carries `ds-permeable` and so never finds its limit.
+ */
+const NESTED_PERMEABLE_BLOCK = `
+<div class="ds card" id="nested-perm-outer">
+  <div class="ds grid ds-permeable" id="nested-perm-root">
+    <p id="nested-perm-p">Paragraph</p>
+  </div>
+</div>`;
+
+const NESTED_PERMEABLE_VANILLA_ONLY = `
+<div id="nested-perm-root">
+  <p id="nested-perm-p">Paragraph</p>
+</div>`;
+
+/**
  * What a root inherits from the page around it, mirrored from
  * territory.test.ts: the confined copy's baseline, not anything the layout
  * preset itself declares.
@@ -81,6 +98,24 @@ describe.each(VANILLA_VERSIONS)("ds-permeable (Vanilla %s)", (version) => {
         ),
       );
     }
+    expect(failures).toEqual([]);
+  });
+
+  it("leaves a plain Vanilla child alone even when the permeable root is nested inside an ordinary .ds ancestor", async () => {
+    const mixed = await render(
+      mixedPage(version, { body: NESTED_PERMEABLE_BLOCK }),
+    );
+    const vanilla = await render(
+      vanillaPage(version, NESTED_PERMEABLE_VANILLA_ONLY),
+    );
+    const failures = idsIn(NESTED_PERMEABLE_VANILLA_ONLY).flatMap((id) =>
+      differences(
+        `#${id}`,
+        computed(mixed, id),
+        computed(vanilla, id),
+        (property) => isLayoutOutput(property),
+      ),
+    );
     expect(failures).toEqual([]);
   });
 

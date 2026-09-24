@@ -91,14 +91,18 @@
  * way a layout component wrapping Vanilla content needs. The limit is a scope
  * boundary (a "donut scope"): the root is still reverted, because a scope's
  * upper bound is always inclusive, but nothing below it is, because the lower
- * bound is exclusive and the limit here is every one of the root's own
- * children. A pragma component nested inside a `ds-permeable` root matches
- * `.ds` on its own account, which opens a fresh scope there, donut and all, so
- * nesting ordinary pragma components inside one needs no changes to work.
- * elements.css carries the same limit, for the same reason; DESIGN.md has the
- * rest. */
+ * bound is exclusive and the limit here is every one of a permeable root's own
+ * children. The limit names the class directly rather than `:scope`, because
+ * `:scope` in a limit is this scope's own root: written `:scope.ds-permeable`
+ * it would only fire for a `.ds` that is itself permeable, and an ordinary
+ * `.ds` ancestor's scope would then reach straight through a permeable
+ * descendant into what it excludes. A pragma component nested inside a
+ * `ds-permeable` root matches `.ds` on its own account, which opens a fresh
+ * scope there, donut and all, so nesting ordinary pragma components inside one
+ * needs no changes to work. elements.css carries the same limit, for the same
+ * reason; DESIGN.md has the rest. */
 @layer boundary {
-  @scope (.ds) to (:scope.ds-permeable > *) {
+  @scope (.ds) to (.ds-permeable > *) {
     :where(:scope, :scope *):where(:not(svg, svg *), svg a),
     :where(:scope, :scope *):where(:not(svg, svg *), svg a)::before,
     :where(:scope, :scope *):where(:not(svg, svg *), svg a)::after,
@@ -172,7 +176,7 @@
  * would still match `.ds *` on the grid's account and lose the very
  * `max-width: 40em` it was supposed to keep. */
 @layer vanilla.escapes {
-  @scope (.ds) to (:scope.ds-permeable > *) {
+  @scope (.ds) to (.ds-permeable > *) {
     /* .u-text-max-width ul, .u-text-max-width ol { max-width: 40em !important } */
     :where(.u-text-max-width) :where(:scope, :scope *):is(ul, ol) {
       /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
