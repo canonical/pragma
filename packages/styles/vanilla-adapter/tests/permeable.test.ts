@@ -27,12 +27,16 @@ const PERMEABLE_BLOCK = `
 </div>`;
 
 /** The same Vanilla elements with no pragma root around them at all, so a
- * "left alone" claim has a page to compare against. */
+ * "left alone" claim has a page to compare against. A plain trailing sibling
+ * stands in for `perm-nested`: not itself compared, but present so a
+ * `:last-child`-dependent Vanilla rule (the button's own spacing) sees the
+ * same sibling shape the real block gives it. */
 const PERMEABLE_VANILLA_ONLY = `
 <div id="perm-root">
   <h2 id="perm-h2">Heading</h2>
   <p id="perm-p">Paragraph</p>
   <button id="perm-button" class="p-button">Button</button>
+  <div></div>
 </div>`;
 
 /**
@@ -69,6 +73,41 @@ const ROOT_INHERITED = [
   "text-wrap-mode",
 ];
 
+/**
+ * Properties that legitimately differ on a permeable root's plain Vanilla
+ * child, per DESIGN.md's "what this does not do": the root still declares
+ * pragma's own font and colour for itself, and those are ordinary inherited
+ * CSS properties that reach the child the same way any parent's declaration
+ * reaches anything inside it — `@scope` narrows which rules match an element,
+ * not what an element inherits from its ancestors. `color-scheme` is itself
+ * an inherited property, and the `currentColor`-derived properties below
+ * simply track the same inherited `color` that `ROOT_INHERITED` already
+ * names, so they are not independent leaks.
+ */
+const CURRENT_COLOR_DERIVED = new Set([
+  "border-block-end-color",
+  "border-block-start-color",
+  "border-bottom-color",
+  "border-inline-end-color",
+  "border-inline-start-color",
+  "border-left-color",
+  "border-right-color",
+  "border-top-color",
+  "caret-color",
+  "column-rule-color",
+  "outline-color",
+  "row-rule-color",
+  "text-decoration-color",
+  "text-emphasis-color",
+  "-webkit-text-fill-color",
+  "-webkit-text-stroke-color",
+]);
+
+const isPermeableInheritance = (property: string): boolean =>
+  ROOT_INHERITED.includes(property) ||
+  CURRENT_COLOR_DERIVED.has(property) ||
+  property === "color-scheme";
+
 describe.each(VANILLA_VERSIONS)("ds-permeable (Vanilla %s)", (version) => {
   it("still gives the permeable root itself the confined baseline", async () => {
     const mixed = await render(
@@ -88,13 +127,17 @@ describe.each(VANILLA_VERSIONS)("ds-permeable (Vanilla %s)", (version) => {
     const mixed = await render(mixedPage(version, { body: PERMEABLE_BLOCK }));
     const vanilla = await render(vanillaPage(version, PERMEABLE_VANILLA_ONLY));
     const failures: string[] = [];
-    for (const id of idsIn(PERMEABLE_VANILLA_ONLY)) {
+    // perm-root itself keeps the confined baseline (asserted above), so only
+    // its plain Vanilla children are compared against the Vanilla-only page.
+    for (const id of idsIn(PERMEABLE_VANILLA_ONLY).filter(
+      (id) => id !== "perm-root",
+    )) {
       failures.push(
         ...differences(
           `#${id}`,
           computed(mixed, id),
           computed(vanilla, id),
-          (property) => isLayoutOutput(property),
+          (property) => isLayoutOutput(property) || isPermeableInheritance(property),
         ),
       );
     }
@@ -108,14 +151,18 @@ describe.each(VANILLA_VERSIONS)("ds-permeable (Vanilla %s)", (version) => {
     const vanilla = await render(
       vanillaPage(version, NESTED_PERMEABLE_VANILLA_ONLY),
     );
-    const failures = idsIn(NESTED_PERMEABLE_VANILLA_ONLY).flatMap((id) =>
-      differences(
-        `#${id}`,
-        computed(mixed, id),
-        computed(vanilla, id),
-        (property) => isLayoutOutput(property),
-      ),
-    );
+    // nested-perm-root itself keeps the confined baseline, so only its plain
+    // Vanilla child is compared against the Vanilla-only page.
+    const failures = idsIn(NESTED_PERMEABLE_VANILLA_ONLY)
+      .filter((id) => id !== "nested-perm-root")
+      .flatMap((id) =>
+        differences(
+          `#${id}`,
+          computed(mixed, id),
+          computed(vanilla, id),
+          (property) => isLayoutOutput(property) || isPermeableInheritance(property),
+        ),
+      );
     expect(failures).toEqual([]);
   });
 

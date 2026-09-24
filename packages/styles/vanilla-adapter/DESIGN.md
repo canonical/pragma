@@ -47,7 +47,7 @@ Pragma's own statement, the same list without `vanilla.escapes`, `vanilla`, `bou
 /* abridged: the shipped file lists every WebKit form part Vanilla styles,
    then each Gecko form part in a rule of its own */
 @layer boundary {
-  @scope (.ds) to (.ds-permeable > *) {
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
     :where(:scope, :scope *):where(:not(svg, svg *), svg a),
     :where(:scope, :scope *):where(:not(svg, svg *), svg a)::before,
     :where(:scope, :scope *):where(:not(svg, svg *), svg a)::after,
@@ -89,12 +89,12 @@ Both the boundary and the confined copy answer to the same class, `.ds`, and by 
 The mechanism is `@scope`'s own donut scope, the same feature described in `@scope`'s own explainer for excluding a nested subtree from an otherwise page-wide scope. Every `@scope (.ds)` block, in `adapter.css`'s boundary and its second boundary, and in each of the three layers `elements.css` confines, carries the same limit:
 
 ```css
-@scope (.ds) to (.ds-permeable > *) {
+@scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
   …
 }
 ```
 
-The limit names the class directly rather than through `:scope`. Inside a `@scope (A) to (B)` block, `:scope` in `B` is always *that scope instance's own root* — never any element that separately also matches the root selector. Written `:scope.ds-permeable`, the limit would only fire when the scope's own root carries `ds-permeable`; an ordinary `.ds` ancestor containing a `ds-permeable` descendant would have a limit that never matches anywhere in its own instance, which is the same as having no limit at all, and its scope would reach straight through the descendant into what it exists to exclude. Written as a bare `.ds-permeable > *`, the limit instead matches every child of *any* `ds-permeable` element in the scope's own subtree, root or descendant alike, so an ordinary ancestor's scope stops at a nested permeable component exactly as a permeable root stops at itself. `> *` makes the limit every one of that element's own children, and a scope's lower bound is exclusive: a matched limit and everything below it fall outside the scope. Nothing below a permeable root is confined or reverted, while the root itself still is, because a scope's upper bound is always inclusive regardless of what the limit matches.
+The limit carries two selectors because neither alone covers both shapes `ds-permeable` needs to stop at, and the two failure modes are opposites. Inside a `@scope (A) to (B)` block, `:scope` in `B` is always *that scope instance's own root* — never any element that separately also matches the root selector. `:scope.ds-permeable > *` fires only when the scope's own root carries `ds-permeable`, which handles a permeable root directly: it stops that instance at its own children. On its own, though, it misses an ordinary `.ds` ancestor containing a `ds-permeable` *descendant* — that ancestor's own `:scope` is never permeable, so the limit never matches anywhere in its instance, which is the same as having no limit at all, and its scope reaches straight through the descendant into what it exists to exclude. A bare `.ds-permeable > *`, matching in *any* scope instance rather than only the one rooted at a permeable element, fixes that: an ordinary ancestor's scope now stops at a nested permeable descendant exactly as it should. But a bare limit selector, tested purely empirically, turns out not to match a scope's own root against itself — only elements strictly below the root — so on its own it fails the very case `:scope.ds-permeable` covers: a permeable root's own limit never fires for that root's own children, and they go unexcluded. Combined, each selector in the list covers the case the other misses; either matching for a given element is enough to exclude it. `> *` makes the limit every one of the matched element's own children, and a scope's lower bound is exclusive: a matched limit and everything below it fall outside the scope. Nothing below a permeable element is confined or reverted, while the element itself still is, because a scope's upper bound is always inclusive regardless of what the limit matches.
 
 A pragma component nested inside a `ds-permeable` root is unaffected, and needs no class of its own to say so. It carries `.ds` in its own right, so `@scope (.ds)` opens a second, independent scope rooted at it — the same reopening a nested `.light-scheme` inside a `.dark-scheme` gets in `@scope`'s own docs. That inner scope carries no limit unless the nested component is itself marked `ds-permeable`, so it is a full island exactly as it would be anywhere else.
 

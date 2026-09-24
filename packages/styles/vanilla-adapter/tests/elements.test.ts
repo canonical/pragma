@@ -40,10 +40,12 @@ const PRAGMA_ORDER =
 
 /** The scope prelude every confined block uses. The `to` limit is this
  * package's own addition, absent from pragma's plain source: it is what makes
- * `ds-permeable` stop the confined copy at a permeable root rather than its
- * children, and it carries no counterpart to pair against, so it is asserted
- * here instead of in the mapping below. */
-const SCOPE = "(.ds) to (.ds-permeable > *)";
+ * `ds-permeable` stop the confined copy at a permeable element rather than
+ * its children, and it carries no counterpart to pair against, so it is
+ * asserted here instead of in the mapping below. It carries two selectors,
+ * one for a permeable root and one for a permeable descendant, because a
+ * limit selector never matches a scope's own root against itself. */
+const SCOPE = "(.ds) to (:scope.ds-permeable > *, .ds-permeable > *)";
 
 /** A selector that picks elements by name or by attribute, with an optional
  * pseudo-element suffix: the shape that has to reach an island root. */

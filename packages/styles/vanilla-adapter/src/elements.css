@@ -38,21 +38,27 @@
  * An engine class a root can carry (`.p`, `.code`, `.editorial`) is written
  * twice, bare and `:scope.p`, for the same reason as the control rule.
  *
- * Every `@scope (.ds)` block carries a limit, `to (.ds-permeable > *)`, that
- * matches every child of any element in the scope's own subtree that carries
- * `ds-permeable`: a component that wants its own territory to stop at itself,
- * rather than extend to whatever it contains, as a layout component such as a
- * grid does when it wraps Vanilla content instead of other pragma components.
- * The limit names the class directly rather than `:scope`, because `:scope` in
- * a limit is this scope's own root: an ordinary `.ds` ancestor's ` to
- * (:scope.ds-permeable > *)` would never fire for itself and would then reach
- * straight through a permeable descendant into what that descendant excludes.
- * The limit is a scope boundary in the CSS sense (a "donut scope"): the root
- * still gets its own baseline from the rules above, because the upper bound of
- * a scope is always inclusive, but nothing below a permeable root is reached,
- * because the lower bound is exclusive and the limit here is every one of
- * that root's own children. A nested pragma root inside a `ds-permeable`
- * component is unaffected: it matches `.ds` in its own right, which opens a
+ * Every `@scope (.ds)` block carries a limit, `to (:scope.ds-permeable > *,
+ * .ds-permeable > *)`, that matches every child of any element in the scope's
+ * own subtree that carries `ds-permeable`: a component that wants its own
+ * territory to stop at itself, rather than extend to whatever it contains, as
+ * a layout component such as a grid does when it wraps Vanilla content instead
+ * of other pragma components. The limit is a scope boundary in the CSS sense
+ * (a "donut scope"): the root still gets its own baseline from the rules
+ * above, because the upper bound of a scope is always inclusive, but nothing
+ * below a permeable element is reached, because the lower bound is exclusive
+ * and the limit here is every one of that element's own children. The limit
+ * carries two selectors rather than one, because neither alone covers both
+ * shapes `ds-permeable` needs to stop at. `:scope.ds-permeable > *` stops at
+ * the scope's own root when the root itself is permeable; on its own it would
+ * miss a permeable descendant nested inside an ordinary `.ds` ancestor,
+ * because that ancestor's own `:scope` is never permeable, so its limit would
+ * never fire. The bare `.ds-permeable > *` covers that descendant case, but on
+ * its own it fails the first case for the opposite reason: a limit selector
+ * never matches the scope root against itself, only elements strictly below
+ * it, so a permeable root cannot be its own limit's match, and its children
+ * stay unexcluded. A nested pragma root inside a `ds-permeable` component is
+ * unaffected either way: it matches `.ds` in its own right, which opens a
  * fresh scope at that element, donut and all, so a `ds-permeable` grid full of
  * ordinary pragma cards is not what this is for and needs no changes to use.
  * adapter.css's boundary carries the same limit, for the same reason;
@@ -115,7 +121,7 @@
  * Copied from @canonical/styles, src/normalize.css. The reasons for each rule
  * are in that file. */
 @layer normalize {
-  @scope (.ds) to (.ds-permeable > *) {
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
     /* The outermost island root. */
     :where(:scope:not(.ds *)) {
       /* Prevent the text inflation iOS applies after an orientation change. */
@@ -220,7 +226,7 @@
  * inherited value. So the outermost island root declares pragma's baseline
  * itself, and everything inside inherits it. */
 @layer ds.reset {
-  @scope (.ds) to (.ds-permeable > *) {
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
     /* The OUTERMOST island root, and only that one: a nested component root
        must inherit its container's font and colour, not restate the baseline. */
     :where(:scope:not(.ds *)) {
@@ -427,7 +433,7 @@
  * consumer who links another engine on a mixed page links it unconfined; only
  * the default engine is copied here. */
 @layer ds.typography {
-  @scope (.ds) to (.ds-permeable > *) {
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
     /* Base font, on the outermost island root: the same token, in the same
        shape, as the root rule in ds.reset above, so the two cannot disagree.
        The exclusion list is that rule's, for the same reason: `normalize` sits

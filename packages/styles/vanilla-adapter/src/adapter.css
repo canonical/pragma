@@ -90,19 +90,26 @@
  * wants Vanilla kept out of itself but not swept out of what it contains, the
  * way a layout component wrapping Vanilla content needs. The limit is a scope
  * boundary (a "donut scope"): the root is still reverted, because a scope's
- * upper bound is always inclusive, but nothing below it is, because the lower
- * bound is exclusive and the limit here is every one of a permeable root's own
- * children. The limit names the class directly rather than `:scope`, because
- * `:scope` in a limit is this scope's own root: written `:scope.ds-permeable`
- * it would only fire for a `.ds` that is itself permeable, and an ordinary
- * `.ds` ancestor's scope would then reach straight through a permeable
- * descendant into what it excludes. A pragma component nested inside a
- * `ds-permeable` root matches `.ds` on its own account, which opens a fresh
- * scope there, donut and all, so nesting ordinary pragma components inside one
- * needs no changes to work. elements.css carries the same limit, for the same
- * reason; DESIGN.md has the rest. */
+ * upper bound is always inclusive, but nothing below a permeable element is,
+ * because the lower bound is exclusive and the limit here is every one of
+ * that element's own children. The limit carries two selectors rather than
+ * one, because neither alone covers both shapes `ds-permeable` needs to stop
+ * at. `:scope.ds-permeable > *` stops at the scope's own root when the root
+ * itself is permeable; on its own it would miss a permeable descendant nested
+ * inside an ordinary `.ds` ancestor, because that ancestor's own `:scope` is
+ * never permeable, so its limit would never fire. The bare `.ds-permeable > *`
+ * covers that descendant case, but on its own it fails the first case for the
+ * opposite reason: a limit selector never matches the scope root against
+ * itself, only elements strictly below it, so a permeable root cannot be its
+ * own limit's match, and `.ds-permeable`'s own children stay unexcluded.
+ * Together the two selectors cover both a permeable root and a permeable
+ * descendant. A pragma component nested inside a `ds-permeable` root matches
+ * `.ds` on its own account, which opens a fresh scope there, donut and all, so
+ * nesting ordinary pragma components inside one needs no changes to work.
+ * elements.css carries the same limit, for the same reason; DESIGN.md has the
+ * rest. */
 @layer boundary {
-  @scope (.ds) to (.ds-permeable > *) {
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
     :where(:scope, :scope *):where(:not(svg, svg *), svg a),
     :where(:scope, :scope *):where(:not(svg, svg *), svg a)::before,
     :where(:scope, :scope *):where(:not(svg, svg *), svg a)::after,
@@ -176,7 +183,7 @@
  * would still match `.ds *` on the grid's account and lose the very
  * `max-width: 40em` it was supposed to keep. */
 @layer vanilla.escapes {
-  @scope (.ds) to (.ds-permeable > *) {
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
     /* .u-text-max-width ul, .u-text-max-width ol { max-width: 40em !important } */
     :where(.u-text-max-width) :where(:scope, :scope *):is(ul, ol) {
       /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
