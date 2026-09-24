@@ -2,10 +2,7 @@ import type React from "react";
 import { Children, isValidElement } from "react";
 import Context from "./Context.js";
 import { Content, Footer, Header } from "./common/index.js";
-import {
-  useSidePanelContextValue,
-  useSidePanelDialog,
-} from "./hooks/index.js";
+import { useSidePanelContextValue, useSidePanelDialog } from "./hooks/index.js";
 import type { SidePanelProviderProps } from "./types.js";
 import "./styles.css";
 

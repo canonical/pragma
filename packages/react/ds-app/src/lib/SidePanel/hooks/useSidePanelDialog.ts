@@ -1,10 +1,5 @@
 import type React from "react";
-import {
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-} from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import type { SidePanelHandle } from "../types.js";
 import type {
   UseSidePanelDialogProps,
