@@ -1,4 +1,7 @@
 .ds.search-box {
+  --dimension-width-search-box-button: var(--dimension-400);
+  --dimension-gap-search-box: var(--dimension-100);
+
   display: grid;
   grid-template-areas: "main";
 
@@ -7,7 +10,11 @@
   }
 
   > input {
-    padding-inline-end: calc(2 * var(--dimension-100) + var(--dimension-400));
+    padding-inline-end: calc(
+      2 *
+      var(--dimension-gap-search-box) +
+      var(--dimension-width-search-box-button)
+    );
 
     &::-webkit-search-cancel-button {
       display: none;
