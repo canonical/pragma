@@ -33,6 +33,11 @@ export default defineConfig({
           },
           include: ["src/**/*.svelte.test.{js,ts}"],
           exclude: ["src/lib/server/**"],
+          // All files share one iframe, run sequentially (isolate:false): the
+          // browser process is per-engine either way; this removes the
+          // per-file iframe spawn and module re-import. vitest-browser-svelte
+          // unmounts components between tests, so the DOM does not accumulate.
+          isolate: false,
           setupFiles: ["./vitest-setup-client.ts"],
         },
       },
