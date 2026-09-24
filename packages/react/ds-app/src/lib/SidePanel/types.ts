@@ -57,7 +57,10 @@ type OwnProps = {
  * precisely so the panel's bookkeeping (focus handoff) cannot be bypassed.
  *
  * Props extend the native props of the `<dialog>` root, so every attribute it
- * accepts (data-*, aria-*, event handlers, …) reaches the DOM.
+ * accepts (data-*, aria-*, event handlers, …) reaches the DOM. That includes
+ * the dialog's own `onClose`: pass your own to hear about every close,
+ * whatever caused it. The panel's bookkeeping
+ * runs after the handler.
  *
  * The panel is always named by its header's title, so `children` must include
  * a `SidePanel.Header` — the provider warns in development when it does not.
