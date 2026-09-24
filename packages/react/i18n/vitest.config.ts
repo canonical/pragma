@@ -10,9 +10,6 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   test: {
-    // Worker reuse across files; the per-file fork respawn is pure overhead.
-    // Inherited by both the client and the ssr project below.
-    isolate: false,
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],
@@ -38,6 +35,8 @@ export default defineConfig({
           name: "client",
           environment: "jsdom",
           globals: true,
+          // Worker reuse across files; the per-file fork respawn is pure overhead.
+          isolate: false,
           setupFiles: ["./vitest.setup.ts"],
           include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
           exclude: ["src/**/*.ssr.test.tsx"],
@@ -48,6 +47,8 @@ export default defineConfig({
         test: {
           name: "ssr",
           environment: "node",
+          // Worker reuse, as in the client project above.
+          isolate: false,
           include: ["src/**/*.ssr.test.tsx"],
         },
       },

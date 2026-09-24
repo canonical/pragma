@@ -15,6 +15,7 @@ export default defineConfig({
   },
   test: reactTestConfig({
     glob: "tests",
+    isolate: false,
     setupFiles: ["./vitest.setup.ts"],
   }),
 });

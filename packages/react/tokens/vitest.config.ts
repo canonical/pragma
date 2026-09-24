@@ -12,6 +12,7 @@ export default defineConfig({
   },
   test: reactTestConfig({
     glob: "test",
+    isolate: false,
     ssr: true,
     setupFiles: ["./vitest.setup.ts"],
     plugins,
