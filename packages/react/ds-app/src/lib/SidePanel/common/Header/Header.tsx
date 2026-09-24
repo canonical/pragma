@@ -7,8 +7,9 @@ import "./styles.css";
 const componentCssClassName = "ds side-panel-header";
 
 /**
- * Header for SidePanel. Never scrolls: it stays visible above
- * `SidePanel.Content`, which scrolls on its own.
+ * Header for SidePanel. Required: its title is the panel's accessible name,
+ * so a panel is not complete without one. Never scrolls: it stays visible
+ * above `SidePanel.Content`, which scrolls on its own.
  *
  * Owns the title the panel is labelled by, and the close button — which is
  * wired through context, so rendering this outside a SidePanel yields a plain

@@ -45,7 +45,8 @@ type OwnProps = {
   /**
    * Panel contents. Compose from `SidePanel.Header`, `SidePanel.Content` and
    * `SidePanel.Footer`; the header and footer stay put while the content
-   * scrolls.
+   * scrolls. The header is required: its title names the panel, and the
+   * provider warns in development when it is missing.
    */
   children: ReactNode;
   /**
@@ -73,9 +74,8 @@ type OwnProps = {
  * Props extend the native props of the `<dialog>` root, so every attribute it
  * accepts (data-*, aria-*, event handlers, …) reaches the DOM.
  *
- * The header's title names the panel automatically; a panel composed without
- * a header must carry its own `aria-label` (see the `WithoutHeader` story in
- * `withSidePanel`).
+ * The panel is always named by its header's title, so `children` must include
+ * a `SidePanel.Header` — the provider warns in development when it does not.
  */
 export type SidePanelProps = OwnProps &
   Omit<ComponentProps<"dialog">, keyof OwnProps | "open">;

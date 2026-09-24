@@ -1,5 +1,12 @@
 import type React from "react";
-import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
+import {
+  Children,
+  isValidElement,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from "react";
 import Context from "./Context.js";
 import { Content, Footer, Header } from "./common/index.js";
 import useSidePanelContextValue from "./hooks/useSidePanelContextValue.js";
@@ -38,10 +45,10 @@ const componentCssClassName = "ds side-panel";
  * on which machine is selected — compose `SidePanel` directly and drive it
  * through its `ref`. Otherwise, use `withSidePanel`.
  *
- * The header's title names the panel automatically; a panel composed without
- * a header must carry its own `aria-label` (see the `WithoutHeader` story in
- * `withSidePanel`). Note the title is not a heading element: the panel is a
- * layer on top of the page, not part of its document outline.
+ * The panel is always named by its header's title, so the header is required
+ * — a panel composed without one gets a development warning. Note the title
+ * is not a heading element: the panel is a layer on top of the page, not
+ * part of its document outline.
  *
  * The panel is `position: fixed` and therefore out of the document flow: an
  * `overflow: hidden` ancestor does not clip it
@@ -63,7 +70,6 @@ const Provider = ({
   className,
   children,
   ref,
-  "aria-label": ariaLabel,
   onKeyDown,
   onClose,
   onOpenChange,
@@ -76,6 +82,22 @@ const Provider = ({
   // `aria-labelledby`.
   const contextValue = useSidePanelContextValue(dialogRef);
   const { close, titleId } = contextValue;
+
+  // The header is required: its title is the panel's accessible name, and a
+  // panel without one cannot be named. Direct children only — a Header wrapped
+  // in a fragment escapes this check, and the warning is a nudge, not a gate.
+  if (
+    typeof process !== "undefined" &&
+    process.env.NODE_ENV !== "production" &&
+    !Children.toArray(children).some(
+      (child) => isValidElement(child) && child.type === Header,
+    )
+  ) {
+    console.warn(
+      "SidePanel: the panel needs a SidePanel.Header — its title is the panel's accessible name.",
+    );
+  }
+
   /** Where focus was before the panel opened, so it can be handed back. */
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   /**
@@ -201,11 +223,13 @@ const Provider = ({
       <dialog
         ref={dialogRef}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
-        // The header's title names the panel. Without a header the consumer
-        // supplies `aria-label`, and pointing at an absent element is worse than
-        // not pointing at all — so the two are mutually exclusive.
-        aria-label={ariaLabel}
-        aria-labelledby={ariaLabel === undefined ? titleId : undefined}
+        // The panel is always named by its header's title — the header is
+        // required, so this always points at a live element (the development
+        // warning above catches panels composed without one). A consumer
+        // `aria-label` still reaches the element through the spread, but
+        // `aria-labelledby` wins the accessible-name computation, so the
+        // title's word is final.
+        aria-labelledby={titleId}
         // Focusable so that opening can place focus on the panel itself.
         tabIndex={-1}
         onKeyDown={handleKeyDown}
