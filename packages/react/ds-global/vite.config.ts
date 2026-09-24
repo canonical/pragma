@@ -20,8 +20,7 @@ export default defineConfig({
     glob: ["test", "tests"],
     ssr: true,
     // Isolation is load-bearing here: some component suites (TooltipEngine,
-    // useContextualMenu) see DOM from whichever file the worker ran before
-    // them, so this package keeps a fresh worker per file.
+    // useContextualMenu) see DOM from whichever file the worker ran first.
     isolate: true,
     setupFiles: ["./vitest.setup.ts"],
   }),

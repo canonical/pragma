@@ -69,11 +69,9 @@ export interface ReactTestConfigOptions {
    */
   coverage?: CoverageOption;
   /**
-   * Per-file worker isolation. Defaults to `false` (worker reuse): these
-   * suites are side-effect free per test and re-run their setup files per
-   * file, so forking a fresh worker per file was pure spawn overhead. Pass
-   * `true` for a package whose files leak DOM or module state into whichever
-   * file the shared worker runs next.
+   * Per-file worker isolation. Defaults to `false` (worker reuse); pass
+   * `true` for a package whose files leak DOM or module state into
+   * whichever file the shared worker runs next.
    */
   isolate?: boolean;
   /** Setup files (e.g. `["./vitest.setup.ts"]`); omitted when empty. */
