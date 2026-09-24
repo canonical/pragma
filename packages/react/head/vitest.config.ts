@@ -11,6 +11,7 @@ export default defineConfig({
     glob: "test",
     ssr: true,
     coverage: true,
+    setupFiles: ["./vitest.setup.ts"],
     plugins,
   }),
 });
