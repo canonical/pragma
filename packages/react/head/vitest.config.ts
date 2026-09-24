@@ -9,7 +9,6 @@ export default defineConfig({
   plugins,
   test: reactTestConfig({
     glob: "test",
-    isolate: false,
     ssr: true,
     coverage: true,
     plugins,

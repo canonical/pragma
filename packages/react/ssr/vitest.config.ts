@@ -5,7 +5,6 @@ export default defineConfig({
   test: reactTestConfig({
     glob: "tests",
     environment: "node",
-    isolate: false,
     coverage: {
       include: ["src/lib/**/*.ts"],
       // constants.ts holds only literals; excluding it keeps the 100%
