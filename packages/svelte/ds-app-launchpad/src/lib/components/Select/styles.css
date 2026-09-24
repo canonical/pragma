@@ -80,11 +80,12 @@
 
     &:disabled {
       cursor: not-allowed;
-      opacity: var(--ds-opacity-muted);
-
-      + .chevron {
-        opacity: var(--ds-opacity-muted);
-      }
+      color: var(--disabled--color-text);
+      background-color: var(
+        --disabled--color-foreground-input,
+        var(--color-foreground-input-disabled)
+      );
+      border-color: var(--color-border-disabled);
     }
 
     &:user-invalid,
@@ -112,26 +113,6 @@
 
         &:checked {
           background-color: var(--color-background-select-input-active);
-        }
-      }
-    }
-  }
-
-  &.base {
-    --color-background-select-input-hover: var(--hover--color-foreground-ghost);
-    --color-background-select-input-active: var(
-      --active--color-foreground-ghost
-    );
-    --color-background-select-input: transparent;
-
-    > select {
-      border: none;
-
-      &:not([multiple]) {
-        option {
-          /* FIXME(steciuk): Pt. 2 of the transparency workaround */
-          /* TODO: remove when launchpad-ui filters move to using dropdown button */
-          background-color: var(--color-foreground-ghost);
         }
       }
     }
