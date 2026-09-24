@@ -43,6 +43,7 @@ packages run in `jsdom` while framework-agnostic/SSR packages run in `node`).
 | `environment` | `"jsdom" \| "node"`               | `"jsdom"` | `"node"` for framework-agnostic / SSR-only packages.                                           |
 | `ssr`         | `boolean`                         | `false`   | Adds a second `node` project running `**/*.ssr.<glob>.tsx` (the client project excludes them). |
 | `coverage`    | `boolean \| { … }`                | `false`   | `true` enables v8 coverage with 100% thresholds; pass an object to override.                   |
+| `isolate`     | `boolean`                         | `false`   | Per-file worker isolation. `false` reuses one worker across files; pass `true` for a package whose files leak DOM or module state (hoisted `vi.mock`, shared portals). |
 | `setupFiles`  | `string[]`                        | `[]`      | e.g. `["./vitest.setup.ts"]`; omitted when empty.                                              |
 | `plugins`     | `Plugin[]`                        | —         | Attached to each project (Vitest resolves plugins per project).                                |
 
