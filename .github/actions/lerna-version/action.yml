@@ -45,9 +45,33 @@ runs:
 
       # `lerna version` updates package numbers, so we must update the root lockfile.
       # This can be removed once https://github.com/lerna/lerna/issues/4234 is closed.
+      #
+      # Two installs, deliberately. Bun records a version bump in two passes:
+      # a sibling dependency is a "workspace" edge in bun.lock, and Bun (1.4.2)
+      # compares two workspace edges by the workspace they link to, never by
+      # the range written on them. So the FIRST install sees `^0.38.0` becoming
+      # `^0.39.0` on an edge that still links the same sibling as unchanged,
+      # carries the old range into the file it saves, and records only each
+      # package's new `version`. The SECOND install loads that file, finds
+      # `^0.38.0` no longer satisfied by the 0.39.0 now recorded beside it, and
+      # only then rewrites the ranges (379 of them per bump). Upstream fix
+      # pending: https://github.com/oven-sh/bun/pull/41931. Once Bun ships it
+      # the second install changes nothing and can go.
+      #
+      # The v0.38.0 (d96431adb), v0.39.0 (a63019de1) and v0.40.0 (acb0bb311)
+      # bumps each committed the file after the first pass. Every job begins
+      # with `bun install --ignore-scripts && git diff --exit-code bun.lock`,
+      # so each tagged commit failed that gate: main went red until someone
+      # committed the missing ranges by hand (#1309, #1338), and the publish
+      # job died before publishing anything. The last line below is that same
+      # gate, applied here while stopping the release still costs nothing.
     - name: Update lockfile
       shell: bash
-      run: bun install --ignore-scripts
+      run: |
+        bun install --ignore-scripts
+        bun install --ignore-scripts
+        git add bun.lock
+        bun install --ignore-scripts && git diff --exit-code bun.lock
 
       # Lerna may introduce slight formatting changes to the package.json files.
       # This can be removed once https://github.com/lerna/lerna/issues/4117 is closed.
