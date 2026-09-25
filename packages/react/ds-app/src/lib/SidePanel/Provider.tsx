@@ -22,11 +22,10 @@ const componentCssClassName = "ds side-panel";
  * application behind stays clickable and tabbable.
  *
  * The panel is controlled through its `ref`: `open()` shows it and moves focus
- * in, `close()` hides it and hands focus back. `defaultOpen` opens it on mount;
- * use the ref for every later state change. The ref is required, since the
- * handle is the only way in after mount — a panel with no ref can never reopen.
- * The dialog's native open state is the single source of truth — there is no
- * `open` prop to mirror it.
+ * in, `close()` hides it and hands focus back. The ref is required, since the
+ * handle is the only way in — a panel with no ref is a panel that can never
+ * open. The dialog's native open state is the single source of truth — there
+ * is no `open` prop to mirror it.
  *
  * Compose the body from `SidePanel.Header`, `SidePanel.Content` and
  * `SidePanel.Footer`. The panel lays them out as a flex column: header and
