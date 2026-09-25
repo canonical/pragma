@@ -97,60 +97,76 @@ const instances: Instance[] = [
  */
 export const WithForm: Story = {
   render: () => (
-    <Component
-      ref={(handle: SidePanelHandle | null) => {
-        handle?.open();
-      }}
-    >
-      <Component.Header>Create instance</Component.Header>
-      <Component.Content>
-        <form
-          style={{ display: "grid", gap: "var(--dimension-300)" }}
-          onSubmit={(event) => {
-            event.preventDefault();
-          }}
-        >
-          <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
-            Instance name
-            <input type="text" name="instance_name" placeholder="noble-vm-01" />
-          </label>
-          <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
-            Ubuntu release
-            <select name="release" defaultValue="noble">
-              <option value="noble">Ubuntu 24.04 LTS (Noble Numbat)</option>
-              <option value="jammy">Ubuntu 22.04 LTS (Jammy Jellyfish)</option>
-              <option value="focal">Ubuntu 20.04 LTS (Focal Fossa)</option>
-            </select>
-          </label>
-          <label style={{ display: "flex", gap: "var(--dimension-100)" }}>
-            Enable Ubuntu Pro
-            <input type="checkbox" name="enable_pro" />
-          </label>
-          <span>
-            Security and compliance coverage for your Ubuntu instances,
-            including extended support for the packages you care about.
-          </span>
-          <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
-            Cloud-init user data (optional)
-            <textarea
-              name="cloud_init"
-              rows={4}
-              placeholder={"#cloud-config\npackages:\n  - nginx"}
-            />
+    <>
+      <style>
+        {`
+          /* Disable animations for visual testing */
+          :root {
+            --side-panel-transition-duration: 0ms;
+          }
+        `}
+      </style>
+      <Component
+        ref={(handle: SidePanelHandle | null) => {
+          handle?.open();
+        }}
+      >
+        <Component.Header>Create instance</Component.Header>
+        <Component.Content>
+          <form
+            style={{ display: "grid", gap: "var(--dimension-300)" }}
+            onSubmit={(event) => {
+              event.preventDefault();
+            }}
+          >
+            <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
+              Instance name
+              <input
+                type="text"
+                name="instance_name"
+                placeholder="noble-vm-01"
+              />
+            </label>
+            <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
+              Ubuntu release
+              <select name="release" defaultValue="noble">
+                <option value="noble">Ubuntu 24.04 LTS (Noble Numbat)</option>
+                <option value="jammy">
+                  Ubuntu 22.04 LTS (Jammy Jellyfish)
+                </option>
+                <option value="focal">Ubuntu 20.04 LTS (Focal Fossa)</option>
+              </select>
+            </label>
+            <label style={{ display: "flex", gap: "var(--dimension-100)" }}>
+              Enable Ubuntu Pro
+              <input type="checkbox" name="enable_pro" />
+            </label>
             <span>
-              Configuration to run on first boot: packages to install, users to
-              create, commands to run.
+              Security and compliance coverage for your instances, including
+              extended support for the packages you care about.
             </span>
-          </label>
-        </form>
-      </Component.Content>
-      <Component.Footer>
-        <Button>Cancel</Button>
-        <Button importance="primary" anticipation="constructive">
-          Create instance
-        </Button>
-      </Component.Footer>
-    </Component>
+            <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
+              Cloud-init user data (optional)
+              <textarea
+                name="cloud_init"
+                rows={4}
+                placeholder={"#cloud-config\npackages:\n  - nginx"}
+              />
+              <span>
+                Configuration to run on first boot: packages to install, users
+                to create, commands to run.
+              </span>
+            </label>
+          </form>
+        </Component.Content>
+        <Component.Footer>
+          <Button>Cancel</Button>
+          <Button importance="primary" anticipation="constructive">
+            Create instance
+          </Button>
+        </Component.Footer>
+      </Component>
+    </>
   ),
   parameters: {
     docs: {
@@ -226,6 +242,14 @@ export const ShowingDetails: Story = {
 
     return (
       <>
+        <style>
+          {`
+            /* Disable animations for visual testing */
+            :root {
+              --side-panel-transition-duration: 0ms;
+            }
+          `}
+        </style>
         <ul
           style={{
             display: "grid",
@@ -323,6 +347,14 @@ useEffect(() => {
 export const RightToLeft: Story = {
   render: () => (
     <div dir="rtl">
+      <style>
+        {`
+          /* Disable animations for visual testing */
+          :root {
+            --side-panel-transition-duration: 0ms;
+          }
+        `}
+      </style>
       <Component
         ref={(handle: SidePanelHandle | null) => {
           handle?.open();
@@ -430,9 +462,16 @@ export const OverflowingTooltip: Story = {
         {/* The message escapes the panel's tree, so it stacks in the page's
             context: keep it above the panel's own z-index. */}
         <style>
-          {
-            ".story-side-panel-tooltip { z-index: calc(var(--side-panel-z-index, 1000) + 1); }"
-          }
+          {`
+            .story-side-panel-tooltip {
+              z-index: calc(var(--side-panel-z-index, 1000) + 1);
+            }
+          
+            /* Disable animations for visual testing */
+            :root {
+              --side-panel-transition-duration: 0ms;
+            }
+          `}
         </style>
         <Component
           ref={(handle: SidePanelHandle | null) => {
