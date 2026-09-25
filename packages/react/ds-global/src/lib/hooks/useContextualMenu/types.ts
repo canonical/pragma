@@ -25,12 +25,30 @@ export type MenuItem = _DistributiveOmit<Item, "items"> & {
   items?: MenuEntry[];
   /** CSS class name applied to this item, in addition to the base classes. */
   className?: string;
+  /** Accessible label overriding the item's visible label. */
+  "aria-label"?: string;
+  /** Called before the menu-level callback when this item is selected. */
+  onSelect?: (item: MenuItem) => void;
   /**
-   * Opts this item into rendering via `Component` instead of the default
-   * layout. `"custom"` without a `Component` falls back to the default.
+   * An anchored non-modal dialog launched by this menu item. Unlike `items`,
+   * this is interactive content, not another menu. Do not set both.
+   */
+  dialog?: {
+    /** Accessible name for the dialog. */
+    label: string;
+    /** Render the dialog body; `close` is for Apply/Cancel actions. */
+    render: (controls: { close: () => void }) => React.ReactNode;
+  };
+  /**
+   * How this item is rendered. `"custom"` without a `Component` falls back to
+   * the default layout.
+   * - `default`: ordinary selectable command row.
+   * - `custom`: selectable command row whose contents come from `Component`.
    */
   displayItemsType?: "default" | "custom";
-  /** Custom component for rendering this item itself, when `displayItemsType` is `"custom"`. */
+  /**
+   * Custom renderer for a selectable `"custom"` row.
+   */
   Component?: React.ComponentType<{ item: MenuItem }>;
 };
 
@@ -77,6 +95,8 @@ export interface UseContextualMenuProps
   wrap?: boolean;
   /** Type-ahead reset timeout in milliseconds. */
   typeAheadTimeout?: number;
+  /** Whether opening highlights and focuses the first enabled item. Defaults to true. */
+  highlightFirstItem?: boolean;
 }
 
 /** Options for the menu ARIA prop-getter. */
