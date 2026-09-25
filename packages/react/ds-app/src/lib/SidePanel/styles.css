@@ -50,6 +50,9 @@
     /* Keyboard focus ring of the scrollable content pane, drawn inside it. */
     --side-panel-focus-ring-width: var(--dimension-stroke-thickness-large);
     --side-panel-color-focus-ring: var(--color-focus-ring);
+    --side-panel-transition-duration: var(--motion-duration-medium);
+    --side-panel-transition-easing-enter: var(--motion-easing-decelerate);
+    --side-panel-transition-easing-exit: var(--motion-easing-accelerate);
   }
 
   .ds.side-panel {
@@ -137,14 +140,23 @@
     background-color: var(--surface-color-background, var(--color-background));
     color: var(--surface-color-text, var(--color-text));
 
+    /* Closed state. `translate` is physical, so flip it when the panel docks left. */
+    --side-panel-translate-closed: 100%;
+    transform: translateX(var(--side-panel-translate-closed));
+
+    &:dir(rtl) {
+      --side-panel-translate-closed: -100%;
+    }
+
     /*
-      The panel appears and disappears without motion — there is no transition
-      in either direction. The `translateX(0)` is not a leftover: any transform
-      makes the panel the containing block for `position: fixed` descendants
-      (the overlay consequence above), and dropping it would re-anchor such
-      overlays to the viewport.
+      `display` is transitioned discretely so the slide-out is seen before the
+      dialog is hidden. No `overlay` in the list: that property only applies to
+      top-layer elements, which a non-modal dialog is not.
     */
-    transform: translateX(0);
+    transition-property: transform, display;
+    transition-duration: var(--side-panel-transition-duration);
+    transition-timing-function: var(--side-panel-transition-easing-exit);
+    transition-behavior: allow-discrete;
 
     /*
       A closed <dialog> is `display: none` by user-agent rule. Declaring display
@@ -157,6 +169,24 @@
     */
     &[open] {
       display: flex;
+      transform: translateX(0);
+      transition-timing-function: var(--side-panel-transition-easing-enter);
+
+      /* The frame the entry transition starts from. */
+      @starting-style {
+        transform: translateX(var(--side-panel-translate-closed));
+      }
+    }
+
+    /* Respect a reduced-motion preference: appear, don't slide. */
+    @media (prefers-reduced-motion: reduce) {
+      transition-property: display;
+
+      &[open] {
+        @starting-style {
+          transform: translateX(0);
+        }
+      }
     }
   }
 }
