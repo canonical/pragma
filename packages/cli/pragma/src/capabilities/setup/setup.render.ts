@@ -40,20 +40,26 @@ const wasApplied = (plan: SetupPlan): boolean =>
  * line is how to grant it.
  *
  * @param plan - The plan to render.
+ * @param verbose - The run's `--verbose`, as the kernel hands it to the seam.
  * @returns The plan table, ended with the dry-run's own line.
  */
-export const renderDryRun = (plan: SetupPlan): string =>
-  renderPlanTable(plan, { lead: "Setup plan", hint: DRY_RUN_HINT });
+export const renderDryRun = (plan: SetupPlan, verbose = false): string =>
+  renderPlanTable(plan, { lead: "Setup plan", hint: DRY_RUN_HINT, verbose });
 
 export const setupFormatters: Formatters<SetupPlan> = {
-  plain(data) {
+  plain(data, context) {
+    const verbose = context?.verbose === true;
     if (data.preview === true) {
-      return renderPlanTable(data, { lead: "Setup plan", hint: PREVIEW_HINT });
+      return renderPlanTable(data, {
+        lead: "Setup plan",
+        hint: PREVIEW_HINT,
+        verbose,
+      });
     }
     if (!wasApplied(data)) {
-      return renderPlanTable(data, { lead: "Setup plan" });
+      return renderPlanTable(data, { lead: "Setup plan", verbose });
     }
-    return renderRecap(data);
+    return renderRecap(data, { verbose });
   },
   llm(data) {
     return renderPlanLlm(data, data.preview === true ? "Setup plan" : "Setup");

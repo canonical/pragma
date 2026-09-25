@@ -35,14 +35,24 @@
  *
  * A dangling link, by contrast, the reconcile ALREADY repairs, and this was
  * checked rather than assumed: `detectSkills` classifies a link that does not
- * resolve to the current skill as `replaced` (delete + relink) whatever it
- * points at, so the next `setup skills` — or the layer-2 pass `sources update`
- * runs — moves it onto the new package directory. The one thing that had to
- * change is ownership: `withinRoot` against the installed root alone read a
+ * reach the current skill as `replaced` (delete + relink) whatever it points
+ * at, so the next `setup skills` — or the layer-2 pass `sources update` runs —
+ * moves it onto the new package directory. The one thing that had to change is
+ * ownership: `withinRoot` against the installed root alone read a
  * bundled-pointing link as somebody else's and skipped it, so the sweep and the
  * relink both range over the root SET now ({@link withinAnyRoot}). The residual
  * window is between an upgrade and the next reconcile, which is the same window
  * a `sources update` link into a cleared ref cache already has.
+ *
+ * "CURRENT" IS A QUESTION OF CONTENT, decided once here for every scope and
+ * every harness directory (`staleReason`): a link is current when what it
+ * reaches IS the skill this CLI ships — the same path, the same real directory,
+ * or the same content — and stale otherwise, with a one-line reason the user
+ * can act on. A path string alone cannot decide it: another release's directory
+ * still resolves after an upgrade, and the same skill can be reached through
+ * more than one path. Every `replaced` action carries its reason and the link
+ * it overwrote, so the plan can say why, the doctor row can list which, and
+ * the undo can restore.
  *
  * Split into `detectSkills` (discovery, harness detection, and the per-link
  * create/skip/replace DECISION, all against the real filesystem up front, so
@@ -54,10 +64,12 @@ import {
   existsSync,
   lstatSync,
   readdirSync,
+  readFileSync,
   readlinkSync,
+  realpathSync,
   statSync,
 } from "node:fs";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
   deleteFile,
   mkdir,
@@ -65,7 +77,7 @@ import {
   symlink,
   type Task,
 } from "@canonical/task";
-import { BIN_NAME } from "../../../constants.js";
+import { BIN_NAME, PACKAGE_NAME, VERSION } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import type { Scope } from "../types.js";
 
@@ -87,12 +99,37 @@ const VERIFIED_GLOBAL_SKILL_HARNESSES: ReadonlySet<string> = new Set([
   "claude-code",
 ]);
 
-/** One symlink create/skip/replace action decided during detection. */
-export interface SymlinkAction {
+/**
+ * One symlink create/skip/replace action decided during detection.
+ *
+ * `replaced` is the one action that overwrites something, so it is the one
+ * that records what it overwrote: the discriminant on `action` is what makes
+ * `previousTarget` present exactly there and nowhere else.
+ */
+export type SymlinkAction = SymlinkActionFields &
+  (
+    | {
+        readonly action: "created" | "skipped";
+        readonly previousTarget?: never;
+      }
+    | {
+        readonly action: "replaced";
+        /**
+         * The link's destination exactly as `readlink` reported it, so the
+         * undo can put the previous link back. Without it the undo could
+         * only delete the link the run created, which restores an ABSENT
+         * path — a state that never existed — rather than the link the run
+         * overwrote.
+         */
+        readonly previousTarget: string;
+      }
+  );
+
+/** The fields every {@link SymlinkAction} carries, whatever its action. */
+interface SymlinkActionFields {
   readonly skillName: string;
   readonly target: string;
   readonly linkPath: string;
-  readonly action: "created" | "skipped" | "replaced";
   readonly harnessName: string;
   /**
    * Whether this link path currently holds a symlink INTO the scope's skill
@@ -110,6 +147,20 @@ export interface SymlinkAction {
    * none does.
    */
   readonly blocked: boolean;
+  /**
+   * Why what occupies the link path is NOT the skill this CLI ships — one line
+   * a user can act on ("its target is missing", "links to the copy shipped
+   * with pragma 0.37.0; the running CLI is 0.40.0", "content differs from the
+   * shipped skill"). Absent on a `created` action (nothing is there yet) and
+   * on a path that IS current.
+   *
+   * Set on every `replaced`, and ALSO on a `skipped` this command declines to
+   * touch — a real directory, or a foreign link — whose content does not match:
+   * the decision not to delete somebody else's entry is separate from the fact
+   * that it is stale, and the doctor row reports the second without pretending
+   * the first is a repair.
+   */
+  readonly stale?: string;
 }
 
 /**
@@ -292,6 +343,142 @@ function linkState(linkPath: string): LinkState {
     }
   }
   return { kind: "other" };
+}
+
+/**
+ * Whether a candidate directory holds the same skill as the shipped one: the
+ * same entry names at every level, and the same bytes in every file.
+ *
+ * THE WALK IS DRIVEN BY THE SHIPPED SIDE, and that bound is the point. A link
+ * the user made into their own checkout can sit over a `node_modules` of
+ * thousands of files, or over a FIFO that blocks any reader forever; a walk
+ * that hashed whatever it found there would cost seconds on every `doctor`, or
+ * never return. So each directory's listing is compared BEFORE anything below
+ * it is opened, only regular files are read (a FIFO, socket or device on
+ * either side is a mismatch, never an `open`), and a file is read only after
+ * its size matches. The candidate is therefore never opened beyond the shape
+ * of the skill this CLI ships, which is a handful of small files.
+ *
+ * `stat`, not `lstat`, per entry: a skill root that is itself a symlink (an
+ * installed skill is one, into the ref cache) and a file linked into place
+ * both count by what they resolve to, since that is what a harness reads.
+ * Anything unreadable on EITHER side — a dangling link inside the shipped
+ * skill, a permission the process lacks — is a mismatch: "current" is a
+ * positive finding, and a tree that cannot be read has not made it.
+ *
+ * @param shipped - The skill's source directory, as discovery resolved it.
+ * @param candidate - The directory a link or copy actually holds.
+ * @returns Whether every file matches, name for name and byte for byte.
+ * @note Impure — reads the files of at most two small trees.
+ */
+function sameContent(shipped: string, candidate: string): boolean {
+  const walk = (a: string, b: string): boolean => {
+    const names = readdirSync(a).sort();
+    if (names.join("\0") !== readdirSync(b).sort().join("\0")) return false;
+    for (const name of names) {
+      const left = statSync(join(a, name));
+      const right = statSync(join(b, name));
+      if (left.isDirectory() && right.isDirectory()) {
+        if (!walk(join(a, name), join(b, name))) return false;
+      } else if (
+        !left.isFile() ||
+        !right.isFile() ||
+        left.size !== right.size ||
+        !readFileSync(join(a, name)).equals(readFileSync(join(b, name)))
+      ) {
+        return false;
+      }
+    }
+    return true;
+  };
+  try {
+    return walk(shipped, candidate);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The version of the release a path's `bundled-skills` directory belongs to,
+ * read from the `package.json` beside it — or `undefined` when the path is not
+ * inside such a directory, the manifest cannot be read, or the manifest is
+ * not another copy of THIS package.
+ *
+ * This is what turns "content differs" into a sentence with a cause. Under a
+ * version-stamped layout (pnpm, npx, volta, a global install moved between
+ * versions) the old release's directory keeps existing after an upgrade, so a
+ * link into it resolves and reads fine; the only thing wrong with it is WHICH
+ * release it is reading. The name check keeps the sentence honest: any package
+ * may ship a `bundled-skills` directory, and naming ITS version as one of ours
+ * would send the user to upgrade a CLI that was never involved.
+ *
+ * @param path - A resolved link destination.
+ * @returns The manifest's `version`, if the path sits inside one of this
+ *   package's bundled roots.
+ * @note Impure — reads one `package.json`.
+ */
+function shippedVersionOf(path: string): string | undefined {
+  const segments = path.split(sep);
+  const at = segments.lastIndexOf(BUNDLED_DIR_SEGMENT);
+  if (at < 1) return undefined;
+  try {
+    const manifest = JSON.parse(
+      readFileSync(
+        join(segments.slice(0, at).join(sep), "package.json"),
+        "utf-8",
+      ),
+    ) as { name?: unknown; version?: unknown };
+    return manifest.name === PACKAGE_NAME &&
+      typeof manifest.version === "string"
+      ? manifest.version
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Why a link's destination is not the skill this CLI ships — or `undefined`
+ * when it is.
+ *
+ * "Current" is a question about CONTENT, not about a path string. The ladder
+ * is: same path, then same real directory (a symlinked home, a `bun link`ed
+ * build), then same content — and only a destination that fails all three is
+ * stale, with the most specific cause available.
+ *
+ * A missing target INSIDE the installed root is named as what it is. The pack
+ * cache the installed copy pointed into can be cleared (it lives under
+ * `$XDG_CACHE_HOME`), and when it is, discovery falls through to the bundled
+ * snapshot and setup relinks onto that — silently, which left the user
+ * running the shipped copy with no word that `sources update` would bring
+ * the installed one back. Nothing in the installed root is deleted: that
+ * root is `sources update`'s to reconcile.
+ *
+ * @param destination - The link's resolved destination.
+ * @param skillPath - The skill's source path, as discovery resolved it.
+ * @param installedRoot - The scope's installed root, when it has one (the
+ *   global scope's `sources update` output).
+ * @returns The one-line reason, or `undefined` for a current link.
+ * @note Impure — stats, and may compare two small trees.
+ */
+function staleReason(
+  destination: string,
+  skillPath: string,
+  installedRoot: string | undefined,
+): string | undefined {
+  if (destination === skillPath) return undefined;
+  if (!existsSync(destination)) {
+    return installedRoot !== undefined &&
+      withinRoot(installedRoot, destination, destination)
+      ? `its installed copy is gone — \`${BIN_NAME} sources update\` restores it; the shipped copy is linked meanwhile`
+      : "its target is missing";
+  }
+  if (realpathSync(destination) === realpathSync(skillPath)) return undefined;
+  if (sameContent(skillPath, destination)) return undefined;
+  const version = shippedVersionOf(destination);
+  return version !== undefined && version !== VERSION
+    ? `links to the copy shipped with ${BIN_NAME} ${version}; the running CLI is ${VERSION}`
+    : "content differs from the shipped skill";
 }
 
 /**
@@ -494,6 +681,9 @@ export async function detectSkills(
   const sourceRoots =
     scope === "project" ? [projectSkillsDir(cwd)] : globalSkillRoots();
   const sourceRoot = sourceRoots[0] as string;
+  // Only the global scope has an installed root — the one `sources update`
+  // fills — and so only it can name a missing target as "the installed copy".
+  const installedRoot = scope === "project" ? undefined : sourceRoot;
   const linkRoot = scope === "project" ? cwd : userHome(readPlatformEnv());
   // First-seen wins, so an installed skill shadows the bundled copy of the same
   // name: someone who ran `sources update` links the CURRENT skill.
@@ -504,25 +694,49 @@ export async function detectSkills(
   const targets = linkTargets(detected, scope, linkRoot);
 
   // Decide each action against REAL fs (so the preview is accurate). Dangling
-  // or wrong-target symlinks are `replaced` (delete + relink); a real
-  // (non-symlink) file or directory at the path is `skipped` — a hand-placed
-  // skill is never this command's to delete.
+  // or stale symlinks are `replaced` (delete + relink); a real (non-symlink)
+  // file or directory at the path is `skipped` — a hand-placed skill is never
+  // this command's to delete.
   const actions: SymlinkAction[] = [];
   for (const { dir, name } of targets) {
     for (const skill of skills) {
       const linkPath = resolve(dir, skill.folderName);
       const state = linkState(linkPath);
-      // A link is already correct when it RESOLVES to the skill, not when its
-      // raw `readlink` string equals an absolute path. Comparing the raw target
-      // classified every RELATIVE link as `replaced`, so a functionally correct
-      // link was torn down and rebuilt on every run and doctor reported it as
-      // `N links point elsewhere`.
-      const resolvesToSkill =
-        state.kind === "symlink" &&
-        resolve(dirname(linkPath), state.target) === skill.sourcePath;
-      const owned =
-        state.kind === "symlink" &&
-        ownsLink(sourceRoots, linkPath, state.target);
+      if (state.kind === "absent") {
+        actions.push({
+          skillName: skill.name,
+          target: skill.sourcePath,
+          linkPath,
+          action: "created",
+          harnessName: name,
+          blocked: false,
+          owned: false,
+        });
+        continue;
+      }
+      // A REAL directory is a copy, and a copy is current only while its
+      // content still matches. It is never this command's to delete either
+      // way; the reason is carried so the doctor row can say which it is.
+      if (state.kind === "other") {
+        actions.push({
+          skillName: skill.name,
+          target: skill.sourcePath,
+          linkPath,
+          action: "skipped",
+          harnessName: name,
+          blocked: true,
+          owned: false,
+          ...(sameContent(skill.sourcePath, linkPath)
+            ? {}
+            : { stale: "a copy whose content differs from the shipped skill" }),
+        });
+        continue;
+      }
+      // A link is current when what it REACHES is the skill — the same path,
+      // the same real directory, or the same content (`staleReason`).
+      const destination = resolve(dirname(linkPath), state.target);
+      const stale = staleReason(destination, skill.sourcePath, installedRoot);
+      const owned = ownsLink(sourceRoots, linkPath, state.target);
       // A link is FOREIGN when it resolves to something real that pragma does
       // not own — a user's own `~/.claude/skills/design-auditor ->
       // ~/work/design-auditor`. That is `skipped`, the same answer a
@@ -536,34 +750,37 @@ export async function detectSkills(
       // leaving it blocks the skill forever and, for pragma's own link into a
       // cleared cache or a replaced package directory, is the repair. An
       // unresolvable target cannot vouch for its owner either way.
-      const foreign =
-        state.kind === "symlink" &&
-        !owned &&
-        existsSync(resolve(dirname(linkPath), state.target));
-      const action: SymlinkAction["action"] =
-        state.kind === "absent"
-          ? "created"
-          : resolvesToSkill
-            ? "skipped"
-            : state.kind === "symlink" && !foreign
-              ? "replaced"
-              : "skipped";
-      actions.push({
+      const foreign = !owned && existsSync(destination);
+      const fields = {
         skillName: skill.name,
         target: skill.sourcePath,
         linkPath,
-        action,
         harnessName: name,
-        blocked: state.kind === "other",
+        blocked: false,
         owned,
-      });
+      };
+      actions.push(
+        stale !== undefined && !foreign
+          ? {
+              ...fields,
+              action: "replaced",
+              stale,
+              previousTarget: state.target,
+            }
+          : {
+              ...fields,
+              action: "skipped",
+              ...(stale === undefined ? {} : { stale }),
+            },
+      );
     }
   }
 
   const warnings = actions
     .filter((a) => a.action === "replaced")
     .map(
-      (a) => `Replaced a stale symlink for ${a.skillName} in ${a.harnessName}`,
+      (a) =>
+        `Replaced a stale symlink for ${a.skillName} in ${a.harnessName} (${a.stale})`,
     );
 
   return {
@@ -615,10 +832,12 @@ export const staleSkillLinks = (
  * itself).
  *
  * Built from re-runnable combinators (NOT a single-use `gen`) because `execute`
- * interprets the task twice (preview + perform). `created` links carry an undo;
- * a `replaced` link is delete-then-relink (idempotent); `skipped` is a no-op —
- * and a detection where every action is `skipped` and nothing is stale composes
- * NOTHING, so a converged re-run performs zero filesystem mutations.
+ * interprets the task twice (preview + perform). `created` links carry an undo
+ * that deletes them; a `replaced` link is delete-then-relink (idempotent), and
+ * its undo puts the PREVIOUS link back rather than leaving the path absent;
+ * `skipped` is a no-op — and a detection where every action is `skipped` and
+ * nothing is stale composes NOTHING, so a converged re-run performs zero
+ * filesystem mutations.
  *
  * A forward run is a RECONCILE, not an append: it also deletes the links this
  * scope owns that no current skill accounts for (see {@link staleSkillLinks}), each
@@ -630,7 +849,10 @@ export const staleSkillLinks = (
  */
 export function composeSkills(d: SkillsDetection): Task<void> {
   const pending = d.available
-    ? d.actions.filter((a) => a.action !== "skipped")
+    ? d.actions.filter(
+        (a): a is SymlinkAction & { action: "created" | "replaced" } =>
+          a.action !== "skipped",
+      )
     : [];
   const stale = staleSkillLinks(d);
   if (pending.length === 0 && stale.length === 0) return sequence_([]);
@@ -639,6 +861,10 @@ export function composeSkills(d: SkillsDetection): Task<void> {
     .sort()
     .map((dir) => mkdir(dir, true));
   for (const a of pending) {
+    // A `created` action found nothing at the path, so its undo deletes; a
+    // `replaced` one records what it overwrote, so its undo puts that back.
+    // The undo clears the path before re-linking, for the reason the sweep's
+    // undo below does.
     if (a.action === "created") {
       tasks.push(
         symlink(a.target, a.linkPath, { undo: deleteFile(a.linkPath) }),
@@ -646,7 +872,12 @@ export function composeSkills(d: SkillsDetection): Task<void> {
     } else {
       tasks.push(deleteFile(a.linkPath));
       tasks.push(
-        symlink(a.target, a.linkPath, { undo: deleteFile(a.linkPath) }),
+        symlink(a.target, a.linkPath, {
+          undo: sequence_([
+            deleteFile(a.linkPath),
+            symlink(a.previousTarget, a.linkPath),
+          ]),
+        }),
       );
     }
   }

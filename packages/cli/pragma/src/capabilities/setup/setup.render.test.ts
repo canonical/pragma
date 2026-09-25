@@ -15,7 +15,13 @@
 
 import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
-import { type PlanRow, type SetupPlan, shortenPath } from "./plan.js";
+import {
+  type PlanChildRow,
+  type PlanRow,
+  type SetupPlan,
+  shortenPath,
+  summarizeChildren,
+} from "./plan.js";
 import {
   renderPlanTable,
   renderProgressLine,
@@ -31,6 +37,7 @@ const ROWS: PlanRow[] = [
     target: "config",
     scope: "global",
     action: "none",
+    summary: "config file already set up",
     detail: "~/.config/pragma/config.json — present",
     selected: false,
   },
@@ -38,6 +45,7 @@ const ROWS: PlanRow[] = [
     target: "completions",
     scope: "global",
     action: "install",
+    summary: "completion script",
     detail: "bash → ~/.local/share/bash-completion/completions/pragma",
     selected: true,
   },
@@ -45,6 +53,8 @@ const ROWS: PlanRow[] = [
     target: "lsp",
     scope: "global",
     action: "skip",
+    summary:
+      "no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
     detail:
       "no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
     reason:
@@ -55,6 +65,7 @@ const ROWS: PlanRow[] = [
     target: "mcp",
     scope: "global",
     action: "update",
+    summary: "2 config files",
     detail: "2 config files",
     children: [
       { key: "/home/u/.claude.json", label: "~/.claude.json", action: "add" },
@@ -70,6 +81,7 @@ const ROWS: PlanRow[] = [
     target: "skills",
     scope: "global",
     action: "link",
+    summary: "2 skills linked into 2 folders",
     detail: "2 skills → 2 folders (~/.claude/skills, ~/.agents/skills)",
     selected: true,
   },
@@ -116,7 +128,28 @@ describe("the setup plan renders as one table", () => {
     // happens to them; and the two quiet outcomes are told apart in words —
     // `no change` for something already correct, `nothing to do` for something
     // there is nothing to act on — with the reason beside each.
-    expect(renderPlanTable(PLAN, { lead: "Setup plan" })).toBe(
+    //
+    // The right column is the row's COMPACT line by default: one sentence per
+    // row, no path in it. The only path on the screen is in the header.
+    const out = renderPlanTable(PLAN, { lead: "Setup plan" });
+    expect(out).toBe(
+      [
+        "Setup plan — global (home: ~ · project: ~/src/app)",
+        "",
+        "  config       no change      config file already set up",
+        "  completions  install        completion script",
+        "  lsp          nothing to do  no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+        "  mcp          install        2 config files",
+        "  skills       link           2 skills linked into 2 folders",
+      ].join("\n"),
+    );
+    expect(out.split("\n").slice(1).join("\n")).not.toContain("~/");
+  });
+
+  it("prints every file and folder with its state under --verbose", () => {
+    // The same rows, the same columns, and the per-target breakdown in the
+    // right column — byte for byte what the default used to print for everyone.
+    expect(renderPlanTable(PLAN, { lead: "Setup plan", verbose: true })).toBe(
       [
         "Setup plan — global (home: ~ · project: ~/src/app)",
         "",
@@ -126,6 +159,25 @@ describe("the setup plan renders as one table", () => {
         "  mcp          install        ~/.claude.json · ~/.codeium/windsurf/mcp_config.json",
         "  skills       link           2 skills → 2 folders (~/.claude/skills, ~/.agents/skills)",
       ].join("\n"),
+    );
+  });
+
+  it("the dry run and the non-interactive preview honour the same flag", () => {
+    const plan = { ...PLAN, preview: true };
+    expect(renderDryRun(plan)).toContain(
+      "  mcp          install        2 config files",
+    );
+    expect(renderDryRun(plan, true)).toContain(
+      "  mcp          install        ~/.claude.json · ~/.codeium/windsurf/mcp_config.json",
+    );
+    const context = { headers: true, stdoutIsTty: true };
+    expect(setupFormatters.plain(plan, context)).toContain(
+      "  skills       link           2 skills linked into 2 folders",
+    );
+    expect(
+      setupFormatters.plain(plan, { ...context, verbose: true }),
+    ).toContain(
+      "  skills       link           2 skills → 2 folders (~/.claude/skills, ~/.agents/skills)",
     );
   });
 
@@ -177,15 +229,24 @@ describe("the recap is the plan replayed", () => {
     expect(renderRecap(APPLIED)).toBe(
       [
         "Setup: 4 of 4 targets configured — global",
-        "  ✓ config       ~/.config/pragma/config.json — present",
-        "  ✓ completions  bash → ~/.local/share/bash-completion/completions/pragma — installed",
+        "  ✓ config       config file already set up",
+        "  ✓ completions  completion script — installed",
         "  ○ lsp          skipped: no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
         "      no action is possible on this machine yet — install VS Code or VSCodium, then run this again",
         "  ✓ mcp          2 config files — 2 added",
-        "  ✓ skills       2 skills → 2 folders (~/.claude/skills, ~/.agents/skills) — linked",
+        "  ✓ skills       2 skills linked into 2 folders — linked",
         "",
         "Check this again any time with `pragma doctor`.",
       ].join("\n"),
+    );
+  });
+
+  it("replays each row's full detail under --verbose", () => {
+    expect(renderRecap(APPLIED, { verbose: true })).toContain(
+      "  ✓ skills       2 skills → 2 folders (~/.claude/skills, ~/.agents/skills) — linked",
+    );
+    expect(renderRecap(APPLIED, { verbose: true })).toContain(
+      "  ✓ config       ~/.config/pragma/config.json — present",
     );
   });
 
@@ -213,10 +274,16 @@ describe("a row that did not run never renders as one that did", () => {
       target: "mcp",
       scope: "global",
       action: "update",
+      summary: "config file",
       detail: "1 file",
       selected: false,
     };
-    expect(renderProgressLine(row, 3)).toBe("· mcp  1 file — not selected");
+    expect(renderProgressLine(row, 3)).toBe(
+      "· mcp  config file — not selected",
+    );
+    expect(renderProgressLine(row, 3, { verbose: true })).toBe(
+      "· mcp  1 file — not selected",
+    );
   });
 
   it("a converged run recaps its noop rows instead of printing a plan", () => {
@@ -231,6 +298,7 @@ describe("a row that did not run never renders as one that did", () => {
           target: "config",
           scope: "global",
           action: "none",
+          summary: "config file already set up",
           detail: "~/.config/pragma/config.json — present",
           selected: false,
           outcome: { status: "noop", note: "unchanged" },
@@ -239,7 +307,7 @@ describe("a row that did not run never renders as one that did", () => {
     };
     expect(setupFormatters.plain(converged)).toBe(renderRecap(converged));
     expect(setupFormatters.plain(converged)).toContain(
-      "✓ config  ~/.config/pragma/config.json — present — unchanged",
+      "✓ config  config file already set up — unchanged",
     );
   });
 
@@ -248,6 +316,7 @@ describe("a row that did not run never renders as one that did", () => {
       target: "lsp",
       scope: "global",
       action: "install",
+      summary: "editor",
       detail: "via code",
       selected: true,
       outcome: {
@@ -258,8 +327,19 @@ describe("a row that did not run never renders as one that did", () => {
       },
     };
     expect(renderProgressLine(failed, 3)).toBe(
-      "✗ lsp  via code — VS Code refused the VSIX",
+      "✗ lsp  editor — VS Code refused the VSIX",
     );
+  });
+
+  it("the llm bullet carries the compact line, and only a multi-file row lists its files", () => {
+    const out = setupFormatters.llm(PLAN);
+    expect(out).toContain(
+      "- · **config** (global): none — config file already set up",
+    );
+    expect(out).toContain("- · **mcp** (global): update — 2 config files");
+    expect(out).toContain("  - ~/.claude.json");
+    // A single-file row's line is its whole story: no sub-bullet repeats it.
+    expect(out).not.toContain("  - ~/.config/pragma/config.json");
   });
 
   it("an unapplied plan does not paint every llm row with a check", () => {
@@ -327,5 +407,62 @@ describe("shortenPath — containment, on the host's own separator", () => {
   it("leaves a path under neither root absolute", () => {
     const outside = join(sep, "etc", "pragma", "config.json");
     expect(shortenPath(outside, roots)).toBe(outside);
+  });
+});
+
+describe("summarizeChildren — the compact line, derived from the children", () => {
+  const noun = ["config file", "config files"] as const;
+  const child = (action: PlanChildRow["action"], n: number): PlanChildRow => ({
+    key: `/f${n}`,
+    label: `f${n}`,
+    action,
+  });
+
+  it("counts nothing for a row with no children", () => {
+    expect(summarizeChildren(noun, [])).toBeUndefined();
+  });
+
+  it("names the noun alone when every child is to be added or updated — the action column says the rest", () => {
+    expect(summarizeChildren(noun, [child("add", 1)])).toBe("config file");
+    expect(
+      summarizeChildren(noun, [
+        child("add", 1),
+        child("add", 2),
+        child("add", 3),
+      ]),
+    ).toBe("3 config files");
+    expect(
+      summarizeChildren(noun, [child("update", 1), child("update", 2)]),
+    ).toBe("2 config files");
+  });
+
+  it("says the quiet state out loud when every child is already set up, or skipped", () => {
+    expect(summarizeChildren(noun, [child("unchanged", 1)])).toBe(
+      "config file already set up",
+    );
+    expect(
+      summarizeChildren(noun, [child("unchanged", 1), child("unchanged", 2)]),
+    ).toBe("2 config files already set up");
+    expect(summarizeChildren(noun, [child("skip", 1), child("skip", 2)])).toBe(
+      "2 config files skipped",
+    );
+  });
+
+  it("counts each state when the children disagree, in a fixed order", () => {
+    expect(
+      summarizeChildren(noun, [
+        child("unchanged", 1),
+        child("add", 2),
+        child("skip", 3),
+        child("update", 4),
+        child("add", 5),
+        child("unchanged", 6),
+      ]),
+    ).toBe(
+      "6 config files: 2 to add, 1 to update, 2 already set up, 1 skipped",
+    );
+    expect(
+      summarizeChildren(noun, [child("add", 1), child("unchanged", 2)]),
+    ).toBe("2 config files: 1 to add, 1 already set up");
   });
 });

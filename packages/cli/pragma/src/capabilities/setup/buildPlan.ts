@@ -16,6 +16,7 @@ import {
   defaultSelected,
   type PlanRow,
   type SetupPlan,
+  summarizeChildren,
   type TargetId,
 } from "./plan.js";
 import {
@@ -140,17 +141,21 @@ export async function detectTargets(
  * dead end: a reader who wanted `completions` under `--local` is told in the
  * same line that `--global` is where it lives.
  */
-const outOfScopeRow = (target: AnyTarget, scope: Scope): PlanRow => ({
-  target: target.id,
-  scope,
-  action: "skip",
-  detail: "not part of this scope",
-  reason:
+const outOfScopeRow = (target: AnyTarget, scope: Scope): PlanRow => {
+  const reason =
     scope === "project"
       ? "this one is global only — run it with `--global`"
-      : "this one is per-project only — run it with `--local`",
-  selected: false,
-});
+      : "this one is per-project only — run it with `--local`";
+  return {
+    target: target.id,
+    scope,
+    action: "skip",
+    summary: reason,
+    detail: "not part of this scope",
+    reason,
+    selected: false,
+  };
+};
 
 /**
  * The row a target gets when its own detection threw. It is a `skip` in the
@@ -167,6 +172,7 @@ const failedDetectionRow = (
   target: target.id,
   scope,
   action: "skip",
+  summary: failure,
   detail: "detection did not complete",
   reason: failure,
   selected: false,
@@ -192,6 +198,20 @@ export function draftFor(
     ? hit.target.removalPlan(hit.detection, hit.scope, roots)
     : hit.target.plan(hit.detection, hit.scope, roots);
 }
+
+/**
+ * The compact line of a drafted row. A skip's line is its reason — the one
+ * thing a reader needs from a row that does nothing; a row that authored its
+ * own line keeps it; every other row counts its children in the target's
+ * noun, and a row with none to count keeps its detail (the removal's `no
+ * entry to remove`).
+ */
+const summarizeDraft = (target: AnyTarget, draft: TargetDraft): string =>
+  draft.action === "skip"
+    ? (draft.reason ?? draft.detail)
+    : (draft.summary ??
+      summarizeChildren(target.noun, draft.children ?? []) ??
+      draft.detail);
 
 /**
  * Project detections into plan rows.
@@ -235,6 +255,7 @@ export function buildPlan(
         target: target.id,
         scope,
         action: draft.action,
+        summary: summarizeDraft(target, draft),
         detail: draft.detail,
         ...(draft.reason === undefined ? {} : { reason: draft.reason }),
         ...(draft.children === undefined ? {} : { children: draft.children }),

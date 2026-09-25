@@ -156,7 +156,7 @@ export function extractParams(
  *
  * The plain branch owns two ROUTING decisions (the rendering itself stays in
  * the formatters): it threads the presentation context (`--no-headers`,
- * stdout's TTY-ness) into the plain formatter, and it routes a declared
+ * `--verbose`, stdout's TTY-ness) into the plain formatter, and it routes a declared
  * empty-state notice to STDERR with exit 0 — a zero-record result is a calm
  * success, and stdout (the data stream) must not carry a human sentence a
  * pipe would read as a record. `llm` and `json` keep their own empty shapes
@@ -202,6 +202,7 @@ function renderData(
   const context: RenderContext = {
     headers: flags.noHeaders !== true,
     stdoutIsTty: !stdoutIsCaptured(),
+    verbose: flags.verbose,
   };
   const text = verb.output.formatters.plain(data, context);
   // The calm notice is success-path guidance — `--quiet` mutes it.

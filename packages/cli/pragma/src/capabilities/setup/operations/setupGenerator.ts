@@ -253,17 +253,30 @@ const readList = (
   Array.isArray(answers[key]) ? (answers[key] as string[]) : undefined;
 
 /**
+ * A row's one-line description as the wizard and the live progress print it:
+ * the compact summary, or the full detail under `--verbose` — the same
+ * register the plan table and the recap chose for the same flag.
+ */
+const rowLine = (row: PlanRow, verbose: boolean): string =>
+  verbose ? row.detail : row.summary;
+
+/**
  * The wizard's row multiselect — its choices ARE the plan rows. Actionable rows
  * are pre-selected; an already-current row is offered DE-selected, so a re-run
  * never proposes to rewrite what is already correct. A skip row is not a choice
  * at all (summon's choice shape has no disabled state) but stays a visible row
  * in the plan and the recap, carrying its reason.
  */
-const buildRowsPrompt = (plan: SetupPlan): PromptDefinition => {
+const buildRowsPrompt = (
+  plan: SetupPlan,
+  verbose: boolean,
+): PromptDefinition => {
   const choices = plan.rows
     .filter((row) => row.action !== "skip")
     .map((row) => ({
-      label: `${row.target} — ${row.detail}${row.action === "none" ? " (already configured)" : ""}`,
+      // The compact line already says `already set up`; the suffix is for
+      // the breakdown, which names the file and not its state.
+      label: `${row.target} — ${rowLine(row, verbose)}${verbose && row.action === "none" ? " (already configured)" : ""}`,
       value: rowKey(row.scope, row.target),
     }));
   return {
@@ -411,9 +424,10 @@ export async function buildSetupRun(
   const detected = await detectTargets(rt, ids, scope);
   const plan = buildPlan(scope, roots, detected, ids, removal);
   const sink = new OutcomeSink();
+  const verbose = rt.globalFlags.verbose === true;
 
   const prompts: PromptDefinition[] = [];
-  if (mode === "all") prompts.push(buildRowsPrompt(plan));
+  if (mode === "all") prompts.push(buildRowsPrompt(plan, verbose));
   // A target is worth narrowing only when it has more than one child to choose
   // between. `mcp` offers its config files; `lsp` offers the editors on PATH —
   // a machine with several VS Code forks should not have the extension pushed
@@ -459,10 +473,14 @@ export async function buildSetupRun(
     answers: Record<string, unknown>,
   ): string | undefined => {
     if (removal) return ACTION_NOTES[row.action];
+    // Only a row the wizard can NARROW counts its children: the count is what
+    // the narrowing did. A single-file row's one child is not a count worth
+    // a sentence — `config file — 1 added` says less than `installed`.
     const childKey = CHILD_ANSWER[row.target];
-    const kept =
-      childKey === undefined ? undefined : readList(answers, childKey);
-    return childNote(row, kept) ?? ACTION_NOTES[row.action];
+    if (childKey === undefined) return ACTION_NOTES[row.action];
+    return (
+      childNote(row, readList(answers, childKey)) ?? ACTION_NOTES[row.action]
+    );
   };
 
   /** The live row listener, when a wizard is watching. See {@link SetupRun}. */
@@ -500,7 +518,7 @@ export async function buildSetupRun(
         // The row's progress sentence — the `target  detail — note` shape
         // `renderProgressLine` prints — so the live view and the recap say the
         // same thing about the same row.
-        const label = `${row.target.padEnd(idWidth)}  ${row.detail}`;
+        const label = `${row.target.padEnd(idWidth)}  ${rowLine(row, verbose)}`;
         const note = noteFor(row, answers);
         return [
           {

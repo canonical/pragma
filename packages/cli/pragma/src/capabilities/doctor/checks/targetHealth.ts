@@ -54,6 +54,7 @@ import {
   mcpGroupState,
   mcpWriteState,
   type SkillsDetection,
+  type SymlinkAction,
   skillsSkipReason,
   skillsSkipRemedy,
 } from "../../setup/operations/index.js";
@@ -259,7 +260,11 @@ async function mcpHealth(
   };
 }
 
-/** The `skills` row: every expected link present, lstat-verified, none stale. */
+/**
+ * The `skills` row: every expected link present, lstat-verified, and each one
+ * reaching the skill this CLI ships — `pass` only when all are current; a stale
+ * one lists itself with its reason under the derived `fix:`.
+ */
 function skillsHealth(
   d: SkillsDetection,
   scope: Scope,
@@ -285,12 +290,25 @@ function skillsHealth(
       detail: `${orphans} link${orphans === 1 ? "" : "s"} point at a skill that is gone`,
     };
   }
-  const stale = d.actions.filter((a) => a.action === "replaced").length;
+  // One item per path that is not current, each carrying the reason detection
+  // recorded — the version it links to, the content that differs, the target
+  // that is gone — so the user reads which skills and why, not a count.
+  const items = (actions: readonly SymlinkAction[]): CheckItem[] =>
+    actions.map((a) => ({
+      label: shortenPath(a.linkPath, roots),
+      status: "available" as const,
+      ...(a.stale === undefined ? {} : { detail: a.stale }),
+    }));
+  // A stale link is `available`, not `fail`: setup replaces it, and the derived
+  // `fix:` names that command. It was a `fail` saying "point elsewhere", which
+  // reads as a fault with no cause on a machine that has merely been upgraded.
+  const stale = d.actions.filter((a) => a.action === "replaced");
   const missing = d.actions.filter((a) => a.action === "created").length;
-  if (stale > 0) {
+  if (stale.length > 0) {
     return {
-      status: "fail",
-      detail: `${stale} of ${d.actions.length} links point elsewhere`,
+      status: "available",
+      detail: `${stale.length} of ${d.actions.length} links ${stale.length === 1 ? "is" : "are"} stale`,
+      items: items(stale),
     };
   }
   // A hand-placed real directory is `skipped` like an already-correct link is,
@@ -301,23 +319,26 @@ function skillsHealth(
   // will never delete it — which would make this row claim "links current" over
   // a path where the user's own link shadows a shipped skill. `skipped` also
   // covers an already-correct link (owned) and a real directory (blocked), so
-  // the foreign case is what is left.
+  // the foreign case is what is left. A foreign link that REACHES the shipped
+  // skill's content is current, whoever made it, and detection marks it so.
   const foreign = d.actions.filter(
-    (a) => a.action === "skipped" && !a.owned && !a.blocked,
-  ).length;
-  if (foreign > 0) {
+    (a) => a.action === "skipped" && !a.owned && !a.blocked && a.stale,
+  );
+  if (foreign.length > 0) {
     return {
       status: "available",
-      detail: `${foreign} of ${d.actions.length} link paths hold a symlink pragma does not own`,
+      detail: `${foreign.length} of ${d.actions.length} link paths hold a symlink pragma does not own`,
+      items: items(foreign),
       remedy:
         "Move or delete the symlink at that path, then link the skills again.",
     };
   }
-  const blocked = d.actions.filter((a) => a.blocked).length;
-  if (blocked > 0) {
+  const blocked = d.actions.filter((a) => a.blocked);
+  if (blocked.length > 0) {
     return {
       status: "available",
-      detail: `${blocked} of ${d.actions.length} link paths hold a real directory`,
+      detail: `${blocked.length} of ${d.actions.length} link paths hold a real directory`,
+      items: items(blocked),
       remedy:
         "Move or delete the directory at that path, then link the skills again.",
     };

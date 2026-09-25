@@ -8,6 +8,11 @@
  * be printed on a run that had silently dropped a target. Here the recap is the
  * preview with outcomes filled in, so the two cannot describe different runs.
  *
+ * Every row renders in one of two registers, and the choice is made HERE, once,
+ * for all of them: the row's compact `summary` by default, its per-file
+ * `detail`/`children` under `--verbose`. A sub-verb, the dry run, the undo
+ * preview and the recap all inherit the rule.
+ *
  * Column widths are computed from the rows being rendered, so the block stays
  * aligned whether it holds one row or seven. Colour rides the shared TTY seam —
  * a piped run renders byte-for-byte plain.
@@ -110,13 +115,21 @@ const childCell = (row: PlanRow, child: PlanChildRow): string =>
     ? child.label
     : `${child.label} (${child.action})`;
 
-/** The right column: the children joined, or the row's own detail. */
+/** The verbose right column: the children joined, or the row's own detail. */
 const detailCell = (row: PlanRow): string =>
   row.children && row.children.length > 0
     ? row.children.map((child) => childCell(row, child)).join(" · ")
     : row.action === "skip"
       ? (row.reason ?? row.detail)
       : row.detail;
+
+/** The right column: the compact `summary`, or the breakdown under `--verbose`. */
+const rightCell = (row: PlanRow, verbose: boolean): string =>
+  verbose ? detailCell(row) : row.summary;
+
+/** The progress and recap body: what and where in full, or the compact line. */
+const rowBody = (row: PlanRow, verbose: boolean): string =>
+  verbose ? row.detail : row.summary;
 
 /** Pad every id to the widest, so the three columns line up. */
 const widthOf = (rows: readonly PlanRow[], pick: (row: PlanRow) => string) =>
@@ -138,15 +151,19 @@ function byScope(plan: SetupPlan): [Scope, PlanRow[]][] {
  *
  * @param plan - The plan to render.
  * @param options - `lead` heads the block; `hint` is the trailing line (the
- *   non-interactive preview's "nothing was applied", or the dry-run's own).
+ *   non-interactive preview's "nothing was applied", or the dry-run's own);
+ *   `verbose` swaps each row's compact line for its per-file breakdown.
  * @param style - Injected for tests; defaults to the shared TTY seam.
  * @returns The rendered block.
  */
 export function renderPlanTable(
   plan: SetupPlan,
-  options: { lead: string; hint?: string } = { lead: "Setup plan" },
+  options: { lead: string; hint?: string; verbose?: boolean } = {
+    lead: "Setup plan",
+  },
   style: RenderStyle = defaultStyle(),
 ): string {
+  const verbose = options.verbose === true;
   const idWidth = widthOf(plan.rows, (row) => row.target);
   const actionWidth = widthOf(plan.rows, actionCell);
   const lines = [style.bold(header(plan, options.lead)), ""];
@@ -155,7 +172,7 @@ export function renderPlanTable(
     if (plan.scope === "both") lines.push(style.bold(SCOPE_LABELS[scope]));
     for (const row of rows) {
       lines.push(
-        `  ${row.target.padEnd(idWidth)}  ${actionCell(row).padEnd(actionWidth)}  ${style.dim(detailCell(row))}`,
+        `  ${row.target.padEnd(idWidth)}  ${actionCell(row).padEnd(actionWidth)}  ${style.dim(rightCell(row, verbose))}`,
       );
     }
   }
@@ -180,13 +197,15 @@ export function renderPlanTable(
  * stderr seam, `--quiet`-aware and a no-op over MCP — because pragma contains no
  * React and no Ink, and three PROTECTED tests exist to keep it that way.
  *
- * The default lists DETECTED rows only; `--verbose` lists everything. "Detected"
- * is `action !== "skip"`, which is not a new partition: it is exactly the
+ * The default lists DETECTED rows only, each as its compact line; `--verbose`
+ * lists everything, each with its per-file breakdown. "Detected" is
+ * `action !== "skip"`, which is not a new partition: it is exactly the
  * predicate the row multiselect already uses to build its choices, so the
  * summary and the question that follows it describe the same set.
  *
  * @param plan - The plan as detected (no outcomes yet).
- * @param options - `verbose` widens detected-only to the whole table.
+ * @param options - `verbose` widens detected-only to the whole table and
+ *   compact lines to the breakdown.
  * @param style - Injected for tests; defaults to the shared TTY seam.
  * @returns The rendered block, or `undefined` when there is nothing to say.
  */
@@ -195,7 +214,8 @@ export function renderDetectionSummary(
   options: { verbose?: boolean } = {},
   style: RenderStyle = defaultStyle(),
 ): string | undefined {
-  const shown = options.verbose
+  const verbose = options.verbose === true;
+  const shown = verbose
     ? plan.rows
     : plan.rows.filter((row) => row.action !== "skip");
   if (shown.length === 0) return undefined;
@@ -207,7 +227,7 @@ export function renderDetectionSummary(
     if (plan.scope === "both") lines.push(style.bold(SCOPE_LABELS[scope]));
     for (const row of rows) {
       lines.push(
-        `  ${row.target.padEnd(idWidth)}  ${actionCell(row).padEnd(actionWidth)}  ${style.dim(detailCell(row))}`,
+        `  ${row.target.padEnd(idWidth)}  ${actionCell(row).padEnd(actionWidth)}  ${style.dim(rightCell(row, verbose))}`,
       );
     }
   }
@@ -222,6 +242,14 @@ export function renderDetectionSummary(
   return lines.join("\n");
 }
 
+/** How a progress line or a recap is rendered: which register, and the styler. */
+export interface RowRenderOptions {
+  /** Print each row's full detail instead of its compact line. */
+  readonly verbose?: boolean;
+  /** Injected for tests; defaults to the shared TTY seam. */
+  readonly style?: RenderStyle;
+}
+
 /**
  * One progress line, emitted as a row's outcome lands. Same columns as the
  * recap, so a reader watching the run and a reader reading the recap afterwards
@@ -229,21 +257,23 @@ export function renderDetectionSummary(
  *
  * @param row - The row, with its outcome filled in.
  * @param idWidth - The shared id column width.
- * @param style - Injected for tests.
+ * @param options - The register and the styler.
  * @returns The line.
  */
 export function renderProgressLine(
   row: PlanRow,
   idWidth: number,
-  style: RenderStyle = defaultStyle(),
+  options: RowRenderOptions = {},
 ): string {
+  const style = options.style ?? defaultStyle();
   const outcome = row.outcome;
+  const body = rowBody(row, options.verbose === true);
 
   // No outcome at all: the row was offered and left unselected. It is neither a
   // success nor a skip-for-cause, and painting it green would claim work that
   // never happened, so it gets a neutral marker and says plainly what it is.
   if (outcome === undefined) {
-    return `${style.dim(NOT_RUN_GLYPH)} ${row.target.padEnd(idWidth)}  ${style.dim(`${row.detail} — not selected`)}`;
+    return `${style.dim(NOT_RUN_GLYPH)} ${row.target.padEnd(idWidth)}  ${style.dim(`${body} — not selected`)}`;
   }
 
   const glyph = OUTCOME_GLYPHS[outcome.status];
@@ -254,7 +284,7 @@ export function renderProgressLine(
         ? style.yellow(glyph)
         : style.green(glyph);
   const note = outcome.note;
-  const body =
+  const sentence =
     outcome.status === "skipped"
       ? // A colon, not a dash: the reasons carry their own em-dash clause
         // ("no skills installed yet — pack skills arrive with …"), and two
@@ -262,9 +292,9 @@ export function renderProgressLine(
         // in front of a reason.
         `skipped: ${row.reason ?? row.detail}`
       : note
-        ? `${row.detail} — ${note}`
-        : row.detail;
-  return `${tinted} ${row.target.padEnd(idWidth)}  ${body}`;
+        ? `${body} — ${note}`
+        : body;
+  return `${tinted} ${row.target.padEnd(idWidth)}  ${sentence}`;
 }
 
 /**
@@ -275,15 +305,16 @@ export function renderProgressLine(
  * vanishing from a sentence that claims completeness.
  *
  * @param plan - The plan, with outcomes filled in.
- * @param lead - The headline's first word (`Setup` / `Removed`).
- * @param style - Injected for tests.
+ * @param options - `lead` is the headline's first word (`Setup` / `Removed`),
+ *   plus the register and the styler.
  * @returns The rendered recap.
  */
 export function renderRecap(
   plan: SetupPlan,
-  lead = "Setup",
-  style: RenderStyle = defaultStyle(),
+  options: RowRenderOptions & { readonly lead?: string } = {},
 ): string {
+  const lead = options.lead ?? "Setup";
+  const style = options.style ?? defaultStyle();
   const { configured, accountable } = planTally(plan);
   const idWidth = widthOf(plan.rows, (row) => row.target);
   const lines = [
@@ -295,7 +326,7 @@ export function renderRecap(
     if (plan.scope === "both")
       lines.push(style.bold(`  ${SCOPE_LABELS[scope]}`));
     for (const row of rows) {
-      lines.push(`  ${renderProgressLine(row, idWidth, style)}`);
+      lines.push(`  ${renderProgressLine(row, idWidth, options)}`);
       const remedy = row.outcome?.remedy;
       if (remedy) lines.push(`      ${style.dim(remedy)}`);
     }
@@ -307,7 +338,11 @@ export function renderRecap(
   return lines.join("\n");
 }
 
-/** The condensed Markdown form — the same rows, one bullet each. */
+/**
+ * The condensed Markdown form — the same rows, one bullet each, with the
+ * compact line on the bullet and the per-file breakdown as sub-bullets, so
+ * an agent reads both without either repeating the other.
+ */
 export function renderPlanLlm(plan: SetupPlan, lead = "Setup"): string {
   const lines = [`## ${lead} — ${scopePhrase(plan.scope)}`, ""];
   for (const row of plan.rows) {
@@ -318,7 +353,7 @@ export function renderPlanLlm(plan: SetupPlan, lead = "Setup"): string {
     const glyph = status === undefined ? NOT_RUN_GLYPH : OUTCOME_GLYPHS[status];
     const state = status ?? row.action;
     lines.push(
-      `- ${glyph} **${row.target}** (${row.scope}): ${state} — ${detailCell(row)}`,
+      `- ${glyph} **${row.target}** (${row.scope}): ${state} — ${row.summary}`,
     );
     for (const child of row.children ?? []) {
       lines.push(`  - ${childCell(row, child)}`);

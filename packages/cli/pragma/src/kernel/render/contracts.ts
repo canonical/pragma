@@ -10,11 +10,12 @@
 /**
  * Presentation context the dispatcher threads into a verb's PLAIN formatter.
  *
- * Only list-shaped formatters read it: the header row is a plain-table
- * concern (`llm` is the byte-frozen agent contract, `json` the envelope), so
- * rather than a second formatter family the plain formatter takes this
- * optional second argument. Absent context reads as an interactive terminal
- * with headers on — the shape every pre-existing caller assumed.
+ * Only plain formatters read it: the header row and the compact-or-full
+ * register are plain-text concerns (`llm` is the byte-frozen agent contract,
+ * `json` the envelope), so rather than a second formatter family the plain
+ * formatter takes this optional second argument. Absent context reads as an
+ * interactive terminal with headers on and the compact register — the shape
+ * every pre-existing caller assumed.
  */
 export interface RenderContext {
   /** False when `--no-headers` suppressed the list header row. */
@@ -26,6 +27,11 @@ export interface RenderContext {
    * goes to stderr).
    */
   readonly stdoutIsTty: boolean;
+  /**
+   * True under `--verbose`: a formatter with a compact and a full register
+   * picks the full one. Absent reads as compact.
+   */
+  readonly verbose?: boolean;
 }
 
 /** A single column in a list rendering. */

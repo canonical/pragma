@@ -90,7 +90,10 @@ export const FIXED_SURFACE = {
       flag: "--format <plain|llm|json>",
       doc: "Select output format (llm = condensed Markdown for agents)",
     },
-    { flag: "--verbose", doc: "Diagnostic output on stderr (sources update)" },
+    {
+      flag: "--verbose",
+      doc: "Diagnostic output on stderr (sources update); the full breakdown in setup and doctor",
+    },
     {
       flag: "--detail <level>",
       doc: "Progressive-disclosure level (summary, standard, detailed)",

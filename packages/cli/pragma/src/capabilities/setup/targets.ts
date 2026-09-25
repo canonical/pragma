@@ -78,6 +78,7 @@ import {
 } from "./operations/setupSkills.js";
 import type { FsProbe } from "./operations/writability.js";
 import {
+  type ChildNoun,
   type PlanAction,
   type PlanChildRow,
   type Roots,
@@ -89,6 +90,12 @@ import type { Scope } from "./types.js";
 /** What a target contributes to one plan row, before selection is applied. */
 export interface TargetDraft {
   readonly action: PlanAction;
+  /**
+   * The compact line, when the row has one the plan cannot derive from its
+   * children — path-free, and carrying the row's own tally. Absent, the plan
+   * derives it from the children by count and the target's noun.
+   */
+  readonly summary?: string;
   readonly detail: string;
   /** REQUIRED when the action is `skip`. */
   readonly reason?: string;
@@ -106,6 +113,12 @@ export interface TargetDefinition<D> {
   readonly id: TargetId;
   /** Human title, used where a sentence needs one; the id is the row name. */
   readonly title: string;
+  /**
+   * What the row's children are, for the plan's compact line: the summary
+   * counts them by state (`6 config files: 4 to add, 2 already set up`), so a
+   * row authors this one word and gets its summary derived.
+   */
+  readonly noun: ChildNoun;
   readonly scopes: readonly Scope[];
   /**
    * Real reads, up front, once per (target, scope) per invocation.
@@ -144,19 +157,42 @@ const defineTarget = <D>(target: TargetDefinition<D>): AnyTarget =>
 // The rows
 // =============================================================================
 
+/**
+ * The compact line of a single-file row — the noun, and the one state worth
+ * saying. Such a row has no children to count, and its detail is the path
+ * the compact line exists to keep off the screen.
+ */
+const oneFile = (noun: ChildNoun, current = false): string =>
+  current ? `${noun[0]} already set up` : noun[0];
+
+const CONFIG_NOUN: ChildNoun = ["config file", "config files"];
+
 const configTarget = defineTarget<ConfigDetection>({
   id: "config",
   title: "Global configuration",
+  noun: CONFIG_NOUN,
   scopes: ["global"],
   detect: () => detectConfigFile(),
   plan: (d, _scope, roots) => {
     const path = shortenPath(d.path, roots);
-    if (!d.exists) return { action: "install", detail: path };
-    return { action: "none", detail: `${path} — present` };
+    if (!d.exists) {
+      return { action: "install", summary: oneFile(CONFIG_NOUN), detail: path };
+    }
+    return {
+      action: "none",
+      summary: oneFile(CONFIG_NOUN, true),
+      detail: `${path} — present`,
+    };
   },
   removalPlan: (d, _scope, roots) => {
     const path = shortenPath(d.path, roots);
-    if (!d.exists) return { action: "none", detail: `${path} — absent` };
+    if (!d.exists) {
+      return {
+        action: "none",
+        summary: "no config file to remove",
+        detail: `${path} — absent`,
+      };
+    }
     if (!d.isSeed) {
       return {
         action: "skip",
@@ -164,15 +200,18 @@ const configTarget = defineTarget<ConfigDetection>({
         reason: `it holds your own settings, so ${path} stays`,
       };
     }
-    return { action: "remove", detail: path };
+    return { action: "remove", summary: oneFile(CONFIG_NOUN), detail: path };
   },
   compose: (d) => composeConfigFile(d),
   composeRemoval: (d, undoKey) => composeConfigRemoval(d, undoKey),
 });
 
+const COMPLETIONS_NOUN: ChildNoun = ["completion script", "completion scripts"];
+
 const completionsTarget = defineTarget<CompletionsDetection>({
   id: "completions",
   title: "Shell completions",
+  noun: COMPLETIONS_NOUN,
   scopes: ["global"],
   detect: (rt) => detectCompletions(rt.cwd),
   plan: (d, _scope, roots) => {
@@ -210,10 +249,15 @@ const completionsTarget = defineTarget<CompletionsDetection>({
     // beside a bare path leaves the reader to guess whether the script is
     // there and current or missing and unreachable.
     if (d.state === "installed") {
-      return { action: "none", detail: `${where} — already up to date` };
+      return {
+        action: "none",
+        summary: oneFile(COMPLETIONS_NOUN, true),
+        detail: `${where} — already up to date`,
+      };
     }
     return {
       action: d.state === "stale" ? "update" : "install",
+      summary: oneFile(COMPLETIONS_NOUN),
       detail: where,
     };
   },
@@ -221,7 +265,11 @@ const completionsTarget = defineTarget<CompletionsDetection>({
     if (d.path === null || d.state === "absent") {
       return { action: "none", detail: "no script installed" };
     }
-    return { action: "remove", detail: shortenPath(d.path, roots) };
+    return {
+      action: "remove",
+      summary: oneFile(COMPLETIONS_NOUN),
+      detail: shortenPath(d.path, roots),
+    };
   },
   compose: (d) => composeCompletions(d),
   composeRemoval: (d, undoKey) => composeCompletionsRemoval(d, undoKey),
@@ -296,6 +344,7 @@ const draftLspRowBlock = (
 const lspTarget = defineTarget<LspDetection>({
   id: "lsp",
   title: "Terrazzo LSP extension",
+  noun: ["editor", "editors"],
   scopes: ["global"],
   detect: (rt, _scope, probe) => detectLsp(rt.cwd, undefined, probe),
   plan: (d, _scope, roots) => {
@@ -401,6 +450,7 @@ const mcpChild = (
 const mcpTarget = defineTarget<McpDetection>({
   id: "mcp",
   title: "MCP server registration",
+  noun: ["config file", "config files"],
   scopes: ["global", "project"],
   detect: (rt, scope, probe) => detectMcp(rt, scope, probe),
   plan: (d, scope, roots) => {
@@ -461,6 +511,7 @@ const mcpTarget = defineTarget<McpDetection>({
 const skillsTarget = defineTarget<SkillsDetection>({
   id: "skills",
   title: "Skill symlinks",
+  noun: ["skill folder", "skill folders"],
   scopes: ["global", "project"],
   detect: (rt, scope) => detectSkills(rt, scope),
   plan: (d, scope, roots) => {
@@ -485,16 +536,51 @@ const skillsTarget = defineTarget<SkillsDetection>({
     }
     const dirs = d.targets.map((t) => shortenPath(t.dir, roots)).join(", ");
     const where = `${d.skillCount} ${d.skillCount === 1 ? "skill" : "skills"} → ${d.targets.length} ${d.targets.length === 1 ? "folder" : "folders"} (${dirs})`;
-    const detail =
-      stale.length === 0
-        ? where
-        : `${where}, ${stale.length} stale ${stale.length === 1 ? "link" : "links"} to remove`;
-    const pending = d.actions.filter((a) => a.action !== "skipped");
-    if (pending.length > 0) return { action: "link", detail };
-    // Nothing to link, but something to retire: `update` is the table's word
-    // for "this row has work that is not a fresh install".
-    if (stale.length > 0) return { action: "update", detail };
-    return { action: "none", detail };
+    // A stale link is replaced, and the row says WHY — by distinct reason, so
+    // eighteen links into one old release read as one cause, not eighteen.
+    // Without the reason a user who has just upgraded sees `link` over a tree
+    // that looked converged a minute ago and has no way to tell whether the
+    // run is repairing something or churning.
+    const replaced = d.actions.filter((a) => a.action === "replaced");
+    const reasons = [...new Set(replaced.map((a) => a.stale))].join("; ");
+    // A hand-placed copy that has drifted is named here too, so this row and
+    // the doctor row agree — but it is never replaced: it is not this
+    // command's to delete.
+    const copies = d.actions.filter((a) => a.blocked && a.stale !== undefined);
+    const clauses = [
+      ...(replaced.length === 0
+        ? []
+        : [
+            `${replaced.length} stale ${replaced.length === 1 ? "link" : "links"} to replace: ${reasons}`,
+          ]),
+      ...(stale.length === 0
+        ? []
+        : [
+            `${stale.length} stale ${stale.length === 1 ? "link" : "links"} to remove`,
+          ]),
+      ...(copies.length === 0
+        ? []
+        : [
+            `${copies.length} ${copies.length === 1 ? "copy differs" : "copies differ"}, left alone`,
+          ]),
+    ];
+    const detail = [where, ...clauses].join(", ");
+    // The compact line keeps the tally and the reasons and drops the folder
+    // paths: the children-derived count would say `2 skill folders` and lose
+    // the nine skills and the stale links, which are the row's whole story.
+    const summary = [
+      `${d.skillCount} ${d.skillCount === 1 ? "skill" : "skills"} linked into ${d.targets.length} ${d.targets.length === 1 ? "folder" : "folders"}`,
+      ...clauses,
+    ].join(", ");
+    if (d.actions.some((a) => a.action === "created")) {
+      return { action: "link", summary, detail };
+    }
+    // Nothing new to link, but something to replace or retire: `update` is the
+    // table's word for "this row has work that is not a fresh install".
+    if (replaced.length > 0 || stale.length > 0) {
+      return { action: "update", summary, detail };
+    }
+    return { action: "none", summary, detail };
   },
   removalPlan: (d, _scope, roots) => {
     const owned = ownedSkillLinks(d);
