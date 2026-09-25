@@ -2,27 +2,25 @@
 @import "./font-faces.css";
 
 html {
-  color: var(--lp-color-text-default);
-  background-color: var(--lp-color-background-default);
+  color: var(--color-text);
+  background-color: var(--color-background);
 
   /* 
-  TODO: Should the color be controlled on the level of modifiers (severity)? If so, how?
+  TODO: Should the color be controlled on the level of modifiers (criticality)? If so, how?
   Outline colors, according to vanilla should:
     - on `Chip` stay default no matter the modifier,
       - OK, we just don't subscribe to the context at all;
     - on `TextInput` follow the values of the secondary context,
       - OK, we subscribe to the secondary context;
-    - on `Button` stay default for all severities but `positive`, where it should become a very dark green,
-      - not OK, we don't have the required value in the severity context.
   */
-  --focus-outline: var(--lp-dimension-stroke-thickness-large) solid
-    var(--lp-color-border-focus);
+  --focus-outline: var(--dimension-stroke-thickness-large) solid
+    var(--color-focusRing);
   /* Most elements have the outline on the inside of the element. Needs to be adjusted for specific cases (e.g. checkbox, radio) */
-  --focus-outline-offset: calc(var(--lp-dimension-stroke-thickness-large) * -1);
+  --focus-outline-offset: calc(var(--dimension-stroke-thickness-large) * -1);
 }
 
 body {
-  font: var(--lp-typography-paragraph-s);
+  font: var(--ds-typography-text-primary);
 }
 
 *:focus-visible {
@@ -51,20 +49,20 @@ body {
 }
 
 h1 {
-  font: var(--lp-typography-h1);
+  font: var(--ds-typography-heading-1);
 }
 h2 {
-  font: var(--lp-typography-h2);
+  font: var(--ds-typography-heading-2);
 }
 h3 {
-  font: var(--lp-typography-h3);
+  font: var(--ds-typography-heading-3);
 }
 h4 {
-  font: var(--lp-typography-h4);
+  font: var(--ds-typography-heading-4);
 }
 h5 {
-  font: var(--lp-typography-h5);
+  font: var(--ds-typography-heading-5);
 }
 h6 {
-  font: var(--lp-typography-h6);
+  font: var(--ds-typography-heading-6);
 }

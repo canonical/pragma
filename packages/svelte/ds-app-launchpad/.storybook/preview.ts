@@ -1,6 +1,6 @@
 import previewConfig from "@canonical/storybook-config/preview";
 
-import "./launchpad-tokens.css";
+import "./storybook.css";
 import "../src/lib/index.css";
 
 const preview = {
