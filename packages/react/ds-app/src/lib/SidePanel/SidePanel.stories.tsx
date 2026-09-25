@@ -1,5 +1,6 @@
 import { Button, withTooltip } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useEffect, useRef, useState } from "react";
 import { ubuntuStory } from "../../storybook/sidePanel/fixtures.js";
 import Component from "./Provider.js";
 import type { SidePanelHandle } from "./types.js";
@@ -26,56 +27,127 @@ export default meta;
 type Story = StoryObj<typeof Component>;
 
 /*
-  Every story shows the panel exactly as a consumer writes it, with one
-  fixture-only twist: the callback ref opens it the moment it mounts, because
-  a story is a static visual fixture with nothing to click. In an application
-  the open comes from an event instead —
+  Every story shows the panel exactly as a consumer writes it. The static
+  fixtures carry one fixture-only twist: the callback ref opens the panel the
+  moment it mounts, because a static story has nothing to click. In an
+  application the open comes from an event instead —
   `onClick={() => panelRef.current?.open()}` on the trigger that owns the
-  panel.
+  panel — which is exactly what the interactive stories wire up for real.
 */
 
+type Instance = {
+  name: string;
+  status: string;
+  image: string;
+  type: string;
+  architecture: string;
+  cpu: string;
+  memory: string;
+  storage: string;
+  ipv4: string;
+  created: string;
+};
+
+const instances: Instance[] = [
+  {
+    name: "noble-vm-01",
+    status: "Running",
+    image: "Ubuntu 24.04 LTS (Noble Numbat)",
+    type: "Virtual machine",
+    architecture: "x86_64",
+    cpu: "2 vCPUs",
+    memory: "4 GiB",
+    storage: "20 GiB",
+    ipv4: "10.20.30.11",
+    created: "2024-11-02",
+  },
+  {
+    name: "jammy-db-01",
+    status: "Running",
+    image: "Ubuntu 22.04 LTS (Jammy Jellyfish)",
+    type: "Container",
+    architecture: "x86_64",
+    cpu: "4 vCPUs",
+    memory: "8 GiB",
+    storage: "50 GiB",
+    ipv4: "10.20.30.24",
+    created: "2023-06-18",
+  },
+  {
+    name: "focal-cache-01",
+    status: "Stopped",
+    image: "Ubuntu 20.04 LTS (Focal Fossa)",
+    type: "Container",
+    architecture: "aarch64",
+    cpu: "1 vCPU",
+    memory: "2 GiB",
+    storage: "10 GiB",
+    ipv4: "10.20.30.7",
+    created: "2022-02-09",
+  },
+];
+
 /**
- * The open panel — the visual baseline, showing its primary use case: static
- * details of a selected entity, with the application behind it still usable.
+ * A form panel — the default story for creating or editing an entity. The
+ * form scrolls with the content pane while the header and actions stay pinned.
+ *
+ * The fields are plain HTML form elements. `Field` and `Form` live in
+ * `@canonical/react-ds-global-form`, and adding that package solely for a
+ * story would add a runtime dependency to this published package.
  */
-export const Open: Story = {
+export const WithForm: Story = {
   render: () => (
     <Component
       ref={(handle: SidePanelHandle | null) => {
         handle?.open();
       }}
     >
-      <Component.Header>Preview</Component.Header>
+      <Component.Header>Create instance</Component.Header>
       <Component.Content>
-        <p>
-          <strong>Name:</strong> noble-vm-01
-        </p>
-        <p>
-          <strong>Status:</strong> Running
-        </p>
-        <p>
-          <strong>Image:</strong> Ubuntu 24.04 LTS (Noble Numbat)
-        </p>
-        <p>
-          <strong>CPU:</strong> 2 vCPUs
-        </p>
-        <p>
-          <strong>Memory:</strong> 4 GiB
-        </p>
-        <p>
-          <strong>Storage:</strong> 20 GiB
-        </p>
+        <form
+          style={{ display: "grid", gap: "var(--dimension-300)" }}
+          onSubmit={(event) => {
+            event.preventDefault();
+          }}
+        >
+          <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
+            Instance name
+            <input type="text" name="instance_name" placeholder="noble-vm-01" />
+          </label>
+          <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
+            Ubuntu release
+            <select name="release" defaultValue="noble">
+              <option value="noble">Ubuntu 24.04 LTS (Noble Numbat)</option>
+              <option value="jammy">Ubuntu 22.04 LTS (Jammy Jellyfish)</option>
+              <option value="focal">Ubuntu 20.04 LTS (Focal Fossa)</option>
+            </select>
+          </label>
+          <label style={{ display: "flex", gap: "var(--dimension-100)" }}>
+            Enable Ubuntu Pro
+            <input type="checkbox" name="enable_pro" />
+          </label>
+          <span>
+            Security and compliance coverage for your Ubuntu instances,
+            including extended support for the packages you care about.
+          </span>
+          <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
+            Cloud-init user data (optional)
+            <textarea
+              name="cloud_init"
+              rows={4}
+              placeholder={"#cloud-config\npackages:\n  - nginx"}
+            />
+            <span>
+              Configuration to run on first boot: packages to install, users to
+              create, commands to run.
+            </span>
+          </label>
+        </form>
       </Component.Content>
       <Component.Footer>
-        {/*
-          Footer content is passed in by the consumer — the panel only
-          lays it out. Only the confirming action is `constructive`: the
-          modifier means "this creates or confirms", so a green Cancel
-          would misread.
-        */}
         <Button>Cancel</Button>
         <Button importance="primary" anticipation="constructive">
-          Launch
+          Create instance
         </Button>
       </Component.Footer>
     </Component>
@@ -89,22 +161,153 @@ export const Open: Story = {
     handle?.open();
   }}
 >
-  <SidePanel.Header>Preview</SidePanel.Header>
+  <SidePanel.Header>Create instance</SidePanel.Header>
   <SidePanel.Content>
-    <p><strong>Name:</strong> noble-vm-01</p>
-    <p><strong>Status:</strong> Running</p>
-    <p><strong>Image:</strong> Ubuntu 24.04 LTS (Noble Numbat)</p>
-    <p><strong>CPU:</strong> 2 vCPUs</p>
-    <p><strong>Memory:</strong> 4 GiB</p>
-    <p><strong>Storage:</strong> 20 GiB</p>
+    <form>
+      <label>
+        Instance name
+        <input type="text" name="instance_name" placeholder="noble-vm-01" />
+      </label>
+      <label>
+        Ubuntu release
+        <select name="release" defaultValue="noble">
+          <option value="noble">Ubuntu 24.04 LTS (Noble Numbat)</option>
+          <option value="jammy">Ubuntu 22.04 LTS (Jammy Jellyfish)</option>
+          <option value="focal">Ubuntu 20.04 LTS (Focal Fossa)</option>
+        </select>
+      </label>
+      <label>
+        Enable Ubuntu Pro
+        <input type="checkbox" name="enable_pro" />
+      </label>
+      <label>
+        Cloud-init user data (optional)
+        <textarea name="cloud_init" rows={4} />
+      </label>
+    </form>
   </SidePanel.Content>
   <SidePanel.Footer>
     <Button>Cancel</Button>
     <Button importance="primary" anticipation="constructive">
-      Launch
+      Create instance
     </Button>
   </SidePanel.Footer>
 </SidePanel>
+        `,
+      },
+    },
+  },
+};
+
+/**
+ * Showing details — the interactive baseline for an application displaying a
+ * selected entity. The panel starts open on the first entity; selecting
+ * another updates the details on the inline-end edge.
+ *
+ * This is the data-driven consumption pattern: compose `SidePanel` directly
+ * and drive it through a stored `ref`, because the content depends on the
+ * selection (`withSidePanel` is the pattern for static content). The panel's
+ * native `onClose` clears the selection on every dismissal — Cancel, Escape,
+ * anything — so clicking the same entity again is a fresh change and reopens
+ * the panel.
+ */
+export const ShowingDetails: Story = {
+  render: () => {
+    const panelRef = useRef<SidePanelHandle | null>(null);
+    const [selected, setSelected] = useState<Instance | null>(instances[0]);
+
+    // Open only once a selection exists, so the content is committed before
+    // the dialog shows — no flash of a previous selection.
+    useEffect(() => {
+      if (selected) {
+        panelRef.current?.open();
+      }
+    }, [selected]);
+
+    return (
+      <>
+        <ul
+          style={{
+            display: "grid",
+            gap: "var(--dimension-200)",
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+          }}
+        >
+          {instances.map((instance) => (
+            <li key={instance.name}>
+              <Button onClick={() => setSelected(instance)}>
+                {instance.name}
+              </Button>
+            </li>
+          ))}
+        </ul>
+        <Component
+          ref={panelRef}
+          // Every dismissal funnels through the native `close` event; clearing
+          // the selection there re-arms the trigger for the same entity.
+          onClose={() => setSelected(null)}
+        >
+          <Component.Header>{selected?.name ?? "Preview"}</Component.Header>
+          <Component.Content>
+            <p>
+              <strong>Status:</strong> {selected?.status}
+            </p>
+            <p>
+              <strong>Image:</strong> {selected?.image}
+            </p>
+            <p>
+              <strong>Type:</strong> {selected?.type}
+            </p>
+            <p>
+              <strong>Architecture:</strong> {selected?.architecture}
+            </p>
+            <p>
+              <strong>CPU:</strong> {selected?.cpu}
+            </p>
+            <p>
+              <strong>Memory:</strong> {selected?.memory}
+            </p>
+            <p>
+              <strong>Storage:</strong> {selected?.storage}
+            </p>
+            <p>
+              <strong>IPv4:</strong> {selected?.ipv4}
+            </p>
+            <p>
+              <strong>Created:</strong> {selected?.created}
+            </p>
+          </Component.Content>
+        </Component>
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+const panelRef = useRef<SidePanelHandle | null>(null);
+const [selected, setSelected] = useState<Instance | null>(instances[0]);
+
+useEffect(() => {
+  if (selected) panelRef.current?.open();
+}, [selected]);
+
+<>
+  <ul>
+    {instances.map((instance) => (
+      <li key={instance.name}>
+        <Button onClick={() => setSelected(instance)}>{instance.name}</Button>
+      </li>
+    ))}
+  </ul>
+  {/* Every dismissal clears the selection, so the same entity can reopen. */}
+  <SidePanel ref={panelRef} onClose={() => setSelected(null)}>
+    <SidePanel.Header>{selected?.name}</SidePanel.Header>
+    <SidePanel.Content>…selected entity's details…</SidePanel.Content>
+  </SidePanel>
+</>
         `,
       },
     },
@@ -203,8 +406,8 @@ export const OverflowingTooltip: Story = {
     const TooltippedButton = withTooltip(
       Button,
       <span>
-        A tooltip message deliberately wider than the panel itself, escaping
-        past its inline-start edge.
+        A tooltip message deliberately wider than the panel, escaping past its
+        inline-start edge.
       </span>,
       {
         // Pins the tooltip open for the static snapshot ONLY — see the
