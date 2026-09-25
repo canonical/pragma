@@ -269,10 +269,13 @@ export const pragmaPage = (
 });
 
 /** The Vanilla-only page: Vanilla alone, in its layer, as the site was before pragma. */
-export const vanillaPage = (vanilla: VanillaVersion): PageSpec => ({
+export const vanillaPage = (
+  vanilla: VanillaVersion,
+  body: string = VANILLA_BLOCK,
+): PageSpec => ({
   root: "",
   styles: [vanillaCss[vanilla]],
-  body: VANILLA_BLOCK,
+  body,
 });
 
 /**
@@ -384,6 +387,19 @@ const LAYOUT_OUTPUTS = new Set([
   "inset-block-end",
   "inset-inline-start",
   "inset-inline-end",
+  // A grid or flex item reports "auto" for its automatic minimum size;
+  // an ordinary block box resolves the same "auto" all the way to "0px".
+  // Whichever it is follows from the parent's own `display`, not from any
+  // rule a comparison is checking.
+  "min-width",
+  "min-height",
+  "min-inline-size",
+  "min-block-size",
+  // An inline-level box's used `display` blockifies when it takes part in a
+  // grid or flex formatting context, per the CSS Display spec — a `<button>`
+  // does not stop being `inline-block` by any rule, only by becoming a grid
+  // or flex item.
+  "display",
 ]);
 
 /** Whether a property is a layout output, for elements whose content differs. */

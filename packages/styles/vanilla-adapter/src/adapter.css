@@ -83,41 +83,67 @@
  * them reach inside an island, and the second boundary below handles those.
  * Measured in Chromium 151, the rule adds nothing measurable to style
  * recalculation, and a Vanilla theme toggle is 42 to 46 percent cheaper with it,
- * because the territory no longer re-resolves Vanilla's variables. */
+ * because the territory no longer re-resolves Vanilla's variables.
+ *
+ * The block carries a scope limit, `to (:scope.ds-permeable > *)`, that only
+ * matches when the island root itself carries `ds-permeable`: a component that
+ * wants Vanilla kept out of itself but not swept out of what it contains, the
+ * way a layout component wrapping Vanilla content needs. The limit is a scope
+ * boundary (a "donut scope"): the root is still reverted, because a scope's
+ * upper bound is always inclusive, but nothing below a permeable element is,
+ * because the lower bound is exclusive and the limit here is every one of
+ * that element's own children. The limit carries two selectors rather than
+ * one, because neither alone covers both shapes `ds-permeable` needs to stop
+ * at. `:scope.ds-permeable > *` stops at the scope's own root when the root
+ * itself is permeable; on its own it would miss a permeable descendant nested
+ * inside an ordinary `.ds` ancestor, because that ancestor's own `:scope` is
+ * never permeable, so its limit would never fire. The bare `.ds-permeable > *`
+ * covers that descendant case, but on its own it fails the first case for the
+ * opposite reason: a limit selector never matches the scope root against
+ * itself, only elements strictly below it, so a permeable root cannot be its
+ * own limit's match, and `.ds-permeable`'s own children stay unexcluded.
+ * Together the two selectors cover both a permeable root and a permeable
+ * descendant. A pragma component nested inside a `ds-permeable` root matches
+ * `.ds` on its own account, which opens a fresh scope there, donut and all, so
+ * nesting ordinary pragma components inside one needs no changes to work.
+ * elements.css carries the same limit, for the same reason; DESIGN.md has the
+ * rest. */
 @layer boundary {
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a),
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::before,
-  :where(.ds, .ds *):where(:not(svg, svg *), svg a)::after,
-  :where(.ds, .ds *)::placeholder,
-  :where(.ds, .ds *)::-webkit-file-upload-button,
-  :where(.ds, .ds *)::-webkit-search-decoration,
-  :where(.ds, .ds *)::-webkit-search-results-decoration,
-  :where(.ds, .ds *)::-webkit-calendar-picker-indicator,
-  :where(.ds, .ds *)::-webkit-inner-spin-button,
-  :where(.ds, .ds *)::-webkit-outer-spin-button,
-  :where(.ds, .ds *)::-webkit-slider-runnable-track,
-  :where(.ds, .ds *)::-webkit-slider-thumb {
-    all: revert;
-  }
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
+    :where(:scope, :scope *):where(:not(svg, svg *), svg a),
+    :where(:scope, :scope *):where(:not(svg, svg *), svg a)::before,
+    :where(:scope, :scope *):where(:not(svg, svg *), svg a)::after,
+    :where(:scope, :scope *)::placeholder,
+    :where(:scope, :scope *)::-webkit-file-upload-button,
+    :where(:scope, :scope *)::-webkit-search-decoration,
+    :where(:scope, :scope *)::-webkit-search-results-decoration,
+    :where(:scope, :scope *)::-webkit-calendar-picker-indicator,
+    :where(:scope, :scope *)::-webkit-inner-spin-button,
+    :where(:scope, :scope *)::-webkit-outer-spin-button,
+    :where(:scope, :scope *)::-webkit-slider-runnable-track,
+    :where(:scope, :scope *)::-webkit-slider-thumb {
+      all: revert;
+    }
 
-  :where(.ds, .ds *)::-moz-range-track {
-    all: revert;
-  }
+    :where(:scope, :scope *)::-moz-range-track {
+      all: revert;
+    }
 
-  :where(.ds, .ds *)::-moz-range-progress {
-    all: revert;
-  }
+    :where(:scope, :scope *)::-moz-range-progress {
+      all: revert;
+    }
 
-  :where(.ds, .ds *)::-moz-range-thumb {
-    all: revert;
-  }
+    :where(:scope, :scope *)::-moz-range-thumb {
+      all: revert;
+    }
 
-  :where(.ds, .ds *)::-moz-focus-inner {
-    all: revert;
-  }
+    :where(:scope, :scope *)::-moz-focus-inner {
+      all: revert;
+    }
 
-  :where(.ds, .ds *)::-moz-focus-outer {
-    all: revert;
+    :where(:scope, :scope *)::-moz-focus-outer {
+      all: revert;
+    }
   }
 }
 
@@ -150,50 +176,57 @@
  * pragma's own declaration of that one property. A pragma list inside
  * `.u-text-max-width` gets the browser's `max-width` rather than pragma's.
  * Outside them nothing changes. Narrowing further is not possible — excluding
- * pragma's own elements hands them back to Vanilla, which is the worse half. */
+ * pragma's own elements hands them back to Vanilla, which is the worse half.
+ *
+ * The same `ds-permeable` limit as the first boundary applies here, and for the
+ * same reason: without it, a plain Vanilla list inside a `ds-permeable` grid
+ * would still match `.ds *` on the grid's account and lose the very
+ * `max-width: 40em` it was supposed to keep. */
 @layer vanilla.escapes {
-  /* .u-text-max-width ul, .u-text-max-width ol { max-width: 40em !important } */
-  :where(.u-text-max-width) :where(.ds, .ds *):is(ul, ol) {
-    /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
-    max-width: revert !important;
-  }
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
+    /* .u-text-max-width ul, .u-text-max-width ol { max-width: 40em !important } */
+    :where(.u-text-max-width) :where(:scope, :scope *):is(ul, ol) {
+      /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
+      max-width: revert !important;
+    }
 
-  /* .u-table-layout--fixed table { table-layout: fixed !important }
+    /* .u-table-layout--fixed table { table-layout: fixed !important }
 
-     Only the fixed utility. Its sibling, `.u-table-layout--auto`, sets the
-     browser's own default, so reverting lands on the value Vanilla already
-     forced and a table that asked for `fixed` cannot get it back — measured,
-     `auto` with a counter and `auto` without one, against the `fixed` a page of
-     pragma's own computes. A counter that changes nothing is worse than none,
-     because it reads as cover. Named in the README instead. */
-  :where(.u-table-layout--fixed) :where(.ds, .ds *):is(table) {
-    /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
-    table-layout: revert !important;
-  }
+       Only the fixed utility. Its sibling, `.u-table-layout--auto`, sets the
+       browser's own default, so reverting lands on the value Vanilla already
+       forced and a table that asked for `fixed` cannot get it back — measured,
+       `auto` with a counter and `auto` without one, against the `fixed` a page of
+       pragma's own computes. A counter that changes nothing is worse than none,
+       because it reads as cover. Named in the README instead. */
+    :where(.u-table-layout--fixed) :where(:scope, :scope *):is(table) {
+      /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
+      table-layout: revert !important;
+    }
 
-  /* .p-content-card__author-and-date > :first-child
-     { margin-bottom: 0 !important } — the island root can be that first child.
+    /* .p-content-card__author-and-date > :first-child
+       { margin-bottom: 0 !important } — the island root can be that first child.
 
-     Two narrowings, both measured. `:first-child` is part of the mirror, not
-     decoration: without it a second `.ds` child of the same container, which
-     Vanilla never touches, loses its own margin to this revert. And the
-     elements pragma gives a bottom margin of its own are excluded, because for
-     them Vanilla's `margin-bottom: 0` already agrees with pragma and reverting
-     replaces that agreement with the user agent's `1em` — measured, a
-     `<p class="ds">` in this position took 14px against pragma's 0px, and an
-     `<h2 class="ds">` 19.92px. What is left is the case the counter is for:
-     a `<ul class="ds">` or `<ol class="ds">` root, which pragma leaves at the
-     browser's 16px and Vanilla forces to 0. */
-  :where(.p-content-card__author-and-date)
-  > :where(.ds:first-child):not(h1, h2, h3, h4, h5, h6, p, .p, .code) {
-    /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
-    margin-bottom: revert !important;
-  }
+       Two narrowings, both measured. `:first-child` is part of the mirror, not
+       decoration: without it a second `.ds` child of the same container, which
+       Vanilla never touches, loses its own margin to this revert. And the
+       elements pragma gives a bottom margin of its own are excluded, because for
+       them Vanilla's `margin-bottom: 0` already agrees with pragma and reverting
+       replaces that agreement with the user agent's `1em` — measured, a
+       `<p class="ds">` in this position took 14px against pragma's 0px, and an
+       `<h2 class="ds">` 19.92px. What is left is the case the counter is for:
+       a `<ul class="ds">` or `<ol class="ds">` root, which pragma leaves at the
+       browser's 16px and Vanilla forces to 0. */
+    :where(.p-content-card__author-and-date)
+      > :where(:scope:first-child):not(h1, h2, h3, h4, h5, h6, p, .p, .code) {
+      /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
+      margin-bottom: revert !important;
+    }
 
-  /* .u-vertically-center > img { align-self: center !important } */
-  :where(.u-vertically-center) > :where(.ds):is(img) {
-    /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
-    align-self: revert !important;
+    /* .u-vertically-center > img { align-self: center !important } */
+    :where(.u-vertically-center) > :where(:scope):is(img) {
+      /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
+      align-self: revert !important;
+    }
   }
 }
 
