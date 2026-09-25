@@ -28,7 +28,7 @@ const componentCssClassName = "ds side-panel";
  * is no `open` prop to mirror it.
  *
  * The panel forwards the native dialog `onClose`: pass your own to hear about
- * every close, whatever caused it — the handle's `close()`, Escape, or anything else. 
+ * every close, whatever caused it — the handle's `close()`, Escape, or anything else.
  *
  * Compose the body from `SidePanel.Header`, `SidePanel.Content` and
  * `SidePanel.Footer`. The panel lays them out as a flex column: header and
