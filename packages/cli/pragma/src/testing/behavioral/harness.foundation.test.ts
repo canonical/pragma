@@ -11,7 +11,7 @@
  */
 
 import { homedir, tmpdir } from "node:os";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { storyModules } from "../../capabilities/distribution.js";
 import { VERSION } from "../../constants.js";
 import { compilePack } from "../../kernel/packs/compile.js";
@@ -30,6 +30,11 @@ import { bootFixtureRuntime } from "../helpers/fixtureGraph.js";
 import { plain } from "../helpers/golden.js";
 import { assertCliMcpParity } from "../helpers/parity.js";
 import { runCli } from "../helpers/runCli.js";
+
+// Tests spawn an entry via `runCli` (20 s kill budget): the test timeout
+// must sit above it so a slow spawn reports runCli's captured-output
+// diagnosis, not a bare clock.
+vi.setConfig({ testTimeout: 25_000 });
 
 const blockModule = storyModules.get("block");
 if (!blockModule) {

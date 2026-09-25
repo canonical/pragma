@@ -220,6 +220,11 @@ describe("doctor — the pack-refs check", () => {
     const cwd = tmp("pragma-proj-");
     const hash = "b".repeat(64);
     const dir = packDir(hash);
+    // Planted straight into the pack cache, which is SHARED across the whole
+    // run: sweep it with `roots` or it outlives this file and flips
+    // resolveSources.test.ts's "pack evicted" row — that suite plants a
+    // POINTER for this very hash and expects no pack behind it.
+    roots.push(dir);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
     writeFileSync(join(dir, "schema.json"), "{}");

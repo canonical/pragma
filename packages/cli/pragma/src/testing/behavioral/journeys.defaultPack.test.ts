@@ -20,6 +20,7 @@
 import {
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   truncateSync,
   writeFileSync,
@@ -459,21 +460,31 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
   it("corrupt (non-empty, invalid) schema.json currently surfaces an UNCLASSIFIED error (known gap)", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
     const active = readActivePack(fixture.cwd) ?? "";
-    writeFileSync(join(packDir(active), SCHEMA_FILE), "{ not valid json ]");
-    let caught: unknown;
+    const schemaPath = join(packDir(active), SCHEMA_FILE);
+    // The pack cache is SHARED across the whole run, and this corruption is
+    // the kind `packIsComplete` cannot see (non-empty garbage passes the size
+    // gate), so the next build of the same content would REUSE the wrecked
+    // pack. Restore the real bytes whatever the assertions say.
+    const realSchema = readFileSync(schemaPath, "utf-8");
     try {
-      await executeVerb(
-        blockListVerb,
-        {},
-        NO_MUTATION,
-        bootRuntime(JSON_FLAGS, fixture.cwd),
-      );
-    } catch (error) {
-      caught = error;
+      writeFileSync(schemaPath, "{ not valid json ]");
+      let caught: unknown;
+      try {
+        await executeVerb(
+          blockListVerb,
+          {},
+          NO_MUTATION,
+          bootRuntime(JSON_FLAGS, fixture.cwd),
+        );
+      } catch (error) {
+        caught = error;
+      }
+      // It throws — but as a raw, unclassified error, NOT a PragmaError. Assert the
+      // gap explicitly so a future classification fix in read.ts trips this guard.
+      expect(caught).toBeInstanceOf(Error);
+      expect(caught).not.toBeInstanceOf(PragmaError);
+    } finally {
+      writeFileSync(schemaPath, realSchema);
     }
-    // It throws — but as a raw, unclassified error, NOT a PragmaError. Assert the
-    // gap explicitly so a future classification fix in read.ts trips this guard.
-    expect(caught).toBeInstanceOf(Error);
-    expect(caught).not.toBeInstanceOf(PragmaError);
   });
 });
