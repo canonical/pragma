@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ssr-adapter-deno",
   "description": "Deno Deploy adapter for @canonical/react-ssr",
-  "version": "0.40.0",
+  "version": "0.41.0",
   "private": true,
   "type": "module",
   "module": "dist/esm/index.js",
@@ -42,14 +42,14 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/react-ssr": "^0.40.0"
+    "@canonical/react-ssr": "^0.41.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@canonical/biome-config": "^0.40.0",
-    "@canonical/typescript-config": "^0.40.0",
-    "@canonical/vitest-config-react": "^0.40.0",
-    "@canonical/webarchitect": "^0.40.0",
+    "@canonical/biome-config": "^0.41.0",
+    "@canonical/typescript-config": "^0.41.0",
+    "@canonical/vitest-config-react": "^0.41.0",
+    "@canonical/webarchitect": "^0.41.0",
     "@types/node": "^26.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "typescript": "^5.9.3",

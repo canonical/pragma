@@ -1,7 +1,7 @@
 {
   "name": "@canonical/prism-contract",
   "description": "The minimal GraphQL surface a Prism docsite provider must offer, plus a semantic-subsumption check that a provider's SDL satisfies it",
-  "version": "0.40.0",
+  "version": "0.41.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -49,10 +49,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@canonical/biome-config": "^0.40.0",
-    "@canonical/ke-graphql": "^0.40.0",
-    "@canonical/typescript-config": "^0.40.0",
-    "@canonical/webarchitect": "^0.40.0",
+    "@canonical/biome-config": "^0.41.0",
+    "@canonical/ke-graphql": "^0.41.0",
+    "@canonical/typescript-config": "^0.41.0",
+    "@canonical/webarchitect": "^0.41.0",
     "@types/node": "^24.12.0",
     "@vitest/coverage-v8": "^4.0.18",
     "graphql": "^16.11.0",

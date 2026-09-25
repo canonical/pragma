@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Features
+
+* **NumberInput:** migrate to design tokens ([#1320](https://github.com/canonical/pragma/issues/1320)) ([1530f31](https://github.com/canonical/pragma/commit/1530f31566fe3c4d2fc538f42e99c6909e88faaa))
+* **svelte:** migrate to design tokens ([#1311](https://github.com/canonical/pragma/issues/1311)) ([050550f](https://github.com/canonical/pragma/commit/050550fb345b09feef6ed7ba1aec9f26b21f8408))
+* **TextInput:** migrate to design tokens ([#1318](https://github.com/canonical/pragma/issues/1318)) ([8100cd2](https://github.com/canonical/pragma/commit/8100cd22cdc3554fb6989fbfa21b64f7204e3452))
+
+
 # [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
 
 **Note:** Version bump only for package @canonical/svelte-ds-app-launchpad

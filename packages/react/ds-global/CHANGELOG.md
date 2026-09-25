@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Bug Fixes
+
+* **modal:** follow ups ([#1356](https://github.com/canonical/pragma/issues/1356)) ([04dd569](https://github.com/canonical/pragma/commit/04dd569a5de6cd234df69834cac618b25206c539))
+* **styles:** make the responsive grid 16 columns on desktop ([#1358](https://github.com/canonical/pragma/issues/1358)) ([4a58572](https://github.com/canonical/pragma/commit/4a58572a7a9bed8f1bb3c5f47ce1c4b269e8db63))
+
+
 # [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
 
 * refactor!: answer the SideNavigation stack's review threads (#1285) ([57096e6](https://github.com/canonical/pragma/commit/57096e694b18cbbacf74819a1465e0609f019e3d)), closes [#1285](https://github.com/canonical/pragma/issues/1285)

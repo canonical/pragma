@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Features
+
+* **styles:** Allow permeable pragma elements with the adapter ([#1362](https://github.com/canonical/pragma/issues/1362)) ([fe39f00](https://github.com/canonical/pragma/commit/fe39f007831609527b039b4bed99c6fde14594c3))
+
+
 # [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
 
 **Note:** Version bump only for package @canonical/styles-vanilla-adapter

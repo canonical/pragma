@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Bug Fixes
+
+* **modal:** follow ups ([#1356](https://github.com/canonical/pragma/issues/1356)) ([04dd569](https://github.com/canonical/pragma/commit/04dd569a5de6cd234df69834cac618b25206c539))
+* **styles:** make the responsive grid 16 columns on desktop ([#1358](https://github.com/canonical/pragma/issues/1358)) ([4a58572](https://github.com/canonical/pragma/commit/4a58572a7a9bed8f1bb3c5f47ce1c4b269e8db63))
+
+### Features
+
+* **constitution:** stricter definition of magic ([#936](https://github.com/canonical/pragma/issues/936)) ([8a4cdfe](https://github.com/canonical/pragma/commit/8a4cdfe1e0a55318af58d2f64723bc2543f27ae1))
+* **NumberInput:** migrate to design tokens ([#1320](https://github.com/canonical/pragma/issues/1320)) ([1530f31](https://github.com/canonical/pragma/commit/1530f31566fe3c4d2fc538f42e99c6909e88faaa))
+* **styles:** Allow permeable pragma elements with the adapter ([#1362](https://github.com/canonical/pragma/issues/1362)) ([fe39f00](https://github.com/canonical/pragma/commit/fe39f007831609527b039b4bed99c6fde14594c3))
+* **svelte:** migrate to design tokens ([#1311](https://github.com/canonical/pragma/issues/1311)) ([050550f](https://github.com/canonical/pragma/commit/050550fb345b09feef6ed7ba1aec9f26b21f8408))
+* **TextInput:** migrate to design tokens ([#1318](https://github.com/canonical/pragma/issues/1318)) ([8100cd2](https://github.com/canonical/pragma/commit/8100cd22cdc3554fb6989fbfa21b64f7204e3452))
+
+
 # [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
 
 * refactor!: answer the SideNavigation stack's review threads (#1285) ([57096e6](https://github.com/canonical/pragma/commit/57096e694b18cbbacf74819a1465e0609f019e3d)), closes [#1285](https://github.com/canonical/pragma/issues/1285)

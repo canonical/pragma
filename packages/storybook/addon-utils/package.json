@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-utils",
-  "version": "0.40.0",
+  "version": "0.41.0",
   "type": "module",
   "files": [
     "dist"
@@ -60,18 +60,18 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/styles-debug": "^0.40.0",
+    "@canonical/styles-debug": "^0.41.0",
     "@storybook/icons": "^2.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@canonical/biome-config": "^0.40.0",
-    "@canonical/router-core": "^0.40.0",
-    "@canonical/router-react": "^0.40.0",
-    "@canonical/storybook-addon-shell-theme": "^0.40.0",
-    "@canonical/styles": "^0.40.0",
-    "@canonical/typescript-config-react": "^0.40.0",
-    "@canonical/webarchitect": "^0.40.0",
+    "@canonical/biome-config": "^0.41.0",
+    "@canonical/router-core": "^0.41.0",
+    "@canonical/router-react": "^0.41.0",
+    "@canonical/storybook-addon-shell-theme": "^0.41.0",
+    "@canonical/styles": "^0.41.0",
+    "@canonical/typescript-config-react": "^0.41.0",
+    "@canonical/webarchitect": "^0.41.0",
     "@storybook/addon-docs": "^10.3.1",
     "@storybook/react-vite": "^10.3.1",
     "@testing-library/jest-dom": "^7.0.0",
