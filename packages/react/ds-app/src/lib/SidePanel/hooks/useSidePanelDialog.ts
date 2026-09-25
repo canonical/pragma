@@ -18,9 +18,11 @@ const useSidePanelDialog = ({
   onClose,
   ref,
   className,
+  defaultOpen,
   ...dialogProps
 }: UseSidePanelDialogProps): UseSidePanelDialogResult => {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const defaultOpenRef = useRef(defaultOpen);
   /** Where focus was before the panel opened, so it can be handed back. */
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   /**
@@ -50,6 +52,14 @@ const useSidePanelDialog = ({
     openRef.current = true;
     dialog.focus();
   }, []);
+
+  // This is deliberately a default: later prop changes do not control the
+  // dialog, whose native open state remains the source of truth.
+  useEffect(() => {
+    if (defaultOpenRef.current) {
+      openPanel();
+    }
+  }, [openPanel]);
 
   // The provider keeps its own dialog ref (show()/close() run through it)
   // and exposes the imperative handle — not the raw element — to a consumer

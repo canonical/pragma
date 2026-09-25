@@ -36,25 +36,31 @@ type OwnProps = {
    */
   children: ReactNode;
   /**
-   * The panel's imperative handle, and the only way the panel opens:
+   * The panel's imperative handle. Apart from an initial `defaultOpen`, it is
+   * the only way the panel opens:
    * `ref.current?.open()`, with `ref.current?.close()` closing it. The prop is
-   * required because the panel is only ever opened through the handle, so a
-   * panel with no ref is a panel that can never open — every panel needs a
-   * ref: withSidePanel hands its factory the ref to attach, and a
-   * directly-composed panel driven by a trigger takes a stored ref. Requiring
-   * the prop turns the withSidePanel factory's duty — attaching the ref it
-   * receives — into a compile error instead of a silent nothing.
+   * required so the panel can be controlled after it mounts: withSidePanel
+   * hands its factory the ref to attach, and a directly-composed panel driven
+   * by a trigger takes a stored ref. Requiring the prop turns the withSidePanel
+   * factory's duty — attaching the ref it receives — into a compile error
+   * instead of a silent nothing.
    */
   ref: Ref<SidePanelHandle>;
+  /**
+   * Whether to open the panel when it mounts. Subsequent changes do not affect
+   * the panel; use the imperative handle to open or close it after mount.
+   */
+  defaultOpen?: boolean;
 };
 
 /**
  * Props for the SidePanel provider.
  *
- * The panel is opened and closed through the imperative `ref` handle, not an
- * `open` prop: the dialog's native open state is the single source of truth.
- * Do not set the native `open` attribute — it is omitted from the surface
- * precisely so the panel's bookkeeping (focus handoff) cannot be bypassed.
+ * Apart from its initial `defaultOpen` state, the panel is opened and closed
+ * through the imperative `ref` handle, not an `open` prop: the dialog's native
+ * open state is the single source of truth. Do not set the native `open`
+ * attribute — it is omitted from the surface precisely so the panel's
+ * bookkeeping (focus handoff) cannot be bypassed.
  *
  * Props extend the native props of the `<dialog>` root, so every attribute it
  * accepts (data-*, aria-*, event handlers, …) reaches the DOM.
