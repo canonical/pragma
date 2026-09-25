@@ -1,0 +1,48 @@
+/* Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.apps {
+  .ds.side-panel-header {
+    /*
+      Never shrinks. It stays visible because only the content pane scrolls —
+      the header sits beside it in the panel's flex column, not over it.
+    */
+    flex: none;
+
+    display: flex;
+    align-items: center;
+    gap: var(--side-panel-header-gap);
+
+    padding-block: var(--side-panel-header-padding-block);
+    /*
+      Inline padding, not margin: nothing here needs the header's box itself
+      inset, and padding keeps it full panel width. The footer is the
+      exception — its border spans the padding box, so it insets with margin
+      (see Footer/styles.css).
+    */
+    padding-inline: var(--side-panel-padding-inline);
+
+    > .title {
+      flex: 1 1 auto;
+      /*
+        A panel title reads as a heading, not body text, so it consumes the
+        heading-2 scale exactly like the `h2` element rule does
+        (@canonical/styles-typography, elements.css)
+      */
+      font-family: var(--typography-heading-2-font-family);
+      font-size: var(--typography-heading-2-font-size);
+      font-weight: var(--typography-heading-2-font-weight);
+      letter-spacing: var(--typography-heading-2-letter-spacing);
+      line-height: var(
+        --typography-heading-2-line-height-dimension,
+        round(
+          up,
+          calc(
+            var(--typography-heading-2-font-size) *
+            var(--typography-heading-2-line-height)
+          ),
+          var(--baseline-height)
+        )
+      );
+    }
+  }
+}

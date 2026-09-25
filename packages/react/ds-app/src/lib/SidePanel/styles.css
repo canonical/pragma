@@ -1,0 +1,162 @@
+/* Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.apps {
+  /**
+   * SidePanel styles
+   *
+   * A NON-MODAL <dialog>: the application behind stays interactive. None of the
+   * top-layer conveniences apply, which is why this file does work a modal
+   * wouldn't — it positions and stacks the panel itself, and never styles
+   * `::backdrop` (a backdrop is only painted for a modal dialog, and faking one
+   * would cover the application and swallow its clicks).
+   */
+
+  /* Component properties — the documented override points. */
+  :root {
+    /*
+      design-tokens 0.8.1 ships no `size/*` token, so this is a literal.
+      TODO: replace with a token when one exists.
+    */
+    --side-panel-inline-size: 33.5rem;
+    /*
+      ...and no `shadow/*` token either. The shadow is what separates the panel
+      from the live page, so unlike a modal we cannot drop it.
+      TODO: replace with a token when one exists.
+    */
+    --side-panel-box-shadow: 0 0 32px 0 rgba(0, 0, 0, 0.2);
+    /*
+      A non-modal dialog is not in the top layer, so stacking is ours to manage.
+      Matches the demo's Drawer so the two never fight.
+    */
+    --side-panel-z-index: 1000;
+
+    --side-panel-border-radius: var(--dimension-radius-medium);
+    /*
+      The hairline closing the scroll region is a divider, not a boundary, so it
+      takes the muted border rather than the default one — gray-100 in light mode
+      against gray-520, and gray-820 in dark so it stays pale either way.
+    */
+    --side-panel-color-border: var(--color-border-muted);
+    /* One inline padding, read by the header, content and footer alike. */
+    --side-panel-padding-inline: var(--dimension-300);
+    /* Block padding of the two pinned regions, so the rhythm is tunable. */
+    --side-panel-header-padding-block: var(--dimension-200);
+    --side-panel-footer-padding-block: var(--dimension-200);
+    --side-panel-content-padding-block: var(--dimension-200);
+    /* Space between the header's title and close button. */
+    --side-panel-header-gap: var(--dimension-200);
+    /* Space between the footer's actions. */
+    --side-panel-footer-gap: var(--dimension-200);
+    /* Keyboard focus ring of the scrollable content pane, drawn inside it. */
+    --side-panel-focus-ring-width: var(--dimension-stroke-thickness-large);
+    --side-panel-color-focus-ring: var(--color-focus-ring);
+  }
+
+  .ds.side-panel {
+    /*
+      Undo the user-agent dialog box. Each of these is set by the UA stylesheet,
+      so leaving one undeclared is not the same as it being absent: `position`
+      is `absolute`, `margin` is `auto` (which would centre the panel), both
+      max sizes are capped, and there is a ~3px border and 1em of padding.
+    */
+    position: fixed;
+    inset-block: 0;
+    inset-inline-end: 0;
+    inset-inline-start: auto;
+    margin: 0;
+    /*
+      No padding of its own. The inline padding lives on the header, content and
+      footer instead, so the content pane spans the full panel width and its
+      scrollbar hugs the panel edge rather than sitting inside the padding.
+    */
+    padding: 0;
+    border: none;
+    max-inline-size: none;
+    max-block-size: none;
+
+    /*
+      The UA also sets `height: fit-content`, which beats `inset-block: 0` and
+      leaves the panel only as tall as its content. `auto` hands the height back
+      to the insets, so the panel spans the full viewport.
+    */
+    block-size: auto;
+
+    /* Full height comes from `inset-block`, avoiding mobile viewport-unit games. */
+    inline-size: min(var(--side-panel-inline-size), 100vw);
+    z-index: var(--side-panel-z-index);
+    border-radius: var(--side-panel-border-radius);
+    box-shadow: var(--side-panel-box-shadow);
+
+    /*
+      The panel is focused when it opens so that reading starts inside it, but
+      it is a container rather than a control: a ring drawn for a pointer
+      click would read as a border, so pointer focus gets none. A keyboard
+      user must still see where focus landed, so `:focus-visible` draws the
+      panel's own ring — the same tokens as the content pane, and inset for
+      the same reason: the panel spans the viewport edges, so an outset ring
+      would be clipped. Its focusable children keep their own either way.
+    */
+    &:focus:not(:focus-visible) {
+      outline: none;
+    }
+
+    &:focus-visible {
+      outline: var(--side-panel-focus-ring-width) solid
+        var(--side-panel-color-focus-ring);
+      outline-offset: calc(-1 * var(--side-panel-focus-ring-width));
+    }
+
+    /*
+      The panel does not scroll; the content pane does. The panel is a
+      full-height flex column (`display: flex` itself is scoped to `[open]`
+      below — declaring it unconditionally would beat the user-agent's
+      `display: none` on a closed dialog). `flex-direction` sits here rather
+      than under `[open]`: it is inert while closed, and the base rule stays
+      the single place the stack direction is declared.
+    */
+    flex-direction: column;
+    overflow: hidden;
+
+    /*
+      Two consequences worth knowing: the content pane is a scroll container,
+      so it clips its descendants, and the `transform` below makes the panel the
+      containing block for any `position: fixed` descendant. So an overlay that
+      escapes its box — ds-global's Popover and ContextualMenu position their
+      content with `position: fixed` — is both clipped and anchored to the
+      panel instead of the viewport. Documented in Provider.tsx; the fix belongs
+      upstream, in overlays that use the top layer rather than fixed
+      positioning.
+    */
+
+    /*
+      Read the surface channels HERE rather than in :root. A custom property
+      substitutes where it is declared, and at :root the surface channels are
+      unset — so a :root intermediate would collapse to the fallback forever.
+      Popover/styles.css in ds-global documents the same trap.
+    */
+    background-color: var(--surface-color-background, var(--color-background));
+    color: var(--surface-color-text, var(--color-text));
+
+    /*
+      The panel appears and disappears without motion — there is no transition
+      in either direction. The `translateX(0)` is not a leftover: any transform
+      makes the panel the containing block for `position: fixed` descendants
+      (the overlay consequence above), and dropping it would re-anchor such
+      overlays to the viewport.
+    */
+    transform: translateX(0);
+
+    /*
+      A closed <dialog> is `display: none` by user-agent rule. Declaring display
+      unconditionally would beat that and leave the panel permanently visible, so
+      the stack layout is scoped to the open state.
+
+      Header, content, footer, top to bottom. The header and footer are
+      `flex: none`; the content pane shrinks to fit and scrolls, so the two
+      pinned regions stay visible without sticky positioning.
+    */
+    &[open] {
+      display: flex;
+    }
+  }
+}
