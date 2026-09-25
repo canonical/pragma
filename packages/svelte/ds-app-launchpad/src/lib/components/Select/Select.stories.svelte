@@ -39,6 +39,14 @@
           category: "properties",
         },
       },
+      importance: {
+        control: { type: "radio" },
+        options: ["tertiary"],
+        defaultValue: "tertiary",
+        table: {
+          category: "properties",
+        },
+      },
     },
   });
 
@@ -70,6 +78,17 @@
         </Select>
       {/each}
     </div>
+  {/snippet}
+</Story>
+
+<Story name="Importance" args={{ value: "", importance: "tertiary"}} argTypes={{ importance: { control: false } }}>
+  {#snippet template(args)}
+        <Select {...args} >
+          <option value="" disabled>tertiary</option>
+          <option value="cosmic-cuttlefish">Cosmic Cuttlefish</option>
+          <option value="bionic-beaver">Bionic Beaver</option>
+          <option value="xenial-xerus">Xenial Xerus</option>
+        </Select>
   {/snippet}
 </Story>
 

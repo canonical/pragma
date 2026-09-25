@@ -7,4 +7,5 @@ export interface SelectProps extends HTMLSelectAttributes {
   ref?: HTMLSelectElement;
   density?: Extract<ModifierFamilyValues["density"], "comfortable" | "dense">;
   criticality?: ModifierFamilyValues["criticality"];
+  importance?: Extract<ModifierFamilyValues["importance"], "tertiary">;
 }
