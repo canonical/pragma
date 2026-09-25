@@ -1,0 +1,49 @@
+/* Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.apps {
+  .ds.side-panel-content {
+    /*
+      Natural height by default: the footer follows the content, so its actions
+      stay next to the text they refer to instead of being pushed to the bottom
+      edge of a short panel. Shrinks when the content is taller than the space
+      the header and footer leave — `overflow` below drops a flex item's
+      automatic minimum size to zero, so it can shrink below its content.
+    */
+    flex: 0 1 auto;
+
+    /* Opt-in: take the space the header and footer leave, so a short panel fills. */
+    &.fill {
+      flex-grow: 1;
+    }
+
+    /*
+      The scroll region, and the only one: the header and footer sit outside it
+      in the panel's flex column, so they stay visible without sticky
+      positioning.
+    */
+    overflow-y: auto;
+    /* Don't hand the scroll to the page behind once the content bottoms out. */
+    overscroll-behavior: contain;
+
+    /*
+      Inline padding, not margin: the pane must span the full panel width, so
+      its scrollbar hugs the panel edge and the focus ring below reaches it,
+      while the padding keeps the text clear of both.
+    */
+    padding-block: var(--side-panel-content-padding-block);
+    padding-inline: var(--side-panel-padding-inline);
+
+    /*
+      Focusable (Content.tsx sets `tabIndex`) so keyboard users can scroll it.
+      The panel clips its overflow, and the pane reaches the panel edges, so an
+      outset ring would be cut off: draw it inside the pane instead. The ring is
+      declared in full, because only a known width can be inset by exactly that
+      much — the user-agent ring's width varies by browser.
+    */
+    &:focus-visible {
+      outline: var(--side-panel-focus-ring-width) solid
+        var(--side-panel-color-focus-ring);
+      outline-offset: calc(-1 * var(--side-panel-focus-ring-width));
+    }
+  }
+}
