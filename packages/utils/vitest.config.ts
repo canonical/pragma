@@ -10,6 +10,9 @@ export default mergeConfig(
         {
           test: {
             name: "client",
+            // Worker reuse across files; the per-file fork respawn is pure overhead.
+            // The inline project does not inherit root options, so it is set here.
+            isolate: false,
             // include vite globals for terser test code
             globals: true,
             include: ["src/**/*.tests.ts", "src/**/*.test.ts"],

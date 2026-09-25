@@ -13,16 +13,27 @@
  * into a directory it can be told about or one it makes itself.
  */
 
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { info, mkdir, sequence_, when, writeFile } from "@canonical/task";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
 import { diffTrees, formatTreeDiff, isIdentical } from "./diffTrees.js";
 import { CONFORMANCE_FIXTURES, fixture } from "./fixtures.js";
 import { produceReference } from "./produceReference.js";
 import { snapshotTree } from "./snapshotTree.js";
+
+// Every temp dir this file creates, removed after the run.
+const tempRoots: string[] = [];
+const tempDir = (prefix: string): string => {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  tempRoots.push(dir);
+  return dir;
+};
+afterAll(() => {
+  for (const dir of tempRoots) rmSync(dir, { recursive: true, force: true });
+});
 
 interface DemoAnswers {
   readonly dir: string;
@@ -66,7 +77,7 @@ const demo: GeneratorDefinition<DemoAnswers> = {
 
 /** A directory tree written directly, for the snapshot/diff unit cases. */
 function writeTree(files: Record<string, string>): string {
-  const root = mkdtempSync(join(tmpdir(), "conformance-unit-"));
+  const root = tempDir("conformance-unit-");
   for (const [rel, content] of Object.entries(files)) {
     const segments = rel.split("/");
     if (segments.length > 1) {
@@ -183,7 +194,7 @@ describe("produceReference — the seam definition", () => {
   });
 
   it("generates into a caller-supplied directory when given one", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "conformance-explicit-"));
+    const cwd = tempDir("conformance-explicit-");
     const tree = await produceReference({
       generator: demo,
       answers: { dir: "out", withExtra: false },

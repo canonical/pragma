@@ -68,6 +68,12 @@ export interface ReactTestConfigOptions {
    * threshold.
    */
   coverage?: CoverageOption;
+  /**
+   * Per-file worker isolation. Defaults to `false` (worker reuse); pass
+   * `true` for a package whose files leak DOM or module state into
+   * whichever file the shared worker runs next.
+   */
+  isolate?: boolean;
   /** Setup files (e.g. `["./vitest.setup.ts"]`); omitted when empty. */
   setupFiles?: string[];
   /**
@@ -149,6 +155,7 @@ export const reactTestConfig = ({
   environment = "jsdom",
   ssr = false,
   coverage = false,
+  isolate = false,
   setupFiles,
   plugins,
 }: ReactTestConfigOptions): TestConfig => {
@@ -163,6 +170,12 @@ export const reactTestConfig = ({
     name: "client",
     environment,
     globals: true,
+    // Worker reuse across test files unless the package opts back into
+    // per-file isolation (see the `isolate` option).
+    isolate,
+    // ~15 jsdom workers on a 16-core host ≈ 5 GB peak; half the cores
+    // bounds it without costing these small suites their wall clock.
+    maxWorkers: "50%",
     ...(hasSetup ? { setupFiles } : {}),
     include: globs.flatMap((g) => [`src/**/*.${g}.ts`, `src/**/*.${g}.tsx`]),
     ...(ssr ? { exclude: globs.map((g) => `src/**/*.ssr.${g}.tsx`) } : {}),
@@ -184,6 +197,9 @@ export const reactTestConfig = ({
   const ssrTest: TestConfig = {
     name: "ssr",
     environment: "node",
+    // Worker reuse, as in the client project above.
+    isolate,
+    maxWorkers: "50%",
     include: globs.map((g) => `src/**/*.ssr.${g}.tsx`),
   };
 

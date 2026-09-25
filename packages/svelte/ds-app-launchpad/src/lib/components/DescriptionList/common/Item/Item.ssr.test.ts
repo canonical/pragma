@@ -2,19 +2,10 @@
 
 import type { RenderResult } from "@canonical/svelte-ssr-test";
 import { render } from "@canonical/svelte-ssr-test";
-import type { ComponentProps } from "svelte";
 import { createRawSnippet } from "svelte";
-import { describe, expect, it, vi } from "vitest";
-import type { DescriptionListContext } from "../../types.js";
-import Component from "./Item.svelte";
-
-vi.mock("../../context.js", () => {
-  return {
-    getDescriptionListContext: (): DescriptionListContext => ({
-      layout: "auto",
-    }),
-  };
-});
+import { describe, expect, it } from "vitest";
+import Harness from "./test-harness.svelte";
+import type { ItemProps } from "./types.js";
 
 describe("Item SSR", () => {
   const baseProps = {
@@ -23,17 +14,17 @@ describe("Item SSR", () => {
     })),
     name: "Term",
     "data-testid": "description-list-item",
-  } satisfies ComponentProps<typeof Component>;
+  } satisfies ItemProps;
 
   describe("basics", () => {
     it("doesn't throw", () => {
       expect(() => {
-        render(Component, { props: { ...baseProps } });
+        render(Harness, { props: { item: { ...baseProps } } });
       }).not.toThrow();
     });
 
     it("renders", () => {
-      const page = render(Component, { props: { ...baseProps } });
+      const page = render(Harness, { props: { item: { ...baseProps } } });
       expect(componentLocator(page)).toBeInstanceOf(page.window.HTMLDivElement);
       expect(termLocator(page).textContent).toBe("Term");
       expect(descriptionLocator(page).textContent).toBe("Description");
@@ -45,22 +36,22 @@ describe("Item SSR", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", (attribute, expected) => {
-      const page = render(Component, {
-        props: { ...baseProps, [attribute]: expected },
+      const page = render(Harness, {
+        props: { item: { ...baseProps, [attribute]: expected } },
       });
       expect(componentLocator(page).getAttribute(attribute)).toBe(expected);
     });
 
     it("applies classes", () => {
-      const page = render(Component, {
-        props: { class: "test-class", ...baseProps },
+      const page = render(Harness, {
+        props: { item: { ...baseProps, class: "test-class" } },
       });
       expect(componentLocator(page).classList).toContain("test-class");
     });
 
     it("applies style", () => {
-      const page = render(Component, {
-        props: { style: "color: orange;", ...baseProps },
+      const page = render(Harness, {
+        props: { item: { ...baseProps, style: "color: orange;" } },
       });
       expect(componentLocator(page).style.color).toBe("orange");
     });

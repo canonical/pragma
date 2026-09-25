@@ -1,21 +1,12 @@
 /* @canonical/generator-ds 0.17.1 */
 
-import type { ComponentProps } from "svelte";
 import { createRawSnippet } from "svelte";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { Locator } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
-import type { DescriptionListContext } from "../../types.js";
-import Component from "./Item.svelte";
-
-vi.mock("../../context.js", () => {
-  return {
-    getDescriptionListContext: (): DescriptionListContext => ({
-      layout: "auto",
-    }),
-  };
-});
+import Harness from "./test-harness.svelte";
+import type { ItemProps } from "./types.js";
 
 describe("Item component", () => {
   const baseProps = {
@@ -24,10 +15,10 @@ describe("Item component", () => {
     })),
     name: "Term",
     "data-testid": "description-list-item",
-  } satisfies ComponentProps<typeof Component>;
+  } satisfies ItemProps;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = render(Harness, { item: { ...baseProps } });
     await expect.element(componentLocator(page)).toBeInTheDocument();
     await expect.element(termLocator(page)).toHaveTextContent("Term");
     await expect
@@ -40,21 +31,24 @@ describe("Item component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = render(Harness, {
+        item: { ...baseProps, [attribute]: expected },
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = render(Harness, {
+        item: { ...baseProps, class: "test-class" },
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
-        ...baseProps,
-        style: "color: orange;",
+      const page = render(Harness, {
+        item: { ...baseProps, style: "color: orange;" },
       });
       await expect
         .element(componentLocator(page))
@@ -63,14 +57,14 @@ describe("Item component", () => {
   });
 });
 
-function componentLocator(page: RenderResult<typeof Component>): Locator {
+function componentLocator(page: RenderResult<typeof Harness>): Locator {
   return page.getByTestId("description-list-item");
 }
 
-function termLocator(page: RenderResult<typeof Component>): Locator {
+function termLocator(page: RenderResult<typeof Harness>): Locator {
   return page.getByRole("term");
 }
 
-function descriptionLocator(page: RenderResult<typeof Component>): Locator {
+function descriptionLocator(page: RenderResult<typeof Harness>): Locator {
   return page.getByRole("definition");
 }

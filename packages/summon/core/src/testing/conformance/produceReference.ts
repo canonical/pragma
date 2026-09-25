@@ -14,7 +14,7 @@
  * and nothing would notice.
  */
 
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import execute from "../../execute/execute.js";
@@ -46,23 +46,31 @@ function freshCwd(): string {
  *
  * @param run - The generator, its answers, and an optional target directory.
  * @returns The generated tree, snapshotted.
- * @note Impure — writes files and reads them back.
+ * @note Impure — writes files and reads them back. A directory it created
+ *   itself is removed after the run, even if the run throws; a
+ *   caller-supplied one is left alone.
  */
 export async function produceReference(
   run: ReferenceRun,
 ): Promise<TreeSnapshot> {
+  const ownsCwd = run.cwd === undefined;
   const cwd = run.cwd ?? freshCwd();
   const answers = { ...run.answers };
-  await runGeneratorTask(
-    execute(run.generator, { prompt: autoPrompt(answers), params: answers }),
-    {
-      cwd,
-      promptHandler: autoPrompt(answers),
-      onEffectStart: createStampOnEffectStart(
-        createGeneratorStamp(run.generator),
-      ),
-      onLog: () => {},
-    },
-  );
-  return snapshotTree(cwd);
+  try {
+    await runGeneratorTask(
+      execute(run.generator, { prompt: autoPrompt(answers), params: answers }),
+      {
+        cwd,
+        promptHandler: autoPrompt(answers),
+        onEffectStart: createStampOnEffectStart(
+          createGeneratorStamp(run.generator),
+        ),
+        onLog: () => {},
+      },
+    );
+    return snapshotTree(cwd);
+  } finally {
+    // A run or snapshot that throws must not strand the dir it owns.
+    if (ownsCwd) rmSync(cwd, { recursive: true, force: true });
+  }
 }

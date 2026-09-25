@@ -12,6 +12,11 @@ export default defineConfig({
   },
   test: reactTestConfig({
     glob: "test",
+    // Isolation is load-bearing here: the router announces route changes
+    // through an aria-live element appended to document.body, which outlives
+    // unmount, so a shared worker document collides its own and other files'
+    // announcers with the probe spans the tests query.
+    isolate: true,
     ssr: true,
     coverage: true,
     setupFiles: ["./vitest.setup.ts"],

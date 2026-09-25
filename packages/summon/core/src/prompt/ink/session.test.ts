@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -11,11 +11,22 @@ import {
   writeFile,
   writeFileEffect,
 } from "@canonical/task";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { CONFIRM_ANSWER_KEY } from "../../execute/execute.js";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
 import type { PromptEffect } from "../types.js";
 import { SessionController } from "./session.js";
+
+// Every temp dir this file creates, removed after the run.
+const tempRoots: string[] = [];
+const tempDir = (prefix: string): string => {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  tempRoots.push(dir);
+  return dir;
+};
+afterAll(() => {
+  for (const dir of tempRoots) rmSync(dir, { recursive: true, force: true });
+});
 
 /** The paths a plan writes, in order. */
 const paths = (effects: readonly Effect[]): string[] =>
@@ -116,7 +127,7 @@ describe("SessionController", () => {
   it("the pane's plan is HONEST: it reads real files and writes none", async () => {
     // The mock this replaced answered every read with a placeholder, so a
     // generator branching on the filesystem could promise the wrong plan.
-    const dir = mkdtempSync(join(tmpdir(), "summon-pane-"));
+    const dir = tempDir("summon-pane-");
     writeFileSync(join(dir, "present.txt"), "here");
     const branching: GeneratorDefinition = {
       ...gen,
@@ -136,7 +147,7 @@ describe("SessionController", () => {
 
     // The same generator against an empty tree plans the other branch — proof
     // the pane reads the cwd it was given, not a mock.
-    const empty = mkdtempSync(join(tmpdir(), "summon-pane-"));
+    const empty = tempDir("summon-pane-");
     const inEmpty = new SessionController(branching, undefined, empty);
     void inEmpty.request(confirm());
     await inEmpty.previewSettled();
@@ -149,7 +160,7 @@ describe("SessionController", () => {
   it("shows an empty pane when the preview FAILS, and never a fiction", async () => {
     // A generator whose first read cannot succeed is a run that will fail. The
     // gate says nothing rather than promising a plan the run cannot deliver.
-    const dir = mkdtempSync(join(tmpdir(), "summon-pane-"));
+    const dir = tempDir("summon-pane-");
     const reading: GeneratorDefinition = {
       ...gen,
       generate: () =>

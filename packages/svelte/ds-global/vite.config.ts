@@ -5,6 +5,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [svelte()],
   test: {
+    // Worker + iframe reuse across files; the setup files unmount between
+    // tests, and fileParallelism:false caps each project's RAM peak.
+    isolate: false,
+    fileParallelism: false,
     projects: [
       {
         extends: true,

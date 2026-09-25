@@ -15,6 +15,11 @@ export default mergeConfig(
       setupFiles: ["./vitest.setup.ts"],
       // Repo convention: test files are named *.tests.ts(x)
       include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
+      // Worker reuse across files; the per-file fork respawn is pure overhead.
+      isolate: false,
+      // ~15 jsdom workers ≈ 5.5 GB peak on a 16-core host; half the cores
+      // bounds it without costing this suite its wall clock.
+      maxWorkers: "50%",
       coverage: {
         provider: "v8",
         // The denominator is the SOURCE TREE, not the import graph. Without

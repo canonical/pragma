@@ -1,14 +1,19 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import resolveComponentLayer, {
   GLOBAL_COMPONENT_LAYER,
 } from "./resolveComponentLayer.js";
 
+// Every temp dir this file creates, removed after the run.
+const tempRoots: string[] = [];
+
 /** A throwaway package directory, optionally with a manifest naming it. */
 const scaffold = (dirName: string, packageName?: string) => {
-  const dir = join(mkdtempSync(join(tmpdir(), "summon-layer-")), dirName);
+  const root = mkdtempSync(join(tmpdir(), "summon-layer-"));
+  tempRoots.push(root);
+  const dir = join(root, dirName);
   require("node:fs").mkdirSync(dir);
   if (packageName) {
     writeFileSync(
@@ -18,6 +23,10 @@ const scaffold = (dirName: string, packageName?: string) => {
   }
   return dir;
 };
+
+afterAll(() => {
+  for (const root of tempRoots) rmSync(root, { recursive: true, force: true });
+});
 
 describe("resolveComponentLayer", () => {
   it("reads the target package's manifest name, one case per tier level", () => {

@@ -3,18 +3,8 @@
 import type { RenderResult } from "@canonical/svelte-ssr-test";
 import { render } from "@canonical/svelte-ssr-test";
 import type { ComponentProps } from "svelte";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import Component from "./DateTime.svelte";
-
-vi.mock("./utils/formatters.js", () => {
-  return {
-    defaultDateTimeFormatter: new Intl.DateTimeFormat("en-US", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: "UTC",
-    }),
-  };
-});
 
 const date = new Date("2024-01-01T12:00:00Z");
 const timestamp = date.getTime();

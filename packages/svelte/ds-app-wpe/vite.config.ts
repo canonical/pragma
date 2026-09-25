@@ -8,6 +8,10 @@ export default defineConfig({
   plugins: [svelte({})],
   test: {
     environment: "node",
+    // Worker + iframe reuse across files; the setup files unmount between
+    // tests, and fileParallelism:false caps each project's RAM peak.
+    isolate: false,
+    fileParallelism: false,
     env: {
       TZ: TIME_ZONE,
     },

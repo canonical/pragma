@@ -1,9 +1,7 @@
 <!-- @canonical/generator-ds 0.17.1 -->
 
 <script lang="ts" module>
-  import { ChainingManager } from "./utils/ChainingManager.js";
-
-  const chainingManager = new ChainingManager(350);
+  import { chainingManager } from "./utils/sharedChainingManager.js";
 </script>
 
 <script lang="ts">

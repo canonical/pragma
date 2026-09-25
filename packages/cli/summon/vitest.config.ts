@@ -4,6 +4,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    // Worker reuse across files; the per-file fork respawn is pure overhead.
+    // Subprocess-spawning tests are unaffected: they fork their own children.
+    isolate: false,
     // The subprocess suites spawn `bun src/bin.tsx`, which executes
     // summon-core's and task's BUILT dists (exports-map resolution + the
     // fixtures' hard-coded dist entries). The gate rebuilds stale dep dists

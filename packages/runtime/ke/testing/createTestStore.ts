@@ -4,6 +4,7 @@ import { join } from "node:path";
 import createStore from "../src/lib/createStore.js";
 import type { SourceSpec, StoreConfig } from "../src/lib/types.js";
 import { PEOPLE_TTL } from "./fixtures.js";
+import { trackTestStoreDir, untrackTestStoreDir } from "./storeTempDirs.js";
 import type { TestStoreOptions, TestStoreResult } from "./types.js";
 
 /**
@@ -37,6 +38,7 @@ export default async function createTestStore(
     `ke-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   );
   mkdirSync(tmpDir, { recursive: true });
+  trackTestStoreDir(tmpDir);
 
   const sources: SourceSpec[] = [];
   let fileIndex = 0;
@@ -75,10 +77,21 @@ export default async function createTestStore(
     config.cache = join(tmpDir, ".cache.nq");
   }
 
-  const store = await createStore(config);
+  let store: Awaited<ReturnType<typeof createStore>>;
+  try {
+    store = await createStore(config);
+  } catch (error) {
+    // The dir was written before the store was attempted; a boot that
+    // rejects (e.g. a failing plugin) must not strand it — no cleanup
+    // function escapes a rejected call.
+    untrackTestStoreDir(tmpDir);
+    rmSync(tmpDir, { recursive: true, force: true });
+    throw error;
+  }
 
   const cleanup = () => {
     store.dispose();
+    untrackTestStoreDir(tmpDir);
     try {
       rmSync(tmpDir, { recursive: true, force: true });
     } catch {

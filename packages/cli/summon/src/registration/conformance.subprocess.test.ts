@@ -26,7 +26,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,13 +38,24 @@ import {
   snapshotTree,
   type TreeSnapshot,
 } from "@canonical/summon-core/testing";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(here, "../..");
 const summonBin = join(packageRoot, "src/bin.tsx");
 
-const freshCwd = (): string => mkdtempSync(join(tmpdir(), "summon-conf-"));
+// Every temp dir this file creates, removed after the run.
+const tempRoots: string[] = [];
+const tempDir = (prefix: string): string => {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  tempRoots.push(dir);
+  return dir;
+};
+afterAll(() => {
+  for (const dir of tempRoots) rmSync(dir, { recursive: true, force: true });
+});
+
+const freshCwd = (): string => tempDir("summon-conf-");
 
 /** Producer (1): the real summon bin, run non-interactively in its own process. */
 function produceBin(args: readonly string[]): TreeSnapshot {
