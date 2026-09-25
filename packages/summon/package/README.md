@@ -44,8 +44,8 @@ summon package
 # Direct — specify options
 summon package --name=@canonical/my-tool --type=tool-ts
 
-# With React support
-summon package --name=@canonical/my-lib --type=library --with-react
+# With a UI framework (library packages)
+summon package --name=@canonical/my-lib --type=library --framework=react
 
 # Preview first
 summon package --name=@canonical/my-tool --type=tool-ts --dry-run
@@ -73,12 +73,14 @@ Creates:
 
 ```
 packages/my-tool/
-├── package.json      # type: module, main: src/index.ts
-├── tsconfig.json     # extends workspace config
-├── biome.json        # extends workspace biome
+├── package.json      # type: module, module: src/index.ts
+├── tsconfig.json     # extends @canonical/typescript-config
+├── biome.json        # extends @canonical/biome-config
+├── vitest.config.ts
 ├── README.md
 └── src/
-    └── index.ts      # export entry point
+    ├── index.ts      # export entry point
+    └── index.test.ts # the sample test, so `bun run test` passes
 ```
 
 Example package.json:
@@ -116,13 +118,18 @@ Creates:
 ```
 packages/my-lib/
 ├── package.json         # type: module, main: dist/esm/index.js
-├── tsconfig.json        # extends workspace config
+├── tsconfig.json        # extends @canonical/typescript-config
 ├── tsconfig.build.json  # emit: dist/esm (JS) + dist/types (declarations)
 ├── biome.json
+├── vitest.config.ts
 ├── README.md
 └── src/
-    └── index.ts
+    ├── index.ts
+    └── index.test.ts
 ```
+
+`--framework=react` and `--framework=svelte` change this layout — see
+[`--framework`](#--framework).
 
 Example package.json:
 
@@ -191,7 +198,7 @@ packages/my-styles/
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--with-react` | Add React dependencies and JSX config | `false` |
+| `--framework` | UI framework for a `library`: `none`, `react` or `svelte` | `none` |
 | `--with-storybook` | Add Storybook configuration | `false` |
 | `--with-cli` | Add CLI binary entry point | `false` |
 | `--with-pr-template` | Add a `.github/PULL_REQUEST_TEMPLATE.md` | `false` |
@@ -210,31 +217,42 @@ packages/my-styles/
 
 ## Feature Details
 
-### `--with-react`
+### `--framework`
 
-Adds React as a peer dependency and configures JSX:
+A `library` can target a UI framework. The three values are peers — each one
+generates a package that installs, checks, builds and tests on its own.
 
-```json
-{
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0"
-  }
-}
-```
+| Value | Build | Type check | Tests | Ruleset |
+|-------|-------|------------|-------|---------|
+| `none` | `tsc -p tsconfig.build.json` → `dist/esm` + `dist/types` | `tsc --noEmit` | `vitest run` | `library` |
+| `react` | `tsc -p tsconfig.build.json` → `dist/esm` + `dist/types` | `tsc --noEmit` | `vitest run` (jsdom) | `package-react` |
+| `svelte` | `svelte-package` → a flat `dist/` | `svelte-check` | three Vitest projects | `package-svelte` |
 
-tsconfig.json:
+**`react`** adds React and React DOM as dependencies, `@types/react*` and
+`@canonical/typescript-config-react` as devDependencies, and scaffolds a
+sample `Example` component with a jsdom test.
 
-```json
-{
-  "compilerOptions": {
-    "jsx": "react-jsx"
-  }
-}
+**`svelte`** targets [`@sveltejs/package`](https://svelte.dev/docs/kit/packaging)
+— a component library, not a SvelteKit app. It emits `svelte.config.js`, a
+`vite.config.ts` declaring the `client` / `ssr` / `server` Vitest projects, an
+`exports` map carrying the `types`/`import`/`svelte` conditions the
+`package-svelte` ruleset enforces, and a sample `Example` component with an SSR
+test, a client (real-browser) test, and a plain module test.
+
+`bun run test` runs the `ssr` and `server` projects. The `client` project drives
+a real browser through Playwright, so it is opt-in — run
+`bunx playwright install` once, then `bun run test:client`.
+
+**Coercions.** A framework applies to `library` packages only, and `svelte`
+cannot carry a CLI entry point (`svelte-package` emits a component tree, not an
+executable). Either combination is coerced with a warning rather than rejected:
+
+```bash
+# warns, then generates a plain tool-ts package
+summon package --name=@canonical/my-tool --type=tool-ts --framework=react
+
+# warns, then generates a svelte library with no bin entry
+summon package --name=@canonical/my-ui --type=library --framework=svelte --with-cli
 ```
 
 ### `--with-storybook`
@@ -338,9 +356,20 @@ summon package \
 summon package \
   --name=@canonical/ui-components \
   --type=library \
-  --with-react \
+  --framework=react \
   --with-storybook \
   --description="Shared UI components"
+```
+
+### Svelte Component Library
+
+```bash
+summon package \
+  --name=@canonical/svelte-ui-components \
+  --type=library \
+  --framework=svelte \
+  --with-storybook \
+  --description="Shared Svelte UI components"
 ```
 
 ### CSS Design Tokens
