@@ -17,7 +17,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runTask } from "@canonical/task/node";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { runChecks } from "../../capabilities/doctor/runChecks.js";
 import { capabilities } from "../../capabilities/index.js";
 import { buildUpdateTask } from "../../capabilities/sources/runUpdate.js";
@@ -30,6 +30,11 @@ import {
   type FixtureGraph,
 } from "../helpers/fixtureGraph.js";
 import { runCli } from "../helpers/runCli.js";
+
+// Tests spawn the shipped entry via `runCli` (20 s kill budget): the test
+// timeout must sit above it so a slow spawn reports runCli's captured-output
+// diagnosis, not a bare clock.
+vi.setConfig({ testTimeout: 25_000 });
 
 const TTL = `
 @prefix ex: <https://example.org/kitchen#> .

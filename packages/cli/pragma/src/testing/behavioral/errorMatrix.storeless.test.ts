@@ -18,7 +18,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import {
   renderErrorJson,
@@ -26,6 +26,11 @@ import {
   renderErrorPlain,
 } from "../../kernel/error/renderError.js";
 import { freshXdgEnv, runCli } from "../helpers/runCli.js";
+
+// Tests spawn the shipped entry via `runCli` (20 s kill budget): the test
+// timeout must sit above it so a slow spawn reports runCli's captured-output
+// diagnosis, not a bare clock.
+vi.setConfig({ testTimeout: 25_000 });
 
 const MATRIX: readonly {
   readonly label: string;

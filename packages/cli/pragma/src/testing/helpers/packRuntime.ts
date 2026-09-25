@@ -17,6 +17,7 @@ import type {
   GlobalFlags,
   LazyStore,
   PragmaRuntime,
+  StoreSession,
 } from "../../kernel/runtime/types.js";
 
 /** Neutral flags for a plain-text, non-agent fixture invocation. */
@@ -67,17 +68,37 @@ export async function buildFixtureRuntime(
     },
   );
 
+  // MEMOIZED like the production handle (`createLazyStore`), on purpose: the
+  // facade calls `store.get()` for every query, and this runtime's verbs run
+  // dozens of queries per suite — an unmemoized `get()` booted a fresh
+  // oxigraph store, ke-GraphQL compile, and index parse PER VERB CALL, and the
+  // suites' `afterAll` dispose then removed a session nobody had used. One
+  // session per runtime is also what makes `dispose()` in a suite's `afterAll`
+  // dispose the store the suite actually ran on — under worker reuse an
+  // undisposed session is native memory that outlives the file.
+  let sessionPromise: Promise<StoreSession> | undefined;
   let booted = false;
   const store: LazyStore = {
     get booted() {
       return booted;
     },
     async get() {
-      const session = await readPack(built.dir);
-      booted = true;
-      return session;
+      sessionPromise ??= readPack(built.dir).then(
+        (session) => {
+          booted = true;
+          return session;
+        },
+        (error: unknown) => {
+          // Never memoize a rejection: a re-`get()` after a failed boot starts
+          // over, the same contract `createLazyStore` gives the MCP server.
+          sessionPromise = undefined;
+          throw error;
+        },
+      );
+      return sessionPromise;
     },
     invalidate() {
+      sessionPromise = undefined;
       booted = false;
     },
   };

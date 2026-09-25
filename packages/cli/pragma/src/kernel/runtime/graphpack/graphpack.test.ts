@@ -143,15 +143,31 @@ describe("the committed embedded pack (PROTECTED)", () => {
     // only some of those yields a pack whose content hash claims more than its
     // directory holds — which the next build then reuses, silently dropping the
     // difference. Comparing the two directories catches that on the day it lands.
-    const built = await build([{ path: "a.ttl", content: TTL }]);
-    expect(readdirSync(await materializeEmbeddedPack()).sort()).toEqual(
-      readdirSync(built.dir).sort(),
+    //
+    // The cache is forced COLD first: the run's shared cache is seeded with
+    // the embedded pack before any worker starts (see
+    // testing/sharedCacheSeed.globalSetup.ts), so an ordinary call takes the
+    // warm branch and writes nothing. This cell is the one place the MISS
+    // branch — import the payload, write the files, rename into place — runs
+    // under coverage, and the comparison is only honest against what THIS
+    // materialisation wrote.
+    const savedCacheHome = process.env.XDG_CACHE_HOME;
+    process.env.XDG_CACHE_HOME = mkdtempSync(
+      join(tmpdir(), "pragma-embed-cold-"),
     );
+    try {
+      const built = await build([{ path: "a.ttl", content: TTL }]);
+      expect(readdirSync(await materializeEmbeddedPack()).sort()).toEqual(
+        readdirSync(built.dir).sort(),
+      );
+    } finally {
+      process.env.XDG_CACHE_HOME = savedCacheHome;
+    }
     // 60s, not the 5s default. This test does real work twice: it BUILDS a
-    // pack from source, and it materialises the embedded one — which on a cold
-    // cache takes the miss branch and imports the multi-megabyte payload. Both
-    // costs grow with the pack, and the pack grows whenever a source is added.
-    // A default that a pack size can outgrow turns a real assertion into an
+    // pack from source, and it materialises the embedded one — which takes
+    // the miss branch and imports the multi-megabyte payload. Both costs grow
+    // with the pack, and the pack grows whenever a source is added. A default
+    // that a pack size can outgrow turns a real assertion into an
     // intermittent one.
   }, 60_000);
 

@@ -5,9 +5,14 @@
  * + the bin's early-exit ladder), so both are spawn-e2e.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { VERSION } from "../../constants.js";
 import { runCli } from "../helpers/runCli.js";
+
+// Tests spawn the shipped entry via `runCli` (20 s kill budget): the test
+// timeout must sit above it so a slow spawn reports runCli's captured-output
+// diagnosis, not a bare clock. `info` also pays a 3 s registry network read.
+vi.setConfig({ testTimeout: 25_000 });
 
 describe("--version at every level (A2, e2e)", () => {
   it("prints the same semver at root, noun, and verb position", () => {

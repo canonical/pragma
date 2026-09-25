@@ -71,6 +71,11 @@ const BUILT_AT = "2026-09-10T21:49:00.411Z";
 /** Materialize a COMPLETE pack — manifest + non-empty dump, schema, and index. */
 function writeCompletePack(hash: string, version?: string): string {
   const dir = packDir(hash);
+  // The pack cache is SHARED across the whole run, so a planted pack outlives
+  // this file unless it is swept here — and one of these hashes ("b") is the
+  // pack another suite (doctor.test.ts) expects to be ABSENT. Registering the
+  // directory with `roots` makes the afterEach below remove it like a cwd.
+  roots.push(dir);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
   writeFileSync(join(dir, "schema.json"), "{}");
@@ -138,6 +143,9 @@ describe("resolveSources decision table", () => {
     // say INCOMPLETE, not "missing", because the directory is right there. This
     // is also the shape every pack built before `stories.json` now takes.
     const dir = packDir(hash);
+    // Planted straight into the SHARED cache (see writeCompletePack): swept
+    // with `roots` so the torn pack dies with the test.
+    roots.push(dir);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
     writeManifest(dir, hash);

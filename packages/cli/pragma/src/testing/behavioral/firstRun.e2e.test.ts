@@ -9,8 +9,13 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { freshXdgEnv, runCli } from "../helpers/runCli.js";
+
+// Tests spawn the shipped entry via `runCli` (20 s kill budget): the test
+// timeout must sit above it so a slow spawn reports runCli's captured-output
+// diagnosis, not a bare clock. `info` also pays a 3 s registry network read.
+vi.setConfig({ testTimeout: 25_000 });
 
 describe("first-run onboarding (e2e)", () => {
   it("hints on the front door and seeds nothing", () => {

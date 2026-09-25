@@ -13,10 +13,10 @@
  * hierarchy with no `Global`, is a change a human should be made to look at.
  */
 
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { storyModules } from "../../capabilities/distribution.js";
 import { checkPackageRefs } from "../../capabilities/doctor/checks/checkPackageRefs.js";
 import { promptListVerb } from "../../capabilities/prompt/verbs.js";
@@ -240,6 +240,21 @@ describe("first install — the surfaces say where the answers come from", () =>
 
 describe("after an upgrade — a pack an older CLI built does not answer", () => {
   /**
+   * The pack directories `stalePackCwd` plants. The pack cache is SHARED
+   * across the whole run, so a planted pack outlives this file unless it is
+   * swept here — and this very hash ("c".repeat(64)) is one
+   * `resolveSources.test.ts` rewrites as a TORN pack to test the incomplete
+   * row. Each suite rewrites what it needs, but only this sweep leaves the
+   * shared cache as the file found it.
+   */
+  const plantedPacks: string[] = [];
+  afterEach(() => {
+    for (const dir of plantedPacks.splice(0)) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  /**
    * A cwd pointed at a complete pack that some older CLI built.
    *
    * Planted rather than built: the point is what the boot does with the
@@ -251,6 +266,7 @@ describe("after an upgrade — a pack an older CLI built does not answer", () =>
     const cwd = mkdtempSync(join(tmpdir(), "pragma-stale-"));
     const hash = "c".repeat(64);
     const dir = packDir(hash);
+    plantedPacks.push(dir);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
     writeFileSync(join(dir, "schema.json"), "{}");

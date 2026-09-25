@@ -11,8 +11,15 @@
  * (`isTty: true` injected).
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { runCli } from "../helpers/runCli.js";
+
+// The tests spawn the shipped entry through `runCli`, whose own kill budget is
+// 20 s; the test timeout must sit ABOVE that or a slow spawn reports a bare
+// clock instead of runCli's captured-output diagnosis. `info` also performs
+// a registry check (a 3 s network read), and a full-suite run contends for the
+// CPU with every other spawn.
+vi.setConfig({ testTimeout: 25_000 });
 
 describe("auto-LLM on a piped (non-TTY) stdout (A10, e2e)", () => {
   it("defaults to condensed Markdown with no flag", () => {

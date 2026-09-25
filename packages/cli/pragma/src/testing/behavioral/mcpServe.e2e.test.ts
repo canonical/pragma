@@ -14,8 +14,14 @@
  * all.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { runCli } from "../helpers/runCli.js";
+
+// Tests spawn the shipped entry via `runCli` (20 s kill budget): the test
+// timeout must sit above it so a slow spawn reports runCli's captured-output
+// diagnosis, not a bare clock. A `mcp serve` boot is the slowest spawn this
+// suite makes.
+vi.setConfig({ testTimeout: 25_000 });
 
 describe("mcp serve — stdin close boots and exits cleanly (A7, e2e)", () => {
   it("exits 0 with no output and no signal", () => {
