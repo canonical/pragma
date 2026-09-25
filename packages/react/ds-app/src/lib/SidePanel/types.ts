@@ -1,4 +1,11 @@
-import type { ComponentProps, ReactNode, Ref } from "react";
+import type {
+  ComponentProps,
+  MouseEvent,
+  ReactElement,
+  ReactNode,
+  Ref,
+  RefObject,
+} from "react";
 
 /** The small API a SidePanel threads down to its header, content and footer. */
 export interface SidePanelContextValue {
@@ -64,3 +71,61 @@ type OwnProps = {
  */
 export type SidePanelProviderProps = OwnProps &
   Omit<ComponentProps<"dialog">, keyof OwnProps | "open">;
+
+/**
+ * The one requirement {@link withSidePanel} places on the component it wraps:
+ * it must accept an `onClick` handler. The HOC composes its toggle handler
+ * onto the trigger itself — no wrapper element — so a trigger that accepts
+ * `onClick` but never forwards it to a clickable element never toggles its
+ * panel. An `onClick` the consumer passes still runs: the HOC calls it first,
+ * then toggles the panel.
+ *
+ * Written in method syntax on purpose: TypeScript checks method parameters
+ * bivariantly, which lets a trigger with a more specific event
+ * (`MouseEventHandler<HTMLButtonElement>`, say) satisfy this — property
+ * syntax would demand the reverse and reject every real trigger.
+ */
+export type WithSidePanelTriggerProps = {
+  onClick?(event: MouseEvent): void;
+};
+
+/**
+ * The props the panel element returned by a {@link WithSidePanelRender}
+ * carries: everything `SidePanel` accepts — including the required `ref`,
+ * which the factory sets on the `<SidePanel>` so the trigger can toggle it.
+ */
+export type WithSidePanelPanelProps = SidePanelProps;
+
+/**
+ * What {@link withSidePanel} hands a {@link WithSidePanelRender} function: a
+ * props object.
+ */
+export type WithSidePanelRenderProps = {
+  /** Closes the panel. What a footer button wires its `onClick` to. */
+  close: () => void;
+  /**
+   * The handle on the panel the trigger toggles. The factory MUST set it on
+   * the `<SidePanel>` it returns — `<SidePanel ref={ref}>`. `SidePanel`
+   * requires its `ref`, so a factory that forgets it fails to compile.
+   */
+  ref: RefObject<SidePanelHandle | null>;
+};
+
+/**
+ * The second argument of {@link withSidePanel}: a render contract. The HOC
+ * calls it during render with a {@link WithSidePanelRenderProps} object —
+ * `{ close, ref }` — and it returns the complete `<SidePanel>` element.
+ *
+ * **Every factory must attach the `ref` it receives to the `<SidePanel>` it
+ * returns.** The trigger toggles the panel through that ref. `SidePanel`
+ * requires its `ref`, so a factory that forgets it fails to compile:
+ *
+ * `({ ref }) => <SidePanel ref={ref}>…</SidePanel>`
+ *
+ * or, with a footer button that closes the panel:
+ *
+ * `({ close, ref }) => <SidePanel ref={ref}><SidePanel.Footer><Button onClick={close}>Done</Button></SidePanel.Footer></SidePanel>`
+ */
+export type WithSidePanelRender = (
+  props: WithSidePanelRenderProps,
+) => ReactElement<WithSidePanelPanelProps>;
