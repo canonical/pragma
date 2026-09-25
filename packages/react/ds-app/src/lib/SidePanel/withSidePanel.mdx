@@ -1,0 +1,145 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Stories from "./withSidePanel.stories";
+
+<Meta of={Stories} />
+
+# withSidePanel
+
+`withSidePanel` is a higher-order component: give it a trigger component and a function that returns a `<SidePanel>`, and it returns a new component that toggles that panel when the trigger is clicked — first click opens, second closes. It owns the wiring — the trigger's `onClick` toggles the dialog, the header's X and Escape close it — and hands your function `close` (so a footer button can close the panel) and `ref` (so the trigger can toggle it).
+
+```tsx
+import {
+  withSidePanel,
+  SidePanel,
+  Button,
+  type WithSidePanelRender,
+} from "@canonical/react-ds-app";
+
+const filtersPanel: WithSidePanelRender = ({ close, ref }) => (
+  <SidePanel ref={ref}>
+    <SidePanel.Header>Filters</SidePanel.Header>
+    <SidePanel.Content>The machine list's filters would live here.</SidePanel.Content>
+    <SidePanel.Footer>
+      <Button onClick={close}>Cancel</Button>
+      <Button importance="primary" anticipation="constructive" onClick={close}>
+        Apply
+      </Button>
+    </SidePanel.Footer>
+  </SidePanel>
+);
+
+const FiltersButton = withSidePanel(Button, filtersPanel);
+
+function Toolbar() {
+  return <FiltersButton importance="secondary">Filters</FiltersButton>;
+}
+```
+
+> **The ref must always be attached.** Every factory must set the `ref` it receives on the `<SidePanel>` it returns — `<SidePanel ref={ref}>`. The trigger toggles the panel through that ref. `SidePanel` requires its `ref`, so a factory that forgets it fails to compile.
+
+<Canvas of={Stories.Toggle} />
+
+## Define it at module scope
+
+`withSidePanel` returns a new component. Call it at module scope — not inside a render body — so its identity is stable across renders:
+
+```tsx
+// Good — built once, stable identity across renders.
+const Filters = withSidePanel(Button, filtersPanel);
+
+function Bar() {
+  return <Filters>Filters</Filters>;
+}
+```
+
+```tsx
+// Avoid — a new component type every render remounts the subtree,
+// and an open panel would close on every parent re-render.
+function Bar() {
+  const Filters = withSidePanel(Button, filtersPanel); // don't
+  return <Filters>Filters</Filters>;
+}
+```
+
+`withSidePanel` is meant for static content: the call belongs at module scope, where the function it is handed can only see module-level values, so the panel it returns is the same on every render. If the panel must show data from the parent — for example a different machine depending on which row is selected — compose [`SidePanel`](?path=/docs/components-sidepanel--docs) directly and drive it through its `ref`.
+
+## Signature
+
+```tsx
+function withSidePanel<TProps extends WithSidePanelTriggerProps>(
+  Trigger: ComponentType<TProps>,
+  panel: WithSidePanelRender,
+): ComponentType<TProps>;
+```
+
+<table>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Trigger</code></td>
+      <td><code>ComponentType&lt;TProps&gt;</code></td>
+      <td>The component the user clicks. It must accept <code>onClick</code> and forward it to the element at its root — that is where the HOC hooks the toggle, with nothing wrapped around it. Your own <code>onClick</code> still runs, first, and then the panel toggles.</td>
+    </tr>
+    <tr>
+      <td><code>panel</code></td>
+      <td><code>WithSidePanelRender</code></td>
+      <td>
+        A function that returns the panel. The HOC calls it on every render of
+        the trigger, with a props object — <code>&#123; close, ref &#125;</code>.
+        <ul>
+          <li>
+            <strong>Always attach the ref:</strong> <code>&lt;SidePanel ref=&#123;ref&#125;&gt;</code> — the trigger toggles the panel through it. <code>SidePanel</code> requires its <code>ref</code>, so forgetting it fails to compile.
+          </li>
+          <li>
+            A footer button needs to close the panel → also take <code>&#123; close &#125;</code> and wire it: <code>onClick=&#123;close&#125;</code>.
+          </li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+The returned component's `displayName` is `` `withSidePanel(${Trigger.displayName || Trigger.name || "Component"})` `` — so `withSidePanel(Button, …)` appears in React DevTools as **`withSidePanel(Button)`**.
+
+## How it closes
+
+The trigger toggles the panel; the header's X button and Escape always close it. **Footer buttons can only close the panel** — that is the one and only action this HOC provides, through the `close` it hands your function. If an action needs to do more — save data, open another panel, close conditionally — compose `SidePanel` directly and drive it through its `ref`.
+
+<Canvas of={Stories.CloseFromContent} />
+
+## When to reach for it
+
+There are two ways to use a side panel, and they differ by what the panel must show and who drives it:
+
+<table>
+  <thead>
+    <tr>
+      <th>You have…</th>
+      <th>Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Static content, same every time — one trigger toggles it, and everything exits through close</td>
+      <td><code>withSidePanel</code> — trigger + panel in one component</td>
+    </tr>
+    <tr>
+      <td>Content from parent state (per-row panels), other open/close paths, or a need to know whether the panel is open</td>
+      <td>SidePanel composed directly, driven through its <code>ref</code></td>
+    </tr>
+  </tbody>
+</table>
+
+`withSidePanel` keeps no state you can read — no `onOpenChange`, no "is it open?" to mirror on a pressed-state trigger. The dialog's native open state is the only one, and it stays hidden behind the HOC. The moment anything else must open the panel, close it, or react to it, that is the cue to compose `SidePanel` directly.
+
+## Accessibility
+
+The header's title names the panel automatically; a panel composed without a header must carry its own `aria-label`. Without a header there is also no close button, so the footer's action is the visible way out.
+
+<Canvas of={Stories.WithoutHeader} />
