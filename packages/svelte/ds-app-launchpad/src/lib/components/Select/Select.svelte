@@ -12,8 +12,9 @@
     ref = $bindable(),
     value = $bindable(),
     children,
-    severity,
+    criticality,
     density,
+    importance,
     "data-testid": dataTestId,
     ...rest
   }: SelectProps = $props();
@@ -26,7 +27,7 @@
   - alternatively, anchor positioning support is widespread enough to position the chevron icon without needing a wrapper element.
 -->
 <div
-  class={[componentCssClassName, className, severity, density]}
+  class={[componentCssClassName, className, criticality, density, importance]}
   data-testid={dataTestId}
 >
   <select bind:value bind:this={ref} {...rest}>
