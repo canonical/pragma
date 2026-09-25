@@ -124,6 +124,71 @@ export const Open: Story = {
 };
 
 /**
+ * The panel in a right-to-left context: no prop, nothing to opt into — the
+ * panel docks to the inline-end edge, which in RTL is the left. The
+ * `dir="rtl"` wrapper stands in for the application's own directionality,
+ * which it carries at the document level; the panel simply inherits it.
+ */
+export const RightToLeft: Story = {
+  render: () => (
+    <div dir="rtl">
+      <Component
+        ref={(handle: SidePanelHandle | null) => {
+          handle?.open();
+        }}
+      >
+        <Component.Header>معاينة</Component.Header>
+        <Component.Content>
+          <p>
+            <strong>الاسم:</strong> noble-vm-01
+          </p>
+          <p>
+            <strong>الحالة:</strong> يعمل
+          </p>
+          <p>
+            <strong>الذاكرة:</strong> 4 GiB
+          </p>
+          <p>
+            <strong>التخزين:</strong> 20 GiB
+          </p>
+        </Component.Content>
+        <Component.Footer>
+          <Button>إلغاء</Button>
+          <Button importance="primary" anticipation="constructive">
+            إطلاق
+          </Button>
+        </Component.Footer>
+      </Component>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      source: {
+        code: `
+{/* In a right-to-left application (dir="rtl" on the document) the panel
+    docks to the left edge — the panel inherits the document's
+    directionality; nothing to configure. */}
+<SidePanel
+  ref={(handle: SidePanelHandle | null) => {
+    handle?.open();
+  }}
+>
+  <SidePanel.Header>معاينة</SidePanel.Header>
+  <SidePanel.Content>…</SidePanel.Content>
+  <SidePanel.Footer>
+    <Button>إلغاء</Button>
+    <Button importance="primary" anticipation="constructive">
+      إطلاق
+    </Button>
+  </SidePanel.Footer>
+</SidePanel>
+        `,
+      },
+    },
+  },
+};
+
+/**
  * A tooltip wider than the panel, overflowing past its edge — with the panel
  * still scrolling vertically. Both at once, because the tooltip never enters
  * the panel's tree.

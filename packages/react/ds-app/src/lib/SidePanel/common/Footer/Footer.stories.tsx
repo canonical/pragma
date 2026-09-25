@@ -71,7 +71,6 @@ Default.parameters = {
   },
 };
 
-
 /** More actions than fit on one line wrap rather than overflow. */
 export const Wrapping: StoryFn = () => (
   <Component>
