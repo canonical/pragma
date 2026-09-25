@@ -2,6 +2,7 @@
   --ds-transition-duration-fast: 165ms;
   --ds-transition-duration-brisk: 333ms;
   --ds-transition-duration-snap: 100ms;
+  --ds-transition-duration-slow: 0.4s;
   --ds-transition-duration-sleepy: 1s;
   --ds-transition-timing-ease-in: cubic-bezier(0.55, 0.055, 0.675, 0.19);
   --ds-transition-timing-ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
@@ -44,6 +45,21 @@
     var(--typography-text-tertiary-bold-font-size) /
     var(--typography-text-tertiary-bold-line-height)
     var(--typography-text-tertiary-bold-font-family);
+  --ds-typography-heading-1:
+    var(--typography-heading-1-font-weight)
+    var(--typography-heading-1-font-size) /
+    var(--typography-heading-1-line-height)
+    var(--typography-heading-1-font-family);
+  --ds-typography-heading-2:
+    var(--typography-heading-2-font-weight)
+    var(--typography-heading-2-font-size) /
+    var(--typography-heading-2-line-height)
+    var(--typography-heading-2-font-family);
+  --ds-typography-heading-3:
+    var(--typography-heading-3-font-weight)
+    var(--typography-heading-3-font-size) /
+    var(--typography-heading-3-line-height)
+    var(--typography-heading-3-font-family);
   --ds-typography-heading-4:
     var(--typography-heading-4-font-weight)
     var(--typography-heading-4-font-size) /
@@ -54,6 +70,11 @@
     var(--typography-heading-5-font-size) /
     var(--typography-heading-5-line-height)
     var(--typography-heading-5-font-family);
+  --ds-typography-heading-6:
+    var(--typography-heading-6-font-weight)
+    var(--typography-heading-6-font-size) /
+    var(--typography-heading-6-line-height)
+    var(--typography-heading-6-font-family);
 }
 
 @layer ds.modifiers {
@@ -63,48 +84,6 @@
 
   .comfortable {
     --density-padding-block: var(--dimension-050);
-  }
-}
-
-/* The criticality modifier exposes every color channel except the solid fill
- * and the on-surface text pairing, so a component painting a solid criticality
- * surface has nothing to read.
- * Upstream fix: https://github.com/canonical/design-tokens/pull/104
- * Delete each line once its channel is generated upstream and the
- * design-tokens pin is bumped. */
-@layer ds.modifiers {
-  .success {
-    --modifier-color-foreground-primary: var(
-      --color-foreground-primary-success
-    );
-    --modifier-color-text-onForegroundSecondary: var(
-      --color-text-onForegroundSecondary-success
-    );
-  }
-
-  .error {
-    --modifier-color-foreground-primary: var(--color-foreground-primary-error);
-    --modifier-color-text-onForegroundSecondary: var(
-      --color-text-onForegroundSecondary-error
-    );
-  }
-
-  .warning {
-    --modifier-color-foreground-primary: var(
-      --color-foreground-primary-warning
-    );
-    --modifier-color-text-onForegroundSecondary: var(
-      --color-text-onForegroundSecondary-warning
-    );
-  }
-
-  .information {
-    --modifier-color-foreground-primary: var(
-      --color-foreground-primary-information
-    );
-    --modifier-color-text-onForegroundSecondary: var(
-      --color-text-onForegroundSecondary-information
-    );
   }
 }
 
