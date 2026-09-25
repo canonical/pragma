@@ -16,6 +16,7 @@
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
+  cpSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -33,7 +34,7 @@ import { execute } from "@canonical/summon-core";
 import { collectUndos, dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BIN_NAME } from "../../constants.js";
+import { BIN_NAME, PACKAGE_NAME, VERSION } from "../../constants.js";
 import { emitScripts } from "../../kernel/completion/emitScripts.js";
 import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
@@ -1782,6 +1783,429 @@ describe("setup skills — the forward pass is a RECONCILE", () => {
     expect(readFileSync(join(backup, "SKILL.md"), "utf-8")).toBe(
       "the user's own copy\n",
     );
+  });
+});
+
+describe("setup skills — a link is current only when it reaches the shipped skill", () => {
+  /** Seed one project skill (with a nested file) and return its source dir. */
+  const seed = (cwd: string, name: string): string => {
+    const dir = join(cwd, ".pragma", "skills", name);
+    mkdirSync(join(dir, "references"), { recursive: true });
+    writeFileSync(
+      join(dir, "SKILL.md"),
+      `---\nname: ${name}\ndescription: A skill.\n---\nCurrent body.\n`,
+    );
+    writeFileSync(join(dir, "references", "notes.md"), "notes\n");
+    return dir;
+  };
+
+  /**
+   * The upgrade shape: a copy of the skill inside ANOTHER release's package
+   * directory, version-stamped, still on disk — exactly what a pnpm, npx or
+   * moved global install leaves behind.
+   */
+  const oldRelease = (
+    cwd: string,
+    name: string,
+    version: string,
+    manifest: string | null = JSON.stringify({ name: PACKAGE_NAME, version }),
+  ): string => {
+    const pkg = join(cwd, "node_modules", `pragma-cli@${version}`);
+    const skill = join(pkg, "bundled-skills", name);
+    mkdirSync(skill, { recursive: true });
+    writeFileSync(
+      join(skill, "SKILL.md"),
+      `---\nname: ${name}\ndescription: A skill.\n---\nOld body.\n`,
+    );
+    if (manifest !== null) {
+      writeFileSync(join(pkg, "package.json"), manifest);
+    }
+    return skill;
+  };
+
+  const linkDirOf = (cwd: string): string => {
+    const dir = join(cwd, ".agents", "skills");
+    mkdirSync(dir, { recursive: true });
+    return dir;
+  };
+
+  it("a link into an OLD release's directory is stale, names both versions, and is replaced", async () => {
+    // THE REPORTED DEFECT. The link resolves, the directory it reaches exists
+    // and holds a readable skill, so the old path test called it current and
+    // doctor said "links current" — while the user ran the previous release's
+    // copy of every skill.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = seed(cwd, "my-skill");
+    const old = oldRelease(cwd, "my-skill", "0.36.0");
+    const linkPath = join(linkDirOf(cwd), "my-skill");
+    symlinkSync(old, linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const action = detected.actions.find((a) => a.linkPath === linkPath);
+    expect(action?.action).toBe("replaced");
+    expect(action?.stale).toBe(
+      `links to the copy shipped with ${BIN_NAME} 0.36.0; the running CLI is ${VERSION}`,
+    );
+    expect(action?.previousTarget).toBe(old);
+    expect(detected.warnings).toEqual([
+      `Replaced a stale symlink for my-skill in .agents/skills (${action?.stale})`,
+    ]);
+
+    await runTask(composeSkills(detected));
+    expect(readlinkSync(linkPath)).toBe(skillDir);
+    // Converged: the second detection finds nothing to do.
+    const again = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(again.actions[0]?.action).toBe("skipped");
+    expect(again.actions[0]?.stale).toBeUndefined();
+    expect(dryRun(composeSkills(again)).effects).toEqual([]);
+  });
+
+  it("the GLOBAL scope judges a link against the skills this build ships", async () => {
+    // The real-machine shape: `~/.agents/skills/<name>` into a previous
+    // release's `bundled-skills`, while the running CLI ships its own. Jailed
+    // in a fresh data root so the bundled snapshot is the only global source.
+    const prevData = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = tmp("pragma-skills-data-");
+    try {
+      const cwd = tmp("pragma-setup-proj-");
+      const home = process.env.HOME as string;
+      const old = oldRelease(home, "design-auditor", "0.37.0");
+      const linkPath = join(linkDirOf(home), "design-auditor");
+      symlinkSync(old, linkPath);
+
+      const detected = await detectSkills(bootRuntime(FLAGS, cwd), "global");
+      const action = detected.actions.find((a) => a.linkPath === linkPath);
+      expect(action?.action).toBe("replaced");
+      expect(action?.stale).toContain("shipped with pragma 0.37.0");
+      expect(action?.target).toContain(`${sep}bundled-skills${sep}`);
+
+      await runTask(composeSkills(detected));
+      expect(readlinkSync(linkPath)).toBe(action?.target);
+    } finally {
+      if (prevData === undefined) delete process.env.XDG_DATA_HOME;
+      else process.env.XDG_DATA_HOME = prevData;
+    }
+  });
+
+  it("a link reaching the SAME skill through another path is current — no churn", async () => {
+    // Path aliasing: a symlinked parent directory, or a second copy with
+    // identical content. Comparing path strings tore both down on every run.
+    const cwd = tmp("pragma-setup-proj-");
+    seed(cwd, "my-skill");
+    const linkDir = linkDirOf(cwd);
+    symlinkSync(join(cwd, ".pragma"), join(cwd, "alias"));
+    symlinkSync(
+      join(cwd, "alias", "skills", "my-skill"),
+      join(linkDir, "my-skill"),
+    );
+    // A twin with identical content inside an old release directory — the
+    // release that shipped the same bytes.
+    const twin = join(
+      cwd,
+      "node_modules",
+      "pragma-cli@0.1.0",
+      "bundled-skills",
+    );
+    mkdirSync(twin, { recursive: true });
+    cpSync(seed(cwd, "twin"), join(twin, "twin"), { recursive: true });
+    symlinkSync(join(twin, "twin"), join(linkDir, "twin"));
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    for (const action of detected.actions) {
+      expect(action.action).toBe("skipped");
+      expect(action.stale).toBeUndefined();
+    }
+    expect(dryRun(composeSkills(detected)).effects).toEqual([]);
+  });
+
+  it("a DANGLING link is stale because its target is missing", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    seed(cwd, "my-skill");
+    const linkPath = join(linkDirOf(cwd), "my-skill");
+    symlinkSync(join(cwd, "gone"), linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const action = detected.actions.find((a) => a.linkPath === linkPath);
+    expect(action?.action).toBe("replaced");
+    expect(action?.stale).toBe("its target is missing");
+    expect(action?.previousTarget).toBe(join(cwd, "gone"));
+  });
+
+  it("a link whose content differs with no release to name says so plainly", async () => {
+    // Shapes that carry no version of OURS to name: outside any package
+    // directory, a package directory with no manifest, one whose manifest
+    // names no version, another package's `bundled-skills` altogether, the
+    // running version itself (a dev build with edits), and a same-sized file
+    // that differs by one byte.
+    const cwd = tmp("pragma-setup-proj-");
+    const linkDir = linkDirOf(cwd);
+    const shapes: readonly [string, string][] = [
+      ["elsewhere", join(cwd, "elsewhere", "elsewhere")],
+      ["no-manifest", oldRelease(cwd, "no-manifest", "0.2.0", null)],
+      ["no-version", oldRelease(cwd, "no-version", "0.3.0", "{}")],
+      [
+        "other-package",
+        oldRelease(
+          cwd,
+          "other-package",
+          "0.5.0",
+          JSON.stringify({ name: "@other/cli", version: "0.5.0" }),
+        ),
+      ],
+      ["same-version", oldRelease(cwd, "same-version", VERSION)],
+      ["one-byte", join(cwd, "one-byte", "one-byte")],
+    ];
+    mkdirSync(shapes[0]?.[1] as string, { recursive: true });
+    writeFileSync(join(shapes[0]?.[1] as string, "SKILL.md"), "other\n");
+    cpSync(seed(cwd, "one-byte"), shapes[5]?.[1] as string, {
+      recursive: true,
+    });
+    writeFileSync(
+      join(shapes[5]?.[1] as string, "references", "notes.md"),
+      "Notes\n",
+    );
+    for (const [name, target] of shapes) {
+      seed(cwd, name);
+      symlinkSync(target, join(linkDir, name));
+    }
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    for (const [name] of shapes) {
+      const action = detected.actions.find((a) => a.skillName === name);
+      expect(action?.stale).toBe("content differs from the shipped skill");
+    }
+    // The one outside every pragma root is the user's own: reported stale,
+    // never replaced.
+    expect(
+      detected.actions.find((a) => a.skillName === "elsewhere")?.action,
+    ).toBe("skipped");
+    expect(
+      detected.actions.find((a) => a.skillName === "no-manifest")?.action,
+    ).toBe("replaced");
+  });
+
+  it("a COPY at the link path is current only while its content matches", async () => {
+    // Skills are linked, never copied, but a user (or another tool) may have
+    // copied one into place. A faithful copy is current; one that has drifted
+    // from the shipped skill — or that the project skill has moved on from —
+    // is stale, and still never deleted.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = seed(cwd, "copied");
+    const linkDir = linkDirOf(cwd);
+    cpSync(skillDir, join(linkDir, "copied"), { recursive: true });
+    const linked = seed(cwd, "linked");
+    symlinkSync(linked, join(linkDir, "linked"));
+
+    const before = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(before.actions.map((a) => [a.blocked, a.stale])).toEqual([
+      [true, undefined],
+      [false, undefined],
+    ]);
+
+    // The project's skills change after linking: the symlink follows, the
+    // copy does not.
+    for (const dir of [skillDir, linked]) {
+      writeFileSync(
+        join(dir, "SKILL.md"),
+        `---\nname: ${basename(dir)}\ndescription: A skill.\n---\nRevised body.\n`,
+      );
+    }
+    const after = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const copied = after.actions.find((a) => a.linkPath.endsWith("copied"));
+    expect(copied?.action).toBe("skipped");
+    expect(copied?.stale).toBe(
+      "a copy whose content differs from the shipped skill",
+    );
+    expect(
+      after.actions.find((a) => a.linkPath.endsWith("linked"))?.stale,
+    ).toBeUndefined();
+    expect(dryRun(composeSkills(after)).effects).toEqual([]);
+
+    // An unreadable copy — a plain file where a directory should be — is a
+    // copy whose content cannot match.
+    rmSync(join(linkDir, "copied"), { recursive: true });
+    writeFileSync(join(linkDir, "copied"), "");
+    const file = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(
+      file.actions.find((a) => a.linkPath.endsWith("copied"))?.stale,
+    ).toBeDefined();
+  });
+
+  it("an unreadable SHIPPED skill never vouches for anything", async () => {
+    // "Current" is a positive finding. If the shipped tree cannot be read (a
+    // dangling link inside it), nothing may match it — not a junk file at the
+    // link path, and not a byte-for-byte copy of the same broken tree.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = seed(cwd, "broken");
+    symlinkSync(join(cwd, "nowhere"), join(skillDir, "extra.md"));
+    seed(cwd, "junked");
+    const linkDir = linkDirOf(cwd);
+    const junk = join(cwd, "junk-file");
+    writeFileSync(junk, "not a directory\n");
+    symlinkSync(junk, join(linkDir, "junked"));
+    cpSync(skillDir, join(linkDir, "broken"), { recursive: true });
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    expect(detected.actions.map((a) => [a.skillName, a.stale])).toEqual([
+      ["broken", "a copy whose content differs from the shipped skill"],
+      ["junked", "content differs from the shipped skill"],
+    ]);
+  });
+
+  it("never opens more of a foreign tree than the shipped skill's shape", async () => {
+    // A user's own link may sit over anything: a checkout with a
+    // `node_modules` of thousands of files, or a FIFO that blocks any reader
+    // until something writes. The comparison is driven by the shipped side —
+    // listings first, regular files only — so neither is ever opened.
+    const cwd = tmp("pragma-setup-proj-");
+    const linkDir = linkDirOf(cwd);
+    const shipped = seed(cwd, "piped");
+    const piped = join(cwd, "work", "piped");
+    cpSync(shipped, piped, { recursive: true });
+    rmSync(join(piped, "SKILL.md"));
+    expect(
+      spawnSync("mkfifo", [join(piped, "SKILL.md")], {
+        env: { PATH: HOST_PATH },
+      }).status,
+    ).toBe(0);
+    symlinkSync(piped, join(linkDir, "piped"));
+    // Same names, a file where the shipped skill has a directory.
+    const shaped = join(cwd, "work", "shaped");
+    cpSync(seed(cwd, "shaped"), shaped, { recursive: true });
+    rmSync(join(shaped, "references"), { recursive: true });
+    writeFileSync(join(shaped, "references"), "");
+    symlinkSync(shaped, join(linkDir, "shaped"));
+    // Extra entries: the listing differs, so nothing below it is read.
+    const bulky = join(cwd, "work", "bulky");
+    cpSync(seed(cwd, "bulky"), bulky, { recursive: true });
+    mkdirSync(join(bulky, "node_modules", "dep"), { recursive: true });
+    writeFileSync(join(bulky, "node_modules", "dep", "index.js"), "");
+    symlinkSync(bulky, join(linkDir, "bulky"));
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    for (const name of ["piped", "shaped", "bulky"]) {
+      const action = detected.actions.find((a) => a.skillName === name);
+      expect(action?.action).toBe("skipped");
+      expect(action?.stale).toBe("content differs from the shipped skill");
+    }
+  });
+
+  it("the plan names a drifted copy, and still leaves it alone", async () => {
+    // Doctor reports a drifted copy; the plan row said `none` over it, so the
+    // two surfaces disagreed about the same directory.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = seed(cwd, "copied");
+    const copy = join(linkDirOf(cwd), "copied");
+    cpSync(skillDir, copy, { recursive: true });
+    writeFileSync(join(copy, "SKILL.md"), "drifted\n");
+
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, cwd),
+      "skills",
+      "project",
+    );
+    const row = plan.rows.find((r) => r.target === "skills");
+    expect(row?.action).toBe("none");
+    expect(row?.detail).toContain("1 copy differs, left alone");
+    expect(readFileSync(join(copy, "SKILL.md"), "utf-8")).toBe("drifted\n");
+  });
+
+  it("a harness link whose INSTALLED copy is gone says what restores it", async () => {
+    // The pack cache the installed root points into was cleared. Discovery
+    // falls through to the bundled snapshot and setup relinks onto it — and
+    // the reason says so, naming `sources update` as what brings the
+    // installed copy back. The installed root itself is not touched.
+    const prevData = process.env.XDG_DATA_HOME;
+    const dataHome = tmp("pragma-skills-data-");
+    process.env.XDG_DATA_HOME = dataHome;
+    try {
+      const cwd = tmp("pragma-setup-proj-");
+      const home = process.env.HOME as string;
+      const installed = join(dataHome, BIN_NAME, "skills");
+      mkdirSync(installed, { recursive: true });
+      const gone = join(cwd, "cleared-cache", "design-auditor");
+      symlinkSync(gone, join(installed, "design-auditor"));
+      const linkPath = join(linkDirOf(home), "design-auditor");
+      symlinkSync(join(installed, "design-auditor"), linkPath);
+
+      const detected = await detectSkills(bootRuntime(FLAGS, cwd), "global");
+      const action = detected.actions.find((a) => a.linkPath === linkPath);
+      expect(action?.action).toBe("replaced");
+      expect(action?.stale).toBe(
+        `its installed copy is gone — \`${BIN_NAME} sources update\` restores it; the shipped copy is linked meanwhile`,
+      );
+      expect(action?.target).toContain(`${sep}bundled-skills${sep}`);
+
+      await runTask(composeSkills(detected));
+      expect(readlinkSync(linkPath)).toBe(action?.target);
+      expect(readlinkSync(join(installed, "design-auditor"))).toBe(gone);
+    } finally {
+      if (prevData === undefined) delete process.env.XDG_DATA_HOME;
+      else process.env.XDG_DATA_HOME = prevData;
+    }
+  });
+
+  it("--dry-run plans the replacement with its reason and writes nothing", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    seed(cwd, "my-skill");
+    const old = oldRelease(cwd, "my-skill", "0.36.0");
+    const linkPath = join(linkDirOf(cwd), "my-skill");
+    symlinkSync(old, linkPath);
+
+    const outcome = await executeVerb(
+      verbOf("skills"),
+      { local: true },
+      DRY,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    // Nothing new to create: the row's verb is `update`, and its detail says
+    // how many links are stale and why.
+    expect(outcome.stdout).toMatch(/skills\s+update\s+1 skill → 1 folder/);
+    expect(outcome.stdout).toContain(
+      `1 stale link to replace: links to the copy shipped with ${BIN_NAME} 0.36.0; the running CLI is ${VERSION}`,
+    );
+    expect(readlinkSync(linkPath)).toBe(old);
+  });
+
+  it("the plan names each distinct reason once, and stays `link` while something is new", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    seed(cwd, "fresh"); // nothing at its link path yet
+    for (const name of ["a", "b"]) {
+      seed(cwd, name);
+      symlinkSync(oldRelease(cwd, name, "0.36.0"), join(linkDirOf(cwd), name));
+    }
+    seed(cwd, "c");
+    symlinkSync(join(cwd, "gone"), join(linkDirOf(cwd), "c"));
+
+    const { plan } = await buildSetupRun(
+      bootRuntime(FLAGS, cwd),
+      "skills",
+      "project",
+    );
+    const row = plan.rows.find((r) => r.target === "skills");
+    expect(row?.action).toBe("link");
+    expect(row?.detail).toContain(
+      `3 stale links to replace: links to the copy shipped with ${BIN_NAME} 0.36.0; the running CLI is ${VERSION}; its target is missing`,
+    );
+  });
+
+  it("undoing a replacement restores the link that was overwritten", async () => {
+    // The undo of a `replaced` link used to delete it, restoring an ABSENT
+    // path — a state the machine had never been in.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = seed(cwd, "my-skill");
+    const old = oldRelease(cwd, "my-skill", "0.36.0");
+    const linkPath = join(linkDirOf(cwd), "my-skill");
+    symlinkSync(old, linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    await runTask(composeSkills(detected));
+    expect(readlinkSync(linkPath)).toBe(skillDir);
+
+    const { undoCount } = await runUndo(composeSkills(detected));
+    expect(undoCount).toBeGreaterThan(0);
+    expect(readlinkSync(linkPath)).toBe(old);
   });
 });
 
