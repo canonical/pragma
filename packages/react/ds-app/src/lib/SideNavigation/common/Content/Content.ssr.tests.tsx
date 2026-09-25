@@ -15,11 +15,11 @@ describe("Content SSR", () => {
       />,
     );
     expect(html).toContain("One");
-    expect(html).toContain("ds content");
+    expect(html).toContain("ds side-navigation-content");
   });
 
   it("renders an empty landmark with no root", () => {
     const html = renderToString(<Content />);
-    expect(html).toContain("ds content");
+    expect(html).toContain("ds side-navigation-content");
   });
 });

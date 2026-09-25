@@ -2,7 +2,7 @@ import type { ComponentProps, ComponentType } from "react";
 import type { LinkComponentProps, NavRoot } from "../../types.js";
 
 type OwnProps = {
-  /** Root whose direct children render as groups — see NavRoot. Data-only: rows render exclusively from this tree (there is no children escape hatch into the landmark). */
+  /** Root whose direct children render as groups — see NavRoot. */
   root?: NavRoot;
   /** Component used to render navigable items. Defaults to `"a"`. */
   LinkComponent?: ComponentType<LinkComponentProps> | "a";

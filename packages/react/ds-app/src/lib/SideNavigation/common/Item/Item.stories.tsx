@@ -1,7 +1,7 @@
+import { Badge } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   HashLink,
-  MockBadge,
   withSideNavShell,
 } from "../../../../storybook/navigation/story-utils.js";
 import Item from "./Item.js";
@@ -79,7 +79,7 @@ export const WithSlot: Story = {
     url: "/machines",
     children: "Machines",
     icon: "machines",
-    slot: <MockBadge>42</MockBadge>,
+    slot: <Badge value={42} criticality="warning" />,
   },
 };
 

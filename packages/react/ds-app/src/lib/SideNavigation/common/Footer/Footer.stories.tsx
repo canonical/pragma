@@ -1,8 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import {
-  contextSwitcherFooterRoot,
-  maasFooterRoot,
-} from "../../../../storybook/navigation/fixtures.js";
+import * as fixtures from "../../../../storybook/navigation/fixtures.js";
 import {
   navDecorators,
   withNavigationRouterProps,
@@ -28,13 +25,13 @@ type Story = StoryObj<typeof Footer>;
 /** Renders the footer navigation from a WD405 root (the free-form escape hatch). */
 export const Default: Story = {
   args: {
-    root: maasFooterRoot,
+    root: fixtures.maasFooterRoot,
   },
 };
 
 /** Free-form footer rows via the footer root: user link, expandable theme switcher, action button. */
 export const Items: Story = {
   args: {
-    root: contextSwitcherFooterRoot,
+    root: fixtures.contextSwitcherFooterRoot,
   },
 };

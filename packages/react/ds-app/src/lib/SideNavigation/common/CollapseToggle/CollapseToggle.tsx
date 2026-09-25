@@ -5,7 +5,14 @@ import "./styles.css";
 
 const componentCssClassName = "ds collapse-toggle";
 
-const CollapseToggleButton = ({
+// 1s hover before the tooltip shows (design-ratified value pending final
+// confirmation with design).
+const TOOLTIP_ACTIVATE_DELAY_MS = 1000;
+
+// The bare trigger render — the module-level constant TooltipEngine wraps,
+// stable so the element type never changes across expanded state (remounts
+// would lose focus/hover mid-toggle).
+const CollapseToggleTrigger = ({
   className,
   expanded = true,
   "aria-label": ariaLabel,
@@ -26,7 +33,7 @@ const CollapseToggleButton = ({
           "Menu"/"Close menu" replaces it — CSS-toggled siblings (see
           styles.css), no media-query read in JS, so it stays SSR-identical. */}
       <Icon icon={expanded ? "collapse-side-nav" : "expand-side-nav"} />
-      <span className="p">{expanded ? "Close menu" : "Menu"}</span>
+      <span>{expanded ? "Close menu" : "Menu"}</span>
     </button>
   );
 };
@@ -52,9 +59,9 @@ const CollapseToggle = ({
 }: CollapseToggleProps): React.ReactElement => (
   <TooltipEngine
     Message={expanded ? "Collapse" : "Expand"}
-    activateDelay={1000}
+    activateDelay={TOOLTIP_ACTIVATE_DELAY_MS}
   >
-    <CollapseToggleButton expanded={expanded} {...props} />
+    <CollapseToggleTrigger expanded={expanded} {...props} />
   </TooltipEngine>
 );
 
