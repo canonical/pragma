@@ -131,7 +131,7 @@ describe("SidePanel", () => {
       );
     });
 
-    it("opens and closes the dialog", () => {
+    it("opens, closes, and toggles the dialog", () => {
       const handle = createRef<SidePanelHandle>();
       const { container } = render(
         <SidePanel ref={handle}>
@@ -145,6 +145,12 @@ describe("SidePanel", () => {
       expect(dialog).toHaveAttribute("open");
 
       handle.current?.close();
+      expect(dialog).not.toHaveAttribute("open");
+
+      handle.current?.toggle();
+      expect(dialog).toHaveAttribute("open");
+
+      handle.current?.toggle();
       expect(dialog).not.toHaveAttribute("open");
     });
 
