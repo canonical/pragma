@@ -72,13 +72,21 @@ describe("withSidePanel", () => {
     expect(getDialog(container)).not.toHaveAttribute("open");
   });
 
-  it("runs the consumer's own onClick alongside the toggle", () => {
+  it("runs the consumer's onClick before toggling the panel", () => {
     const onClick = vi.fn();
     const ToggledButton = withSidePanel(Button, labelledPanel);
-    render(<ToggledButton onClick={onClick}>Open panel</ToggledButton>);
+    const { container } = render(
+      <ToggledButton onClick={onClick}>Open panel</ToggledButton>,
+    );
+
+    onClick.mockImplementation(() => {
+      expect(getDialog(container)).not.toHaveAttribute("open");
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Open panel" }));
+
     expect(onClick).toHaveBeenCalledTimes(1);
+    expect(getDialog(container)).toHaveAttribute("open");
   });
 
   it("hands the factory a close that closes the panel", () => {

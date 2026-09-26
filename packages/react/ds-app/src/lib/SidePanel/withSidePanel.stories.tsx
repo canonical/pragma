@@ -14,14 +14,13 @@ import withSidePanel from "./withSidePanel.js";
  */
 
 /**
- * The trigger toggles the panel: first click opens, second closes. Escape and
- * the header's close button dismiss it too — the HOC has no state to be told
- * about.
+ * Static information belongs in a fixed panel: the trigger, Escape, and the
+ * header's close button are its only exit paths.
  *
  * The story's `play` clicks the trigger so the snapshot captures the panel
  * open; in the canvas you can click it yourself, both directions.
  */
-const TogglePanel: WithSidePanelRender = ({ ref }) => (
+const StaticInfoPanel: WithSidePanelRender = ({ ref }) => (
   <Component ref={ref}>
     <Component.Header>Ubuntu Pro</Component.Header>
     <Component.Content>
@@ -34,50 +33,7 @@ const TogglePanel: WithSidePanelRender = ({ ref }) => (
   </Component>
 );
 
-const TogglePanelButton = withSidePanel(Button, TogglePanel);
-
-/**
- * The factory receives `close` too — for content with its own exit routes, a
- * form's footer buttons say.
- */
-const FormPanel: WithSidePanelRender = ({ close, ref }) => (
-  <Component ref={ref}>
-    <Component.Header>Toggle panel</Component.Header>
-    <Component.Content>
-      <p>A form would live here, exiting through `close`.</p>
-    </Component.Content>
-    <Component.Footer>
-      <Button onClick={close}>Cancel</Button>
-      <Button importance="primary" anticipation="constructive" onClick={close}>
-        Save
-      </Button>
-    </Component.Footer>
-  </Component>
-);
-
-const FormPanelButton = withSidePanel(Button, FormPanel);
-
-/**
- * A panel composed without a header names itself through `aria-label`
- * instead, and wires its own way out: without a header there is no close
- * button either.
- */
-const HeaderlessPanel: WithSidePanelRender = ({ close, ref }) => (
-  <Component ref={ref} aria-label="Ubuntu mission">
-    <Component.Content>
-      We deliver the world's free software, freely, to everybody on the same
-      terms. Whether you are a student or a global bank, you can download and
-      use Ubuntu free of charge.
-    </Component.Content>
-    <Component.Footer>
-      <Button importance="primary" onClick={close}>
-        Got it
-      </Button>
-    </Component.Footer>
-  </Component>
-);
-
-const OpenPanelButton = withSidePanel(Button, HeaderlessPanel);
+const StaticInfoButton = withSidePanel(Button, StaticInfoPanel);
 
 type InitialTransitionDisabledProps = {
   children: (onClick: () => void) => ReactElement;
@@ -133,13 +89,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** One component: the trigger plus the panel it toggles. */
-export const Toggle: Story = {
+/** Static content with one trigger and no application-owned panel state. */
+export const StaticInfo: Story = {
   render: () => (
     <InitialTransitionDisabled>
       {(onClick) => (
         <div style={{ padding: "1rem" }}>
-          <TogglePanelButton onClick={onClick}>Toggle panel</TogglePanelButton>
+          <StaticInfoButton onClick={onClick}>Toggle panel</StaticInfoButton>
         </div>
       )}
     </InitialTransitionDisabled>
@@ -158,7 +114,7 @@ import {
   type WithSidePanelRender,
 } from "@canonical/react-ds-app";
 
-const TogglePanel: WithSidePanelRender = ({ ref }) => (
+const StaticInfoPanel: WithSidePanelRender = ({ ref }) => (
   <SidePanel ref={ref}>
     <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
     <SidePanel.Content>
@@ -170,119 +126,11 @@ const TogglePanel: WithSidePanelRender = ({ ref }) => (
   </SidePanel>
 );
 
-const TogglePanelButton = withSidePanel(Button, TogglePanel);
+const StaticInfoButton = withSidePanel(Button, StaticInfoPanel);
 
-<TogglePanelButton>Toggle panel</TogglePanelButton>
+<StaticInfoButton>Toggle panel</StaticInfoButton>
         `,
       },
     },
   },
 };
-
-/** Content that owns its exits: the factory receives `close`. */
-export const CloseFromContent: Story = {
-  render: () => (
-    <InitialTransitionDisabled>
-      {(onClick) => (
-        <div style={{ padding: "1rem" }}>
-          <FormPanelButton importance="primary" onClick={onClick}>
-            Toggle panel
-          </FormPanelButton>
-        </div>
-      )}
-    </InitialTransitionDisabled>
-  ),
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Toggle panel" }));
-  },
-  parameters: {
-    docs: {
-      source: {
-        code: `
-import { Button } from "@canonical/react-ds-global";
-import {
-  SidePanel,
-  withSidePanel,
-  type WithSidePanelRender,
-} from "@canonical/react-ds-app";
-
-const FormPanel: WithSidePanelRender = ({ close, ref }) => (
-  <SidePanel ref={ref}>
-    <SidePanel.Header>Toggle panel</SidePanel.Header>
-    <SidePanel.Content>
-      <MachineForm
-        onCancel={close}
-        onSubmit={(data) => { save(data); close(); }}
-      />
-    </SidePanel.Content>
-    <SidePanel.Footer>
-      <Button onClick={close}>Cancel</Button>
-      <Button importance="primary" anticipation="constructive" onClick={close}>
-        Save
-      </Button>
-    </SidePanel.Footer>
-  </SidePanel>
-);
-
-const FormPanelButton = withSidePanel(Button, FormPanel);
-
-<FormPanelButton importance="primary">Toggle panel</FormPanelButton>
-        `,
-      },
-    },
-  },
-};
-
-/**
- * This story exists solely to show one rule: a panel composed without a
- * header has no title to name it, so it must carry its own `aria-label`.
- * Without a header there is also no close button, so the footer's action is
- * the visible way out.
- */
-export const WithoutHeader: Story = {
-  render: () => (
-    <InitialTransitionDisabled>
-      {(onClick) => (
-        <div style={{ padding: "1rem" }}>
-          <OpenPanelButton onClick={onClick}>toggle panel</OpenPanelButton>
-        </div>
-      )}
-    </InitialTransitionDisabled>
-  ),
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "toggle panel" }));
-  },
-  parameters: {
-    docs: {
-      source: {
-        code: `
-import { Button } from "@canonical/react-ds-global";
-import {
-  SidePanel,
-  withSidePanel,
-  type WithSidePanelRender,
-} from "@canonical/react-ds-app";
-
-const HeaderlessPanel: WithSidePanelRender = ({ close, ref }) => (
-  <SidePanel ref={ref} aria-label="Ubuntu mission">
-    <SidePanel.Content>
-      We deliver the world's free software, freely, to everybody on the same
-      terms. Whether you are a student or a global bank, you can download and
-      use Ubuntu free of charge.
-    </SidePanel.Content>
-    <SidePanel.Footer>
-      {/* With no header there is no close button — the footer is the way out */}
-      <Button importance="primary" onClick={close}>Got it</Button>
-    </SidePanel.Footer>
-  </SidePanel>
-);
-
-const OpenPanelButton = withSidePanel(Button, HeaderlessPanel);
-
-<OpenPanelButton>Open panel</OpenPanelButton>
-        `,
-      },
-    },
-  },
-};
-WithoutHeader.storyName = "Without a header";

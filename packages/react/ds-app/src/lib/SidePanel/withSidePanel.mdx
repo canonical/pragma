@@ -8,36 +8,35 @@ import * as Stories from "./withSidePanel.stories";
 `withSidePanel` is a higher-order component: give it a trigger component and a function that returns a `<SidePanel>`, and it returns a new component that toggles that panel when the trigger is clicked — first click opens, second closes. It owns the wiring — the trigger's `onClick` toggles the dialog, the header's X and Escape close it — and hands your function `close` (so a footer button can close the panel) and `ref` (so the trigger can toggle it).
 
 ```tsx
+import { Button } from "@canonical/react-ds-global";
 import {
   withSidePanel,
   SidePanel,
-  Button,
   type WithSidePanelRender,
 } from "@canonical/react-ds-app";
 
-const filtersPanel: WithSidePanelRender = ({ close, ref }) => (
+const StaticInfoPanel: WithSidePanelRender = ({ ref }) => (
   <SidePanel ref={ref}>
-    <SidePanel.Header>Filters</SidePanel.Header>
-    <SidePanel.Content>The machine list's filters would live here.</SidePanel.Content>
-    <SidePanel.Footer>
-      <Button onClick={close}>Cancel</Button>
-      <Button importance="primary" anticipation="constructive" onClick={close}>
-        Apply
-      </Button>
-    </SidePanel.Footer>
+    <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
+    <SidePanel.Content>
+      Ubuntu Pro provides security and compliance coverage for open source
+      software in Ubuntu.
+    </SidePanel.Content>
   </SidePanel>
 );
 
-const FiltersButton = withSidePanel(Button, filtersPanel);
+const StaticInfoButton = withSidePanel(Button, StaticInfoPanel);
 
 function Toolbar() {
-  return <FiltersButton importance="secondary">Filters</FiltersButton>;
+  return (
+    <StaticInfoButton importance="secondary">Toggle panel</StaticInfoButton>
+  );
 }
 ```
 
 > **The ref must always be attached.** Every factory must set the `ref` it receives on the `<SidePanel>` it returns — `<SidePanel ref={ref}>`. The trigger toggles the panel through that ref. `SidePanel` requires its `ref`, so a factory that forgets it fails to compile.
 
-<Canvas of={Stories.Toggle} />
+<Canvas of={Stories.StaticInfo} />
 
 ## Define it at module scope
 
@@ -45,7 +44,7 @@ function Toolbar() {
 
 ```tsx
 // Good — built once, stable identity across renders.
-const Filters = withSidePanel(Button, filtersPanel);
+const Filters = withSidePanel(Button, FiltersPanel);
 
 function Bar() {
   return <Filters>Filters</Filters>;
@@ -56,7 +55,7 @@ function Bar() {
 // Avoid — a new component type every render remounts the subtree,
 // and an open panel would close on every parent re-render.
 function Bar() {
-  const Filters = withSidePanel(Button, filtersPanel); // don't
+  const Filters = withSidePanel(Button, FiltersPanel); // don't
   return <Filters>Filters</Filters>;
 }
 ```
@@ -111,8 +110,6 @@ The returned component's `displayName` is `` `withSidePanel(${Trigger.displayNam
 
 The trigger toggles the panel; the header's X button and Escape always close it. **Footer buttons can only close the panel** — that is the one and only action this HOC provides, through the `close` it hands your function. If an action needs to do more — save data, open another panel, close conditionally — compose `SidePanel` directly and drive it through its `ref`.
 
-<Canvas of={Stories.CloseFromContent} />
-
 ## When to reach for it
 
 There are two ways to use a side panel, and they differ by what the panel must show and who drives it:
@@ -126,7 +123,7 @@ There are two ways to use a side panel, and they differ by what the panel must s
   </thead>
   <tbody>
     <tr>
-      <td>Static content, same every time — one trigger toggles it, and everything exits through close</td>
+      <td>Static content, same every time — one trigger owns it and its exit paths are self-contained</td>
       <td><code>withSidePanel</code> — trigger + panel in one component</td>
     </tr>
     <tr>
@@ -137,9 +134,3 @@ There are two ways to use a side panel, and they differ by what the panel must s
 </table>
 
 `withSidePanel` keeps no state you can read — no `onOpenChange`, no "is it open?" to mirror on a pressed-state trigger. The dialog's native open state is the only one, and it stays hidden behind the HOC. The moment anything else must open the panel, close it, or react to it, that is the cue to compose `SidePanel` directly.
-
-## Accessibility
-
-The header's title names the panel automatically; a panel composed without a header must carry its own `aria-label`. Without a header there is also no close button, so the footer's action is the visible way out.
-
-<Canvas of={Stories.WithoutHeader} />
