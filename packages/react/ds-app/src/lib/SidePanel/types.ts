@@ -93,13 +93,6 @@ export type WithSidePanelTriggerProps = {
 };
 
 /**
- * The props the panel element returned by a {@link WithSidePanelRender}
- * carries: everything `SidePanel` accepts — including the required `ref`,
- * which the factory sets on the `<SidePanel>` so the trigger can toggle it.
- */
-export type WithSidePanelPanelProps = SidePanelProps;
-
-/**
  * What {@link withSidePanel} hands a {@link WithSidePanelRender} function: a
  * props object.
  */
@@ -131,4 +124,4 @@ export type WithSidePanelRenderProps = {
  */
 export type WithSidePanelRender = (
   props: WithSidePanelRenderProps,
-) => ReactElement<WithSidePanelPanelProps>;
+) => ReactElement<SidePanelProviderProps>;
