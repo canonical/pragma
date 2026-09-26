@@ -83,14 +83,6 @@ const withSidePanel = <TProps extends WithSidePanelTriggerProps>(
   const WrappedComponent = (props: TProps): ReactElement => {
     const panelRef = useRef<SidePanelHandle>(null);
 
-    // The dialog's native open state is the only one: read it, then flip it.
-    const toggle = (): void => {
-      const handle = panelRef.current;
-      if (!handle) return;
-      if (handle.element?.open) handle.close();
-      else handle.open();
-    };
-
     // The contract: the HOC hands the factory its own ref, and the factory
     // sets it on the `<SidePanel>` it returns. `SidePanel` requires its
     // `ref`, so a factory that forgets `ref={ref}` fails to compile.
@@ -107,7 +99,7 @@ const withSidePanel = <TProps extends WithSidePanelTriggerProps>(
             // The consumer's handler runs first, then the panel toggles; a
             // preventDefault or stopPropagation there does not gate the toggle.
             props.onClick?.(event);
-            toggle();
+            panelRef.current?.toggle();
           }}
         />
         {panelElement}

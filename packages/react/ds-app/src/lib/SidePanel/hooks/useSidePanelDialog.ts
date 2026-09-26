@@ -51,6 +51,11 @@ const useSidePanelDialog = ({
     dialog.focus();
   }, []);
 
+  const toggle = useCallback(() => {
+    if (dialogRef.current?.open) close();
+    else openPanel();
+  }, [close, openPanel]);
+
   // The provider keeps its own dialog ref (show()/close() run through it)
   // and exposes the imperative handle — not the raw element — to a consumer
   // ref.
@@ -59,9 +64,10 @@ const useSidePanelDialog = ({
     (): SidePanelHandle => ({
       open: openPanel,
       close,
+      toggle,
       element: dialogRef.current,
     }),
-    [openPanel, close],
+    [openPanel, close, toggle],
   );
 
   // Hand focus back if the panel disappears while still open.

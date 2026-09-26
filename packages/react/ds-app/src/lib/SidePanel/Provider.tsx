@@ -22,10 +22,10 @@ const componentCssClassName = "ds side-panel";
  * application behind stays clickable and tabbable.
  *
  * The panel is controlled through its `ref`: `open()` shows it and moves focus
- * in, `close()` hides it and hands focus back. The ref is required, since the
- * handle is the only way in — a panel with no ref is a panel that can never
- * open. The dialog's native open state is the single source of truth — there
- * is no `open` prop to mirror it.
+ * in, `close()` hides it and hands focus back, and `toggle()` switches between
+ * those states. The ref is required, since the handle is the only way in — a
+ * panel with no ref is a panel that can never open. The dialog's native open
+ * state is the single source of truth — there is no `open` prop to mirror it.
  *
  * The panel forwards the native dialog `onClose`: pass your own to hear about
  * every close, whatever caused it — the handle's `close()`, Escape, or anything else.

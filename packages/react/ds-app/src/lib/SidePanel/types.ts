@@ -30,6 +30,8 @@ export interface SidePanelHandle {
    * opened. A no-op while already closed.
    */
   close: () => void;
+  /** Open the panel if closed, or close it if open. */
+  toggle: () => void;
   /** The underlying `<dialog>`, for anything the handle does not cover. */
   element: HTMLDialogElement | null;
 }
@@ -44,13 +46,8 @@ type OwnProps = {
   children: ReactNode;
   /**
    * The panel's imperative handle, and the only way the panel opens:
-   * `ref.current?.open()`, with `ref.current?.close()` closing it. The prop is
-   * required because the panel is only ever opened through the handle, so a
-   * panel with no ref is a panel that can never open — every panel needs a
-   * ref: withSidePanel hands its factory the ref to attach, and a
-   * directly-composed panel driven by a trigger takes a stored ref. Requiring
-   * the prop turns the withSidePanel factory's duty — attaching the ref it
-   * receives — into a compile error instead of a silent nothing.
+   * `ref.current?.open()`, with `ref.current?.close()` closing it, and
+   * `ref.current?.toggle()` switching it between those states.
    */
   ref: Ref<SidePanelHandle>;
 };
@@ -64,10 +61,8 @@ type OwnProps = {
  * precisely so the panel's bookkeeping (focus handoff) cannot be bypassed.
  *
  * Props extend the native props of the `<dialog>` root, so every attribute it
- * accepts (data-*, aria-*, event handlers, …) reaches the DOM. That includes
- * the dialog's own `onClose`: pass your own to hear about every close,
- * whatever caused it. The panel's bookkeeping
- * runs after the handler.
+ * accepts reaches the DOM. That includes the dialog's own `onClose`: pass your
+ * own to hear about every close. The panel's bookkeeping runs after the handler.
  *
  * The panel is always named by its header's title, so `children` must include
  * a `SidePanel.Header` — the provider warns in development when it does not.
@@ -77,16 +72,11 @@ export type SidePanelProviderProps = OwnProps &
 
 /**
  * The one requirement {@link withSidePanel} places on the component it wraps:
- * it must accept an `onClick` handler. The HOC composes its toggle handler
- * onto the trigger itself — no wrapper element — so a trigger that accepts
+ * it must accept an `onClick` handler. A trigger that accepts
  * `onClick` but never forwards it to a clickable element never toggles its
  * panel. An `onClick` the consumer passes still runs: the HOC calls it first,
  * then toggles the panel.
  *
- * Written in method syntax on purpose: TypeScript checks method parameters
- * bivariantly, which lets a trigger with a more specific event
- * (`MouseEventHandler<HTMLButtonElement>`, say) satisfy this — property
- * syntax would demand the reverse and reject every real trigger.
  */
 export type WithSidePanelTriggerProps = {
   onClick?(event: MouseEvent): void;
@@ -108,11 +98,7 @@ export type WithSidePanelRenderProps = {
 };
 
 /**
- * The second argument of {@link withSidePanel}: a render contract. The HOC
- * calls it during render with a {@link WithSidePanelRenderProps} object —
- * `{ close, ref }` — and it returns the complete `<SidePanel>` element.
- *
- * **Every factory must attach the `ref` it receives to the `<SidePanel>` it
+ * Every factory must attach the `ref` it receives to the `<SidePanel>` it
  * returns.** The trigger toggles the panel through that ref. `SidePanel`
  * requires its `ref`, so a factory that forgets it fails to compile:
  *
