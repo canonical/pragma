@@ -65,11 +65,11 @@ Default.parameters = {
   },
 };
 
-/** A panel dismissed only from its footer omits the close button. */
-export const NotDismissible: StoryFn = () => (
+/** Passing the prop undismissible to the header removes the close button from the header. */
+export const UnDismissible: StoryFn = () => (
   <Component undismissible>Ubuntu Pro</Component>
 );
-NotDismissible.parameters = {
+UnDismissible.parameters = {
   docs: {
     source: {
       code: `<SidePanel.Header undismissible>Ubuntu Pro</SidePanel.Header>`,
