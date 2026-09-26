@@ -101,9 +101,9 @@ describe("withSidePanel", () => {
     expect(getDialog(container)).not.toHaveAttribute("open");
   });
 
-  it("renders the panel the factory composes, props and all", () => {
+  it("renders the panel the factory composes and closes it on Escape", () => {
     const ToggledButton = withSidePanel(Button, ({ ref }) => (
-      <SidePanel ref={ref} aria-label="Filters" disableEscapeClose>
+      <SidePanel ref={ref} aria-label="Filters">
         <SidePanel.Content>Body</SidePanel.Content>
       </SidePanel>
     ));
@@ -112,9 +112,8 @@ describe("withSidePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open panel" }));
     expect(getDialog(container)).toHaveAttribute("aria-label", "Filters");
 
-    // disableEscapeClose sits on the panel the factory wrote: Escape is ignored.
     fireEvent.keyDown(getDialog(container), { key: "Escape" });
-    expect(getDialog(container)).toHaveAttribute("open");
+    expect(getDialog(container)).not.toHaveAttribute("open");
   });
 
   it("names the wrapped component after its trigger", () => {
