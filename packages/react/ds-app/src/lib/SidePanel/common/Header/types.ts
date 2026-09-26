@@ -7,6 +7,11 @@ type OwnProps = {
    * The title is deliberately not a heading element: the panel is a layer on
    * top of the page, not part of its document outline, so it names the dialog
    * through `aria-labelledby` instead.
+   *
+   * Content only — the element is fixed: `children` renders inside a
+   * Header-owned `<span class="title">` carrying the `id` that
+   * `aria-labelledby` points at, so the wrapper cannot be swapped for a
+   * consumer element.
    */
   children: ReactNode;
   /** Accessible name for the close button. Defaults to "Close panel". */
