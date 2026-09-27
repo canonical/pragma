@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import type {
   GeneratorDefinition,
   PromptDefinition,
@@ -15,6 +16,7 @@ import {
 import { toCamelCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
+import { renderTemplate } from "../shared/renderTemplate.js";
 import { validateCommandPath } from "../shared/validators.js";
 import { printVersions } from "../shared/versions.js";
 
@@ -38,40 +40,11 @@ const prompts: PromptDefinition[] = [
   },
 ];
 
-function buildMainPage(domainName: string): string {
-  const title = toTitleCase(domainName);
-
-  return `import { Head } from "@canonical/react-head";
-import type { ReactElement } from "react";
-
-export default function MainPage(): ReactElement {
-  return (
-    <section aria-labelledby="main-title">
-      <Head title="${title}" />
-      <h1 id="main-title">${title}</h1>
-      <p>This is the main page for the ${domainName} domain.</p>
-    </section>
-  );
-}
-`;
-}
-
-function buildRoutesFile(domainName: string): string {
-  const routeUrl = `/${normalizeCommandPath(domainName)}`;
-
-  return `import { route } from "@canonical/router-core";
-import MainPage from "./MainPage.js";
-
-const routes = {
-  ${toCamelCase(domainName)}: route({
-    url: "${routeUrl}",
-    content: MainPage,
-  }),
-} as const;
-
-export default routes;
-`;
-}
+/** The domain generator's own templates, copied next to it by the build. */
+const templatesDir = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "templates",
+);
 
 export const generator: GeneratorDefinition<DomainAnswers> = {
   meta: {
@@ -83,7 +56,7 @@ export const generator: GeneratorDefinition<DomainAnswers> = {
   - MainPage.tsx — example page component with <Head>
   - routes.ts — route barrel exporting the domain's routes
 
-Add more routes with: summon route <domain>/<route-name>`,
+Add more pages with: summon page <domain>/<name>`,
     examples: [
       "summon domain billing",
       "summon domain user-settings",
@@ -101,8 +74,20 @@ Add more routes with: summon route <domain>/<route-name>`,
       printVersions("domain"),
       info(`Creating domain "${name}"...`),
       mkdir(domainDir),
-      writeFile(path.join(domainDir, "MainPage.tsx"), buildMainPage(name)),
-      writeFile(path.join(domainDir, "routes.ts"), buildRoutesFile(name)),
+      writeFile(
+        path.join(domainDir, "MainPage.tsx"),
+        renderTemplate(templatesDir, "MainPage.tsx.ejs", {
+          title: toTitleCase(name),
+          domainName: name,
+        }),
+      ),
+      writeFile(
+        path.join(domainDir, "routes.ts"),
+        renderTemplate(templatesDir, "routes.ts.ejs", {
+          routeKey: toCamelCase(name),
+          routeUrl: `/${name}`,
+        }),
+      ),
       info(
         `Domain "${name}" created. Import its routes in src/routes.tsx and wire them with group().`,
       ),

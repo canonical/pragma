@@ -38,14 +38,21 @@ const FLAGS: GlobalFlags = {
   verbose: false,
 };
 
-/** Spawn the real bin non-interactively in a fresh, XDG-isolated cwd. */
-function run(args: readonly string[]): {
+/**
+ * Spawn the real bin non-interactively in a fresh, XDG-isolated cwd, after
+ * `seed` has written whatever the leaf needs to already exist there.
+ */
+function run(
+  args: readonly string[],
+  seed?: (cwd: string) => void,
+): {
   status: number | null;
   stdout: string;
   stderr: string;
   cwd: string;
 } {
   const cwd = freshCwd();
+  seed?.(cwd);
   const result = spawnSync("bun", [pragmaBin, ...args], {
     cwd,
     encoding: "utf-8",
@@ -659,6 +666,29 @@ describe("the mounted create grammar (subprocess)", () => {
       "--app-path": "replied-app",
       "--rendering": "spa",
     },
+    page: { "--page-path": "replied/detail" },
+  };
+  // A leaf that adds to an existing application needs that part of it
+  // present: `page` refuses to run without its domain's routes.ts.
+  const SEEDS: Record<
+    string,
+    { files: string[]; seed: (cwd: string) => void }
+  > = {
+    page: {
+      files: [
+        "src",
+        "src/domains",
+        "src/domains/replied",
+        "src/domains/replied/routes.ts",
+      ],
+      seed: (cwd) => {
+        mkdirSync(join(cwd, "src/domains/replied"), { recursive: true });
+        writeFileSync(
+          join(cwd, "src/domains/replied/routes.ts"),
+          "export default {};\n",
+        );
+      },
+    },
   };
   for (const [commandPath, surface] of Object.entries(CREATE_SURFACE)) {
     it(`${commandPath}: the refusal's own instruction WORKS — its Missing tokens supplied back (+ --dry-run) preview, exit 0`, () => {
@@ -688,11 +718,17 @@ describe("the mounted create grammar (subprocess)", () => {
         }
         return [token, value];
       });
-      const replied = run(["create", ...path, ...supplied, "--dry-run"]);
+      const seeded = SEEDS[commandPath];
+      const replied = run(
+        ["create", ...path, ...supplied, "--dry-run"],
+        seeded?.seed,
+      );
       expect(replied.stderr).not.toContain("unknown option");
       expect(replied.status, replied.stderr).toBe(0);
       expect(replied.stdout).toContain("Dry-run complete.");
-      expect(readdirSync(replied.cwd)).toEqual([]);
+      expect(
+        readdirSync(replied.cwd, { recursive: true }).map(String).sort(),
+      ).toEqual(seeded?.files ?? []);
     }, 60_000);
   }
   // The react list stays pinned at its exact bytes (the round-14 literal):

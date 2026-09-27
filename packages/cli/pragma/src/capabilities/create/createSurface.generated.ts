@@ -267,6 +267,21 @@ export const CREATE_SURFACE: Readonly<Record<string, SurfaceCommand>> = {
       }
     ]
   },
+  "page": {
+    "path": [
+      "page"
+    ],
+    "description": "Add a page component to an existing domain",
+    "prompts": [
+      {
+        "name": "pagePath",
+        "type": "text",
+        "message": "Page path, as <domain>/<name> (for example invoices/detail):",
+        "positional": true,
+        "group": "Page"
+      }
+    ]
+  },
 };
 
 /**
@@ -417,6 +432,13 @@ export const CREATE_CLI_SYNTAX: Readonly<
       "flag": "--no-run-install",
       "takesValue": false,
       "kebabName": "run-install"
+    }
+  },
+  "page": {
+    "pagePath": {
+      "flag": "--page-path",
+      "takesValue": true,
+      "kebabName": "page-path"
     }
   },
 };

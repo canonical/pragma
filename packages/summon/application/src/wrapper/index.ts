@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import type {
   GeneratorDefinition,
   PromptDefinition,
@@ -15,6 +16,7 @@ import {
 import { toKebabCase, toPascalCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
+import { renderTemplate } from "../shared/renderTemplate.js";
 import { validateCommandPath } from "../shared/validators.js";
 
 export interface WrapperAnswers {
@@ -37,26 +39,11 @@ const prompts: PromptDefinition[] = [
   },
 ];
 
-function buildLayout(wrapperName: string): string {
-  const layoutName = `${toPascalCase(wrapperName)}Layout`;
-  const className = `${toKebabCase(wrapperName)}-layout`;
-
-  return `import type { ReactNode, ReactElement } from "react";
-
-export default function ${layoutName}({
-  children,
-}: { children: ReactNode }): ReactElement {
-  return <div className="${className}">{children}</div>;
-}
-`;
-}
-
-function buildBarrel(wrapperName: string): string {
-  const layoutName = `${toPascalCase(wrapperName)}Layout`;
-
-  return `export { default } from "./${layoutName}.js";
-`;
-}
+/** The wrapper generator's own templates, copied next to it by the build. */
+const templatesDir = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "templates",
+);
 
 export const generator: GeneratorDefinition<WrapperAnswers> = {
   meta: {
@@ -86,8 +73,17 @@ Given a name like "settings", creates:
     const scaffold = sequence_([
       info(`Creating wrapper "${layoutName}"...`),
       mkdir(layoutDir),
-      writeFile(path.join(layoutDir, `${layoutName}.tsx`), buildLayout(name)),
-      writeFile(path.join(layoutDir, "index.ts"), buildBarrel(name)),
+      writeFile(
+        path.join(layoutDir, `${layoutName}.tsx`),
+        renderTemplate(templatesDir, "Layout.tsx.ejs", {
+          layoutName,
+          className: `${toKebabCase(name)}-layout`,
+        }),
+      ),
+      writeFile(
+        path.join(layoutDir, "index.ts"),
+        renderTemplate(templatesDir, "index.ts.ejs", { layoutName }),
+      ),
       info(`Wrapper "${layoutName}" created at ${layoutDir}.`),
     ]);
 

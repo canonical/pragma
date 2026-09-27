@@ -45,7 +45,7 @@ See [Storybook](#storybook) below for how to run a package's Storybook server an
   The real generators live in their own packages; install the ones you need into the same
   location and Summon discovers them automatically:
   ```bash
-  npm install -g @canonical/summon-application   # summon application / domain / route / wrapper
+  npm install -g @canonical/summon-application   # summon application / domain / page / wrapper
   npm install -g @canonical/summon-component     # summon component
   ```
   Then use `summon application react my-app` to scaffold an app,
@@ -153,7 +153,7 @@ Component styles live with their components rather than in the styles packages. 
 
 Three rulesets cover the common cases. The `library` ruleset targets reusable packages (LGPL-3.0 licensing by default). The `tool` ruleset targets CLI tools and applications (GPL-3.0). The `tool-ts` ruleset handles TypeScript-only tools that run directly with Bun without a build step. Further rulesets (`base`, `package`, `package-react`, `package-svelte`, `assets`) cover specialised cases; see [`packages/webarchitect/rulesets`](packages/webarchitect/rulesets).
 
-**Summon** scaffolds new code. The `@canonical/summon` CLI (at `packages/cli/summon`) is a small framework that discovers generator packages installed alongside it: `@canonical/summon-component` scaffolds React, Svelte, and Lit components (`summon component react src/lib/MyComponent`), `@canonical/summon-package` scaffolds monorepo packages, `@canonical/summon-application` scaffolds applications, domains, routes, and wrappers, and `@canonical/summon-monorepo` scaffolds entire monorepos — all built on the `@canonical/summon-core` framework (`packages/summon/*`). The component generator creates the component file, types, styles, stories, unit tests, and SSR tests following the [standard structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md). The `pragma` CLI mounts the summon generator tree under `create` — `pragma create component react src/components/Button` is `summon component react src/components/Button` wearing a different binary (same tree segments, same prompt-derived flags, same wizard, byte-identical output, `--dry-run`/`--undo`/`--yes` alike). Each generator package ships its own template tree, so `create component`, `create package`, and `create application` all run from a published install. Parity is EXECUTED rather than written down: `crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares what they emit. See the [Prerequisites](#prerequisites) section for installation.
+**Summon** scaffolds new code. The `@canonical/summon` CLI (at `packages/cli/summon`) is a small framework that discovers generator packages installed alongside it: `@canonical/summon-component` scaffolds React, Svelte, and Lit components (`summon component react src/lib/MyComponent`), `@canonical/summon-package` scaffolds monorepo packages, `@canonical/summon-application` scaffolds applications, domains, pages, and wrappers, and `@canonical/summon-monorepo` scaffolds entire monorepos — all built on the `@canonical/summon-core` framework (`packages/summon/*`). The component generator creates the component file, types, styles, stories, unit tests, and SSR tests following the [standard structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md). The `pragma` CLI mounts the summon generator tree under `create` — `pragma create component react src/components/Button` is `summon component react src/components/Button` wearing a different binary (same tree segments, same prompt-derived flags, same wizard, byte-identical output, `--dry-run`/`--undo`/`--yes` alike). Each generator package ships its own template tree, so `create component`, `create package`, and `create application` all run from a published install. Parity is EXECUTED rather than written down: `crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares what they emit. See the [Prerequisites](#prerequisites) section for installation.
 
 ## Component Structure
 
@@ -320,7 +320,7 @@ The documentation-site layer. The dependency arrow points one way — see "The d
 | `@canonical/summon-core` | `packages/summon/core` | Code generation framework: generator definitions, templates, discovery |
 | `@canonical/summon-component` | `packages/summon/component` | React, Svelte, and Lit component generators |
 | `@canonical/summon-package` | `packages/summon/package` | Package generator for scaffolding npm packages |
-| `@canonical/summon-application` | `packages/summon/application` | Application scaffolding generators: application, domain, route, wrapper |
+| `@canonical/summon-application` | `packages/summon/application` | Application scaffolding generators: application, domain, page, wrapper |
 | `@canonical/summon-monorepo` | `packages/summon/monorepo` | Monorepo generator: Bun + Lerna monorepos with CI and shared config |
 
 ### Storybook

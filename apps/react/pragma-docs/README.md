@@ -63,7 +63,7 @@ established structure rather than diverging from it.
 
 ```bash
 summon domain billing            # a new feature domain (routes + pages)
-summon route billing/invoices    # a route within a domain
+summon page billing/invoices     # a page within a domain, routed by hand
 summon wrapper sidebar           # a layout wrapper
 ```
 

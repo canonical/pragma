@@ -14,9 +14,9 @@ const SEGMENT = /^[A-Za-z][A-Za-z0-9-]*$/;
  * contract; never throws.
  */
 export function validateCommandPath(options: {
-  /** Human label for messages, e.g. "Route path". */
+  /** Human label for messages, e.g. "Page path". */
   label: string;
-  /** Minimum segment count (route needs domain/name = 2). */
+  /** Minimum segment count (a page needs domain/name = 2). */
   minSegments?: number;
   /** Maximum segment count (a domain or wrapper name is a single segment). */
   maxSegments?: number;
@@ -37,7 +37,9 @@ export function validateCommandPath(options: {
       return `${label} needs at least ${minSegments} segments (for example ${example})`;
     }
     if (maxSegments !== undefined && segments.length > maxSegments) {
-      return `${label} must be a single name without slashes (for example ${example})`;
+      return maxSegments === 1
+        ? `${label} must be a single name without slashes (for example ${example})`
+        : `${label} must have at most ${maxSegments} segments (for example ${example})`;
     }
     for (const segment of segments) {
       if (!SEGMENT.test(segment)) {
@@ -49,6 +51,31 @@ export function validateCommandPath(options: {
     }
     return true;
   };
+}
+
+/**
+ * A kebab-case name: lowercase letters and digits, words joined by single
+ * hyphens (`order-lines`).
+ */
+const KEBAB_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+
+/**
+ * Build a validator for a name that other names are derived from mechanically
+ * (`order-lines` → `OrderLinesPage`, `orderLines`), so it must be kebab-case:
+ * a name such as `DETAIL` would leave those mappings to guess. Returns
+ * `true | string`; never throws.
+ */
+export function validateKebabName(options: {
+  /** Human label for messages, e.g. "Page name". */
+  label: string;
+  /** Example shown in error messages. */
+  example: string;
+}): (value: unknown) => true | string {
+  const { label, example } = options;
+  return (value: unknown): true | string =>
+    typeof value === "string" && KEBAB_NAME.test(value)
+      ? true
+      : `${label} "${String(value)}" must be kebab-case: lowercase letters and digits, words joined by single hyphens (for example ${example})`;
 }
 
 /**
