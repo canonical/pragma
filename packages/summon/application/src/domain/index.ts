@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import type {
   GeneratorDefinition,
   PromptDefinition,
@@ -13,9 +14,9 @@ import {
   writeFile,
 } from "@canonical/task";
 import { toCamelCase, toTitleCase } from "@canonical/utils";
-import { buildPage } from "../shared/buildPage.js";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
+import { renderTemplate } from "../shared/renderTemplate.js";
 import { validateCommandPath } from "../shared/validators.js";
 import { printVersions } from "../shared/versions.js";
 
@@ -39,31 +40,11 @@ const prompts: PromptDefinition[] = [
   },
 ];
 
-function buildMainPage(domainName: string): string {
-  return buildPage({
-    pageName: "MainPage",
-    title: toTitleCase(domainName),
-    headingId: "main-title",
-    body: [`<p>This is the main page for the ${domainName} domain.</p>`],
-  });
-}
-
-function buildRoutesFile(domainName: string): string {
-  const routeUrl = `/${normalizeCommandPath(domainName)}`;
-
-  return `import { route } from "@canonical/router-core";
-import MainPage from "./MainPage.js";
-
-const routes = {
-  ${toCamelCase(domainName)}: route({
-    url: "${routeUrl}",
-    content: MainPage,
-  }),
-} as const;
-
-export default routes;
-`;
-}
+/** The domain generator's own templates, copied next to it by the build. */
+const templatesDir = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "templates",
+);
 
 export const generator: GeneratorDefinition<DomainAnswers> = {
   meta: {
@@ -93,8 +74,20 @@ Add more pages with: summon page <domain>/<name>`,
       printVersions("domain"),
       info(`Creating domain "${name}"...`),
       mkdir(domainDir),
-      writeFile(path.join(domainDir, "MainPage.tsx"), buildMainPage(name)),
-      writeFile(path.join(domainDir, "routes.ts"), buildRoutesFile(name)),
+      writeFile(
+        path.join(domainDir, "MainPage.tsx"),
+        renderTemplate(templatesDir, "MainPage.tsx.ejs", {
+          title: toTitleCase(name),
+          domainName: name,
+        }),
+      ),
+      writeFile(
+        path.join(domainDir, "routes.ts"),
+        renderTemplate(templatesDir, "routes.ts.ejs", {
+          routeKey: toCamelCase(name),
+          routeUrl: `/${name}`,
+        }),
+      ),
       info(
         `Domain "${name}" created. Import its routes in src/routes.tsx and wire them with group().`,
       ),

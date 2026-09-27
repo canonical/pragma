@@ -581,7 +581,53 @@ describe("application/react generator", () => {
   });
 });
 
+/** Path → content of every file a generator writes, from a dry run. */
+function writtenFiles(
+  task: Parameters<typeof dryRun>[0],
+): Record<string, string> {
+  return Object.fromEntries(
+    dryRun(task)
+      .effects.filter((e) => e._tag === "WriteFile")
+      .map((e) => [
+        (e as { path: string }).path,
+        (e as { content: string }).content,
+      ]),
+  );
+}
+
 describe("domain generator", () => {
+  it("renders its files from templates, byte for byte as before", () => {
+    expect(
+      writtenFiles(generators.domain.generate({ domainName: "user-settings" })),
+    ).toEqual({
+      "src/domains/user-settings/MainPage.tsx": `import { Head } from "@canonical/react-head";
+import type { ReactElement } from "react";
+
+export default function MainPage(): ReactElement {
+  return (
+    <section aria-labelledby="main-title">
+      <Head title="User Settings" />
+      <h1 id="main-title">User Settings</h1>
+      <p>This is the main page for the user-settings domain.</p>
+    </section>
+  );
+}
+`,
+      "src/domains/user-settings/routes.ts": `import { route } from "@canonical/router-core";
+import MainPage from "./MainPage.js";
+
+const routes = {
+  userSettings: route({
+    url: "/user-settings",
+    content: MainPage,
+  }),
+} as const;
+
+export default routes;
+`,
+    });
+  });
+
   it("creates MainPage.tsx and routes.ts in src/domains/{name}/", () => {
     const result = dryRun(
       generators.domain.generate({ domainName: "billing" }),
@@ -623,6 +669,23 @@ describe("domain generator", () => {
 });
 
 describe("wrapper generator", () => {
+  it("renders its files from templates, byte for byte as before", () => {
+    expect(
+      writtenFiles(generators.wrapper.generate({ wrapperName: "side-nav" })),
+    ).toEqual({
+      "src/lib/SideNavLayout/SideNavLayout.tsx": `import type { ReactNode, ReactElement } from "react";
+
+export default function SideNavLayout({
+  children,
+}: { children: ReactNode }): ReactElement {
+  return <div className="side-nav-layout">{children}</div>;
+}
+`,
+      "src/lib/SideNavLayout/index.ts": `export { default } from "./SideNavLayout.js";
+`,
+    });
+  });
+
   it("creates {Name}Layout.tsx and index.ts in src/lib/{Name}Layout/", () => {
     const result = dryRun(
       generators.wrapper.generate({ wrapperName: "settings" }),
