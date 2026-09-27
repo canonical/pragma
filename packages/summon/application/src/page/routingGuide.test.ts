@@ -10,7 +10,6 @@ import { generator as domainGenerator } from "../domain/index.js";
 import { generator } from "./index.js";
 import {
   formatRoutingGuide,
-  LAYOUT_PLACEHOLDER,
   type RouteExample,
   routingGuide,
 } from "./routingGuide.js";
@@ -74,7 +73,7 @@ describe("routing guide", () => {
       '  }: RouteContentProps<RouteParams<"/invoices/:id">>): ReactElement {',
     );
     expect(lines).toContain(
-      "  const [detail] = group(<layout>, [invoicesRoutes.detail] as const);",
+      "  const [detail] = group(/* your wrapper() */, [invoicesRoutes.detail] as const);",
     );
     expect(lines).toContain(
       "  const appRoutes = { /* …the routes already listed */ detail } as const;",
@@ -168,9 +167,9 @@ describe("routing guide", () => {
             '  id: "public-layout",',
             "  component: ({ children }) => children,",
             "});",
-            // The placeholder is the app's own wrapper; here, the one above.
+            // The wrapper comment stands for the app's own; here, the one above.
             ...guide.wiring.map((line) =>
-              line.replace(LAYOUT_PLACEHOLDER, "publicLayout"),
+              line.replace("/* your wrapper() */", "publicLayout"),
             ),
             // The page's route is reachable through appRoutes.
             `export const wired: AnyRoute = appRoutes.${toCamelCase(name)};`,

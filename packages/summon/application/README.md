@@ -200,11 +200,11 @@ import DetailPage from "./DetailPage.js";
   detail: route({ url: "/invoices/detail", content: DetailPage }),
 ```
 
-and ends with the wiring for `src/routes.tsx`, where `<layout>` stands for the app's own `wrapper()`:
+and ends with the wiring for `src/routes.tsx`, where the comments stand for what the app names itself:
 
 ```tsx
 import invoicesRoutes from "#domains/invoices/routes.js";
-const [detail] = group(<layout>, [invoicesRoutes.detail] as const);
+const [detail] = group(/* your wrapper() */, [invoicesRoutes.detail] as const);
 const appRoutes = { /* …the routes already listed */ detail } as const;
 ```
 
