@@ -68,9 +68,9 @@ import type { ReactElement } from "react";
 
 export default function OrderLinesPage(): ReactElement {
   return (
-    <section aria-labelledby="orderLines-title">
+    <section aria-labelledby="order-lines-title">
       <Head title="Order Lines" />
-      <h1 id="orderLines-title">Order Lines</h1>
+      <h1 id="order-lines-title">Order Lines</h1>
     </section>
   );
 }

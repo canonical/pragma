@@ -12,7 +12,8 @@ import {
   sequence_,
   writeFile,
 } from "@canonical/task";
-import { toCamelCase, toPascalCase, toTitleCase } from "@canonical/utils";
+import { toPascalCase, toTitleCase } from "@canonical/utils";
+import { buildPage } from "../shared/buildPage.js";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
 import { validateCommandPath } from "../shared/validators.js";
@@ -51,24 +52,6 @@ const prompts: PromptDefinition[] = [
     group: "Page",
   },
 ];
-
-function buildPage(pageName: string, name: string): string {
-  const title = toTitleCase(name);
-  const headingId = `${toCamelCase(name)}-title`;
-
-  return `import { Head } from "@canonical/react-head";
-import type { ReactElement } from "react";
-
-export default function ${pageName}(): ReactElement {
-  return (
-    <section aria-labelledby="${headingId}">
-      <Head title="${title}" />
-      <h1 id="${headingId}">${title}</h1>
-    </section>
-  );
-}
-`;
-}
 
 export const generator: GeneratorDefinition<PageAnswers> = {
   meta: {
@@ -119,7 +102,14 @@ The domain must exist first.`,
     // mkdir's default undo would delete that domain's folder on `--undo`.
     // writeFile's default undo deletes the file, which is exactly `--undo`.
     const scaffold = sequence_([
-      writeFile(pageFile, buildPage(pageName, name)),
+      writeFile(
+        pageFile,
+        buildPage({
+          pageName,
+          title: toTitleCase(name),
+          headingId: `${name}-title`,
+        }),
+      ),
       // One message, so the code lines print without a per-line prefix and
       // can be copied as they are.
       info(formatRoutingGuide(routingGuide(domainName, name)).join("\n")),

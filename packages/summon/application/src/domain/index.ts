@@ -13,6 +13,7 @@ import {
   writeFile,
 } from "@canonical/task";
 import { toCamelCase, toTitleCase } from "@canonical/utils";
+import { buildPage } from "../shared/buildPage.js";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
 import { validateCommandPath } from "../shared/validators.js";
@@ -39,21 +40,12 @@ const prompts: PromptDefinition[] = [
 ];
 
 function buildMainPage(domainName: string): string {
-  const title = toTitleCase(domainName);
-
-  return `import { Head } from "@canonical/react-head";
-import type { ReactElement } from "react";
-
-export default function MainPage(): ReactElement {
-  return (
-    <section aria-labelledby="main-title">
-      <Head title="${title}" />
-      <h1 id="main-title">${title}</h1>
-      <p>This is the main page for the ${domainName} domain.</p>
-    </section>
-  );
-}
-`;
+  return buildPage({
+    pageName: "MainPage",
+    title: toTitleCase(domainName),
+    headingId: "main-title",
+    body: [`<p>This is the main page for the ${domainName} domain.</p>`],
+  });
 }
 
 function buildRoutesFile(domainName: string): string {
