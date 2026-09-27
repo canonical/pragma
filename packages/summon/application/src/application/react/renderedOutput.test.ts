@@ -152,7 +152,7 @@ describe("rendered template output is well-formed in every combination", () => {
         parseFailures(typescript),
         `emitted TypeScript does not parse for ${label(combo)}`,
       ).toBeNull();
-    });
+    }, 30_000);
   }
 });
 

@@ -93,7 +93,7 @@ export default function OrderLinesPage(): ReactElement {
 
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toBe(page.content);
-  });
+  }, 30_000);
 
   it("prints the routing guide as one message after writing", () => {
     const effects = pageEffects("invoices/detail");

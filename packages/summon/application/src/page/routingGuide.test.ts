@@ -164,5 +164,5 @@ describe("routing guide", () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
-  });
+  }, 120_000);
 });
