@@ -11,6 +11,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { GENERATOR_INVALID_ANSWER } from "@canonical/summon-core";
 import { dryRun, type Effect, sequence_ } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -122,11 +123,45 @@ export default function OrderLinesPage(): ReactElement {
     ).toThrow(/"\.\."/);
   });
 
-  it("fails when the domain does not exist", () => {
+  it("refuses a page name that is not kebab-case, as an invalid answer", () => {
+    for (const pagePath of [
+      "invoices/DETAIL",
+      "invoices/Detail",
+      "invoices/order--lines",
+    ]) {
+      expect(() => dryRun(generator.generate({ pagePath }))).toThrow(
+        expect.objectContaining({
+          code: GENERATOR_INVALID_ANSWER,
+          message: expect.stringContaining("must be kebab-case"),
+        }),
+      );
+    }
+  });
+
+  it("refuses a page name whose route key JavaScript reserves, as an invalid answer", () => {
+    for (const name of ["new", "delete", "default"]) {
+      expect(() =>
+        dryRun(generator.generate({ pagePath: `invoices/${name}` })),
+      ).toThrow(
+        expect.objectContaining({
+          code: GENERATOR_INVALID_ANSWER,
+          message: expect.stringContaining(`route key "${name}"`),
+        }),
+      );
+    }
+    // A name whose key is not itself reserved is fine.
+    expect(() => pageEffects("invoices/new-invoice")).not.toThrow();
+  });
+
+  it("fails when the domain does not exist, as an invalid answer", () => {
     expect(() =>
       dryRun(generator.generate({ pagePath: "missing/page" })),
     ).toThrow(
-      'Domain "missing" not found: src/domains/missing/routes.ts is missing. Create the domain first.',
+      expect.objectContaining({
+        code: GENERATOR_INVALID_ANSWER,
+        message:
+          'Domain "missing" not found: src/domains/missing/routes.ts is missing. Create the domain first.',
+      }),
     );
   });
 });
@@ -164,7 +199,10 @@ describe("page generator against the filesystem", () => {
 
     await expect(
       runTask(generator.generate({ pagePath: "catalog/detail" }), { cwd }),
-    ).rejects.toThrow(/already exists/);
+    ).rejects.toMatchObject({
+      code: GENERATOR_INVALID_ANSWER,
+      message: expect.stringContaining("already exists"),
+    });
     expect(readFileSync(pageFile(), "utf8")).toBe("hand-written\n");
   });
 });

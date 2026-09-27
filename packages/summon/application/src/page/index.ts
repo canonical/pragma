@@ -12,7 +12,7 @@ import {
   sequence_,
   writeFile,
 } from "@canonical/task";
-import { toPascalCase, toTitleCase } from "@canonical/utils";
+import { toCamelCase, toPascalCase, toTitleCase } from "@canonical/utils";
 import { buildPage } from "../shared/buildPage.js";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
@@ -31,6 +31,69 @@ const validateSegments = validateCommandPath({
 });
 
 /**
+ * The page name in kebab-case: lowercase letters and digits, words joined by
+ * single hyphens. It is what the file, component and route key are named
+ * from (`order-lines` → `OrderLinesPage`, `orderLines`), so a name those
+ * mappings would have to guess at, such as `DETAIL`, is refused.
+ */
+const KEBAB_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+
+/**
+ * Words JavaScript reserves, which the printed wiring cannot use as the route
+ * key it destructures (`const [new] = group(…)` does not parse).
+ */
+const RESERVED = new Set([
+  "arguments",
+  "await",
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "enum",
+  "eval",
+  "export",
+  "extends",
+  "false",
+  "finally",
+  "for",
+  "function",
+  "if",
+  "implements",
+  "import",
+  "in",
+  "instanceof",
+  "interface",
+  "let",
+  "new",
+  "null",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "return",
+  "static",
+  "super",
+  "switch",
+  "this",
+  "throw",
+  "true",
+  "try",
+  "typeof",
+  "var",
+  "void",
+  "while",
+  "with",
+  "yield",
+]);
+
+/**
  * Two name segments, `<domain>/<name>`. A leading slash is refused rather than
  * stripped: "/invoices/detail" reads as a url or an absolute path, and the
  * page path is neither.
@@ -39,7 +102,17 @@ function validatePagePath(value: unknown): true | string {
   if (typeof value === "string" && /^\s*[/\\]/.test(value)) {
     return "Page path must be <domain>/<name>, not an absolute path (for example invoices/detail)";
   }
-  return validateSegments(value);
+  const verdict = validateSegments(value);
+  if (verdict !== true) return verdict;
+  const name = normalizeCommandPath(String(value)).split("/")[1] as string;
+  if (!KEBAB_NAME.test(name)) {
+    return `Page name "${name}" must be kebab-case: lowercase letters and digits, words joined by single hyphens (for example order-lines)`;
+  }
+  const key = toCamelCase(name);
+  if (RESERVED.has(key)) {
+    return `Page name "${name}" would make the route key "${key}", a word JavaScript reserves; choose another name (for example ${name}-page)`;
+  }
+  return true;
 }
 
 const prompts: PromptDefinition[] = [
