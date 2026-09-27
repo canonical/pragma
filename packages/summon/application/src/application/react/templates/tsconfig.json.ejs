@@ -12,18 +12,7 @@
       "vitest/globals",
       "@testing-library/jest-dom"
     ],
-    "noEmit": true,
-    "paths": {
-      "#lib/*": ["./src/lib/*"],
-      "#domains/*": ["./src/domains/*"],
-<% if (intl) { -%>
-      "#i18n/*": ["./src/i18n/*"],
-<% } -%>
-<% if (relay) { -%>
-      "#relay/*": ["./src/relay/*"],
-<% } -%>
-      "#styles/*": ["./src/styles/*"]
-    }
+    "noEmit": true
   },
   "include": [
     "src/**/*.ts",
