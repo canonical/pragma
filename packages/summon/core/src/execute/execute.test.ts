@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -104,6 +104,45 @@ describe("execute — the summon↔pragma seam", () => {
       }),
     ).rejects.toMatchObject({
       taskError: { code: "MISSING_REQUIRED_ANSWER" },
+    });
+  });
+});
+
+describe("execute — a generator that adds to existing files", () => {
+  // Refuses unless `base.txt` is already there: the guard depends on the
+  // host, which the pure preview walk cannot see.
+  const addsTo: GeneratorDefinition = {
+    ...fixture,
+    prompts: [],
+    generate: () =>
+      ifElseM(
+        exists("base.txt"),
+        writeFile("added.txt", "added\n"),
+        fail({ code: "BASE_MISSING", message: "base.txt is missing" }),
+      ),
+  };
+  const run = (dir: string) =>
+    runGeneratorTask(execute(addsTo, { prompt: autoPrompt({}), params: {} }), {
+      cwd: dir,
+      promptHandler: autoPrompt({}),
+    });
+
+  it("runs when the file it adds to exists, and summarises the write", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "exec-adds-"));
+    writeFileSync(join(dir, "base.txt"), "base\n");
+    const result = await run(dir);
+    expect(readFileSync(join(dir, "added.txt"), "utf-8")).toBe("added\n");
+    expect(
+      result.effects.some(
+        (e) => e._tag === "WriteFile" && e.path === "added.txt",
+      ),
+    ).toBe(true);
+  });
+
+  it("fails with the guard's own message when that file is missing", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "exec-adds-"));
+    await expect(run(dir)).rejects.toMatchObject({
+      taskError: { code: "BASE_MISSING" },
     });
   });
 });

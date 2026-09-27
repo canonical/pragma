@@ -24,7 +24,9 @@
  */
 
 import {
+  collectUndos,
   dryRun,
+  type Effect,
   fail,
   flatMap,
   map,
@@ -80,6 +82,30 @@ export function isInvalidAnswersError(error: unknown): error is Error {
     error instanceof Error &&
     (error as { code?: unknown }).code === GENERATOR_INVALID_ANSWER
   );
+}
+
+/**
+ * The effects of one pure build of a generator task, for the outcome summary.
+ *
+ * The pure walk cannot see the host, so every existence check in it answers
+ * "absent". A generator that adds to existing code guards on a file that must
+ * already be there (a page added to a domain refuses when the domain is missing),
+ * and that guard fails in the pure walk however the host looks. When the plain
+ * walk fails, the walk is repeated letting each existence check take the other
+ * answer where the first led to a failure: the plan of the run in which the
+ * guards pass. The real build that follows enforces the guards against the
+ * host, so a guard that truly fails still fails the run with its own message.
+ * A failure no existence answer avoids is rethrown as before.
+ */
+function previewEffects(task: Task<unknown>): Effect[] {
+  try {
+    return dryRun(task).effects;
+  } catch (error) {
+    if (!(error instanceof TaskExecutionError)) throw error;
+    const effects: Effect[] = [];
+    collectUndos(task, { onForwardEffect: (effect) => effects.push(effect) });
+    return effects;
+  }
 }
 
 /** The context {@link execute} builds its task from. */
@@ -151,7 +177,7 @@ export default function execute(
           //    `generate` effects ARE the plan; on the node interpreter they
           //    write for real. The preview gives the outcome summary its file
           //    list without re-running side effects.
-          const effects = dryRun(generator.generate(answers)).effects;
+          const effects = previewEffects(generator.generate(answers));
           return map(generator.generate(answers), () => ({
             generator,
             answers,
