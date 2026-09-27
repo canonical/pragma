@@ -17,8 +17,8 @@
  * existed to turn that crash into a clean refusal.
  *
  * There is no virtual filesystem now. Every generator's templates are real
- * files under its own package, so all three nouns run from the shipped entry and
- * all three are asserted here. THE REFUSAL CASES ARE GONE ON PURPOSE: a test
+ * files under its own package, so all four nouns run from the shipped entry and
+ * all four are asserted here. THE REFUSAL CASES ARE GONE ON PURPOSE: a test
  * asserting `create package` refuses would now be asserting a defect.
  *
  * The svelte + lit cases stay load-bearing: `types.ts.ejs` / `index.ts.ejs` /

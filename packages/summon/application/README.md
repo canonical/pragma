@@ -190,55 +190,25 @@ src/domains/invoices/
 └── DetailPage.tsx   # New page component
 ```
 
-The argument is exactly two segments, the domain and then the page name; the domain folder already carries the domain's name, so the file is `DetailPage.tsx`, not `InvoicesDetailPage.tsx`. The generator refuses to run when the domain does not exist (create it first with `summon domain <name>`) or when the page file already exists.
+The argument is exactly two segments, the domain and then the page name in kebab-case (`order-lines` makes `OrderLinesPage.tsx`); the domain folder already carries the domain's name, so the file is `DetailPage.tsx`, not `InvoicesDetailPage.tsx`. The generator refuses to run when the domain does not exist (create it first with `summon domain <name>`) or when the page file already exists.
 
-After writing the page, it prints what to add by hand: the import line, example route entries to adapt, and the wiring for `src/routes.tsx`. The urls are examples, not inferred from anything; pick the one that fits and change it. For `invoices/detail` it prints:
+After writing the page, it prints what to add by hand. For `invoices/detail`, that starts with the import and a route entry for `src/domains/invoices/routes.ts` (the url is an example to adapt):
 
-```
-Created src/domains/invoices/DetailPage.tsx. Nothing else was changed; route the page by hand.
+```ts
+import DetailPage from "./DetailPage.js";
 
-In src/domains/invoices/routes.ts, import the page:
-  import DetailPage from "./DetailPage.js";
-
-Then add one entry to its routes object. The urls are examples to adapt.
-
-A static url:
   detail: route({ url: "/invoices/detail", content: DetailPage }),
-
-A url with a :param segment; the page takes the params it declares:
-  detail: route({ url: "/invoices/:id", content: DetailPage }),
-  // DetailPage.tsx
-  import type { RouteContentProps, RouteParams } from "@canonical/router-core";
-  export default function DetailPage({
-    params,
-  }: RouteContentProps<RouteParams<"/invoices/:id">>): ReactElement {
-
-A typed search schema (Standard Schema v1, so Zod, Valibot or ArkType fit too); the page reads search:
-  import type { StandardSchemaV1 } from "@canonical/router-core";
-  const detailSearch: StandardSchemaV1<Record<string, unknown>, { readonly q?: string }> = {
-    "~standard": {
-      version: 1,
-      vendor: "app",
-      validate(value) {
-        const q = typeof value === "object" && value !== null && "q" in value ? value.q : undefined;
-        return { value: { q: typeof q === "string" ? q : undefined } };
-      },
-    },
-  };
-  detail: route({ url: "/invoices/detail", search: detailSearch, content: DetailPage }),
-  // DetailPage.tsx
-  import type { RouteContentProps } from "@canonical/router-core";
-  export default function DetailPage({
-    search,
-  }: RouteContentProps<Record<string, never>, { readonly q?: string }>): ReactElement {
-
-In src/routes.tsx, put the route in a group() and list it in appRoutes:
-  import invoicesRoutes from "#domains/invoices/routes.js";
-  const [detail] = group(publicLayout, [invoicesRoutes.detail] as const);
-  const appRoutes = { home, detail } as const; // keep the routes already listed
 ```
 
-The examples are type-checked against `@canonical/router-core` in this package's tests, so they stay correct as the router changes.
+and ends with the wiring for `src/routes.tsx`, where `<layout>` stands for the app's own `wrapper()`:
+
+```tsx
+import invoicesRoutes from "#domains/invoices/routes.js";
+const [detail] = group(<layout>, [invoicesRoutes.detail] as const);
+const appRoutes = { /* …the routes already listed */ detail } as const;
+```
+
+The full guide printed at run time also shows a url with a `:param` and the page signature that reads `params`, and a typed search schema with the page signature that reads `search`. Every printed example is type-checked against `@canonical/router-core` in this package's tests.
 
 `--undo` deletes the page file. It touches nothing else, because the generator changed nothing else; remove any lines you pasted by hand yourself.
 

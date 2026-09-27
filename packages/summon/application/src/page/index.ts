@@ -144,9 +144,7 @@ signature, a typed search schema and the page's search signature), and the
 group() and appRoutes lines for src/routes.tsx.
 
 Refuses to run when the domain does not exist or the page file already exists.
---undo deletes the page file.
-
-The domain must exist first.`,
+--undo deletes the page file.`,
     examples: [
       "summon page invoices/detail",
       "summon page account/settings",

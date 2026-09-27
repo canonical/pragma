@@ -11,7 +11,7 @@
 | Know which tier something belongs to | `pragma tier list`, `pragma tier lookup <name>` |
 | Stay consistent with the modifiers that already exist | `pragma modifier list` — 11 families |
 | Check your code against the coding standards | `pragma standard list --category react` |
-| Scaffold a component, package, or application | `pragma create component react <path>` |
+| Scaffold a component, package, or application, or a page in an existing domain | `pragma create component react <path>` |
 | Ask the graph something the commands don't cover | `pragma graph query "<sparql>"` |
 | Set it up, and check it's healthy | `pragma setup`, then `pragma doctor` |
 | Give your AI agent the same access | `pragma setup mcp` |
@@ -119,7 +119,7 @@ pragma block lookup 'Nav*'
 pragma tier lookup Global
 ```
 
-**Build from it.** The `create` commands scaffold a component, package, or application. They run the `@canonical/summon-*` generator packages directly — those are regular dependencies of this package, so scaffolding works from a clean install. Preview any of them with `--dry-run`:
+**Build from it.** The `create` commands scaffold a component, package, or application, or a page in an existing domain. They run the `@canonical/summon-*` generator packages directly — those are regular dependencies of this package, so scaffolding works from a clean install. Preview any of them with `--dry-run`:
 
 ```bash
 pragma create component react src/components/Button
