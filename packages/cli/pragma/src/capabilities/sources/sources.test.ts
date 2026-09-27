@@ -469,6 +469,29 @@ describe("sources update — network-free preview (M2)", () => {
     expect(runtime.store.booted).toBe(false);
   });
 
+  it("CLI --undo --dry-run still previews the forward plan, offline", async () => {
+    // `sources update` previews a plan-only stand-in, not the task --undo
+    // walks, so an undo read off it would be wrong (it would delete the
+    // pointer the real undo writes back). It keeps previewing its plan.
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-remote", source: UNREACHABLE },
+    ]);
+
+    const outcome = await executeVerb(
+      updateVerb,
+      {},
+      { dryRun: true, undo: true, yes: false },
+      runtime,
+    );
+
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("Resolve and build 1 pack(s)");
+    expect(outcome.stdout).not.toContain("Delete file");
+    expect(readActivePack(cwd)).toBeUndefined();
+    expect(runtime.store.booted).toBe(false);
+  });
+
   it("MCP sources_update without confirm returns a plan, fetching nothing", async () => {
     const cwd = tmp("pragma-proj-");
     writeFileSync(

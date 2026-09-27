@@ -411,6 +411,7 @@ export const CREATE_CAPABILITY = {
   mutates: true,
   destructive: false,
   interactive: true,
+  undoPreview: true,
   mcp: {
     expose: true as const,
     annotations: { readOnlyHint: false, openWorldHint: false },

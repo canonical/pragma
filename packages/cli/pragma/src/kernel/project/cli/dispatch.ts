@@ -14,7 +14,6 @@
 import {
   collectUndos,
   describeEffect,
-  dryRun,
   type Effect,
   type Task,
 } from "@canonical/task";
@@ -259,6 +258,7 @@ async function renderPlan(
     ) => string | Promise<string>;
     planData: unknown;
   },
+  meta?: { readonly undo: true },
 ): Promise<DispatchOutcome> {
   if (flags.format === "json") {
     const body =
@@ -266,7 +266,7 @@ async function renderPlan(
         ? { plan }
         : { plan, targets: seam.planData };
     return {
-      stdout: `${JSON.stringify(successEnvelope(body, { dryRun: true }))}\n`,
+      stdout: `${JSON.stringify(successEnvelope(body, { dryRun: true, ...meta }))}\n`,
       exitCode: 0,
     };
   }
@@ -287,9 +287,6 @@ async function renderPlan(
       : "Dry run — no effects.";
   return { stdout: `${body}\n`, exitCode: 0 };
 }
-
-/** Effects an undo walks through that are not themselves reversals. */
-const UNDO_PLUMBING = new Set(["Log", "ReadFile", "Exists", "ReadContext"]);
 
 /** Render the outcome of an undo. */
 function renderUndo(flags: GlobalFlags, undone: number): DispatchOutcome {
@@ -382,26 +379,32 @@ export async function executeVerb(
         | Task<unknown>
         | Promise<Task<unknown>>,
     );
-    if (mutation.dryRun && mutation.undo) {
+    if (mutation.dryRun && mutation.undo && verb.capability.undoPreview) {
       // An undo dry-run previews the UNDO, not the forward run: the reversals
       // `--undo` would perform, collected against the disk exactly as
       // `runUndo` collects them, in the order they would run, and none of
-      // them performed. Each reversal is described by its own (mocked) walk;
-      // the reads and logs it makes on the way are not reversals, so they are
-      // left out of the plan.
+      // them performed. Only a verb that declares `undoPreview` gets this:
+      // its preview task is the task `--undo` walks. Any other verb keeps
+      // previewing its forward plan.
+      //
+      // The steps are described by the rule the summon bin shows its own undo
+      // plan with, loaded lazily from the LIGHT `/format` subpath like the
+      // forward preview's visibility rule below.
       const previewExec = mutationRuntime.exec ?? {};
       try {
         const undos = collectUndos(task, {
           resolveExists: hostExistsResolver(previewExec.cwd),
         });
-        const reversals = [...undos]
-          .reverse()
-          .flatMap((undo) => dryRun(undo).effects)
-          .filter((effect) => !UNDO_PLUMBING.has(effect._tag));
+        const { describeUndoSteps } = await import(
+          "@canonical/summon-core/format"
+        );
+        const steps = describeUndoSteps(undos);
         return await renderPlan(
           flags,
-          reversals.map(describeEffect),
-          reversals,
+          steps.map(describeEffect),
+          steps,
+          undefined,
+          { undo: true },
         );
       } finally {
         await previewExec.dispose?.();

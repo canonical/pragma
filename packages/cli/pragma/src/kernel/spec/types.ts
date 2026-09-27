@@ -53,6 +53,13 @@ export type Capability = {
   destructive?: boolean;
   needsNetwork?: boolean;
   interactive?: boolean;
+  /**
+   * The verb's preview task is the very task `--undo` walks, so
+   * `--undo --dry-run` previews the undo from it. A verb whose preview runs
+   * a plan-only stand-in (so its undo would be read off the wrong task) leaves
+   * this unset and keeps previewing its forward plan.
+   */
+  undoPreview?: boolean;
   mcp:
     | { expose: true; annotations?: McpAnnotations }
     | { expose: false; reason: string };
