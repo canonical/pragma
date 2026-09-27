@@ -5,7 +5,8 @@
  * {@link visiblePlanEffects}, {@link formatEffectLine} and friends — WITHOUT
  * loading summon-core proper: the barrel pulls the generator runtime and, with
  * it, React, which the pragma CLI keeps off its `--help` / `__complete` fast
- * paths. This module's runtime graph is `chalk` and Node built-ins, so a host
+ * paths. This module's runtime graph is `chalk`, the node-free `@canonical/task`
+ * base and Node built-ins, so a host
  * pays for the plan rules and nothing else — whether it imports them eagerly,
  * as the summon bin does, or behind a dynamic `import()` at render time, as
  * the pragma kernel does to keep its own fast paths free of this package
@@ -24,6 +25,7 @@ export {
   COMPLETED_GLYPH,
   FAILURE_GLYPH,
 } from "../prompt/ink/progressWindow.js";
+export { default as describeUndoSteps } from "./describeUndoSteps.js";
 export type { EffectColor, EffectStyle } from "./effects.js";
 export {
   buildReplayCommand,
