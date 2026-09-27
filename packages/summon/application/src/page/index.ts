@@ -1,7 +1,8 @@
 import * as path from "node:path";
-import type {
-  GeneratorDefinition,
-  PromptDefinition,
+import {
+  GENERATOR_INVALID_ANSWER,
+  type GeneratorDefinition,
+  type PromptDefinition,
 } from "@canonical/summon-core";
 import {
   exists,
@@ -103,7 +104,7 @@ Create the domain first with: summon domain <name>`,
   generate: (answers) => {
     const verdict = validatePagePath(answers.pagePath);
     if (verdict !== true) {
-      return fail({ code: "PAGE_PATH_INVALID", message: verdict });
+      return fail({ code: GENERATOR_INVALID_ANSWER, message: verdict });
     }
 
     const [domainName, name] = normalizeCommandPath(answers.pagePath).split(
@@ -124,20 +125,22 @@ Create the domain first with: summon domain <name>`,
       info(formatRoutingGuide(routingGuide(domainName, name)).join("\n")),
     ]);
 
-    // Guard before touching anything:
+    // Guard before touching anything. Both refusals are the answer's fault
+    // (a domain that is not there, a name already taken), so they carry the
+    // invalid-answer code hosts report as a usage error, not as a bug:
     // - the domain must exist (a page is added to an existing domain);
     // - the page must NOT exist (the write's undo is a delete, so overwriting
     //   a hand-authored page then running `--undo` would destroy the original).
     return flatMap(exists(routesFile), (domainPresent) =>
       !domainPresent
         ? fail({
-            code: "PAGE_DOMAIN_MISSING",
+            code: GENERATOR_INVALID_ANSWER,
             message: `Domain "${domainName}" not found (${routesFile} missing). Create it first with: summon domain ${domainName}`,
           })
         : flatMap(exists(pageFile), (pagePresent) =>
             pagePresent
               ? fail({
-                  code: "PAGE_EXISTS",
+                  code: GENERATOR_INVALID_ANSWER,
                   message: `Page "${pageFile}" already exists. Choose a different page name or remove the file first.`,
                 })
               : scaffold,
