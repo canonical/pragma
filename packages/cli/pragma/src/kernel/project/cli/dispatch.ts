@@ -11,8 +11,19 @@
  * exit code.
  */
 
-import { describeEffect, type Effect, type Task } from "@canonical/task";
-import { runPreview, runTask, runUndo } from "@canonical/task/node";
+import {
+  collectUndos,
+  describeEffect,
+  dryRun,
+  type Effect,
+  type Task,
+} from "@canonical/task";
+import {
+  hostExistsResolver,
+  runPreview,
+  runTask,
+  runUndo,
+} from "@canonical/task/node";
 import { BIN_NAME } from "../../../constants.js";
 import {
   asPragmaError,
@@ -277,6 +288,9 @@ async function renderPlan(
   return { stdout: `${body}\n`, exitCode: 0 };
 }
 
+/** Effects an undo walks through that are not themselves reversals. */
+const UNDO_PLUMBING = new Set(["Log", "ReadFile", "Exists", "ReadContext"]);
+
 /** Render the outcome of an undo. */
 function renderUndo(flags: GlobalFlags, undone: number): DispatchOutcome {
   if (flags.format === "json") {
@@ -368,6 +382,31 @@ export async function executeVerb(
         | Task<unknown>
         | Promise<Task<unknown>>,
     );
+    if (mutation.dryRun && mutation.undo) {
+      // An undo dry-run previews the UNDO, not the forward run: the reversals
+      // `--undo` would perform, collected against the disk exactly as
+      // `runUndo` collects them, in the order they would run, and none of
+      // them performed. Each reversal is described by its own (mocked) walk;
+      // the reads and logs it makes on the way are not reversals, so they are
+      // left out of the plan.
+      const previewExec = mutationRuntime.exec ?? {};
+      try {
+        const undos = collectUndos(task, {
+          resolveExists: hostExistsResolver(previewExec.cwd),
+        });
+        const reversals = [...undos]
+          .reverse()
+          .flatMap((undo) => dryRun(undo).effects)
+          .filter((effect) => !UNDO_PLUMBING.has(effect._tag));
+        return await renderPlan(
+          flags,
+          reversals.map(describeEffect),
+          reversals,
+        );
+      } finally {
+        await previewExec.dispose?.();
+      }
+    }
     if (mutation.dryRun) {
       // The HONEST preview (PR7): reads hit the real filesystem, writes are
       // recorded and never executed. A mutation whose real run would die on its

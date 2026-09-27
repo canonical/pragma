@@ -333,6 +333,30 @@ describe("create page (PROTECTED)", () => {
     }
   });
 
+  it("CLI: --undo --dry-run previews the undo of a real run and reverses nothing", async () => {
+    const dir = appWithDomain();
+    const prev = process.cwd();
+    process.chdir(dir);
+    try {
+      const run = (dryRun: boolean, undo: boolean) =>
+        executeVerb(
+          createVerbs.page as VerbSpec,
+          { pagePath: "invoices/detail" },
+          { dryRun, undo, yes: true },
+          bootRuntime(FLAGS, dir),
+        );
+      expect((await run(false, false)).exitCode).toBe(0);
+      const preview = await run(true, true);
+      expect(preview.exitCode).toBe(0);
+      expect(preview.stdout).toContain(
+        "Delete file: src/domains/invoices/DetailPage.tsx",
+      );
+      expect(existsSync(pageFile(dir))).toBe(true);
+    } finally {
+      process.chdir(prev);
+    }
+  });
+
   it("refuses when the domain does not exist, writing nothing", async () => {
     const dir = freshCwd();
     const prev = process.cwd();
