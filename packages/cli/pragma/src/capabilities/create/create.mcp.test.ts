@@ -16,7 +16,9 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
+import { mapExitCode } from "../../kernel/project/cli/exitCodes.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
@@ -352,6 +354,45 @@ describe("create page (PROTECTED)", () => {
         "Delete file: src/domains/invoices/DetailPage.tsx",
       );
       expect(existsSync(pageFile(dir))).toBe(true);
+    } finally {
+      process.chdir(prev);
+    }
+  });
+
+  it("CLI: a missing domain or a taken page name is INVALID_INPUT, exit 2", async () => {
+    // What the CLI boundary makes of the run's failure: its error and exit.
+    const refusal = async (dir: string) => {
+      try {
+        await executeVerb(
+          createVerbs.page as VerbSpec,
+          { pagePath: "invoices/detail" },
+          { dryRun: false, undo: false, yes: true },
+          bootRuntime(FLAGS, dir),
+        );
+      } catch (error) {
+        const pragma = asPragmaError(error);
+        return { pragma, exit: mapExitCode(pragma.code) };
+      }
+      throw new Error("the run did not refuse");
+    };
+    const prev = process.cwd();
+    try {
+      const empty = freshCwd();
+      process.chdir(empty);
+      const missing = await refusal(empty);
+      expect(missing.pragma.code).toBe("INVALID_INPUT");
+      expect(missing.exit).toBe(2);
+      expect(missing.pragma.message).toContain('Domain "invoices" not found');
+      expect(readdirSync(empty)).toEqual([]);
+
+      const dir = appWithDomain();
+      process.chdir(dir);
+      writeFileSync(pageFile(dir), "hand-written\n");
+      const taken = await refusal(dir);
+      expect(taken.pragma.code).toBe("INVALID_INPUT");
+      expect(taken.exit).toBe(2);
+      expect(taken.pragma.message).toContain("already exists");
+      expect(readFileSync(pageFile(dir), "utf8")).toBe("hand-written\n");
     } finally {
       process.chdir(prev);
     }

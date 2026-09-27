@@ -9,6 +9,7 @@ import {
   type Covenant,
 } from "../kernel/spec/surfaceConformance.js";
 import { projectMcp } from "../testing/helpers/projectMcp.js";
+import { CREATE_GENERATORS } from "./create/constants.js";
 import { CREATE_SURFACE } from "./create/createSurface.generated.js";
 import { capabilities } from "./index.js";
 
@@ -274,13 +275,24 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
         );
       }
     }
-    // Not vacuous: some create verbs do carry flags (`page`, whose one prompt
-    // is positional, carries none).
-    expect(
-      (emitted.nouns.create?.verbs ?? []).some(
-        (verb) => (verb.flags?.length ?? 0) > 0,
-      ),
-    ).toBe(true);
+    // A create verb carries flags if and only if one of its generators has a
+    // non-positional prompt (`page`, whose one prompt is positional, carries
+    // none) — checked per verb against the projected surface.
+    for (const verb of emitted.nouns.create?.verbs ?? []) {
+      const binding =
+        CREATE_GENERATORS[verb.v as keyof typeof CREATE_GENERATORS];
+      expect(binding, `no binding for create ${verb.v}`).toBeDefined();
+      const hasFlagPrompt = (binding.paths as readonly string[]).some(
+        (commandPath) =>
+          CREATE_SURFACE[commandPath]?.prompts.some(
+            (prompt) => prompt.positional !== true,
+          ) === true,
+      );
+      expect(
+        (verb.flags?.length ?? 0) > 0,
+        `create ${verb.v}: flags iff a non-positional prompt`,
+      ).toBe(hasFlagPrompt);
+    }
     for (const verb of emitted.nouns.create?.verbs ?? []) {
       for (const token of verb.flags ?? []) {
         expect([...registered.values()]).toContain(token);
