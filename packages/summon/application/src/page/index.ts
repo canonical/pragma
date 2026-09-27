@@ -33,7 +33,6 @@ const prompts: PromptDefinition[] = [
     name: "pagePath",
     type: "text",
     message: "Page path, as <domain>/<name> (for example invoices/detail):",
-    default: "example/page",
     positional: true,
     validate: validatePagePath,
     group: "Page",
