@@ -33,6 +33,14 @@ describe("validateCommandPath", () => {
 
   it("enforces the maximum segment count", () => {
     expect(singleName("a/b")).toContain("single name");
+    const pagePath = validateCommandPath({
+      label: "Page path",
+      minSegments: 2,
+      maxSegments: 2,
+      example: "invoices/detail",
+    });
+    expect(pagePath("invoices/detail")).toBe(true);
+    expect(pagePath("invoices/detail/lines")).toContain("at most 2 segments");
   });
 
   it("rejects segments that would not survive as identifiers", () => {

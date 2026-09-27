@@ -14,9 +14,9 @@ const SEGMENT = /^[A-Za-z][A-Za-z0-9-]*$/;
  * contract; never throws.
  */
 export function validateCommandPath(options: {
-  /** Human label for messages, e.g. "Route path". */
+  /** Human label for messages, e.g. "Page path". */
   label: string;
-  /** Minimum segment count (route needs domain/name = 2). */
+  /** Minimum segment count (a page needs domain/name = 2). */
   minSegments?: number;
   /** Maximum segment count (a domain or wrapper name is a single segment). */
   maxSegments?: number;
@@ -37,7 +37,9 @@ export function validateCommandPath(options: {
       return `${label} needs at least ${minSegments} segments (for example ${example})`;
     }
     if (maxSegments !== undefined && segments.length > maxSegments) {
-      return `${label} must be a single name without slashes (for example ${example})`;
+      return maxSegments === 1
+        ? `${label} must be a single name without slashes (for example ${example})`
+        : `${label} must have at most ${maxSegments} segments (for example ${example})`;
     }
     for (const segment of segments) {
       if (!SEGMENT.test(segment)) {
