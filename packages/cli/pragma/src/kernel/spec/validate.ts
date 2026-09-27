@@ -71,7 +71,6 @@ const capabilitySchema = z.object({
   destructive: z.boolean().optional(),
   needsNetwork: z.boolean().optional(),
   interactive: z.boolean().optional(),
-  undoPreview: z.boolean().optional(),
   mcp: z.union([
     z.object({
       expose: z.literal(true),

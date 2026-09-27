@@ -56,36 +56,6 @@ describe("validateModule", () => {
     expect(() => validateModule(bad)).toThrow();
   });
 
-  it("validates a capability's undoPreview as a boolean", () => {
-    const withUndoPreview = (undoPreview: unknown) =>
-      ({
-        name: "undo-preview",
-        verbs: [
-          {
-            path: ["x"],
-            summary: "x",
-            params: [],
-            output: {
-              formatters: { plain: () => "", llm: () => "", json: () => "" },
-            },
-            capability: {
-              needsStore: false,
-              mutates: true,
-              undoPreview,
-              mcp: { expose: true },
-            },
-            run: async () => null,
-          },
-        ],
-      }) as unknown as CapabilityModule;
-
-    expect(() => validateModule(withUndoPreview(true))).not.toThrow();
-    // Declared in the schema, so a wrong type is caught rather than ignored.
-    expect(() => validateModule(withUndoPreview("yes"))).toThrow(
-      /capability\.undoPreview/,
-    );
-  });
-
   it("rejects a run that is not a function", () => {
     const bad = {
       name: "notfn",

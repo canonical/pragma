@@ -6,8 +6,8 @@
  * Non-TTY throughout (a piped child is the CI shape). Covered here:
  *  - row 6: a bare non-TTY mutation REFUSES (message + exit 2, no Ink mount);
  *  - row 5: a fully-explicit non-TTY invocation runs without `--yes`;
- *  - row 1/2: `--dry-run`/`--undo` are batch renders, a dry-run previews
- *    against the real disk, `--undo --dry-run` previews the undo, and a
+ *  - row 1/2: `--dry-run`/`--undo` are batch renders, dry-run taking
+ *    precedence, a dry-run previews against the real disk, and a
  *    missing/invalid batch answer errors loudly (exit 2);
  *  - the run arm's exit codes: an execution failure renders in the App and
  *    exits 1 (the cross-CLI matrix — never exit 0 on a rendered failure);
@@ -146,14 +146,12 @@ function run(
   args: readonly string[],
   cwd: string,
   timeoutMs?: number,
-  env?: Readonly<Record<string, string>>,
 ): { status: number | null; stdout: string; stderr: string } {
   const result = spawnSync("bun", [summonBin, ...args], {
     cwd,
     encoding: "utf-8",
     input: "",
     ...(timeoutMs === undefined ? {} : { timeout: timeoutMs }),
-    ...(env === undefined ? {} : { env: { ...process.env, ...env } }),
   });
   return {
     status: result.status,
@@ -258,81 +256,15 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
-  it("--undo with a typed --format json or --llm refuses in every form, reversing nothing", () => {
+  it("--dry-run takes precedence over --undo", () => {
     const cwd = freshCwd();
-    writeFileSync(join(cwd, "base.txt"), "base\n");
-    expect(
-      run(["--generators", fixtureDir, "adder", "--yes"], cwd).status,
-    ).toBe(0);
-    for (const form of [["--format", "json"], ["--llm"]]) {
-      for (const mode of [["--dry-run"], ["--yes"], []]) {
-        for (const env of [undefined, { SUMMON_LLM: "1" }]) {
-          const { status, stdout, stderr } = run(
-            ["--generators", fixtureDir, "adder", "--undo", ...mode, ...form],
-            cwd,
-            undefined,
-            env,
-          );
-          expect(status, `${[...mode, ...form].join(" ")}`).toBe(2);
-          expect(stdout).toBe("");
-          expect(stderr).toBe(
-            "Refusing --undo with --format json or --llm: the undo plan is printed as text only.\n",
-          );
-        }
-      }
-    }
-    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
-  }, 120_000);
-
-  it("SUMMON_LLM=1 never writes: --undo --yes prints the undo plan and reverses nothing", () => {
-    const cwd = freshCwd();
-    writeFileSync(join(cwd, "base.txt"), "base\n");
-    expect(
-      run(["--generators", fixtureDir, "adder", "--yes"], cwd).status,
-    ).toBe(0);
-    const { status, stdout, stderr } = run(
-      ["--generators", fixtureDir, "adder", "--undo", "--yes"],
-      cwd,
-      undefined,
-      { SUMMON_LLM: "1" },
-    );
-    expect(status, stderr).toBe(0);
-    expect(stderr).toContain("Undo will reverse 1 step:");
-    expect(stdout).toContain("Dry-run complete. Nothing was reversed.");
-    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
-  }, 60_000);
-
-  it("SUMMON_LLM=1 with --undo --dry-run prints the human-readable plan", () => {
-    const cwd = freshCwd();
-    writeFileSync(join(cwd, "base.txt"), "base\n");
-    run(["--generators", fixtureDir, "adder", "--yes"], cwd);
-    const { status, stdout, stderr } = run(
-      ["--generators", fixtureDir, "adder", "--undo", "--dry-run"],
-      cwd,
-      undefined,
-      { SUMMON_LLM: "1" },
-    );
-    expect(status, stderr).toBe(0);
-    expect(stderr).toContain("Undo will reverse 1 step:");
-    expect(stdout).toContain("Dry-run complete. Nothing was reversed.");
-    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
-  }, 60_000);
-
-  it("--undo --dry-run previews the undo of a real run and reverses nothing", () => {
-    const cwd = freshCwd();
-    writeFileSync(join(cwd, "base.txt"), "base\n");
-    expect(
-      run(["--generators", fixtureDir, "adder", "--yes"], cwd).status,
-    ).toBe(0);
-    const { status, stdout, stderr } = run(
-      ["--generators", fixtureDir, "adder", "--undo", "--dry-run"],
+    const { status, stdout } = run(
+      ["example", "hello", "--dry-run", "--undo"],
       cwd,
     );
-    expect(status, stderr).toBe(0);
-    expect(stderr).toContain("Undo will reverse 1 step");
-    expect(stderr).toContain("added.txt");
-    expect(stdout).toContain("Dry-run complete. Nothing was reversed.");
-    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
+    expect(status).toBe(0);
+    expect(stdout).toContain("Plan:");
+    expect(stdout).not.toContain("Undo");
   }, 60_000);
 
   it("--undo without --yes runs the batch undo (no wizard, no prompt)", () => {

@@ -26,7 +26,6 @@ import {
   validateAnswers,
   visiblePlanEffects,
 } from "@canonical/summon-core";
-import { describeUndoSteps } from "@canonical/summon-core/format";
 import {
   applyDefaults,
   type CommandEntry,
@@ -56,7 +55,10 @@ import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
 import { App } from "../components/App.js";
-import { isUnreversibleExec } from "../components/undoPlan.js";
+import {
+  describeUndoSteps,
+  isUnreversibleExec,
+} from "../components/undoPlan.js";
 import { resolveSummonMode, summonIsTTY } from "./resolveMode.js";
 
 // =============================================================================
@@ -273,30 +275,9 @@ async function runGeneratorAction(
   /* v8 ignore next -- the projection calls the action only for generator entries. */
   if (!generator) return;
 
-  // An undo is printed as text only: summon's machine forms describe a
-  // forward generation (generator, answers, files), which an undo is not.
-  // Typing one with --undo is refused as the usage error it is, before either
-  // form expands.
-  if (
-    actualOptions.undo === true &&
-    (actualOptions.llm === true || actualOptions.format === "json")
-  ) {
-    process.stderr.write(
-      "Refusing --undo with --format json or --llm: the undo plan is printed as text only.\n",
-    );
-    process.exitCode = 2;
-    return;
-  }
-
-  // Support SUMMON_LLM=1 environment variable: under it summon never writes.
-  // A forward run becomes an LLM dry run; an `--undo` prints its plan and
-  // reverses nothing.
+  // Support SUMMON_LLM=1 environment variable
   if (process.env.SUMMON_LLM === "1" && actualOptions.llm !== true) {
-    if (actualOptions.undo === true) {
-      actualOptions.dryRun = true;
-    } else {
-      actualOptions.llm = true;
-    }
+    actualOptions.llm = true;
   }
 
   // Expand --llm flag into its component flags
@@ -366,8 +347,7 @@ async function runGeneratorAction(
   if (mode === "batch-undo" || mode === "batch-dry-run") {
     if (!failLoudBatchInput(generator, answersWithDefaults)) return;
     try {
-      // An undo dry-run previews the UNDO, not the forward run.
-      if (mode === "batch-undo" || actualOptions.undo === true) {
+      if (mode === "batch-undo") {
         await runBatchUndo(
           generator,
           answersWithDefaults,

@@ -231,55 +231,6 @@ describe("create over MCP (PROTECTED)", () => {
   });
 });
 
-describe("create --undo --dry-run (PROTECTED)", () => {
-  it("lists every step --undo performs, the barrel revert included, and performs none", async () => {
-    const dir = freshCwd();
-    const prev = process.cwd();
-    process.chdir(dir);
-    try {
-      const params = {
-        framework: "react",
-        componentPath: "src/lib/Foo",
-        withStyles: false,
-        withStories: false,
-        withSsrTests: false,
-      };
-      const run = (dryRun: boolean, undo: boolean, format: "plain" | "json") =>
-        executeVerb(
-          createVerbs.component as VerbSpec,
-          params,
-          { dryRun, undo, yes: true },
-          bootRuntime({ ...FLAGS, format }, dir),
-        );
-      expect((await run(false, false, "plain")).exitCode).toBe(0);
-      expect(existsSync(join(dir, "src/lib/index.ts"))).toBe(true);
-
-      const preview = await run(true, true, "json");
-      expect(preview.exitCode).toBe(0);
-      const envelope = JSON.parse(preview.stdout as string) as {
-        data: { plan: string[] };
-        meta: Record<string, unknown>;
-      };
-      expect(envelope.meta).toEqual({ dryRun: true, undo: true });
-      // The barrel's remove-line undo only reads and writes back, which a
-      // mocked walk cannot show: it is named as a revert, not dropped.
-      expect(envelope.data.plan).toContain(
-        "Log [info]: Revert changes in src/lib/index.ts",
-      );
-      expect(existsSync(join(dir, "src/lib/Foo/Foo.tsx"))).toBe(true);
-
-      // As many rows as --undo reverses steps.
-      const undone = await run(false, true, "json");
-      const { undone: count } = (
-        JSON.parse(undone.stdout as string) as { data: { undone: number } }
-      ).data;
-      expect(envelope.data.plan).toHaveLength(count);
-    } finally {
-      process.chdir(prev);
-    }
-  });
-});
-
 describe("create page (PROTECTED)", () => {
   /** A scratch application holding the `invoices` domain a page is added to. */
   const appWithDomain = (): string => {
@@ -379,30 +330,6 @@ describe("create page (PROTECTED)", () => {
       expect(
         readFileSync(join(dir, "src/domains/invoices/routes.ts"), "utf8"),
       ).toBe("export default {};\n");
-    } finally {
-      process.chdir(prev);
-    }
-  });
-
-  it("CLI: --undo --dry-run previews the undo of a real run and reverses nothing", async () => {
-    const dir = appWithDomain();
-    const prev = process.cwd();
-    process.chdir(dir);
-    try {
-      const run = (dryRun: boolean, undo: boolean) =>
-        executeVerb(
-          createVerbs.page as VerbSpec,
-          { pagePath: "invoices/detail" },
-          { dryRun, undo, yes: true },
-          bootRuntime(FLAGS, dir),
-        );
-      expect((await run(false, false)).exitCode).toBe(0);
-      const preview = await run(true, true);
-      expect(preview.exitCode).toBe(0);
-      expect(preview.stdout).toContain(
-        "Delete file: src/domains/invoices/DetailPage.tsx",
-      );
-      expect(existsSync(pageFile(dir))).toBe(true);
     } finally {
       process.chdir(prev);
     }

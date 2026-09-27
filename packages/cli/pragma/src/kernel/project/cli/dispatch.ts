@@ -11,18 +11,8 @@
  * exit code.
  */
 
-import {
-  collectUndos,
-  describeEffect,
-  type Effect,
-  type Task,
-} from "@canonical/task";
-import {
-  hostExistsResolver,
-  runPreview,
-  runTask,
-  runUndo,
-} from "@canonical/task/node";
+import { describeEffect, type Effect, type Task } from "@canonical/task";
+import { runPreview, runTask, runUndo } from "@canonical/task/node";
 import { BIN_NAME } from "../../../constants.js";
 import {
   asPragmaError,
@@ -258,7 +248,6 @@ async function renderPlan(
     ) => string | Promise<string>;
     planData: unknown;
   },
-  meta?: { readonly undo: true },
 ): Promise<DispatchOutcome> {
   if (flags.format === "json") {
     const body =
@@ -266,7 +255,7 @@ async function renderPlan(
         ? { plan }
         : { plan, targets: seam.planData };
     return {
-      stdout: `${JSON.stringify(successEnvelope(body, { dryRun: true, ...meta }))}\n`,
+      stdout: `${JSON.stringify(successEnvelope(body, { dryRun: true }))}\n`,
       exitCode: 0,
     };
   }
@@ -379,37 +368,6 @@ export async function executeVerb(
         | Task<unknown>
         | Promise<Task<unknown>>,
     );
-    if (mutation.dryRun && mutation.undo && verb.capability.undoPreview) {
-      // An undo dry-run previews the UNDO, not the forward run: the reversals
-      // `--undo` would perform, collected against the disk exactly as
-      // `runUndo` collects them, in the order they would run, and none of
-      // them performed. Only a verb that declares `undoPreview` gets this:
-      // its preview task is the task `--undo` walks. Any other verb keeps
-      // previewing its forward plan.
-      //
-      // The steps are described by the rule the summon bin shows its own undo
-      // plan with, loaded lazily from the LIGHT `/format` subpath like the
-      // forward preview's visibility rule below.
-      const previewExec = mutationRuntime.exec ?? {};
-      try {
-        const undos = collectUndos(task, {
-          resolveExists: hostExistsResolver(previewExec.cwd),
-        });
-        const { describeUndoSteps } = await import(
-          "@canonical/summon-core/format"
-        );
-        const steps = describeUndoSteps(undos);
-        return await renderPlan(
-          flags,
-          steps.map(describeEffect),
-          steps,
-          undefined,
-          { undo: true },
-        );
-      } finally {
-        await previewExec.dispose?.();
-      }
-    }
     if (mutation.dryRun) {
       // The HONEST preview (PR7): reads hit the real filesystem, writes are
       // recorded and never executed. A mutation whose real run would die on its

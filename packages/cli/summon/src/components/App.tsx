@@ -12,7 +12,6 @@ import {
   type PromptDefinition,
   type StampConfig,
 } from "@canonical/summon-core";
-import { describeUndoSteps } from "@canonical/summon-core/format";
 import {
   collectUndos,
   type Effect,
@@ -29,7 +28,11 @@ import { useCallback, useEffect, useState } from "react";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
 import { PromptSequence } from "./PromptSequence.js";
 import { Spinner } from "./Spinner.js";
-import { isUnreversibleExec, shouldSkipUndoGate } from "./undoPlan.js";
+import {
+  describeUndoSteps,
+  isUnreversibleExec,
+  shouldSkipUndoGate,
+} from "./undoPlan.js";
 
 // =============================================================================
 // Effect Tree - Hierarchical display with action labels and tree connectors
