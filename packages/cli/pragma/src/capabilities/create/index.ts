@@ -1,5 +1,5 @@
 /**
- * The `create` capability barrel — component / package / application scaffolds.
+ * The `create` capability barrel — component / package / application / page scaffolds.
  *
  * Importing this pulls only the verb specs (params derived from the committed
  * projection), the mount, and the formatters; every generator load and the

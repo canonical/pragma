@@ -24,11 +24,14 @@
  */
 
 import {
+  collectUndos,
   dryRun,
+  type Effect,
   fail,
   flatMap,
   map,
   prompt,
+  pure,
   type Task,
   TaskExecutionError,
 } from "@canonical/task";
@@ -80,6 +83,46 @@ export function isInvalidAnswersError(error: unknown): error is Error {
     error instanceof Error &&
     (error as { code?: unknown }).code === GENERATOR_INVALID_ANSWER
   );
+}
+
+/**
+ * The effects of one pure build of a generator task, for the outcome summary.
+ *
+ * The pure walk cannot see the host, so every existence check in it answers
+ * "absent". A generator that adds to existing code guards on a file that must
+ * already be there (a page added to a domain refuses when the domain is missing),
+ * and that guard fails in the pure walk however the host looks. When the plain
+ * walk fails, the walk is repeated letting each existence check take the other
+ * answer where the first led to a failure: the plan of the run in which the
+ * guards pass. The real build that follows enforces the guards against the
+ * host, so a guard that truly fails still fails the run with its own message.
+ * When no existence answer avoids a failure, the plain walk's own error is
+ * rethrown, as before.
+ *
+ * Every walk builds the generator's task afresh from `build`: a task built
+ * with `gen()` can be walked only once, and the retry walks more than once.
+ * A non-deterministic `generate` (one that throws only on its first call) is
+ * not supported.
+ */
+function previewEffects(build: () => Task<unknown>): Effect[] {
+  try {
+    return dryRun(build()).effects;
+  } catch (error) {
+    // Any failure is retried, and any failure of the retry rethrows the plain
+    // walk's own error — so an error that is not a task failure, which the
+    // retry meets again, comes back unchanged without a check of its own.
+    // Deferring the build into a continuation makes each walk call it again.
+    const fresh = flatMap(pure(undefined), build);
+    const effects: Effect[] = [];
+    try {
+      collectUndos(fresh, {
+        onForwardEffect: (effect) => effects.push(effect),
+      });
+    } catch {
+      throw error;
+    }
+    return effects;
+  }
 }
 
 /** The context {@link execute} builds its task from. */
@@ -151,7 +194,7 @@ export default function execute(
           //    `generate` effects ARE the plan; on the node interpreter they
           //    write for real. The preview gives the outcome summary its file
           //    list without re-running side effects.
-          const effects = dryRun(generator.generate(answers)).effects;
+          const effects = previewEffects(() => generator.generate(answers));
           return map(generator.generate(answers), () => ({
             generator,
             answers,

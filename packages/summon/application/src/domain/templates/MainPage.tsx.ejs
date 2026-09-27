@@ -1,0 +1,12 @@
+import { Head } from "@canonical/react-head";
+import type { ReactElement } from "react";
+
+export default function MainPage(): ReactElement {
+  return (
+    <section aria-labelledby="main-title">
+      <Head title="<%= title %>" />
+      <h1 id="main-title"><%= title %></h1>
+      <p>This is the main page for the <%= domainName %> domain.</p>
+    </section>
+  );
+}

@@ -136,7 +136,7 @@ assuming a mismatch is a bug:
 ## Extension points this PR left for you, by owner
 
 - **PR5 (`create`)** — `C1` in the port ledger. No journey exists yet for
-  `create component/package/application` dry-run/real/byte-equality. Add
+  `create component/package/application/page` dry-run/real/byte-equality. Add
   `journeys.create.test.ts` here plus its own eval cases.
 - **PR6 (config mutation, info enrichment, doctor, upgrade, setup, `graph
   query`)** — `C2`/`C3`/`C4` — **BUILT**. Each new verb ships its own

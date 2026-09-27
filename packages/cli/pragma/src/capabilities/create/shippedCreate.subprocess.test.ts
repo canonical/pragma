@@ -17,8 +17,8 @@
  * existed to turn that crash into a clean refusal.
  *
  * There is no virtual filesystem now. Every generator's templates are real
- * files under its own package, so all three nouns run from the shipped entry and
- * all three are asserted here. THE REFUSAL CASES ARE GONE ON PURPOSE: a test
+ * files under its own package, so all four nouns run from the shipped entry and
+ * all four are asserted here. THE REFUSAL CASES ARE GONE ON PURPOSE: a test
  * asserting `create package` refuses would now be asserting a defect.
  *
  * The svelte + lit cases stay load-bearing: `types.ts.ejs` / `index.ts.ejs` /
@@ -28,7 +28,13 @@
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -70,7 +76,12 @@ function snapshot(dir: string): Map<string, string> {
  * No case installs dependencies (`runInstall` defaults false), so every tree is
  * generator output alone and byte-comparable.
  */
-const CASES: ReadonlyArray<{ label: string; args: readonly string[] }> = [
+const CASES: ReadonlyArray<{
+  label: string;
+  args: readonly string[];
+  /** Files that must already exist in the cwd (`page` adds to a domain). */
+  seed?: Readonly<Record<string, string>>;
+}> = [
   ...(["react", "svelte", "lit"] as const).map((framework) => ({
     label: `component ${framework}`,
     // The framework is a PATH SEGMENT, not a flag — `create` mirrors summon's
@@ -88,6 +99,11 @@ const CASES: ReadonlyArray<{ label: string; args: readonly string[] }> = [
     // `application/react`, and the tree mirrors summon's.
     args: ["create", "application", "react", "probeapp", "--yes"],
   },
+  {
+    label: "page",
+    args: ["create", "page", "probe/detail", "--yes"],
+    seed: { "src/domains/probe/routes.ts": "export default {};\n" },
+  },
 ];
 
 /** Run one create invocation in its own cwd and snapshot what it wrote. */
@@ -95,19 +111,24 @@ function create(
   command: string,
   prefix: readonly string[],
   args: readonly string[],
+  seed: Readonly<Record<string, string>> = {},
 ): Map<string, string> {
   const dir = freshCwd();
+  for (const [file, content] of Object.entries(seed)) {
+    mkdirSync(dirname(join(dir, file)), { recursive: true });
+    writeFileSync(join(dir, file), content);
+  }
   execFileSync(command, [...prefix, ...args], { cwd: dir, stdio: "pipe" });
   return snapshot(dir);
 }
 
 describe("shipped pragma create (PROTECTED)", () => {
-  for (const { label, args } of CASES) {
+  for (const { label, args, seed } of CASES) {
     it(`${label}: shipped entry ≡ source run, byte-for-byte`, () => {
       // (1) The shipped entry, exactly as a consumer's `pragma` runs it.
-      const shipped = create(process.execPath, [shippedEntry], args);
+      const shipped = create(process.execPath, [shippedEntry], args, seed);
       // (2) A source run — the reference output.
-      const source = create("bun", [sourceEntry], args);
+      const source = create("bun", [sourceEntry], args, seed);
 
       // Wrote something. Before the distribution stopped shipping a compiled
       // binary, `package` and `application` wrote NOTHING here — they refused.

@@ -22,7 +22,7 @@ generators live in their own packages; install the ones you need into the same
 location and Summon discovers them automatically:
 
 ```bash
-npm install -g @canonical/summon-application   # summon application / domain / route / wrapper
+npm install -g @canonical/summon-application   # summon application / domain / page / wrapper
 npm install -g @canonical/summon-component      # summon component
 ```
 
@@ -147,7 +147,7 @@ summon component react src/comp<TAB>  # Completes to: src/components/
 
 ### Installing Generator Packages
 
-The CLI bundles the `application`, `domain`, `route`, and `wrapper` generators.
+The CLI bundles the `application`, `domain`, `page`, and `wrapper` generators.
 Other generators — including the official `@canonical/summon-component` — ship as
 separate packages following the `summon-*` or `@scope/summon-*` naming convention.
 Install one into the **same location** as the CLI (both global, or both project

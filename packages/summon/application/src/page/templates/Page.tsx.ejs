@@ -1,0 +1,11 @@
+import { Head } from "@canonical/react-head";
+import type { ReactElement } from "react";
+
+export default function <%= pageName %>(): ReactElement {
+  return (
+    <section aria-labelledby="<%= name %>-title">
+      <Head title="<%= title %>" />
+      <h1 id="<%= name %>-title"><%= title %></h1>
+    </section>
+  );
+}

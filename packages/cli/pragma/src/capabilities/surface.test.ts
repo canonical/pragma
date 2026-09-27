@@ -9,6 +9,7 @@ import {
   type Covenant,
 } from "../kernel/spec/surfaceConformance.js";
 import { projectMcp } from "../testing/helpers/projectMcp.js";
+import { CREATE_GENERATORS } from "./create/constants.js";
 import { CREATE_SURFACE } from "./create/createSurface.generated.js";
 import { capabilities } from "./index.js";
 
@@ -199,7 +200,7 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     // args carry the kebab positional the usage line prints, so the covenant
     // names `--no-with-styles` and `[component-path]`, never a
     // `--with-styles` the CLI rejects or a `[componentPath]` its help never
-    // prints. Pin the three entries verbatim so a prompt edit that moves the
+    // prints. Pin the four entries verbatim so a prompt edit that moves the
     // covenant is SEEN.
     expect(emitted.nouns.create?.verbs).toEqual([
       {
@@ -247,6 +248,13 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
         mutates: true,
         mcp: "create_application",
       },
+      {
+        v: "page",
+        // The one prompt is the positional page path, so there is no flag.
+        args: ["[page-path]"],
+        mutates: true,
+        mcp: "create_page",
+      },
     ]);
   });
 
@@ -267,8 +275,25 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
         );
       }
     }
+    // A create verb carries flags if and only if one of its generators has a
+    // non-positional prompt (`page`, whose one prompt is positional, carries
+    // none) — checked per verb against the projected surface.
     for (const verb of emitted.nouns.create?.verbs ?? []) {
-      expect(verb.flags?.length ?? 0).toBeGreaterThan(0);
+      const binding =
+        CREATE_GENERATORS[verb.v as keyof typeof CREATE_GENERATORS];
+      expect(binding, `no binding for create ${verb.v}`).toBeDefined();
+      const hasFlagPrompt = (binding.paths as readonly string[]).some(
+        (commandPath) =>
+          CREATE_SURFACE[commandPath]?.prompts.some(
+            (prompt) => prompt.positional !== true,
+          ) === true,
+      );
+      expect(
+        (verb.flags?.length ?? 0) > 0,
+        `create ${verb.v}: flags iff a non-positional prompt`,
+      ).toBe(hasFlagPrompt);
+    }
+    for (const verb of emitted.nouns.create?.verbs ?? []) {
       for (const token of verb.flags ?? []) {
         expect([...registered.values()]).toContain(token);
       }
@@ -378,14 +403,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 50) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 51) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(50);
+    expect(emitted.mcpSurface.tools).toHaveLength(51);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

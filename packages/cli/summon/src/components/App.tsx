@@ -14,12 +14,15 @@ import {
 } from "@canonical/summon-core";
 import {
   collectUndos,
-  dryRun,
   type Effect,
   type Task,
   type TaskError,
 } from "@canonical/task";
-import { hostExistsResolver, runCollectedUndos } from "@canonical/task/node";
+import {
+  hostExistsResolver,
+  runCollectedUndos,
+  runPreview,
+} from "@canonical/task/node";
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
@@ -1006,28 +1009,31 @@ export const App = ({
       }
 
       if (dryRunOnly || preview) {
-        // Run dry-run to collect effects
-        try {
-          const result = dryRun(task);
-          if (dryRunOnly) {
-            setState({ phase: "preview", effects: result.effects });
-          } else {
+        // Preview against the real disk (reads real, writes recorded), so a
+        // generator that checks existing files previews what its run would do.
+        runPreview(task).then(
+          (result) => {
+            if (dryRunOnly) {
+              setState({ phase: "preview", effects: result.effects });
+            } else {
+              setState({
+                phase: "confirming",
+                effects: result.effects,
+                promptAnswers,
+              });
+            }
+          },
+          (err: unknown) => {
             setState({
-              phase: "confirming",
-              effects: result.effects,
-              promptAnswers,
+              phase: "error",
+              error:
+                err instanceof Error
+                  ? { code: "DRY_RUN_ERROR", message: err.message }
+                  : { code: "UNKNOWN_ERROR", message: String(err) },
+              answers: promptAnswers,
             });
-          }
-        } catch (err) {
-          setState({
-            phase: "error",
-            error:
-              err instanceof Error
-                ? { code: "DRY_RUN_ERROR", message: err.message }
-                : { code: "UNKNOWN_ERROR", message: String(err) },
-            answers: promptAnswers,
-          });
-        }
+          },
+        );
       } else {
         setState({ phase: "executing", task });
       }

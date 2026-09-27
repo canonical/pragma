@@ -13,9 +13,9 @@
  * hand-written because it cannot be discovered:
  *  - surfacing a noun also needs prose and examples in `create.verb.ts`, so
  *    the surface is a deliberate SUBSET — `@canonical/summon-application`
- *    ships `application/react`, `domain`, `route` and `wrapper`, and `create`
- *    exposes one of them;
- *  - `pickGenerator` imports all three generators STATICALLY. A computed
+ *    ships `application/react`, `domain`, `page` and `wrapper`, and `create`
+ *    exposes `application/react` and `page`;
+ *  - `pickGenerator` imports all three generator packages STATICALLY. A computed
  *    `import(name)` is opaque to every bundler and analyser; the historical
  *    cost was measured under `bun build --compile`, which left the
  *    generators out of the artifact entirely.
@@ -37,6 +37,9 @@ export const CREATE_GENERATORS = {
   },
   application: {
     paths: ["application/react"],
+  },
+  page: {
+    paths: ["page"],
   },
 } as const;
 

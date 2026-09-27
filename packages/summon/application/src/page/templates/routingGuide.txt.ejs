@@ -1,0 +1,24 @@
+Created src/domains/<%= domain %>/<%= pageName %>.tsx. Nothing else was changed; route the page by hand.
+
+In src/domains/<%= domain %>/routes.ts, import the page:
+  import <%= pageName %> from "./<%= pageName %>.js";
+
+Then add one entry to its routes object. The urls are examples to adapt.
+
+A static url:
+  <%= key %>: route({ url: "/<%= domain %>/<%= name %>", content: <%= pageName %> }),
+
+A url with a :param segment; the page takes the params it declares:
+  <%= key %>: route({ url: "/<%= domain %>/:id", content: <%= pageName %> }),
+  // <%= pageName %>.tsx
+  import type { RouteContentProps, RouteParams } from "@canonical/router-core";
+  export default function <%= pageName %>({
+    params,
+  }: RouteContentProps<RouteParams<"/<%= domain %>/:id">>): ReactElement {
+
+Typed search parameters: add `search: <a Standard Schema>` to the route and read `search` in the page.
+
+In src/routes.tsx, put the route in a group() and list it in appRoutes:
+  import <%= domainRoutes %> from "#domains/<%= domain %>/routes.js";
+  const [<%= key %>] = group(/* your wrapper() */, [<%= domainRoutes %>.<%= key %>] as const);
+  const appRoutes = { /* …the routes already listed */ <%= key %> } as const;
