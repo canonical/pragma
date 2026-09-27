@@ -7,9 +7,11 @@ import {
   dryRun,
   exists,
   fail,
+  flatMap,
   gen,
   ifElseM,
   mkdir,
+  pure,
   sequence_,
   type Task,
   writeFile,
@@ -144,6 +146,19 @@ describe("execute — a generator that adds to existing files", () => {
     await expect(run(dir)).rejects.toMatchObject({
       taskError: { code: "BASE_MISSING" },
     });
+  });
+
+  it("rethrows a preview failure that is not a task failure, unchanged", () => {
+    const broken: GeneratorDefinition = {
+      ...addsTo,
+      generate: () =>
+        flatMap(pure(undefined), (): Task<void> => {
+          throw new RangeError("not a task failure");
+        }),
+    };
+    expect(() =>
+      dryRun(execute(broken, { prompt: autoPrompt({}), params: {} })),
+    ).toThrow(RangeError);
   });
 });
 
