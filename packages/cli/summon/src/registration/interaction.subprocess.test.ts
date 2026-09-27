@@ -146,12 +146,14 @@ function run(
   args: readonly string[],
   cwd: string,
   timeoutMs?: number,
+  env?: Readonly<Record<string, string>>,
 ): { status: number | null; stdout: string; stderr: string } {
   const result = spawnSync("bun", [summonBin, ...args], {
     cwd,
     encoding: "utf-8",
     input: "",
     ...(timeoutMs === undefined ? {} : { timeout: timeoutMs }),
+    ...(env === undefined ? {} : { env: { ...process.env, ...env } }),
   });
   return {
     status: result.status,
@@ -273,6 +275,62 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
         "--undo --dry-run prints a human-readable plan only; drop --format/--llm.\n",
       );
     }
+    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
+  }, 60_000);
+
+  it("SUMMON_LLM=1 never turns --undo into a preview: --undo --yes reverses", () => {
+    const cwd = freshCwd();
+    writeFileSync(join(cwd, "base.txt"), "base\n");
+    expect(
+      run(["--generators", fixtureDir, "adder", "--yes"], cwd).status,
+    ).toBe(0);
+    const { status, stdout, stderr } = run(
+      ["--generators", fixtureDir, "adder", "--undo", "--yes"],
+      cwd,
+      undefined,
+      { SUMMON_LLM: "1" },
+    );
+    expect(status, stderr).toBe(0);
+    expect(stdout).toContain("Undo complete (1 step reversed).");
+    expect(readdirSync(cwd)).toEqual(["base.txt"]);
+  }, 60_000);
+
+  it("SUMMON_LLM=1 with --undo --dry-run prints the human-readable plan", () => {
+    const cwd = freshCwd();
+    writeFileSync(join(cwd, "base.txt"), "base\n");
+    run(["--generators", fixtureDir, "adder", "--yes"], cwd);
+    const { status, stdout, stderr } = run(
+      ["--generators", fixtureDir, "adder", "--undo", "--dry-run"],
+      cwd,
+      undefined,
+      { SUMMON_LLM: "1" },
+    );
+    expect(status, stderr).toBe(0);
+    expect(stderr).toContain("Undo will reverse 1 step:");
+    expect(stdout).toContain("Dry-run complete. Nothing was reversed.");
+    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
+  }, 60_000);
+
+  it("--format json with --undo but no --dry-run previews the forward generation, as before", () => {
+    const cwd = freshCwd();
+    writeFileSync(join(cwd, "base.txt"), "base\n");
+    run(["--generators", fixtureDir, "adder", "--yes"], cwd);
+    const { status, stdout, stderr } = run(
+      [
+        "--generators",
+        fixtureDir,
+        "adder",
+        "--undo",
+        "--yes",
+        "--format",
+        "json",
+      ],
+      cwd,
+    );
+    expect(status, stderr).toBe(0);
+    const output = JSON.parse(stdout) as Record<string, unknown>;
+    expect(output).toHaveProperty("generator");
+    expect(output).toHaveProperty("plan");
     expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
   }, 60_000);
 

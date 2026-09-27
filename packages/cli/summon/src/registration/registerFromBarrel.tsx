@@ -273,16 +273,27 @@ async function runGeneratorAction(
   /* v8 ignore next -- the projection calls the action only for generator entries. */
   if (!generator) return;
 
-  // Support SUMMON_LLM=1 environment variable
-  if (process.env.SUMMON_LLM === "1" && actualOptions.llm !== true) {
+  // `--dry-run` as typed, before --llm / --format json imply it below.
+  const explicitDryRun = actualOptions.dryRun === true;
+
+  // Support SUMMON_LLM=1 environment variable. An environment default is not
+  // a request: it never turns an `--undo` into a preview, so under it
+  // `--undo` still reverses and `--undo --dry-run` still prints its plan.
+  if (
+    process.env.SUMMON_LLM === "1" &&
+    actualOptions.llm !== true &&
+    actualOptions.undo !== true
+  ) {
     actualOptions.llm = true;
   }
 
   // The undo preview is a human-readable plan only: summon's machine forms
   // describe a forward generation (generator, answers, files), which an undo
-  // is not. Refused as the usage error it is, before either form expands.
+  // is not. Asking for one on the command line is refused as the usage error
+  // it is, before either form expands.
   if (
     actualOptions.undo === true &&
+    explicitDryRun &&
     (actualOptions.llm === true || actualOptions.format === "json")
   ) {
     process.stderr.write(
@@ -360,7 +371,12 @@ async function runGeneratorAction(
     if (!failLoudBatchInput(generator, answersWithDefaults)) return;
     try {
       // An undo dry-run previews the UNDO, not the forward run.
-      if (mode === "batch-undo" || actualOptions.undo === true) {
+      // `--undo --dry-run` previews the undo; `--dry-run` implied by a
+      // machine form keeps previewing the forward generation.
+      if (
+        mode === "batch-undo" ||
+        (actualOptions.undo === true && explicitDryRun)
+      ) {
         await runBatchUndo(
           generator,
           answersWithDefaults,
