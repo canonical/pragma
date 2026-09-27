@@ -26,6 +26,7 @@ import {
   validateAnswers,
   visiblePlanEffects,
 } from "@canonical/summon-core";
+import { describeUndoSteps } from "@canonical/summon-core/format";
 import {
   applyDefaults,
   type CommandEntry,
@@ -55,10 +56,7 @@ import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
 import { App } from "../components/App.js";
-import {
-  describeUndoSteps,
-  isUnreversibleExec,
-} from "../components/undoPlan.js";
+import { isUnreversibleExec } from "../components/undoPlan.js";
 import { resolveSummonMode, summonIsTTY } from "./resolveMode.js";
 
 // =============================================================================
