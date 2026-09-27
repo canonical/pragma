@@ -274,17 +274,20 @@ async function runGeneratorAction(
   if (!generator) return;
 
   // `--dry-run` as typed, before --llm / --format json imply it below.
-  const explicitDryRun = actualOptions.dryRun === true;
+  let explicitDryRun = actualOptions.dryRun === true;
 
-  // Support SUMMON_LLM=1 environment variable. An environment default is not
-  // a request: it never turns an `--undo` into a preview, so under it
-  // `--undo` still reverses and `--undo --dry-run` still prints its plan.
-  if (
-    process.env.SUMMON_LLM === "1" &&
-    actualOptions.llm !== true &&
-    actualOptions.undo !== true
-  ) {
-    actualOptions.llm = true;
+  // Support SUMMON_LLM=1 environment variable: under it summon never writes.
+  // A forward run becomes an LLM dry run. An `--undo` becomes the undo
+  // preview — the human-readable plan, since the machine forms describe a
+  // forward generation — unless a machine form was typed, which keeps its
+  // own meaning below.
+  if (process.env.SUMMON_LLM === "1" && actualOptions.llm !== true) {
+    if (actualOptions.undo !== true) {
+      actualOptions.llm = true;
+    } else if (actualOptions.format !== "json") {
+      actualOptions.dryRun = true;
+      explicitDryRun = true;
+    }
   }
 
   // The undo preview is a human-readable plan only: summon's machine forms

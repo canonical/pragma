@@ -278,7 +278,7 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
   }, 60_000);
 
-  it("SUMMON_LLM=1 never turns --undo into a preview: --undo --yes reverses", () => {
+  it("SUMMON_LLM=1 never writes: --undo --yes prints the undo plan and reverses nothing", () => {
     const cwd = freshCwd();
     writeFileSync(join(cwd, "base.txt"), "base\n");
     expect(
@@ -291,8 +291,9 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
       { SUMMON_LLM: "1" },
     );
     expect(status, stderr).toBe(0);
-    expect(stdout).toContain("Undo complete (1 step reversed).");
-    expect(readdirSync(cwd)).toEqual(["base.txt"]);
+    expect(stderr).toContain("Undo will reverse 1 step:");
+    expect(stdout).toContain("Dry-run complete. Nothing was reversed.");
+    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
   }, 60_000);
 
   it("SUMMON_LLM=1 with --undo --dry-run prints the human-readable plan", () => {
