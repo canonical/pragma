@@ -28,7 +28,6 @@ import execute, {
   GENERATOR_INVALID_ANSWER,
   invalidAnswersError,
   isInvalidAnswersError,
-  previewEffects,
 } from "./execute.js";
 
 const fixture: GeneratorDefinition = {
@@ -163,11 +162,28 @@ describe("execute — a generator that adds to existing files", () => {
   });
 });
 
-describe("previewEffects — the summary walk", () => {
-  it("lists the real effects of a gen()-built task guarded on an existing file", () => {
-    // gen() is single-use, so every walk must build the task afresh.
-    const build = (): Task<void> =>
+describe("execute — the summary walk behind a guard on an existing file", () => {
+  const runIn = (dir: string, generate: GeneratorDefinition["generate"]) => {
+    const generator: GeneratorDefinition = {
+      ...fixture,
+      prompts: [],
+      generate,
+    };
+    return runGeneratorTask(
+      execute(generator, { prompt: autoPrompt({}), params: {} }),
+      { cwd: dir, promptHandler: autoPrompt({}) },
+    );
+  };
+
+  it("summarises a gen()-built generator's real effects (each walk builds afresh)", async () => {
+    // gen() is single-use: a retry that re-walked the first walk's task would
+    // drive its spent iterator, whose walk no longer passes the guard — the
+    // summary would lose the existence check between the two writes.
+    const dir = mkdtempSync(join(tmpdir(), "exec-gen-"));
+    writeFileSync(join(dir, "base.txt"), "base\n");
+    const result = await runIn(dir, () =>
       gen(function* () {
+        yield* $(writeFile("first.txt", "first\n"));
         const present = yield* $(exists("base.txt"));
         if (!present) {
           yield* $(
@@ -175,34 +191,32 @@ describe("previewEffects — the summary walk", () => {
           );
         }
         yield* $(writeFile("added.txt", "added\n"));
-      });
-    const effects = previewEffects(build);
-    expect(
-      effects.some((e) => e._tag === "WriteFile" && e.path === "added.txt"),
-    ).toBe(true);
-  });
-
-  it("rethrows the plain walk's error when no existence answer avoids a failure", () => {
-    const build = () =>
-      ifElseM(
-        exists("a"),
-        fail({ code: "A_EXISTS", message: "a exists" }),
-        fail({ code: "B", message: "b" }),
-      );
-    expect(() => previewEffects(build)).toThrow(
-      expect.objectContaining({
-        taskError: expect.objectContaining({ code: "B" }),
       }),
     );
+    const walked = result.effects.flatMap((e) =>
+      e._tag === "WriteFile" || e._tag === "Exists"
+        ? [`${e._tag} ${e.path}`]
+        : [],
+    );
+    expect(walked).toEqual([
+      "WriteFile first.txt",
+      "Exists base.txt",
+      "WriteFile added.txt",
+    ]);
+    expect(readFileSync(join(dir, "added.txt"), "utf-8")).toBe("added\n");
   });
 
-  it("rethrows a non-task error unchanged", () => {
-    const error = new RangeError("not a task failure");
-    const build = () =>
-      flatMap(pure(undefined), (): Task<void> => {
-        throw error;
-      });
-    expect(() => previewEffects(build)).toThrow(error);
+  it("fails with the plain walk's error when no existence answer avoids a failure", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "exec-both-"));
+    await expect(
+      runIn(dir, () =>
+        ifElseM(
+          exists("a"),
+          fail({ code: "A_EXISTS", message: "a exists" }),
+          fail({ code: "B", message: "b" }),
+        ),
+      ),
+    ).rejects.toMatchObject({ taskError: { code: "B" } });
   });
 });
 

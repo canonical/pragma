@@ -102,11 +102,13 @@ export function isInvalidAnswersError(error: unknown): error is Error {
  * Every walk builds the generator's task afresh from `build`: a task built
  * with `gen()` can be walked only once, and the retry walks more than once.
  */
-export function previewEffects(build: () => Task<unknown>): Effect[] {
+function previewEffects(build: () => Task<unknown>): Effect[] {
   try {
     return dryRun(build()).effects;
   } catch (error) {
-    if (!(error instanceof TaskExecutionError)) throw error;
+    // Any failure is retried, and any failure of the retry rethrows the plain
+    // walk's own error — so an error that is not a task failure, which the
+    // retry meets again, comes back unchanged without a check of its own.
     // Deferring the build into a continuation makes each walk call it again.
     const fresh = flatMap(pure(undefined), build);
     const effects: Effect[] = [];
