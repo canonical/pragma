@@ -1,6 +1,6 @@
 # @canonical/summon-application
 
-Summon generators for scaffolding application structure: full applications, domains, routes, and wrappers. Produces code aligned with the [boilerplate reference app](../../../apps/react/boilerplate-vite/).
+Summon generators for scaffolding application structure: full applications, domains, pages, and wrappers. Produces code aligned with the [boilerplate reference app](../../../apps/react/boilerplate-vite/).
 
 ## Generators
 
@@ -175,29 +175,72 @@ import billingRoutes from "#domains/billing/routes.js";
 const [billing] = group(publicLayout, [billingRoutes.billing] as const);
 ```
 
-### `summon route <domain>/<name>`
+### `summon page <domain>/<name>`
 
-Adds a page component to an existing domain and wires it into the domain's `routes.ts` — no manual edit needed.
+Adds a page component to an existing domain. It writes one new file and edits nothing else: routing the page stays a hand edit, so the domain's `routes.ts` and `src/routes.tsx` only ever contain what you wrote.
 
 ```bash
-summon route billing/invoices
+summon page invoices/detail
 ```
 
 Produces:
 
 ```
-src/domains/billing/
-├── InvoicesPage.tsx   # New page component
-└── routes.ts          # Import + route entry inserted
+src/domains/invoices/
+└── DetailPage.tsx   # New page component
 ```
 
-The generator locates the `routes` object with the TypeScript AST and splices in both the import and the full entry:
+The argument is exactly two segments, the domain and then the page name; the domain folder already carries the domain's name, so the file is `DetailPage.tsx`, not `InvoicesDetailPage.tsx`. The generator refuses to run when the domain does not exist (create it first with `summon domain <name>`) or when the page file already exists.
 
-```ts
-invoices: route({ url: "/billing/invoices", content: InvoicesPage }),
+After writing the page, it prints what to add by hand: the import line, example route entries to adapt, and the wiring for `src/routes.tsx`. The urls are examples, not inferred from anything; pick the one that fits and change it. For `invoices/detail` it prints:
+
+```
+Created src/domains/invoices/DetailPage.tsx. Nothing else was changed; route the page by hand.
+
+In src/domains/invoices/routes.ts, import the page:
+  import DetailPage from "./DetailPage.js";
+
+Then add one entry to its routes object. The urls are examples to adapt.
+
+A static url:
+  detail: route({ url: "/invoices/detail", content: DetailPage }),
+
+A url with a :param segment; the page takes the params it declares:
+  detail: route({ url: "/invoices/:id", content: DetailPage }),
+  // DetailPage.tsx
+  import type { RouteContentProps, RouteParams } from "@canonical/router-core";
+  export default function DetailPage({
+    params,
+  }: RouteContentProps<RouteParams<"/invoices/:id">>): ReactElement {
+
+A typed search schema (Standard Schema v1, so Zod, Valibot or ArkType fit too); the page reads search:
+  import type { StandardSchemaV1 } from "@canonical/router-core";
+  const detailSearch: StandardSchemaV1<Record<string, unknown>, { readonly q?: string }> = {
+    "~standard": {
+      version: 1,
+      vendor: "app",
+      validate(value) {
+        const q = typeof value === "object" && value !== null && "q" in value ? value.q : undefined;
+        return { value: { q: typeof q === "string" ? q : undefined } };
+      },
+    },
+  };
+  detail: route({ url: "/invoices/detail", search: detailSearch, content: DetailPage }),
+  // DetailPage.tsx
+  import type { RouteContentProps } from "@canonical/router-core";
+  export default function DetailPage({
+    search,
+  }: RouteContentProps<Record<string, never>, { readonly q?: string }>): ReactElement {
+
+In src/routes.tsx, put the route in a group() and list it in appRoutes:
+  import invoicesRoutes from "#domains/invoices/routes.js";
+  const [detail] = group(publicLayout, [invoicesRoutes.detail] as const);
+  const appRoutes = { home, detail } as const; // keep the routes already listed
 ```
 
-Running with `--undo` removes that entry and import again — safe when the insertion actually added a new key. If the route key already existed the insertion was a no-op, and `--undo` would remove the pre-existing route (the generator help documents the same caveat). Create the domain first with `summon domain <name>`.
+The examples are type-checked against `@canonical/router-core` in this package's tests, so they stay correct as the router changes.
+
+`--undo` deletes the page file. It touches nothing else, because the generator changed nothing else; remove any lines you pasted by hand yourself.
 
 ### `summon wrapper <name>`
 

@@ -80,7 +80,7 @@ src/
 ```
 src/domains/billing/
 ├── MainPage.tsx          # Default page (created by summon domain)
-├── InvoicesPage.tsx      # Additional pages (created by summon route)
+├── InvoicesPage.tsx      # Additional pages (created by summon page)
 ├── PaymentsPage.tsx
 └── routes.ts             # Route barrel
 ```
