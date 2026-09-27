@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -7,15 +6,14 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { GENERATOR_INVALID_ANSWER } from "@canonical/summon-core";
 import { dryRun, type Effect, sequence_ } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { generator as domainGenerator } from "../domain/index.js";
+import { formatWithBiome } from "../testing/formatWithBiome.js";
 import { generator } from "./index.js";
 import { formatRoutingGuide, routingGuide } from "./routingGuide.js";
 
@@ -80,21 +78,13 @@ export default function OrderLinesPage(): ReactElement {
 
   it("emits a page that Biome parses and leaves unchanged", () => {
     const [page] = writes(pageEffects("invoices/detail"));
-    const require = createRequire(import.meta.url);
-    const packageDir = fileURLToPath(new URL("../..", import.meta.url));
-    const result = spawnSync(
-      process.execPath,
-      [
-        require.resolve("@biomejs/biome/bin/biome"),
-        "format",
-        "--stdin-file-path=DetailPage.tsx",
-      ],
-      { cwd: packageDir, input: page.content, encoding: "utf8" },
-    );
+    const { failures, formatted } = formatWithBiome({
+      "DetailPage.tsx": page.content,
+    });
 
-    expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toBe(page.content);
-  }, 30_000);
+    expect(failures).toBeNull();
+    expect(formatted["DetailPage.tsx"]).toBe(page.content);
+  });
 
   it("prints the routing guide as one message after writing", () => {
     const effects = pageEffects("invoices/detail");
