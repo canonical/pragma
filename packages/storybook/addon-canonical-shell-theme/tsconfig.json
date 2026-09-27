@@ -1,7 +1,6 @@
 {
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
-    "baseUrl": "src",
     "lib": ["ES2023", "dom"],
     "types": [],
     "skipLibCheck": true

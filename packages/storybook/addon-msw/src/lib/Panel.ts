@@ -1,4 +1,4 @@
-import { createElement, memo } from "react";
+import { createElement, memo, type ReactElement } from "react";
 import { AddonPanel, SyntaxHighlighter } from "storybook/internal/components";
 import { type API, useParameter } from "storybook/manager-api";
 import { PARAM_KEY } from "../constants.js";
@@ -9,7 +9,9 @@ interface PanelProps {
   active?: boolean;
 }
 
-export const Panel = memo(function MswPanel({ active }: PanelProps) {
+export const Panel = memo(function MswPanel({
+  active,
+}: PanelProps): ReactElement | null {
   const parameter = useParameter<MswParameter>(PARAM_KEY);
 
   if (!active || !parameter?.handlers) {

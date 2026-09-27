@@ -74,7 +74,7 @@
     "@types/omelette": "^0.4.5",
     "@types/react": "^19.2.14",
     "ink-testing-library": "^4.0.0",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.0.18"
   },
   "engines": {

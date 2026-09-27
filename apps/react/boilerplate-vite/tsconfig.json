@@ -1,7 +1,6 @@
 {
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
-    "baseUrl": "src",
     "skipLibCheck": true,
     "types": [
       "bun-types",
@@ -13,11 +12,11 @@
     ],
     "noEmit": true,
     "paths": {
-      "#lib/*": ["./lib/*"],
-      "#domains/*": ["./domains/*"],
-      "#i18n/*": ["./i18n/*"],
-      "#relay/*": ["./relay/*"],
-      "#styles/*": ["./styles/*"]
+      "#lib/*": ["./src/lib/*"],
+      "#domains/*": ["./src/domains/*"],
+      "#i18n/*": ["./src/i18n/*"],
+      "#relay/*": ["./src/relay/*"],
+      "#styles/*": ["./src/styles/*"]
     }
   },
   "include": [

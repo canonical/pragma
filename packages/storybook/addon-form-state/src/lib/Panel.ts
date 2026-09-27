@@ -1,4 +1,4 @@
-import { createElement, memo, useState } from "react";
+import { createElement, memo, type ReactElement, useState } from "react";
 import { AddonPanel, SyntaxHighlighter } from "storybook/internal/components";
 import { useChannel } from "storybook/manager-api";
 import { EVENT_FORM_STATE } from "../constants.js";
@@ -18,7 +18,9 @@ interface PanelProps {
   active?: boolean;
 }
 
-export const Panel = memo(function FormStatePanel({ active }: PanelProps) {
+export const Panel = memo(function FormStatePanel({
+  active,
+}: PanelProps): ReactElement | null {
   const [state, setState] = useState<FormStatePayload | null>(null);
 
   useChannel({

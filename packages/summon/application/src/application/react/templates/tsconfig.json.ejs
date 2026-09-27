@@ -1,7 +1,6 @@
 {
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
-    "baseUrl": "src",
     "skipLibCheck": true,
     "types": [
 <% if (!spa) { -%>
@@ -15,15 +14,15 @@
     ],
     "noEmit": true,
     "paths": {
-      "#lib/*": ["./lib/*"],
-      "#domains/*": ["./domains/*"],
+      "#lib/*": ["./src/lib/*"],
+      "#domains/*": ["./src/domains/*"],
 <% if (intl) { -%>
-      "#i18n/*": ["./i18n/*"],
+      "#i18n/*": ["./src/i18n/*"],
 <% } -%>
 <% if (relay) { -%>
-      "#relay/*": ["./relay/*"],
+      "#relay/*": ["./src/relay/*"],
 <% } -%>
-      "#styles/*": ["./styles/*"]
+      "#styles/*": ["./src/styles/*"]
     }
   },
   "include": [

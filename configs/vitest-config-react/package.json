@@ -37,7 +37,7 @@
     "check:ts": "tsc --noEmit"
   },
   "peerDependencies": {
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.0",
     "vite": "^8.0.1",
     "vitest": "^4.0.18"
   },
@@ -46,7 +46,7 @@
     "@canonical/biome-config": "^0.41.0",
     "@canonical/typescript-config": "^0.41.0",
     "@types/node": "^26.0.0",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vite": "^8.0.1",
     "vitest": "^4.0.18"
   }

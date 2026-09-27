@@ -78,7 +78,7 @@
     "jsdom": "^28.1.0",
     "msw": "^2.12.10",
     "storybook": "^10.6.0",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vite": "^8.0.1",
     "vitest": "^4.0.18"
   }
