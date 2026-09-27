@@ -20,17 +20,8 @@
  */
 
 import { spawnSync } from "node:child_process";
-import {
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderString, withHelpers } from "@canonical/summon-core";
@@ -71,34 +62,33 @@ const combos = [false, true].flatMap((forms) =>
   ),
 );
 
+const biome = createRequire(import.meta.url).resolve(
+  "@biomejs/biome/bin/biome",
+);
+const packageDir = fileURLToPath(new URL("../../..", import.meta.url));
+
+/** Verdicts by file extension and text: most files render alike across combinations. */
+const parsed = new Map<string, string | null>();
+
 /**
- * Parse every file with Biome and return its report, or `null` when all
- * parse. Biome formats a throwaway copy in place: it formats any file it can
- * parse and exits non-zero only when one does not, so the exit status is
- * exactly the parse verdict. No module resolution is involved, which is the
- * class a gate on rendered text can honestly claim. An empty `biome.json` pins
- * Biome's defaults, so no configuration above the temporary directory applies.
+ * Parse one file with Biome and return its report, or `null` when it parses.
+ * `biome format` reads the text on stdin and exits non-zero only when it does
+ * not parse, so the exit status is exactly the parse verdict. No module
+ * resolution is involved, which is the class a gate on rendered text can
+ * honestly claim.
  */
-function parseFailures(files: ReadonlyMap<string, string>): string | null {
-  const root = mkdtempSync(path.join(tmpdir(), "summon-rendered-"));
-  try {
-    writeFileSync(path.join(root, "biome.json"), "{}");
-    for (const [rel, content] of files) {
-      mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
-      writeFileSync(path.join(root, rel), content);
-    }
-    const biome = createRequire(import.meta.url).resolve(
-      "@biomejs/biome/bin/biome",
-    );
-    const result = spawnSync(
-      process.execPath,
-      [biome, "format", "--write", "."],
-      { cwd: root, encoding: "utf8" },
-    );
-    return result.status === 0 ? null : result.stdout + result.stderr;
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
+function parseFailure(dest: string, content: string): string | null {
+  const key = `${path.extname(dest)}\0${content}`;
+  const known = parsed.get(key);
+  if (known !== undefined) return known;
+  const result = spawnSync(
+    process.execPath,
+    [biome, "format", `--stdin-file-path=${path.basename(dest)}`],
+    { cwd: packageDir, input: content, encoding: "utf8" },
+  );
+  const verdict = result.status === 0 ? null : result.stderr;
+  parsed.set(key, verdict);
+  return verdict;
 }
 
 const label = (c: {
@@ -113,7 +103,6 @@ describe("rendered template output is well-formed in every combination", () => {
   for (const combo of combos) {
     it(`${label(combo)}: every emitted file renders, parses, and is valid`, () => {
       const vars = varsFor(combo);
-      const typescript = new Map<string, string>();
 
       for (const rel of templates) {
         const source = readFileSync(path.join(templatesDir, rel), "utf8");
@@ -131,10 +120,12 @@ describe("rendered template output is well-formed in every combination", () => {
 
         const dest = rel.slice(0, -".ejs".length);
 
-        // 2. Emitted TypeScript is collected here and parsed below, in one
-        //    Biome run for the whole combination.
+        // 2. Emitted TypeScript parses.
         if (dest.endsWith(".ts") || dest.endsWith(".tsx")) {
-          typescript.set(dest, rendered);
+          expect(
+            parseFailure(dest, rendered),
+            `${dest} does not parse for ${label(combo)}`,
+          ).toBeNull();
         }
 
         // 3. Emitted JSON is JSON. The templates hand-manage commas around
@@ -146,12 +137,9 @@ describe("rendered template output is well-formed in every combination", () => {
           ).not.toThrow();
         }
       }
-
-      expect(typescript.size).toBeGreaterThan(0);
-      expect(
-        parseFailures(typescript),
-        `emitted TypeScript does not parse for ${label(combo)}`,
-      ).toBeNull();
+      // A combination spawns Biome once per file it has not seen yet — the
+      // first one about thirty — which a loaded runner does not fit in the
+      // default five seconds.
     }, 30_000);
   }
 });
