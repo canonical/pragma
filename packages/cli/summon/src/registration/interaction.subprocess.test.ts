@@ -258,25 +258,31 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
-  it("--undo --dry-run with --format json or --llm refuses: the undo plan is human-readable only", () => {
+  it("--undo with a typed --format json or --llm refuses in every form, reversing nothing", () => {
     const cwd = freshCwd();
     writeFileSync(join(cwd, "base.txt"), "base\n");
     expect(
       run(["--generators", fixtureDir, "adder", "--yes"], cwd).status,
     ).toBe(0);
     for (const form of [["--format", "json"], ["--llm"]]) {
-      const { status, stdout, stderr } = run(
-        ["--generators", fixtureDir, "adder", "--undo", "--dry-run", ...form],
-        cwd,
-      );
-      expect(status).toBe(2);
-      expect(stdout).toBe("");
-      expect(stderr).toBe(
-        "--undo --dry-run prints a human-readable plan only; drop --format/--llm.\n",
-      );
+      for (const mode of [["--dry-run"], ["--yes"], []]) {
+        for (const env of [undefined, { SUMMON_LLM: "1" }]) {
+          const { status, stdout, stderr } = run(
+            ["--generators", fixtureDir, "adder", "--undo", ...mode, ...form],
+            cwd,
+            undefined,
+            env,
+          );
+          expect(status, `${[...mode, ...form].join(" ")}`).toBe(2);
+          expect(stdout).toBe("");
+          expect(stderr).toBe(
+            "Refusing --undo with --format json or --llm: the undo plan is printed as text only.\n",
+          );
+        }
+      }
     }
     expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
-  }, 60_000);
+  }, 120_000);
 
   it("SUMMON_LLM=1 never writes: --undo --yes prints the undo plan and reverses nothing", () => {
     const cwd = freshCwd();
@@ -309,29 +315,6 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     expect(status, stderr).toBe(0);
     expect(stderr).toContain("Undo will reverse 1 step:");
     expect(stdout).toContain("Dry-run complete. Nothing was reversed.");
-    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
-  }, 60_000);
-
-  it("--format json with --undo but no --dry-run previews the forward generation, as before", () => {
-    const cwd = freshCwd();
-    writeFileSync(join(cwd, "base.txt"), "base\n");
-    run(["--generators", fixtureDir, "adder", "--yes"], cwd);
-    const { status, stdout, stderr } = run(
-      [
-        "--generators",
-        fixtureDir,
-        "adder",
-        "--undo",
-        "--yes",
-        "--format",
-        "json",
-      ],
-      cwd,
-    );
-    expect(status, stderr).toBe(0);
-    const output = JSON.parse(stdout) as Record<string, unknown>;
-    expect(output).toHaveProperty("generator");
-    expect(output).toHaveProperty("plan");
     expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
   }, 60_000);
 

@@ -273,37 +273,30 @@ async function runGeneratorAction(
   /* v8 ignore next -- the projection calls the action only for generator entries. */
   if (!generator) return;
 
-  // `--dry-run` as typed, before --llm / --format json imply it below.
-  let explicitDryRun = actualOptions.dryRun === true;
-
-  // Support SUMMON_LLM=1 environment variable: under it summon never writes.
-  // A forward run becomes an LLM dry run. An `--undo` becomes the undo
-  // preview — the human-readable plan, since the machine forms describe a
-  // forward generation — unless a machine form was typed, which keeps its
-  // own meaning below.
-  if (process.env.SUMMON_LLM === "1" && actualOptions.llm !== true) {
-    if (actualOptions.undo !== true) {
-      actualOptions.llm = true;
-    } else if (actualOptions.format !== "json") {
-      actualOptions.dryRun = true;
-      explicitDryRun = true;
-    }
-  }
-
-  // The undo preview is a human-readable plan only: summon's machine forms
-  // describe a forward generation (generator, answers, files), which an undo
-  // is not. Asking for one on the command line is refused as the usage error
-  // it is, before either form expands.
+  // An undo is printed as text only: summon's machine forms describe a
+  // forward generation (generator, answers, files), which an undo is not.
+  // Typing one with --undo is refused as the usage error it is, before either
+  // form expands.
   if (
     actualOptions.undo === true &&
-    explicitDryRun &&
     (actualOptions.llm === true || actualOptions.format === "json")
   ) {
     process.stderr.write(
-      "--undo --dry-run prints a human-readable plan only; drop --format/--llm.\n",
+      "Refusing --undo with --format json or --llm: the undo plan is printed as text only.\n",
     );
     process.exitCode = 2;
     return;
+  }
+
+  // Support SUMMON_LLM=1 environment variable: under it summon never writes.
+  // A forward run becomes an LLM dry run; an `--undo` prints its plan and
+  // reverses nothing.
+  if (process.env.SUMMON_LLM === "1" && actualOptions.llm !== true) {
+    if (actualOptions.undo === true) {
+      actualOptions.dryRun = true;
+    } else {
+      actualOptions.llm = true;
+    }
   }
 
   // Expand --llm flag into its component flags
@@ -374,12 +367,7 @@ async function runGeneratorAction(
     if (!failLoudBatchInput(generator, answersWithDefaults)) return;
     try {
       // An undo dry-run previews the UNDO, not the forward run.
-      // `--undo --dry-run` previews the undo; `--dry-run` implied by a
-      // machine form keeps previewing the forward generation.
-      if (
-        mode === "batch-undo" ||
-        (actualOptions.undo === true && explicitDryRun)
-      ) {
+      if (mode === "batch-undo" || actualOptions.undo === true) {
         await runBatchUndo(
           generator,
           answersWithDefaults,

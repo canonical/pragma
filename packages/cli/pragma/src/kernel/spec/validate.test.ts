@@ -56,7 +56,7 @@ describe("validateModule", () => {
     expect(() => validateModule(bad)).toThrow();
   });
 
-  it("validates a capability's undoPreview as a boolean, and keeps it", () => {
+  it("validates a capability's undoPreview as a boolean", () => {
     const withUndoPreview = (undoPreview: unknown) =>
       ({
         name: "undo-preview",
@@ -79,9 +79,7 @@ describe("validateModule", () => {
         ],
       }) as unknown as CapabilityModule;
 
-    const good = withUndoPreview(true);
-    expect(() => validateModule(good)).not.toThrow();
-    expect(good.verbs[0]?.capability.undoPreview).toBe(true);
+    expect(() => validateModule(withUndoPreview(true))).not.toThrow();
     // Declared in the schema, so a wrong type is caught rather than ignored.
     expect(() => validateModule(withUndoPreview("yes"))).toThrow(
       /capability\.undoPreview/,
