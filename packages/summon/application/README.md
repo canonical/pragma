@@ -208,7 +208,7 @@ const [detail] = group(/* your wrapper() */, [invoicesRoutes.detail] as const);
 const appRoutes = { /* …the routes already listed */ detail } as const;
 ```
 
-The full guide printed at run time also shows a url with a `:param` and the page signature that reads `params`, and a typed search schema with the page signature that reads `search`. Every printed example is type-checked against `@canonical/router-core` in this package's tests.
+The full guide printed at run time also shows a url with a `:param` and the page signature that reads `params`, and says where typed search parameters go (a Standard Schema as the route's `search`). Its route examples are type-checked against `@canonical/router-core` in this package's tests. The page and the guide are rendered from the generator's `.ejs` templates.
 
 `--undo` deletes the page file. It touches nothing else, because the generator changed nothing else; remove any lines you pasted by hand yourself.
 
