@@ -114,6 +114,12 @@ export default function OrderLinesPage(): ReactElement {
     expect(() =>
       dryRun(generator.generate({ pagePath: "invoices/detail/lines" })),
     ).toThrow(/at most 2 segments/);
+    expect(() =>
+      dryRun(generator.generate({ pagePath: "/invoices/detail" })),
+    ).toThrow(/not an absolute path/);
+    expect(() =>
+      dryRun(generator.generate({ pagePath: "../invoices" })),
+    ).toThrow(/"\.\."/);
   });
 
   it("fails when the domain does not exist", () => {

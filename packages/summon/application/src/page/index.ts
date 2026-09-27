@@ -21,12 +21,24 @@ export interface PageAnswers {
   readonly pagePath: string;
 }
 
-const validatePagePath = validateCommandPath({
+const validateSegments = validateCommandPath({
   label: "Page path",
   minSegments: 2,
   maxSegments: 2,
   example: "invoices/detail",
 });
+
+/**
+ * Two name segments, `<domain>/<name>`. A leading slash is refused rather than
+ * stripped: "/invoices/detail" reads as a url or an absolute path, and the
+ * page path is neither.
+ */
+function validatePagePath(value: unknown): true | string {
+  if (typeof value === "string" && /^\s*[/\\]/.test(value)) {
+    return "Page path must be <domain>/<name>, not an absolute path (for example invoices/detail)";
+  }
+  return validateSegments(value);
+}
 
 const prompts: PromptDefinition[] = [
   {
