@@ -28,6 +28,7 @@ import execute, {
   GENERATOR_INVALID_ANSWER,
   invalidAnswersError,
   isInvalidAnswersError,
+  previewEffects,
 } from "./execute.js";
 
 const fixture: GeneratorDefinition = {
@@ -159,6 +160,49 @@ describe("execute — a generator that adds to existing files", () => {
     expect(() =>
       dryRun(execute(broken, { prompt: autoPrompt({}), params: {} })),
     ).toThrow(RangeError);
+  });
+});
+
+describe("previewEffects — the summary walk", () => {
+  it("lists the real effects of a gen()-built task guarded on an existing file", () => {
+    // gen() is single-use, so every walk must build the task afresh.
+    const build = (): Task<void> =>
+      gen(function* () {
+        const present = yield* $(exists("base.txt"));
+        if (!present) {
+          yield* $(
+            fail({ code: "BASE_MISSING", message: "base.txt is missing" }),
+          );
+        }
+        yield* $(writeFile("added.txt", "added\n"));
+      });
+    const effects = previewEffects(build);
+    expect(
+      effects.some((e) => e._tag === "WriteFile" && e.path === "added.txt"),
+    ).toBe(true);
+  });
+
+  it("rethrows the plain walk's error when no existence answer avoids a failure", () => {
+    const build = () =>
+      ifElseM(
+        exists("a"),
+        fail({ code: "A_EXISTS", message: "a exists" }),
+        fail({ code: "B", message: "b" }),
+      );
+    expect(() => previewEffects(build)).toThrow(
+      expect.objectContaining({
+        taskError: expect.objectContaining({ code: "B" }),
+      }),
+    );
+  });
+
+  it("rethrows a non-task error unchanged", () => {
+    const error = new RangeError("not a task failure");
+    const build = () =>
+      flatMap(pure(undefined), (): Task<void> => {
+        throw error;
+      });
+    expect(() => previewEffects(build)).toThrow(error);
   });
 });
 

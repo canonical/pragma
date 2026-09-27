@@ -31,6 +31,7 @@ import {
   flatMap,
   map,
   prompt,
+  pure,
   type Task,
   TaskExecutionError,
 } from "@canonical/task";
@@ -95,15 +96,27 @@ export function isInvalidAnswersError(error: unknown): error is Error {
  * answer where the first led to a failure: the plan of the run in which the
  * guards pass. The real build that follows enforces the guards against the
  * host, so a guard that truly fails still fails the run with its own message.
- * A failure no existence answer avoids is rethrown as before.
+ * When no existence answer avoids a failure, the plain walk's own error is
+ * rethrown, as before.
+ *
+ * Every walk builds the generator's task afresh from `build`: a task built
+ * with `gen()` can be walked only once, and the retry walks more than once.
  */
-function previewEffects(task: Task<unknown>): Effect[] {
+export function previewEffects(build: () => Task<unknown>): Effect[] {
   try {
-    return dryRun(task).effects;
+    return dryRun(build()).effects;
   } catch (error) {
     if (!(error instanceof TaskExecutionError)) throw error;
+    // Deferring the build into a continuation makes each walk call it again.
+    const fresh = flatMap(pure(undefined), build);
     const effects: Effect[] = [];
-    collectUndos(task, { onForwardEffect: (effect) => effects.push(effect) });
+    try {
+      collectUndos(fresh, {
+        onForwardEffect: (effect) => effects.push(effect),
+      });
+    } catch {
+      throw error;
+    }
     return effects;
   }
 }
@@ -177,7 +190,7 @@ export default function execute(
           //    `generate` effects ARE the plan; on the node interpreter they
           //    write for real. The preview gives the outcome summary its file
           //    list without re-running side effects.
-          const effects = previewEffects(generator.generate(answers));
+          const effects = previewEffects(() => generator.generate(answers));
           return map(generator.generate(answers), () => ({
             generator,
             answers,
