@@ -5,7 +5,5 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 /** @type {SvelteConfig & SveltePackageOptions} */
 export default {
   preprocess: vitePreprocess(),
-  kit: {
-    outDir: ".build-cache",
-  },
+  outDir: ".build-cache",
 };
