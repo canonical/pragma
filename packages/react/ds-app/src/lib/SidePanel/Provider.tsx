@@ -50,13 +50,15 @@ const componentCssClassName = "ds side-panel";
  * The panel is `position: fixed` and therefore out of the document flow: an
  * `overflow: hidden` ancestor does not clip it
  *
- * Because the content pane is a scroll container, the panel clips its own
- * overflow, and the panel is offset with a transform, the panel both clips and
- * re-anchors its descendants: an overlay that needs to escape its box — a
- * `Popover` or `ContextualMenu`, whose content is `position: fixed` — is cut
- * off at the content pane's edge and positioned against the panel rather than
- * the viewport. Keep such overlays inside the content pane's bounds, or render
- * them outside the panel.
+ * Because the content pane scrolls and the panel is transformed, a
+ * `position: fixed` overlay rendered inside the panel is clipped at the
+ * pane's edge and positioned relative to the panel rather than the viewport.
+ * `Popover` currently follows that pattern, so keep it within the content
+ * pane's bounds.
+ *
+ * `ContextualMenu` instead portals its surface to `document.body`, escaping
+ * this clipping. When it must overlap the panel, give its overlay layer a
+ * z-index higher than `--side-panel-z-index`.
  *
  * `import { SidePanel } from "@canonical/react-ds-app";`
  *
