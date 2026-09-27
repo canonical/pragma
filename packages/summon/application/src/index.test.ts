@@ -9,24 +9,9 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dryRun, dryRunWith, type Effect, sequence_ } from "@canonical/task";
+import { dryRun, dryRunWith, type Effect } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { generators } from "./index.js";
-
-/**
- * The route generator requires an existing domain (it adds to one). In a
- * dry-run the virtual filesystem is empty, so we first run the domain generator
- * in the same sequence to "create" src/domains/<domain>/routes.ts, then add the
- * route — mirroring real usage (`summon domain` then `summon route`).
- */
-function dryRunRoute(domain: string, route: string) {
-  return dryRun(
-    sequence_([
-      generators.domain.generate({ domainName: domain }),
-      generators.route.generate({ routePath: `${domain}/${route}` }),
-    ]),
-  );
-}
 
 describe("application/react generator", () => {
   it("produces effects for all expected files", () => {
@@ -634,85 +619,6 @@ describe("domain generator", () => {
     const paths = mkdirEffects.map((e) => (e as { path: string }).path);
 
     expect(paths).toContain("src/domains/billing");
-  });
-});
-
-describe("route generator", () => {
-  it("creates {Name}Page.tsx and transforms routes.ts", () => {
-    const result = dryRunRoute("account", "settings");
-
-    const writePaths = result.effects
-      .filter((e) => e._tag === "WriteFile")
-      .map((e) => (e as { path: string }).path);
-    expect(writePaths).toContain("src/domains/account/SettingsPage.tsx");
-
-    // The route is wired into routes.ts via a TransformFile (AST insert), not
-    // an AppendFile of a TODO comment. The transform content is covered by
-    // insertRoute.test.ts.
-    const transformPaths = result.effects
-      .filter((e) => e._tag === "TransformFile")
-      .map((e) => (e as { path: string }).path);
-    expect(transformPaths).toContain("src/domains/account/routes.ts");
-  });
-
-  it("includes correct content in the page component", () => {
-    const result = dryRunRoute("account", "settings");
-
-    const page = result.effects.find(
-      (e) =>
-        e._tag === "WriteFile" &&
-        (e as { path: string }).path === "src/domains/account/SettingsPage.tsx",
-    ) as { content: string } | undefined;
-
-    expect(page).toBeDefined();
-    expect(page?.content).toContain("export default function SettingsPage()");
-    expect(page?.content).toContain('<Head title="Settings" />');
-  });
-
-  it("wires the route via a reversible TransformFile (no TODO append)", () => {
-    const result = dryRunRoute("account", "settings");
-
-    // No AppendFile TODO stub any more.
-    expect(result.effects.some((e) => e._tag === "AppendFile")).toBe(false);
-
-    const transform = result.effects.find(
-      (e) =>
-        e._tag === "TransformFile" &&
-        (e as { path: string }).path === "src/domains/account/routes.ts",
-    ) as { transform: (s: string) => string; undo?: unknown } | undefined;
-
-    expect(transform).toBeDefined();
-    // It carries an undo (the inverse removeRoute transform).
-    expect(transform?.undo).toBeDefined();
-
-    // The forward transform actually inserts the import + route entry.
-    const base = `import { route } from "@canonical/router-core";
-import MainPage from "./MainPage.js";
-
-const routes = {
-  account: route({ url: "/account", content: MainPage }),
-} as const;
-
-export default routes;
-`;
-    const out = transform?.transform(base) ?? "";
-    expect(out).toContain('import SettingsPage from "./SettingsPage.js";');
-    expect(out).toContain("settings: route({");
-    expect(out).toContain('url: "/account/settings",');
-    expect(out).toContain("content: SettingsPage,");
-  });
-
-  it("throws on single-segment path", () => {
-    expect(() =>
-      dryRun(generators.route.generate({ routePath: "settings" })),
-    ).toThrow();
-  });
-
-  it("fails when the target domain does not exist", () => {
-    // No domain created first → the guard rejects before writing anything.
-    expect(() =>
-      dryRun(generators.route.generate({ routePath: "missing/page" })),
-    ).toThrow(/not found|Create it first/);
   });
 });
 

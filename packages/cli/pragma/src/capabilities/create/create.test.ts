@@ -782,7 +782,7 @@ describe("declared generator bindings (PROTECTED)", () => {
     // surfacing a noun also needs a hand-written prompt mirror, path param and
     // examples in create.verb.ts, so the surface is a deliberate SUBSET of what
     // the declared packages ship (`@canonical/summon-application` also ships
-    // `domain`, `route` and `wrapper`). Pinning OUR three nouns rather than any
+    // `domain`, `page` and `wrapper`). Pinning OUR three nouns rather than any
     // third-party package's generator list keeps an upstream release from
     // turning this red.
     expect(createModule.verbs.map((v) => v.path[1])).toEqual([

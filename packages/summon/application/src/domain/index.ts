@@ -83,7 +83,7 @@ export const generator: GeneratorDefinition<DomainAnswers> = {
   - MainPage.tsx — example page component with <Head>
   - routes.ts — route barrel exporting the domain's routes
 
-Add more routes with: summon route <domain>/<route-name>`,
+Add more pages with: summon page <domain>/<name>`,
     examples: [
       "summon domain billing",
       "summon domain user-settings",

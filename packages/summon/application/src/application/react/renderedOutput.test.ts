@@ -19,11 +19,21 @@
  * is the mechanism that covers that class today, for the SSR shape only.
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderString, withHelpers } from "@canonical/summon-core";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const templatesDir = fileURLToPath(new URL("./templates", import.meta.url));
@@ -61,6 +71,36 @@ const combos = [false, true].flatMap((forms) =>
   ),
 );
 
+/**
+ * Parse every file with Biome and return its report, or `null` when all
+ * parse. Biome formats a throwaway copy in place: it formats any file it can
+ * parse and exits non-zero only when one does not, so the exit status is
+ * exactly the parse verdict. No module resolution is involved, which is the
+ * class a gate on rendered text can honestly claim. An empty `biome.json` pins
+ * Biome's defaults, so no configuration above the temporary directory applies.
+ */
+function parseFailures(files: ReadonlyMap<string, string>): string | null {
+  const root = mkdtempSync(path.join(tmpdir(), "summon-rendered-"));
+  try {
+    writeFileSync(path.join(root, "biome.json"), "{}");
+    for (const [rel, content] of files) {
+      mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      writeFileSync(path.join(root, rel), content);
+    }
+    const biome = createRequire(import.meta.url).resolve(
+      "@biomejs/biome/bin/biome",
+    );
+    const result = spawnSync(
+      process.execPath,
+      [biome, "format", "--write", "."],
+      { cwd: root, encoding: "utf8" },
+    );
+    return result.status === 0 ? null : result.stdout + result.stderr;
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
 const label = (c: {
   forms: boolean;
   intl: boolean;
@@ -73,6 +113,7 @@ describe("rendered template output is well-formed in every combination", () => {
   for (const combo of combos) {
     it(`${label(combo)}: every emitted file renders, parses, and is valid`, () => {
       const vars = varsFor(combo);
+      const typescript = new Map<string, string>();
 
       for (const rel of templates) {
         const source = readFileSync(path.join(templatesDir, rel), "utf8");
@@ -90,26 +131,10 @@ describe("rendered template output is well-formed in every combination", () => {
 
         const dest = rel.slice(0, -".ejs".length);
 
-        // 2. Emitted TypeScript parses. `transpileModule` reports syntactic
-        //    diagnostics only, which is exactly the class a gate on rendered
-        //    text can honestly claim — no module resolution is involved.
+        // 2. Emitted TypeScript is collected here and parsed below, in one
+        //    Biome run for the whole combination.
         if (dest.endsWith(".ts") || dest.endsWith(".tsx")) {
-          const { diagnostics } = ts.transpileModule(rendered, {
-            reportDiagnostics: true,
-            compilerOptions: {
-              jsx: ts.JsxEmit.Preserve,
-              target: ts.ScriptTarget.ESNext,
-              module: ts.ModuleKind.ESNext,
-            },
-            fileName: dest,
-          });
-          const messages = (diagnostics ?? []).map((d) =>
-            ts.flattenDiagnosticMessageText(d.messageText, " "),
-          );
-          expect(
-            messages,
-            `${dest} does not parse for ${label(combo)}`,
-          ).toEqual([]);
+          typescript.set(dest, rendered);
         }
 
         // 3. Emitted JSON is JSON. The templates hand-manage commas around
@@ -121,6 +146,12 @@ describe("rendered template output is well-formed in every combination", () => {
           ).not.toThrow();
         }
       }
+
+      expect(typescript.size).toBeGreaterThan(0);
+      expect(
+        parseFailures(typescript),
+        `emitted TypeScript does not parse for ${label(combo)}`,
+      ).toBeNull();
     });
   }
 });

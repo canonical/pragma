@@ -13,7 +13,7 @@
  * hand-written because it cannot be discovered:
  *  - surfacing a noun also needs prose and examples in `create.verb.ts`, so
  *    the surface is a deliberate SUBSET — `@canonical/summon-application`
- *    ships `application/react`, `domain`, `route` and `wrapper`, and `create`
+ *    ships `application/react`, `domain`, `page` and `wrapper`, and `create`
  *    exposes one of them;
  *  - `pickGenerator` imports all three generators STATICALLY. A computed
  *    `import(name)` is opaque to every bundler and analyser; the historical
