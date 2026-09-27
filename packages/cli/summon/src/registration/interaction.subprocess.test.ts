@@ -6,8 +6,9 @@
  * Non-TTY throughout (a piped child is the CI shape). Covered here:
  *  - row 6: a bare non-TTY mutation REFUSES (message + exit 2, no Ink mount);
  *  - row 5: a fully-explicit non-TTY invocation runs without `--yes`;
- *  - row 1/2: `--dry-run`/`--undo` are batch renders, dry-run taking
- *    precedence, and a missing/invalid batch answer errors loudly (exit 2);
+ *  - row 1/2: `--dry-run`/`--undo` are batch renders, a dry-run previews
+ *    against the real disk, `--undo --dry-run` previews the undo, and a
+ *    missing/invalid batch answer errors loudly (exit 2);
  *  - the run arm's exit codes: an execution failure renders in the App and
  *    exits 1 (the cross-CLI matrix — never exit 0 on a rendered failure);
  *  - the exit classification's INFORMATIONAL branches: `--help`/`--version`
@@ -112,6 +113,24 @@ export default {
 };
 `,
   );
+  // A generator that adds to a file which must already exist — the shape of
+  // a page added to an existing domain. Its guard depends on the disk.
+  mkdirSync(join(dir, "adder"));
+  writeFileSync(
+    join(dir, "adder", "index.js"),
+    `import { exists, fail, ifElseM, writeFile } from ${JSON.stringify(`file://${taskDist}`)};
+export default {
+  meta: { name: "adder", displayName: "adder", description: "Adds next to base.txt", version: "0.0.1" },
+  prompts: [],
+  generate: () =>
+    ifElseM(
+      exists("base.txt"),
+      writeFile("added.txt", "added\\n"),
+      fail({ code: "BASE_MISSING", message: "base.txt is missing" }),
+    ),
+};
+`,
+  );
   return dir;
 }
 
@@ -213,15 +232,45 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
-  it("--dry-run takes precedence over --undo", () => {
+  it("--dry-run previews against the real disk: a file the generator adds to is seen", () => {
     const cwd = freshCwd();
-    const { status, stdout } = run(
-      ["example", "hello", "--dry-run", "--undo"],
+    writeFileSync(join(cwd, "base.txt"), "base\n");
+    const { status, stdout, stderr } = run(
+      ["--generators", fixtureDir, "adder", "--dry-run"],
       cwd,
     );
-    expect(status).toBe(0);
-    expect(stdout).toContain("Plan:");
-    expect(stdout).not.toContain("Undo");
+    expect(status, stderr).toBe(0);
+    expect(stdout).toContain("added.txt");
+    expect(stdout).toContain("Dry-run complete. No files were modified.");
+    expect(readdirSync(cwd)).toEqual(["base.txt"]);
+  }, 60_000);
+
+  it("--dry-run fails with the generator's own message when that file is missing", () => {
+    const cwd = freshCwd();
+    const { status, stderr } = run(
+      ["--generators", fixtureDir, "adder", "--dry-run"],
+      cwd,
+    );
+    expect(status).toBe(1);
+    expect(stderr).toContain("base.txt is missing");
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+
+  it("--undo --dry-run previews the undo of a real run and reverses nothing", () => {
+    const cwd = freshCwd();
+    writeFileSync(join(cwd, "base.txt"), "base\n");
+    expect(
+      run(["--generators", fixtureDir, "adder", "--yes"], cwd).status,
+    ).toBe(0);
+    const { status, stdout, stderr } = run(
+      ["--generators", fixtureDir, "adder", "--undo", "--dry-run"],
+      cwd,
+    );
+    expect(status, stderr).toBe(0);
+    expect(stderr).toContain("Undo will reverse 1 step");
+    expect(stderr).toContain("added.txt");
+    expect(stdout).toContain("Dry-run complete. Nothing was reversed.");
+    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
   }, 60_000);
 
   it("--undo without --yes runs the batch undo (no wizard, no prompt)", () => {
