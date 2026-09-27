@@ -92,6 +92,7 @@ export function generateCreateSurface({
     component: componentGenerators as never,
     package: packageGenerators as never,
     application: applicationGenerators as never,
+    page: applicationGenerators as never,
   };
   const entries: Record<string, SurfaceCommand> = {};
   const syntax: Record<string, Record<string, PromptCliSyntax>> = {};

@@ -432,6 +432,33 @@ pragma create package --name @canonical/my-lib --type library
 pragma create package --name @canonical/my-tool --no-run-install
 ```
 
+### pragma create page
+
+Add a page component to an existing domain of a scaffolded application, and print how to route it.
+
+Use when asked to add a page to an existing domain of an application scaffolded with create application.
+
+```
+pragma create page [page-path] [options]
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `[page-path]` | yes | Page path, as <domain>/<name> (for example invoices/detail). |
+
+- Store: storeless.
+- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
+- MCP: exposed as the `create_page` tool.
+
+**Examples**
+
+```bash
+pragma create page invoices/detail  # writes src/domains/invoices/DetailPage.tsx and prints route examples
+pragma create page invoices/detail --undo  # delete the page again
+```
+
 ## doctor
 
 ### pragma doctor

@@ -604,6 +604,7 @@ describe("projection fidelity — the committed surface IS the live generators (
       "component/lit:componentPath",
       "component/react:componentPath",
       "component/svelte:componentPath",
+      "page:pagePath",
     ]);
   });
 
@@ -777,18 +778,19 @@ describe("declared generator bindings (PROTECTED)", () => {
     expect(framework?.default).toBeUndefined();
   });
 
-  it("create surfaces exactly the three declared nouns", () => {
+  it("create surfaces exactly the four declared nouns", () => {
     // A LITERAL surface pin, deliberately not derived from CREATE_GENERATORS:
     // surfacing a noun also needs a hand-written prompt mirror, path param and
     // examples in create.verb.ts, so the surface is a deliberate SUBSET of what
     // the declared packages ship (`@canonical/summon-application` also ships
-    // `domain`, `page` and `wrapper`). Pinning OUR three nouns rather than any
+    // `domain` and `wrapper`). Pinning OUR four nouns rather than any
     // third-party package's generator list keeps an upstream release from
     // turning this red.
     expect(createModule.verbs.map((v) => v.path[1])).toEqual([
       "component",
       "package",
       "application",
+      "page",
     ]);
   });
 });

@@ -5,7 +5,14 @@
  * the CLI `--dry-run` preview (both filter out Prompt effects).
  */
 
-import { existsSync, mkdtempSync, readdirSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -216,6 +223,130 @@ describe("create over MCP (PROTECTED)", () => {
         }
       ).data.plan;
       expect(mcpPlan).toEqual(cliPlan);
+    } finally {
+      process.chdir(prev);
+    }
+  });
+});
+
+describe("create page (PROTECTED)", () => {
+  /** A scratch application holding the `invoices` domain a page is added to. */
+  const appWithDomain = (): string => {
+    const dir = freshCwd();
+    mkdirSync(join(dir, "src/domains/invoices"), { recursive: true });
+    writeFileSync(
+      join(dir, "src/domains/invoices/routes.ts"),
+      "export default {};\n",
+    );
+    return dir;
+  };
+  const pageFile = (dir: string) =>
+    join(dir, "src/domains/invoices/DetailPage.tsx");
+
+  it("MCP plan-first: a plan naming the page and the routing guide, nothing written; confirm: true writes it", async () => {
+    const dir = appWithDomain();
+    const prev = process.cwd();
+    process.chdir(dir);
+    try {
+      const mcp = await projectMcp([createModule], dir);
+      cleanup = mcp.cleanup;
+
+      const planned = await mcp.callTool("create_page", {
+        pagePath: "invoices/detail",
+      });
+      expect(planned.ok).toBe(true);
+      expect(planned.meta).toMatchObject({
+        planOnly: true,
+        confirmRequired: true,
+      });
+      const plan = (planned.data as { plan: string[] }).plan;
+      expect(plan.some((line) => line.includes("DetailPage.tsx"))).toBe(true);
+      expect(plan.at(-1)).toContain(
+        'import DetailPage from "./DetailPage.js";',
+      );
+      expect(existsSync(pageFile(dir))).toBe(false);
+
+      const applied = await mcp.callTool("create_page", {
+        pagePath: "invoices/detail",
+        confirm: true,
+      });
+      expect(applied.ok).toBe(true);
+      expect(readFileSync(pageFile(dir), "utf8")).toContain(
+        "export default function DetailPage(): ReactElement {",
+      );
+      expect(
+        readFileSync(join(dir, "src/domains/invoices/routes.ts"), "utf8"),
+      ).toBe("export default {};\n");
+    } finally {
+      process.chdir(prev);
+    }
+  });
+
+  it("the MCP plan matches the CLI --dry-run preview", async () => {
+    const dir = appWithDomain();
+    const prev = process.cwd();
+    process.chdir(dir);
+    try {
+      const mcp = await projectMcp([createModule], dir);
+      cleanup = mcp.cleanup;
+      const mcpResult = await mcp.callTool("create_page", {
+        pagePath: "invoices/detail",
+      });
+      const cliOutcome = await executeVerb(
+        createVerbs.page as VerbSpec,
+        { pagePath: "invoices/detail" },
+        { dryRun: true, undo: false, yes: false },
+        bootRuntime({ ...FLAGS, format: "json" }, dir),
+      );
+      const cliPlan = (
+        JSON.parse(cliOutcome.stdout as string) as {
+          data: { plan: string[] };
+        }
+      ).data.plan;
+      expect((mcpResult.data as { plan: string[] }).plan).toEqual(cliPlan);
+    } finally {
+      process.chdir(prev);
+    }
+  });
+
+  it("CLI: --yes writes the page, --undo deletes it and nothing else", async () => {
+    const dir = appWithDomain();
+    const prev = process.cwd();
+    process.chdir(dir);
+    try {
+      const run = (undo: boolean) =>
+        executeVerb(
+          createVerbs.page as VerbSpec,
+          { pagePath: "invoices/detail" },
+          { dryRun: false, undo, yes: true },
+          bootRuntime(FLAGS, dir),
+        );
+      expect((await run(false)).exitCode).toBe(0);
+      expect(existsSync(pageFile(dir))).toBe(true);
+      expect((await run(true)).exitCode).toBe(0);
+      expect(existsSync(pageFile(dir))).toBe(false);
+      expect(
+        readFileSync(join(dir, "src/domains/invoices/routes.ts"), "utf8"),
+      ).toBe("export default {};\n");
+    } finally {
+      process.chdir(prev);
+    }
+  });
+
+  it("refuses when the domain does not exist, writing nothing", async () => {
+    const dir = freshCwd();
+    const prev = process.cwd();
+    process.chdir(dir);
+    try {
+      const mcp = await projectMcp([createModule], dir);
+      cleanup = mcp.cleanup;
+      const result = await mcp.callTool("create_page", {
+        pagePath: "invoices/detail",
+        confirm: true,
+      });
+      expect(result.ok).toBe(false);
+      expect(JSON.stringify(result)).toContain("Create the domain first.");
+      expect(readdirSync(dir)).toEqual([]);
     } finally {
       process.chdir(prev);
     }
