@@ -187,7 +187,14 @@ In src/routes.tsx, put the route in a group() and list it in appRoutes:
 
       const result = spawnSync(
         process.execPath,
-        [require.resolve("typescript/bin/tsc"), "-p", root],
+        [
+          path.join(
+            path.dirname(require.resolve("typescript/package.json")),
+            "bin/tsc",
+          ),
+          "-p",
+          root,
+        ],
         { encoding: "utf8" },
       );
       expect(result.stdout + result.stderr).toBe("");
