@@ -256,6 +256,41 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
+  it("--undo --format json previews the undo in the pragma CLI's envelope", () => {
+    const cwd = freshCwd();
+    writeFileSync(join(cwd, "base.txt"), "base\n");
+    expect(
+      run(["--generators", fixtureDir, "adder", "--yes"], cwd).status,
+    ).toBe(0);
+    const { status, stdout, stderr } = run(
+      ["--generators", fixtureDir, "adder", "--undo", "--format", "json"],
+      cwd,
+    );
+    expect(status, stderr).toBe(0);
+    expect(JSON.parse(stdout)).toEqual({
+      ok: true,
+      data: { plan: ["Delete file: added.txt"] },
+      meta: { dryRun: true, undo: true },
+    });
+    expect(stderr).toBe("");
+    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
+  }, 60_000);
+
+  it("--undo --llm previews the undo as Markdown", () => {
+    const cwd = freshCwd();
+    writeFileSync(join(cwd, "base.txt"), "base\n");
+    run(["--generators", fixtureDir, "adder", "--yes"], cwd);
+    const { status, stdout, stderr } = run(
+      ["--generators", fixtureDir, "adder", "--undo", "--llm"],
+      cwd,
+    );
+    expect(status, stderr).toBe(0);
+    expect(stdout).toBe(
+      "## Undo plan\n\n- Delete file: added.txt\n\nDry-run: nothing was reversed.\n",
+    );
+    expect(readdirSync(cwd).sort()).toEqual(["added.txt", "base.txt"]);
+  }, 60_000);
+
   it("--undo --dry-run previews the undo of a real run and reverses nothing", () => {
     const cwd = freshCwd();
     writeFileSync(join(cwd, "base.txt"), "base\n");

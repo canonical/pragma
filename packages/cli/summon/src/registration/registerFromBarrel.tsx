@@ -134,13 +134,43 @@ function generateBatchTask(
   return task;
 }
 
+/**
+ * The machine forms of an undo preview, for `--format json` and `--llm`. The
+ * JSON is the pragma CLI's envelope for the same preview — the plan as
+ * described effects, with `dryRun` and `undo` in its meta — so the two
+ * bins answer `--undo --dry-run` in one shape.
+ */
+function formatUndoPreview(
+  steps: readonly Effect[],
+  form: "json" | "llm",
+): string {
+  const plan = steps.map(describeEffect);
+  if (form === "json") {
+    return `${JSON.stringify({ ok: true, data: { plan }, meta: { dryRun: true, undo: true } })}\n`;
+  }
+  return `## Undo plan\n\n${
+    plan.length > 0
+      ? plan.map((line) => `- ${line}`).join("\n")
+      : "Nothing to undo."
+  }\n\nDry-run: nothing was reversed.\n`;
+}
+
 /** Run the batch (non-interactive) undo path. */
 async function runBatchUndo(
   generator: GeneratorDefinition,
   answersWithDefaults: Record<string, unknown>,
   dryRunOnly: boolean,
+  actualOptions: Record<string, unknown> = {},
 ): Promise<void> {
   const task = generateBatchTask(generator, answersWithDefaults);
+  // A preview asked for in a machine form prints only that form, on stdout.
+  const form: "json" | "llm" | undefined = !dryRunOnly
+    ? undefined
+    : actualOptions.format === "json"
+      ? "json"
+      : actualOptions.llm === true
+        ? "llm"
+        : undefined;
   try {
     const unreversible: Effect[] = [];
     const undos = collectUndos(task, {
@@ -149,6 +179,10 @@ async function runBatchUndo(
         if (isUnreversibleExec(effect)) unreversible.push(effect);
       },
     });
+    if (form !== undefined) {
+      process.stdout.write(formatUndoPreview(describeUndoSteps(undos), form));
+      return;
+    }
     if (undos.length === 0) {
       console.log("Nothing to undo.");
       return;
@@ -351,6 +385,7 @@ async function runGeneratorAction(
           generator,
           answersWithDefaults,
           actualOptions.dryRun === true,
+          actualOptions,
         );
       } else {
         await runBatchDryRun(generator, answersWithDefaults, actualOptions);
