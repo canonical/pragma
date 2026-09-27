@@ -4,11 +4,13 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dryRun, sequence_ } from "@canonical/task";
+import { toCamelCase } from "@canonical/utils";
 import { describe, expect, it } from "vitest";
 import { generator as domainGenerator } from "../domain/index.js";
 import { generator } from "./index.js";
 import {
   formatRoutingGuide,
+  LAYOUT_PLACEHOLDER,
   type RouteExample,
   routingGuide,
 } from "./routingGuide.js";
@@ -32,8 +34,15 @@ function generatedPage(domain: string, name: string): string {
   return page.content;
 }
 
-/** The generated page with an example's imports and signature pasted in. */
-function pastePage(source: string, example: RouteExample): string {
+/**
+ * The generated page with an example's imports and signature pasted in, and
+ * `reads` placed at the top of its body so the page uses the props it takes.
+ */
+function pastePage(
+  source: string,
+  example: RouteExample,
+  reads: readonly string[],
+): string {
   const imports = example.page.filter((line) => line.startsWith("import "));
   const signature = example.page.filter((line) => !line.startsWith("import "));
   const lines = source.split("\n");
@@ -43,7 +52,9 @@ function pastePage(source: string, example: RouteExample): string {
   const declaration = lines.findIndex((line) =>
     line.startsWith("export default function "),
   );
-  if (signature.length > 0) lines.splice(declaration, 1, ...signature);
+  if (signature.length > 0) {
+    lines.splice(declaration, 1, ...signature, ...reads.map((r) => `  ${r}`));
+  }
   lines.splice(reactImport + 1, 0, ...imports);
   return lines.join("\n");
 }
@@ -63,7 +74,10 @@ describe("routing guide", () => {
       '  }: RouteContentProps<RouteParams<"/invoices/:id">>): ReactElement {',
     );
     expect(lines).toContain(
-      "  const [detail] = group(publicLayout, [invoicesRoutes.detail] as const);",
+      "  const [detail] = group(<layout>, [invoicesRoutes.detail] as const);",
+    );
+    expect(lines).toContain(
+      "  const appRoutes = { /* …the routes already listed */ detail } as const;",
     );
     expect(lines.length).toBeLessThanOrEqual(45);
   });
@@ -118,11 +132,21 @@ describe("routing guide", () => {
         ["reports", "summary"],
       ] as const;
 
+      // What each example's page reads, so a page that takes props uses them.
+      const READS: readonly (readonly string[])[] = [
+        [],
+        ["void params.id;"],
+        ["void search.q;"],
+      ];
+
       pages.forEach(([domain, name], index) => {
         const guide = routingGuide(domain, name);
         const example = guide.examples[index];
 
-        write(guide.pageFile, pastePage(generatedPage(domain, name), example));
+        write(
+          guide.pageFile,
+          pastePage(generatedPage(domain, name), example, READS[index] ?? []),
+        );
         write(
           guide.routesFile,
           [
@@ -139,13 +163,17 @@ describe("routing guide", () => {
         write(
           `src/routes.${domain}.tsx`,
           [
-            'import { group, route, wrapper } from "@canonical/router-core";',
+            'import { type AnyRoute, group, wrapper } from "@canonical/router-core";',
             "const publicLayout = wrapper({",
             '  id: "public-layout",',
             "  component: ({ children }) => children,",
             "});",
-            'const home = route({ url: "/", content: () => null });',
-            ...guide.wiring,
+            // The placeholder is the app's own wrapper; here, the one above.
+            ...guide.wiring.map((line) =>
+              line.replace(LAYOUT_PLACEHOLDER, "publicLayout"),
+            ),
+            // The page's route is reachable through appRoutes.
+            `export const wired: AnyRoute = appRoutes.${toCamelCase(name)};`,
             "export type AppRoutes = typeof appRoutes;",
             "",
           ].join("\n"),
@@ -164,5 +192,5 @@ describe("routing guide", () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
-  }, 120_000);
+  }, 30_000);
 });

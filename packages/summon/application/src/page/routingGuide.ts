@@ -23,9 +23,18 @@ export interface RoutingGuide {
   /** The import line for the page, in the domain's routes.ts. */
   readonly pageImport: string;
   readonly examples: readonly RouteExample[];
-  /** Lines for src/routes.tsx: import the domain routes, group, list. */
+  /**
+   * Lines for src/routes.tsx: import the domain routes, group, list. They
+   * carry {@link LAYOUT_PLACEHOLDER} where the app names its own wrapper.
+   */
   readonly wiring: readonly string[];
 }
+
+/**
+ * Stands for the `wrapper()` the route renders in, which each app names for
+ * itself. Printed as is, so it cannot be mistaken for a name that exists.
+ */
+export const LAYOUT_PLACEHOLDER = "<layout>";
 
 export function routingGuide(domain: string, name: string): RoutingGuide {
   const pageName = `${toPascalCase(name)}Page`;
@@ -90,8 +99,8 @@ export function routingGuide(domain: string, name: string): RoutingGuide {
     ],
     wiring: [
       `import ${domainRoutes} from "#domains/${domain}/routes.js";`,
-      `const [${key}] = group(publicLayout, [${domainRoutes}.${key}] as const);`,
-      `const appRoutes = { home, ${key} } as const; // keep the routes already listed`,
+      `const [${key}] = group(${LAYOUT_PLACEHOLDER}, [${domainRoutes}.${key}] as const);`,
+      `const appRoutes = { /* …the routes already listed */ ${key} } as const;`,
     ],
   };
 }
@@ -118,7 +127,7 @@ export function formatRoutingGuide(guide: RoutingGuide): string[] {
         : []),
     ]),
     "",
-    "In src/routes.tsx, put the route in a group() and list it in appRoutes:",
+    `In src/routes.tsx, put the route in a group() and list it in appRoutes (${LAYOUT_PLACEHOLDER} stands for your wrapper()):`,
     ...guide.wiring.map(indent),
   ];
 }
