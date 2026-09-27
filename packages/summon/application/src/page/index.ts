@@ -90,7 +90,7 @@ group() and appRoutes lines for src/routes.tsx.
 Refuses to run when the domain does not exist or the page file already exists.
 --undo deletes the page file.
 
-Create the domain first with: summon domain <name>`,
+The domain must exist first.`,
     examples: [
       "summon page invoices/detail",
       "summon page account/settings",
@@ -135,7 +135,7 @@ Create the domain first with: summon domain <name>`,
       !domainPresent
         ? fail({
             code: GENERATOR_INVALID_ANSWER,
-            message: `Domain "${domainName}" not found (${routesFile} missing). Create it first with: summon domain ${domainName}`,
+            message: `Domain "${domainName}" not found: ${routesFile} is missing. Create the domain first.`,
           })
         : flatMap(exists(pageFile), (pagePresent) =>
             pagePresent

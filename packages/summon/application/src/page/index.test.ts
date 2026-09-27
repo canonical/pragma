@@ -125,7 +125,9 @@ export default function OrderLinesPage(): ReactElement {
   it("fails when the domain does not exist", () => {
     expect(() =>
       dryRun(generator.generate({ pagePath: "missing/page" })),
-    ).toThrow(/not found .*Create it first with: summon domain missing/);
+    ).toThrow(
+      'Domain "missing" not found: src/domains/missing/routes.ts is missing. Create the domain first.',
+    );
   });
 });
 
