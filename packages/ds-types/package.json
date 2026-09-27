@@ -49,6 +49,6 @@
     "@canonical/biome-config": "^0.41.0",
     "@canonical/typescript-config": "^0.41.0",
     "@canonical/webarchitect": "^0.41.0",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   }
 }

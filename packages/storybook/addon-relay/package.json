@@ -82,7 +82,7 @@
     "react-relay": "^21.0.1",
     "relay-runtime": "^21.0.1",
     "storybook": "^10.6.0",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vite": "^8.0.1",
     "vitest": "^4.0.18"
   },

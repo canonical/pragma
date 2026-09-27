@@ -28,9 +28,9 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
     "@canonical/biome-config": "^0.41.0",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
-    "typescript": "^5.9.3 || ^6.0.0"
+    "typescript": "^5.9.3 || ^6.0.0 || ^7.0.0"
   }
 }

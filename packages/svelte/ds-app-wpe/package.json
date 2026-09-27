@@ -7,13 +7,13 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.js",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "svelte": "./dist/index.js"
     },
     "./styles.css": "./dist/index.css",
     "./internal": {
-      "types": "./dist/internal.d.js",
+      "types": "./dist/internal.d.ts",
       "import": "./dist/internal.js",
       "svelte": "./dist/internal.js"
     }
