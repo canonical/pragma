@@ -15,7 +15,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { generator as domainGenerator } from "../domain/index.js";
 import { formatWithBiome } from "../testing/formatWithBiome.js";
 import { generator } from "./index.js";
-import { formatRoutingGuide, routingGuide } from "./routingGuide.js";
 
 /**
  * The page generator adds to an existing domain. In a dry run the virtual
@@ -92,9 +91,11 @@ export default function OrderLinesPage(): ReactElement {
       .filter((e) => e._tag === "Log")
       .map((e) => (e as { message: string }).message);
 
-    expect(messages).toEqual([
-      formatRoutingGuide(routingGuide("invoices", "detail")).join("\n"),
-    ]);
+    // The guide's text is pinned in guide.test.ts.
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatch(
+      /^Created src\/domains\/invoices\/DetailPage\.tsx\./,
+    );
     expect(effects.at(-1)?._tag).toBe("Log");
   });
 

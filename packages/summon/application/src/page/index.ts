@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   GENERATOR_INVALID_ANSWER,
   type GeneratorDefinition,
@@ -13,14 +14,19 @@ import {
   writeFile,
 } from "@canonical/task";
 import { toCamelCase, toPascalCase, toTitleCase } from "@canonical/utils";
-import { buildPage } from "../shared/buildPage.js";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
+import { renderTemplate } from "../shared/renderTemplate.js";
 import {
   validateCommandPath,
   validateKebabName,
 } from "../shared/validators.js";
-import { formatRoutingGuide, routingGuide } from "./routingGuide.js";
+
+/** The page generator's own templates, copied next to it by the build. */
+const templatesDir = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "templates",
+);
 
 export interface PageAnswers {
   readonly pagePath: string;
@@ -138,9 +144,8 @@ The argument is exactly two segments: the domain, then the page name.
 
 The page is not routed yet. After writing it, the generator prints what to add
 by hand: the import line for src/domains/<domain>/routes.ts, example route
-entries to adapt (a static url, a url with a :param and the page's params
-signature, a typed search schema and the page's search signature), and the
-group() and appRoutes lines for src/routes.tsx.
+entries to adapt (a static url, and a url with a :param with the page's params
+signature), and the group() and appRoutes lines for src/routes.tsx.
 
 Refuses to run when the domain does not exist or the page file already exists.
 --undo deletes the page file.`,
@@ -171,18 +176,21 @@ Refuses to run when the domain does not exist or the page file already exists.
     // No mkdir: the page goes into an *existing* domain (guarded below), and
     // mkdir's default undo would delete that domain's folder on `--undo`.
     // writeFile's default undo deletes the file, which is exactly `--undo`.
+    const vars = {
+      domain: domainName,
+      name,
+      pageName,
+      title: toTitleCase(name),
+      key: toCamelCase(name),
+      domainRoutes: `${toCamelCase(domainName)}Routes`,
+    };
     const scaffold = sequence_([
-      writeFile(
-        pageFile,
-        buildPage({
-          pageName,
-          title: toTitleCase(name),
-          headingId: `${name}-title`,
-        }),
-      ),
+      writeFile(pageFile, renderTemplate(templatesDir, "Page.tsx.ejs", vars)),
       // One message, so the code lines print without a per-line prefix and
       // can be copied as they are.
-      info(formatRoutingGuide(routingGuide(domainName, name)).join("\n")),
+      info(
+        renderTemplate(templatesDir, "routingGuide.txt.ejs", vars).trimEnd(),
+      ),
     ]);
 
     // Guard before touching anything. Both refusals are the answer's fault
