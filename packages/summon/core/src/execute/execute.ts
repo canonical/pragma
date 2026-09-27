@@ -101,6 +101,8 @@ export function isInvalidAnswersError(error: unknown): error is Error {
  *
  * Every walk builds the generator's task afresh from `build`: a task built
  * with `gen()` can be walked only once, and the retry walks more than once.
+ * A non-deterministic `generate` (one that throws only on its first call) is
+ * not supported.
  */
 function previewEffects(build: () => Task<unknown>): Effect[] {
   try {

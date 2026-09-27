@@ -149,16 +149,26 @@ describe("execute — a generator that adds to existing files", () => {
   });
 
   it("rethrows a preview failure that is not a task failure, unchanged", () => {
+    // Each walk throws its own instance, so the one that comes back says
+    // which walk's error was rethrown: it must be the plain walk's, the first.
+    const thrown: RangeError[] = [];
     const broken: GeneratorDefinition = {
       ...addsTo,
       generate: () =>
         flatMap(pure(undefined), (): Task<void> => {
-          throw new RangeError("not a task failure");
+          const error = new RangeError(`walk ${thrown.length + 1}`);
+          thrown.push(error);
+          throw error;
         }),
     };
-    expect(() =>
-      dryRun(execute(broken, { prompt: autoPrompt({}), params: {} })),
-    ).toThrow(RangeError);
+    let caught: unknown;
+    try {
+      dryRun(execute(broken, { prompt: autoPrompt({}), params: {} }));
+    } catch (error) {
+      caught = error;
+    }
+    expect(thrown.length).toBeGreaterThan(1);
+    expect(caught).toBe(thrown[0]);
   });
 });
 
