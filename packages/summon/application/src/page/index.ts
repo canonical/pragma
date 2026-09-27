@@ -16,7 +16,10 @@ import { toCamelCase, toPascalCase, toTitleCase } from "@canonical/utils";
 import { buildPage } from "../shared/buildPage.js";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
-import { validateCommandPath } from "../shared/validators.js";
+import {
+  validateCommandPath,
+  validateKebabName,
+} from "../shared/validators.js";
 import { formatRoutingGuide, routingGuide } from "./routingGuide.js";
 
 export interface PageAnswers {
@@ -29,14 +32,6 @@ const validateSegments = validateCommandPath({
   maxSegments: 2,
   example: "invoices/detail",
 });
-
-/**
- * The page name in kebab-case: lowercase letters and digits, words joined by
- * single hyphens. It is what the file, component and route key are named
- * from (`order-lines` → `OrderLinesPage`, `orderLines`), so a name those
- * mappings would have to guess at, such as `DETAIL`, is refused.
- */
-const KEBAB_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
 /**
  * Words JavaScript reserves, which the printed wiring cannot use as the route
@@ -105,9 +100,13 @@ function validatePagePath(value: unknown): true | string {
   const verdict = validateSegments(value);
   if (verdict !== true) return verdict;
   const name = normalizeCommandPath(String(value)).split("/")[1] as string;
-  if (!KEBAB_NAME.test(name)) {
-    return `Page name "${name}" must be kebab-case: lowercase letters and digits, words joined by single hyphens (for example order-lines)`;
-  }
+  // The file, component and route key are named from it (`order-lines` →
+  // `OrderLinesPage`, `orderLines`), so it must be kebab-case.
+  const kebab = validateKebabName({
+    label: "Page name",
+    example: "order-lines",
+  })(name);
+  if (kebab !== true) return kebab;
   const key = toCamelCase(name);
   if (RESERVED.has(key)) {
     return `Page name "${name}" would make the route key "${key}", a word JavaScript reserves; choose another name (for example ${name}-page)`;

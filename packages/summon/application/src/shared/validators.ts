@@ -54,6 +54,31 @@ export function validateCommandPath(options: {
 }
 
 /**
+ * A kebab-case name: lowercase letters and digits, words joined by single
+ * hyphens (`order-lines`).
+ */
+const KEBAB_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+
+/**
+ * Build a validator for a name that other names are derived from mechanically
+ * (`order-lines` → `OrderLinesPage`, `orderLines`), so it must be kebab-case:
+ * a name such as `DETAIL` would leave those mappings to guess. Returns
+ * `true | string`; never throws.
+ */
+export function validateKebabName(options: {
+  /** Human label for messages, e.g. "Page name". */
+  label: string;
+  /** Example shown in error messages. */
+  example: string;
+}): (value: unknown) => true | string {
+  const { label, example } = options;
+  return (value: unknown): true | string =>
+    typeof value === "string" && KEBAB_NAME.test(value)
+      ? true
+      : `${label} "${String(value)}" must be kebab-case: lowercase letters and digits, words joined by single hyphens (for example ${example})`;
+}
+
+/**
  * Validate the application directory path: non-empty, relative, and free of
  * `..` traversal — the generator writes an entire tree under it.
  */
