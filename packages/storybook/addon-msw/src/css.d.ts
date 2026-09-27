@@ -1,2 +1,2 @@
-/** Side-effect stylesheet imports, bundled by the consumer's build tool. */
+/** Lets TypeScript accept stylesheet imports; the bundler processes the CSS. */
 declare module "*.css";
