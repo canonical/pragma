@@ -124,28 +124,13 @@ jobs:
       - name: Test the guard
         run: bun run check:ranges:test
 
+        # Bun silently skips a patch whose version no longer resolves, and the
+        # release's package signing depends on this one.
+      - name: Check the sigstore patch still applies
+        run: grep -qF '"sigstore@4.1.0": "patches/sigstore@4.1.0.patch"' bun.lock
+
       - name: Check workspace sibling version ranges
         run: bun run check:ranges
-
-    # Guards patches/sigstore@4.1.0.patch, which the release publish job
-    # (tag.yml) depends on but no PR otherwise exercises. It reads manifests
-    # only — no install, no network.
-  sigstore-patch:
-    name: Sigstore publish patch
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 1
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-
-      - name: Test the sigstore patch
-        run: bun run sigstore-patch:test
 
   build-gate:
     runs-on: ubuntu-latest
