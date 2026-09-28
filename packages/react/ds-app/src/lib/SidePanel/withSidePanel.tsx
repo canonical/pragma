@@ -13,7 +13,8 @@ import type {
  * **The wrapped component must accept `onClick`** and forward it to the
  * clickable element at its root — the HOC composes its toggle handler onto
  * the trigger itself, with no wrapper element in between. An `onClick` the
- * consumer passes keeps working: it runs first, then the panel toggles.
+ * consumer passes keeps working: it runs first, then the panel toggles, unless
+ * the handler calls `event.preventDefault()`, which cancels the toggle.
  *
  * The second argument is a function: the HOC calls it with a props object
  * carrying `close` and `ref`, and it returns a complete `<SidePanel>`
@@ -96,9 +97,10 @@ const withSidePanel = <TProps extends WithSidePanelTriggerProps>(
         <Trigger
           {...props}
           onClick={(event) => {
-            // The consumer's handler runs first, then the panel toggles; a
-            // preventDefault or stopPropagation there does not gate the toggle.
+            // The consumer's handler runs first; preventDefault() there
+            // cancels the toggle, as it cancels a native default action.
             props.onClick?.(event);
+            if (event.defaultPrevented) return;
             panelRef.current?.toggle();
           }}
         />

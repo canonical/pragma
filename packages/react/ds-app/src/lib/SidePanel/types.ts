@@ -75,8 +75,7 @@ export type SidePanelProviderProps = OwnProps &
  * it must accept an `onClick` handler. A trigger that accepts
  * `onClick` but never forwards it to a clickable element never toggles its
  * panel. An `onClick` the consumer passes still runs: the HOC calls it first,
- * then toggles the panel.
- *
+ * then toggles the panel, unless the handler calls `event.preventDefault()`.
  */
 export type WithSidePanelTriggerProps = {
   onClick?(event: MouseEvent): void;
