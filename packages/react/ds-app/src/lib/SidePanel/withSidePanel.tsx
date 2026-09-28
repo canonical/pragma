@@ -111,7 +111,7 @@ const withSidePanel = <TProps extends WithSidePanelTriggerProps>(
 
   // Set the displayName for easier debugging
   WrappedComponent.displayName = `withSidePanel(${
-    Trigger.displayName || Trigger.name || "AnonymousComponent"
+    Trigger.displayName || Trigger.name || "Component"
   })`;
 
   return WrappedComponent;

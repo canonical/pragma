@@ -97,7 +97,7 @@ export type WithSidePanelRenderProps = {
 };
 
 /**
- * Every factory must attach the `ref` it receives to the `<SidePanel>` it
+ * **Every factory must attach the `ref` it receives to the `<SidePanel>` it
  * returns.** The trigger toggles the panel through that ref. `SidePanel`
  * requires its `ref`, so a factory that forgets it fails to compile:
  *
