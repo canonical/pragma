@@ -46,15 +46,19 @@ runs:
       # `lerna version` updates package numbers, so we must update the root lockfile.
       # This can be removed once https://github.com/lerna/lerna/issues/4234 is closed.
       #
-      # One install does not settle it: Bun records the bumped workspace
-      # versions first and the bumped sibling ranges only on the next install,
-      # so a lockfile from a single install is rewritten again by the publish
-      # job's setup-env check at the tag, and publishing never starts. The
-      # script installs until a further install leaves bun.lock unchanged (at
-      # most three installs), and fails with the diff otherwise.
+      # Twice, because one install does not settle bun.lock after a bump: when
+      # workspace versions and sibling ranges change in the same edit, Bun
+      # records the new versions on the first install and the new ranges only
+      # on the second. With one install, the publish job's `git diff
+      # --exit-code bun.lock` check rewrites the lockfile at the tag and fails.
+      # Still true of Bun 1.4.2; the upstream fix is proposed in
+      # https://github.com/oven-sh/bun/pull/41931. Drop the second install once
+      # the pinned Bun includes it.
     - name: Update lockfile
       shell: bash
-      run: ${{ github.action_path }}/update-lockfile.sh
+      run: |
+        bun install --ignore-scripts
+        bun install --ignore-scripts
 
       # Lerna may introduce slight formatting changes to the package.json files.
       # This can be removed once https://github.com/lerna/lerna/issues/4117 is closed.
