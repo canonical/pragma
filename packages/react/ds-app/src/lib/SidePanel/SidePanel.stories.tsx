@@ -1,4 +1,5 @@
 import { Button, withTooltip } from "@canonical/react-ds-global";
+import { Field, Form } from "@canonical/react-ds-global-form";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useRef, useState } from "react";
 import { ubuntuStory } from "../../storybook/sidePanel/fixtures.js";
@@ -91,9 +92,9 @@ const instances: Instance[] = [
  * A form panel — the default story for creating or editing an entity. The
  * form scrolls with the content pane while the header and actions stay pinned.
  *
- * The fields are plain HTML form elements. `Field` and `Form` live in
- * `@canonical/react-ds-global-form`, and adding that package solely for a
- * story would add a runtime dependency to this published package.
+ * The fields are the design system's own `Form` and `Field`. The submit button
+ * sits in the footer, outside the `<form>`, so it names the form through its
+ * `form` attribute.
  */
 export const WithForm: Story = {
   render: () => (
@@ -113,55 +114,50 @@ export const WithForm: Story = {
       >
         <Component.Header>Create instance</Component.Header>
         <Component.Content>
-          <form
-            style={{ display: "grid", gap: "var(--dimension-300)" }}
-            onSubmit={(event) => {
-              event.preventDefault();
-            }}
+          <Form
+            id="create-instance"
+            onSubmit={() => {}}
+            defaultValues={{ release: "noble" }}
           >
-            <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
-              Instance name
-              <input
-                type="text"
-                name="instance_name"
-                placeholder="noble-vm-01"
-              />
-            </label>
-            <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
-              Ubuntu release
-              <select name="release" defaultValue="noble">
-                <option value="noble">Ubuntu 24.04 LTS (Noble Numbat)</option>
-                <option value="jammy">
-                  Ubuntu 22.04 LTS (Jammy Jellyfish)
-                </option>
-                <option value="focal">Ubuntu 20.04 LTS (Focal Fossa)</option>
-              </select>
-            </label>
-            <label style={{ display: "flex", gap: "var(--dimension-100)" }}>
-              Enable Ubuntu Pro
-              <input type="checkbox" name="enable_pro" />
-            </label>
-            <span>
-              Security and compliance coverage for your instances, including
-              extended support for the packages you care about.
-            </span>
-            <label style={{ display: "grid", gap: "var(--dimension-100)" }}>
-              Cloud-init user data (optional)
-              <textarea
-                name="cloud_init"
-                rows={4}
-                placeholder={"#cloud-config\npackages:\n  - nginx"}
-              />
-              <span>
-                Configuration to run on first boot: packages to install, users
-                to create, commands to run.
-              </span>
-            </label>
-          </form>
+            <Field
+              name="instance_name"
+              inputType="text"
+              label="Instance name"
+              placeholder="noble-vm-01"
+            />
+            <Field
+              name="release"
+              inputType="select"
+              label="Ubuntu release"
+              options={[
+                { value: "noble", label: "Ubuntu 24.04 LTS (Noble Numbat)" },
+                { value: "jammy", label: "Ubuntu 22.04 LTS (Jammy Jellyfish)" },
+                { value: "focal", label: "Ubuntu 20.04 LTS (Focal Fossa)" },
+              ]}
+            />
+            <Field
+              name="enable_pro"
+              inputType="checkbox"
+              controlLabel="Enable Ubuntu Pro"
+              description="Security and compliance coverage for your instances, including extended support for the packages you care about."
+            />
+            <Field
+              name="cloud_init"
+              inputType="textarea"
+              label="Cloud-init user data (optional)"
+              placeholder={"#cloud-config\npackages:\n  - nginx"}
+              description="Configuration to run on first boot: packages to install, users to create, commands to run."
+            />
+          </Form>
         </Component.Content>
         <Component.Footer>
           <Button>Cancel</Button>
-          <Button importance="primary" anticipation="constructive">
+          <Button
+            importance="primary"
+            anticipation="constructive"
+            type="submit"
+            form="create-instance"
+          >
             Create instance
           </Button>
         </Component.Footer>
@@ -179,32 +175,42 @@ export const WithForm: Story = {
 >
   <SidePanel.Header>Create instance</SidePanel.Header>
   <SidePanel.Content>
-    <form>
-      <label>
-        Instance name
-        <input type="text" name="instance_name" placeholder="noble-vm-01" />
-      </label>
-      <label>
-        Ubuntu release
-        <select name="release" defaultValue="noble">
-          <option value="noble">Ubuntu 24.04 LTS (Noble Numbat)</option>
-          <option value="jammy">Ubuntu 22.04 LTS (Jammy Jellyfish)</option>
-          <option value="focal">Ubuntu 20.04 LTS (Focal Fossa)</option>
-        </select>
-      </label>
-      <label>
-        Enable Ubuntu Pro
-        <input type="checkbox" name="enable_pro" />
-      </label>
-      <label>
-        Cloud-init user data (optional)
-        <textarea name="cloud_init" rows={4} />
-      </label>
-    </form>
+    <Form
+      id="create-instance"
+      onSubmit={handleSubmit}
+      defaultValues={{ release: "noble" }}
+    >
+      <Field name="instance_name" inputType="text" label="Instance name" />
+      <Field
+        name="release"
+        inputType="select"
+        label="Ubuntu release"
+        options={[
+          { value: "noble", label: "Ubuntu 24.04 LTS (Noble Numbat)" },
+          { value: "jammy", label: "Ubuntu 22.04 LTS (Jammy Jellyfish)" },
+          { value: "focal", label: "Ubuntu 20.04 LTS (Focal Fossa)" },
+        ]}
+      />
+      <Field
+        name="enable_pro"
+        inputType="checkbox"
+        controlLabel="Enable Ubuntu Pro"
+      />
+      <Field
+        name="cloud_init"
+        inputType="textarea"
+        label="Cloud-init user data (optional)"
+      />
+    </Form>
   </SidePanel.Content>
   <SidePanel.Footer>
     <Button>Cancel</Button>
-    <Button importance="primary" anticipation="constructive">
+    <Button
+      importance="primary"
+      anticipation="constructive"
+      type="submit"
+      form="create-instance"
+    >
       Create instance
     </Button>
   </SidePanel.Footer>
@@ -506,6 +512,7 @@ export const OverflowingTooltip: Story = {
       source: {
         code: `
 import { Button, withTooltip } from "@canonical/react-ds-global";
+import { Field, Form } from "@canonical/react-ds-global-form";
 
 const TooltippedButton = withTooltip(
   Button,
