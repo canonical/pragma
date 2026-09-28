@@ -47,12 +47,18 @@
     --modifier-color-text-onForegroundSecondary: var(
       --color-text-onForegroundSecondary-information
     );
+    --modifier-color-foreground-primary-disabled: var(
+      --color-foreground-primary-information-disabled
+    );
   }
 
   .success {
     --modifier-icon: url("/icons/success.svg#success");
     --modifier-color-text-onForegroundSecondary: var(
       --color-text-onForegroundSecondary-success
+    );
+    --modifier-color-foreground-primary-disabled: var(
+      --color-foreground-primary-success-disabled
     );
   }
 
@@ -61,12 +67,18 @@
     --modifier-color-text-onForegroundSecondary: var(
       --color-text-onForegroundSecondary-warning
     );
+    --modifier-color-foreground-primary-disabled: var(
+      --color-foreground-primary-warning-disabled
+    );
   }
 
   .error {
     --modifier-icon: url("/icons/error.svg#error");
     --modifier-color-text-onForegroundSecondary: var(
       --color-text-onForegroundSecondary-error
+    );
+    --modifier-color-foreground-primary-disabled: var(
+      --color-foreground-primary-error-disabled
     );
   }
 }

@@ -1,0 +1,46 @@
+<script lang="ts" module>
+  const roundedValueFormatter = new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    compactDisplay: "short",
+    maximumSignificantDigits: 3,
+  });
+</script>
+
+<script lang="ts">
+  import type { BadgeProps } from "./types.js";
+  import "./styles.css";
+
+  const componentCssClassName = "ds badge";
+
+  const {
+    class: className,
+    criticality,
+    value,
+    formatter = roundedValueFormatter,
+    capped,
+    ...rest
+  }: BadgeProps = $props();
+
+
+  const displayValue = $derived.by(() => {
+    const nonNegativeInt = Math.round(Math.max(value, 0));
+
+    if (capped) return nonNegativeInt > 999 ? "999+" : nonNegativeInt;
+  
+    return formatter.format(nonNegativeInt);
+  });
+</script>
+
+<span class={[componentCssClassName, className, criticality ]} {...rest}>
+  {displayValue}
+</span>
+
+<!-- @component
+`Badge` is a visual indicator for numeric values. It is static and not interactive.
+
+## Example Usage
+```svelte
+<Badge value={42} criticality="warning" />
+<Badge value={2351} variant="rounded" />
+```
+-->
