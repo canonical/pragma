@@ -535,3 +535,113 @@ const TooltippedButton = withTooltip(
     },
   },
 };
+
+/* Real copy from ubuntu.com/about, cycled as filler in the tall story. */
+const ubuntuFacts = [
+  "Ubuntu is an ancient African word meaning 'humanity to others'. It is often described as reminding us that 'I am what I am because of who we all are'.",
+  "Canonical is the publisher of Ubuntu. Members of the Canonical team lead aspects of Ubuntu such as the kernel, default desktop, foundations, security, OpenStack, and Kubernetes.",
+  "Ubuntu was the first operating system to commit to scheduled releases on a predictable cadence, every six months, starting in October 2004.",
+];
+
+/**
+ * Content taller than the panel scrolls the content pane itself; the header
+ * and footer stay pinned.
+ */
+export const TallContent: Story = {
+  render: () => (
+    <>
+      <style>
+        {`
+          /* Disable animations for visual testing */
+          :root {
+            --side-panel-transition-duration: 0ms;
+          }
+        `}
+      </style>
+      <Component
+        ref={(handle: SidePanelHandle | null) => {
+          handle?.open();
+        }}
+      >
+        <Component.Header>About Ubuntu</Component.Header>
+        <Component.Content>
+          {Array.from({ length: 10 }, (_, index) => index).map((index) => (
+            <p key={index}>{ubuntuFacts[index % ubuntuFacts.length]}</p>
+          ))}
+        </Component.Content>
+        <Component.Footer>
+          <Button importance="primary">Done</Button>
+        </Component.Footer>
+      </Component>
+    </>
+  ),
+  parameters: {
+    docs: {
+      source: {
+        code: `<SidePanel ref={panelRef}>
+  <SidePanel.Header>About Ubuntu</SidePanel.Header>
+  {/* Taller than the panel: the pane scrolls, header and footer stay. */}
+  <SidePanel.Content>{paragraphs}</SidePanel.Content>
+  <SidePanel.Footer>
+    <Button importance="primary">Done</Button>
+  </SidePanel.Footer>
+</SidePanel>`,
+      },
+    },
+  },
+};
+
+/**
+ * Opt-in `fill`: the pane grows to take the space the header and footer
+ * leave, so a short panel pushes its footer to the bottom edge. The default
+ * is the opposite — the content keeps its natural height and the footer
+ * follows it, so the actions sit next to the text they refer to rather than
+ * at a distance.
+ */
+export const FillContent: Story = {
+  render: () => (
+    <>
+      <style>
+        {`
+          /* Disable animations for visual testing */
+          :root {
+            --side-panel-transition-duration: 0ms;
+          }
+        `}
+      </style>
+      <Component
+        ref={(handle: SidePanelHandle | null) => {
+          handle?.open();
+        }}
+      >
+        <Component.Header>Ubuntu Pro subscription</Component.Header>
+        <Component.Content fill>
+          <p>
+            A short body — with `fill`, the pane still takes all the space the
+            header and footer leave, and the footer sits on the bottom edge.
+          </p>
+        </Component.Content>
+        <Component.Footer>
+          <Button importance="primary">Subscribe</Button>
+        </Component.Footer>
+      </Component>
+    </>
+  ),
+  parameters: {
+    docs: {
+      source: {
+        code: `<SidePanel ref={panelRef}>
+  <SidePanel.Header>Ubuntu Pro subscription</SidePanel.Header>
+  {/* fill: the pane takes the space the header and footer leave,
+      so the short panel still pushes its footer to the bottom edge. */}
+  <SidePanel.Content fill>
+    <p>A short body.</p>
+  </SidePanel.Content>
+  <SidePanel.Footer>
+    <Button importance="primary">Subscribe</Button>
+  </SidePanel.Footer>
+</SidePanel>`,
+      },
+    },
+  },
+};
