@@ -35,9 +35,10 @@ const getDialog = (container: HTMLElement): HTMLDialogElement => {
   return dialog;
 };
 
-/** The factory every test shares: a labelled panel with a body. */
+/** The factory every test shares: a panel named by its header, with a body. */
 const labelledPanel: WithSidePanelRender = ({ ref }) => (
-  <SidePanel ref={ref} aria-label="Panel">
+  <SidePanel ref={ref}>
+    <SidePanel.Header>Panel</SidePanel.Header>
     <SidePanel.Content>Body</SidePanel.Content>
   </SidePanel>
 );
@@ -89,9 +90,22 @@ describe("withSidePanel", () => {
     expect(getDialog(container)).toHaveAttribute("open");
   });
 
+  it("does not toggle when the consumer's onClick prevents the default", () => {
+    const ToggledButton = withSidePanel(Button, labelledPanel);
+    const { container } = render(
+      <ToggledButton onClick={(event) => event.preventDefault()}>
+        Open panel
+      </ToggledButton>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open panel" }));
+    expect(getDialog(container)).not.toHaveAttribute("open");
+  });
+
   it("hands the factory a close that closes the panel", () => {
     const ToggledButton = withSidePanel(Button, ({ ref, close }) => (
-      <SidePanel ref={ref} aria-label="Panel">
+      <SidePanel ref={ref}>
+        <SidePanel.Header>Panel</SidePanel.Header>
         <SidePanel.Content>Body</SidePanel.Content>
         <SidePanel.Footer>
           <button onClick={close} type="button">
@@ -111,14 +125,15 @@ describe("withSidePanel", () => {
 
   it("renders the panel the factory composes and closes it on Escape", () => {
     const ToggledButton = withSidePanel(Button, ({ ref }) => (
-      <SidePanel ref={ref} aria-label="Filters">
+      <SidePanel ref={ref}>
+        <SidePanel.Header>Filters</SidePanel.Header>
         <SidePanel.Content>Body</SidePanel.Content>
       </SidePanel>
     ));
     const { container } = render(<ToggledButton>Open panel</ToggledButton>);
 
     fireEvent.click(screen.getByRole("button", { name: "Open panel" }));
-    expect(getDialog(container)).toHaveAttribute("aria-label", "Filters");
+    expect(getDialog(container)).toHaveAccessibleName("Filters");
 
     fireEvent.keyDown(getDialog(container), { key: "Escape" });
     expect(getDialog(container)).not.toHaveAttribute("open");
