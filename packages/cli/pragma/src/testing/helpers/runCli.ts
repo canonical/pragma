@@ -57,6 +57,13 @@ export interface RunCliOptions {
  */
 const DEFAULT_TIMEOUT_MS = 20_000;
 
+/**
+ * A proxy address nothing listens on (port 9 is the discard port), so any
+ * HTTPS request a spawned CLI makes is refused locally instead of reaching the
+ * network.
+ */
+const UNREACHABLE_PROXY = "http://127.0.0.1:9";
+
 /** The captured outcome of a `runCli` invocation. */
 export interface RunCliResult {
   readonly stdout: string;
@@ -110,12 +117,26 @@ export function runCli(
   // unconditionally. FORCE_COLOR is DELETED rather than overridden: Bun warns
   // on stderr when it sees both, and stderr is part of what is asserted.
   // `options.env` still wins, so a test that wants colour asks for it.
+  //
+  // Network OFF by default: `info` asks the npm registry for the latest
+  // version (3s limit, silent on failure), so two spawns on a busy machine
+  // could disagree when one lookup answers and the other times out. Every
+  // request is sent to a proxy on a closed local port, so the lookup fails at
+  // once and every run reports the offline result. Node follows the proxy
+  // variables only with NODE_USE_ENV_PROXY set; Bun always does. Both
+  // spellings are set because the lowercase one wins where both exist, and
+  // NO_PROXY is dropped so an inherited exemption cannot let a request past.
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     NO_COLOR: "1",
     XDG_CONFIG_HOME: seededXdgConfigHome(),
+    NODE_USE_ENV_PROXY: "1",
+    HTTPS_PROXY: UNREACHABLE_PROXY,
+    https_proxy: UNREACHABLE_PROXY,
   };
   delete env.FORCE_COLOR;
+  delete env.NO_PROXY;
+  delete env.no_proxy;
 
   const result = spawnSync(command, spawnArgs, {
     cwd: options.cwd,
