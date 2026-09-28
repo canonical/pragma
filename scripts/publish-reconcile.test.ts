@@ -5,9 +5,12 @@ import { join, resolve } from "node:path";
 import {
 	type PublicPackage,
 	type RegistryAnswer,
+	VERIFY_BACKOFF_MS,
+	backoffSchedule,
 	packumentPath,
 	parsePackument,
 	reconcile,
+	reconcileUntilConverged,
 	renderLog,
 	renderSummary,
 } from "./publish-reconcile";
@@ -142,6 +145,114 @@ describe("reconcile edge cases", () => {
 			registryOf({ "@canonical/utils": ["0.36.0", "0.37.0-experimental.0"] }),
 		);
 		expect(result.missing).toEqual([]);
+	});
+});
+
+describe("settling after a publish", () => {
+	// The v0.40.0 shape: every package published, but the first read-back,
+	// 0.6 s after lerna finished, still saw most of them missing.
+	const workspace = [pkg("@canonical/utils", "0.40.0"), pkg("@canonical/ke", "0.40.0")];
+
+	/**
+	 * A registry that answers each full pass over the workspace from the next
+	 * snapshot, then keeps answering from the last one.
+	 */
+	function laggingRegistry(snapshots: Record<string, string[]>[]) {
+		let passes = 0;
+		const query = async (name: string): Promise<RegistryAnswer> => {
+			if (name === workspace[0].name) passes++;
+			const snapshot = snapshots[Math.min(passes, snapshots.length) - 1];
+			return { kind: "versions", versions: snapshot[name] ?? [] };
+		};
+		return { query, passes: () => passes };
+	}
+
+	const before = { "@canonical/utils": ["0.39.0"], "@canonical/ke": ["0.39.0"] };
+	const halfway = { "@canonical/utils": ["0.39.0", "0.40.0"], "@canonical/ke": ["0.39.0"] };
+	const after = {
+		"@canonical/utils": ["0.39.0", "0.40.0"],
+		"@canonical/ke": ["0.39.0", "0.40.0"],
+	};
+
+	function recorder() {
+		const slept: number[] = [];
+		const retries: number[] = [];
+		return {
+			slept,
+			retries,
+			options: (delaysMs: number[]) => ({
+				delaysMs,
+				sleep: async (ms: number) => {
+					slept.push(ms);
+				},
+				onRetry: (result: { missing: unknown[] }) => {
+					retries.push(result.missing.length);
+				},
+			}),
+		};
+	}
+
+	test("a lagging registry is re-read until it converges, then passes", async () => {
+		const registry = laggingRegistry([before, halfway, after]);
+		const rec = recorder();
+
+		const result = await reconcileUntilConverged(
+			workspace,
+			registry.query,
+			rec.options([5, 10, 20, 40]),
+		);
+
+		expect(result.missing).toEqual([]);
+		expect(registry.passes()).toBe(3);
+		// Waited only as long as it lagged, and logged the shrinking delta.
+		expect(rec.slept).toEqual([5, 10]);
+		expect(rec.retries).toEqual([2, 1]);
+	});
+
+	test("a converged registry is read once, with no wait", async () => {
+		const registry = laggingRegistry([after]);
+		const rec = recorder();
+
+		const result = await reconcileUntilConverged(
+			workspace,
+			registry.query,
+			rec.options([5, 10]),
+		);
+
+		expect(result.missing).toEqual([]);
+		expect(registry.passes()).toBe(1);
+		expect(rec.slept).toEqual([]);
+	});
+
+	test("a package still missing after every wait is still the verdict", async () => {
+		const registry = laggingRegistry([before, halfway]);
+		const rec = recorder();
+
+		const result = await reconcileUntilConverged(
+			workspace,
+			registry.query,
+			rec.options([5, 10, 20]),
+		);
+
+		expect(result.missing.map((s) => s.name)).toEqual(["@canonical/ke"]);
+		expect(registry.passes()).toBe(4);
+		expect(rec.slept).toEqual([5, 10, 20]);
+	});
+
+	test("an unreadable registry fails at once rather than being waited on", async () => {
+		const rec = recorder();
+
+		await expect(
+			reconcileUntilConverged(workspace, registryOf({}), rec.options([5, 10])),
+		).rejects.toThrow("registry query for @canonical/utils failed");
+		expect(rec.slept).toEqual([]);
+	});
+
+	test("the verify backoff doubles to a one-minute cap and spends five minutes", () => {
+		expect(backoffSchedule(5_000, 60_000, 300_000)).toEqual([
+			5_000, 10_000, 20_000, 40_000, 60_000, 60_000, 60_000, 45_000,
+		]);
+		expect(VERIFY_BACKOFF_MS.reduce((sum, ms) => sum + ms, 0)).toBe(300_000);
 	});
 });
 

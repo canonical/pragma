@@ -32,27 +32,29 @@
  * This is read-only settling: the script never publishes, never retries a
  * publish, and converges on whatever state the registry is in.
  *
- * There is NO settling window, deliberately. What made v0.37.0 fail its own
- * verdict after publishing all 55 packages was the READ, not a wait that was
- * too short: `npm view` fetches the CDN-cached packument, which carries
- * `cache-control: public, max-age=300`. A publish does not invalidate it, so a
- * reader can only wait out a 5-minute TTL — any budget below it is a coin
- * flip, any budget above it is five idle minutes on every release, and either
- * way the next red gets 'fixed' by raising the number again.
+ * The read goes to the ORIGIN: `GET <registry>/<name>?write=true`, which the
+ * registry serves uncached (`cf-cache-status: DYNAMIC` on every repeat). What
+ * made v0.37.0 fail its own verdict after publishing all 55 packages was
+ * `npm view`, which fetches the CDN-cached packument (`cache-control: public,
+ * max-age=300`) that a publish does not invalidate.
  *
- * So this reads the ORIGIN: `GET <registry>/<name>?write=true`, which the
- * registry serves uncached (`cf-cache-status: DYNAMIC` on every repeat).
- * Read-after-write is consistent, the verdict is a fact rather than a race,
- * and the whole 55-package check answers in about two seconds.
+ * The origin read is not enough on its own, though. v0.40.0 (run 35538920030)
+ * published all 58 packages, and a verify started 0.6 s after lerna's last
+ * publish read 57 of them as missing from the origin too: the origin can also
+ * lag a publish it has already accepted. So a non-empty delta is
+ * re-read on a backoff (VERIFY_BACKOFF_MS, about five minutes in all) before
+ * it becomes a verdict. A registry that has converged answers on the first
+ * read, so a clean release pays nothing; only a lagging one waits, and only
+ * as long as it lags. The final verdict is as strict as a single read was:
+ * any package still missing after the last read fails the job.
  *
- * Transient faults are NOT retried here either, and that is on purpose:
- * `reconcile` throws on an unreadable registry rather than counting it as
- * missing, so a retry loop around it could never have seen one. A stuck read
- * is a job failure to re-run, not a package to keep asking about.
+ * Transient faults are NOT retried: `reconcile` throws on an unreadable
+ * registry rather than counting it as missing, and that throw ends the run.
+ * A stuck read is a job failure to re-run, not a package to keep asking about.
  *
- * A failure also reports the SHAPE of the settling window, because
- * `still converging` and `the publish dropped packages` are different
- * incidents and the missing-count trend is what tells them apart.
+ * Each re-read logs the missing count, because `still converging` and `the
+ * publish dropped packages` are different incidents and the missing-count
+ * trend is what tells them apart.
  *
  * What it deliberately does NOT do
  * --------------------------------
@@ -206,6 +208,59 @@ export async function reconcile(
 }
 
 // -------------------------------------------------------------------
+// Settling (pure given a query function and a sleep)
+// -------------------------------------------------------------------
+
+/**
+ * Waits between verify reads: doubling from `firstMs`, capped at `capMs` per
+ * wait, and trimmed so the waits add up to exactly `budgetMs`.
+ */
+export function backoffSchedule(firstMs: number, capMs: number, budgetMs: number): number[] {
+	const delays: number[] = [];
+	let total = 0;
+	let next = firstMs;
+	while (total < budgetMs) {
+		const delay = Math.min(next, capMs, budgetMs - total);
+		delays.push(delay);
+		total += delay;
+		next *= 2;
+	}
+	return delays;
+}
+
+/** 5 s, 10 s, 20 s, 40 s, then 60 s waits: five minutes of settling in all. */
+export const VERIFY_BACKOFF_MS = backoffSchedule(5_000, 60_000, 300_000);
+
+export interface SettleOptions {
+	/** Wait before each re-read; its length bounds the number of re-reads. */
+	delaysMs: readonly number[];
+	sleep: (ms: number) => Promise<void>;
+	/** Called before each wait with the delta that caused it. */
+	onRetry?: (result: ReconcileResult, attempt: number, delayMs: number) => void;
+}
+
+/**
+ * Reconciles, and while any package is missing, waits and reads again — once
+ * per entry in `delaysMs`. Returns the first converged result, or the last
+ * result once the waits are spent, so the caller's verdict stays strict. A
+ * query error throws out of the loop exactly as `reconcile` does.
+ */
+export async function reconcileUntilConverged(
+	packages: PublicPackage[],
+	query: RegistryQuery,
+	options: SettleOptions,
+): Promise<ReconcileResult> {
+	let result = await reconcile(packages, query);
+	for (const [i, delayMs] of options.delaysMs.entries()) {
+		if (result.missing.length === 0) break;
+		options.onRetry?.(result, i + 1, delayMs);
+		await options.sleep(delayMs);
+		result = await reconcile(packages, query);
+	}
+	return result;
+}
+
+// -------------------------------------------------------------------
 // Rendering
 // -------------------------------------------------------------------
 
@@ -277,8 +332,9 @@ their manifest versions.
 
   (no flags)         print the delta and exit 0 (the "plan" before a publish)
   --verify           exit 1 while the delta is non-empty (the verdict after a
-                     publish). Reads hit the registry ORIGIN, so the answer is
-                     immediate and final — there is nothing to wait for
+                     publish). A non-empty delta is re-read on a backoff for
+                     up to about five minutes, because the registry can lag a
+                     publish; whatever is still missing then fails the run
 `;
 
 /** The configured registry, so a fork publishing elsewhere is still checked. */
@@ -337,7 +393,16 @@ async function main(argv: string[]): Promise<number> {
 	const root = resolve(import.meta.dirname, "..");
 	const packages = loadPublicPackages(root);
 
-	const result = await reconcile(packages, queryRegistry);
+	const result = verify
+		? await reconcileUntilConverged(packages, queryRegistry, {
+				delaysMs: VERIFY_BACKOFF_MS,
+				sleep: Bun.sleep,
+				onRetry: (pending, attempt, delayMs) =>
+					console.log(
+						`Read ${attempt}: ${pending.missing.length} of ${pending.statuses.length} public packages not yet on npm; reading again in ${delayMs / 1000} s.`,
+					),
+			})
+		: await reconcile(packages, queryRegistry);
 
 	console.log(renderLog(result));
 	const summary = renderSummary(result, { verify });
