@@ -588,13 +588,6 @@ const TooltippedButton = withTooltip(
   },
 };
 
-/* Real copy from ubuntu.com/about, cycled as filler in the tall story. */
-const ubuntuFacts = [
-  "Ubuntu is an ancient African word meaning 'humanity to others'. It is often described as reminding us that 'I am what I am because of who we all are'.",
-  "Canonical is the publisher of Ubuntu. Members of the Canonical team lead aspects of Ubuntu such as the kernel, default desktop, foundations, security, OpenStack, and Kubernetes.",
-  "Ubuntu was the first operating system to commit to scheduled releases on a predictable cadence, every six months, starting in October 2004.",
-];
-
 /**
  * Content taller than the panel scrolls the content pane itself; the header
  * and footer stay pinned.
@@ -618,7 +611,7 @@ export const TallContent: Story = {
         <Component.Header>About Ubuntu</Component.Header>
         <Component.Content>
           {Array.from({ length: 10 }, (_, index) => index).map((index) => (
-            <p key={index}>{ubuntuFacts[index % ubuntuFacts.length]}</p>
+            <p key={index}>{ubuntuStory[index % ubuntuStory.length]}</p>
           ))}
         </Component.Content>
         <Component.Footer>
