@@ -126,10 +126,15 @@ export function runCli(
   // variables only with NODE_USE_ENV_PROXY set; Bun always does. Both
   // spellings are set because the lowercase one wins where both exist, and
   // NO_PROXY is dropped so an inherited exemption cannot let a request past.
+  // Node 22 warns on stderr that the proxy support is experimental; that one
+  // warning is switched off because stderr is asserted.
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     NO_COLOR: "1",
     XDG_CONFIG_HOME: seededXdgConfigHome(),
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, "--disable-warning=UNDICI-EHPA"]
+      .filter(Boolean)
+      .join(" "),
     NODE_USE_ENV_PROXY: "1",
     HTTPS_PROXY: UNREACHABLE_PROXY,
     https_proxy: UNREACHABLE_PROXY,
