@@ -24,6 +24,7 @@ export default defineConfig({
     setupFiles: [
       "./src/testing/setupXdgIsolation.ts",
       "./src/testing/setupCallChecking.ts",
+      "./src/testing/setupOfflineRegistry.ts",
     ],
     environment: "node",
     coverage: {
