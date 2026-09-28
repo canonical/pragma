@@ -1,6 +1,5 @@
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { type ReactElement, useState } from "react";
 import { userEvent } from "storybook/test";
 import Component from "./Provider.js";
 import type { WithSidePanelRender } from "./types.js";
@@ -35,37 +34,6 @@ const StaticInfoPanel: WithSidePanelRender = ({ ref }) => (
 
 const StaticInfoButton = withSidePanel(Button, StaticInfoPanel);
 
-type InitialTransitionDisabledProps = {
-  children: (onClick: () => void) => ReactElement;
-};
-
-/**
- * Opens a story panel without motion for its first visual snapshot. The HOC
- * calls the supplied handler before it toggles the dialog, so React removes
- * the override only after that first open; later clicks animate normally.
- */
-const InitialTransitionDisabled = ({
-  children,
-}: InitialTransitionDisabledProps): ReactElement => {
-  const [disableTransition, setDisableTransition] = useState(true);
-
-  return (
-    <>
-      {disableTransition && (
-        <style>
-          {`
-            /* Disable the transition only while the initial play opens the panel. */
-            :root {
-              --side-panel-transition-duration: 0ms;
-            }
-          `}
-        </style>
-      )}
-      {children(() => setDisableTransition(false))}
-    </>
-  );
-};
-
 const meta = {
   title: "Components/SidePanel/withSidePanel",
   parameters: {
@@ -92,13 +60,19 @@ type Story = StoryObj<typeof meta>;
 /** Static content with one trigger and no application-owned panel state. */
 export const StaticInfo: Story = {
   render: () => (
-    <InitialTransitionDisabled>
-      {(onClick) => (
-        <div style={{ padding: "1rem" }}>
-          <StaticInfoButton onClick={onClick}>Toggle panel</StaticInfoButton>
-        </div>
-      )}
-    </InitialTransitionDisabled>
+    <>
+      <style>
+        {`
+          /* Disable animations for visual testing */
+          :root {
+            --side-panel-transition-duration: 0ms;
+          }
+        `}
+      </style>
+      <div style={{ padding: "1rem" }}>
+        <StaticInfoButton>Toggle panel</StaticInfoButton>
+      </div>
+    </>
   ),
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Toggle panel" }));
