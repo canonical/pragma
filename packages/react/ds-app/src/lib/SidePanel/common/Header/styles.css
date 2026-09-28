@@ -21,28 +21,57 @@
     */
     padding-inline: var(--side-panel-padding-inline);
 
+    /*
+      The title is heading text beside a control, not a control: its line box
+      is far taller than the density seat line, so the typography engine seats
+      it rather than the density seat. It carries `.p`, the engine's class hook
+      for an element that is not `p` or `h1`–`h6`; this rule feeds the engine
+      the title's type (the `--side-panel-title-*` tokens) in place of the
+      paragraph values `.p` brings. The engine then adds the start and end
+      nudges that land the first baseline on the grid; they always sum to one
+      baseline, so the title box is its line box plus one baseline.
+    */
     > .title {
       flex: 1 1 auto;
-      /*
-        A panel title reads as a heading, not body text, so it consumes the
-        heading-2 scale exactly like the `h2` element rule does
-        (@canonical/styles-typography, elements.css)
-      */
-      font-family: var(--typography-heading-2-font-family);
-      font-size: var(--typography-heading-2-font-size);
-      font-weight: var(--typography-heading-2-font-weight);
-      letter-spacing: var(--typography-heading-2-letter-spacing);
-      line-height: var(
-        --typography-heading-2-line-height-dimension,
-        round(
-          up,
-          calc(
-            var(--typography-heading-2-font-size) *
-            var(--typography-heading-2-line-height)
-          ),
-          var(--baseline-height)
-        )
-      );
+      --font-size: var(--side-panel-title-font-size);
+      --font-weight: var(--side-panel-title-font-weight);
+      --line-height: var(--side-panel-title-line-height);
+      /* No element-owned space below, even inside an `.editorial` ancestor. */
+      --space-after: 0;
+      font-family: var(--side-panel-title-font-family);
+      letter-spacing: var(--side-panel-title-letter-spacing);
     }
+  }
+
+  /*
+    Inside a density scope the close button is a density cell, shorter than
+    the title box. Centring it would put its top half the difference down,
+    which is off the grid whenever that difference is an odd number of
+    baselines. Pin it to the top instead, offset by that half-difference
+    rounded to the grid, so both of its edges land on grid lines.
+
+    `:where()` keeps the base rule's specificity: the scope decides, not a
+    longer selector (the reasoning Button's density seat gives).
+  */
+  :where(.comfortable, .dense, .app, .site, .docs)
+    .ds.side-panel-header
+    > .close {
+    align-self: flex-start;
+    /* Never negative, should a smaller title tier make the button the taller. */
+    margin-block-start: max(
+      0px,
+      round(
+        nearest,
+        calc(
+          (
+            var(--side-panel-title-line-height) +
+            var(--baseline-height) -
+            var(--density-line-height-effective)
+          ) /
+          2
+        ),
+        var(--baseline-height)
+      )
+    );
   }
 }

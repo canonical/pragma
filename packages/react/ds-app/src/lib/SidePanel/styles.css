@@ -43,6 +43,31 @@
     --side-panel-header-padding-block: var(--dimension-200);
     --side-panel-footer-padding-block: var(--dimension-200);
     --side-panel-content-padding-block: var(--dimension-200);
+    /*
+      Title type — heading-2 for now. The type tier is provisional: to change
+      it, swap the tier in these five lines and nothing else. The typography
+      engine seats whatever line box they produce (see Header/styles.css), and
+      the close button's offset is derived from it, so no other value follows
+      the tier by hand.
+    */
+    --side-panel-title-font-family: var(--typography-heading-2-font-family);
+    --side-panel-title-font-size: var(--typography-heading-2-font-size);
+    --side-panel-title-font-weight: var(--typography-heading-2-font-weight);
+    --side-panel-title-letter-spacing: var(
+      --typography-heading-2-letter-spacing
+    );
+    /* Snapped up onto the grid exactly as the `h2` element rule does. */
+    --side-panel-title-line-height: var(
+      --typography-heading-2-line-height-dimension,
+      round(
+        up,
+        calc(
+          var(--typography-heading-2-font-size) *
+          var(--typography-heading-2-line-height)
+        ),
+        var(--baseline-height)
+      )
+    );
     /* Space between the header's title and close button. */
     --side-panel-header-gap: var(--dimension-200);
     /* Space between the footer's actions. */
