@@ -89,7 +89,59 @@ const instances: Instance[] = [
 ];
 
 /**
- * A form panel — the default story for creating or editing an entity. The
+ * The simplest panel: a title that names it, a short body, and one action.
+ */
+export const Default: Story = {
+  render: () => (
+    <>
+      <style>
+        {`
+          /* Disable animations for visual testing */
+          :root {
+            --side-panel-transition-duration: 0ms;
+          }
+        `}
+      </style>
+      <Component
+        ref={(handle: SidePanelHandle | null) => {
+          handle?.open();
+        }}
+      >
+        <Component.Header>Ubuntu Pro</Component.Header>
+        <Component.Content>
+          <p>
+            Security and compliance coverage for your instances, including
+            extended support for the packages you care about.
+          </p>
+        </Component.Content>
+        <Component.Footer>
+          <Button importance="primary">Done</Button>
+        </Component.Footer>
+      </Component>
+    </>
+  ),
+  parameters: {
+    docs: {
+      source: {
+        code: `<SidePanel ref={panelRef}>
+  <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
+  <SidePanel.Content>
+    <p>
+      Security and compliance coverage for your instances, including
+      extended support for the packages you care about.
+    </p>
+  </SidePanel.Content>
+  <SidePanel.Footer>
+    <Button importance="primary">Done</Button>
+  </SidePanel.Footer>
+</SidePanel>`,
+      },
+    },
+  },
+};
+
+/**
+ * A form panel, for creating or editing an entity. The
  * form scrolls with the content pane while the header and actions stay pinned.
  *
  * The fields are the design system's own `Form` and `Field`. The submit button
