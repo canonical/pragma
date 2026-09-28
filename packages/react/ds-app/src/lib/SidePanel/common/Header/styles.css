@@ -3,13 +3,40 @@
 @layer ds.components.apps {
   .ds.side-panel-header {
     /*
+      Title type — heading-2 for now. The tier is provisional: to change it,
+      swap the tier in these five lines and nothing else.
+
+      Declared here, not on :root: a var() inside a custom property resolves
+      where it is declared, and the typography tokens are redefined per
+      context (.app, .site, .docs). On :root these would capture the
+      page-level tier; here they resolve inside the panel's own context.
+    */
+    --side-panel-title-font-family: var(--typography-heading-2-font-family);
+    --side-panel-title-font-size: var(--typography-heading-2-font-size);
+    --side-panel-title-font-weight: var(--typography-heading-2-font-weight);
+    --side-panel-title-letter-spacing: var(
+      --typography-heading-2-letter-spacing
+    );
+    --side-panel-title-line-height: var(
+      --typography-heading-2-line-height-dimension
+    );
+
+    /*
       Never shrinks. It stays visible because only the content pane scrolls —
       the header sits beside it in the panel's flex column, not over it.
     */
     flex: none;
 
     display: flex;
-    align-items: center;
+    /*
+      Top-aligned, not centred. The title's box and the close button's box are
+      each a whole number of baselines tall and both start at the row's top, so
+      every edge in the row lands on the grid whatever their heights, the
+      baseline engine in use, or the density cell. Centring would offset the
+      shorter one by half the difference, which is off the grid whenever that
+      difference is an odd number of baselines.
+    */
+    align-items: flex-start;
     gap: var(--side-panel-header-gap);
 
     padding-block: var(--side-panel-header-padding-block);
@@ -23,13 +50,10 @@
 
     /*
       The title is heading text beside a control, not a control: its line box
-      is far taller than the density seat line, so the typography engine seats
-      it rather than the density seat. It carries `.p`, the engine's class hook
+      is taller than the density seat line, so the typography engine seats it
+      rather than the density seat. It carries `.p`, the engine's class hook
       for an element that is not `p` or `h1`–`h6`; this rule feeds the engine
-      the title's type (the `--side-panel-title-*` tokens) in place of the
-      paragraph values `.p` brings. The engine then adds the start and end
-      nudges that land the first baseline on the grid; they always sum to one
-      baseline, so the title box is its line box plus one baseline.
+      the title's type in place of the paragraph values `.p` brings.
     */
     > .title {
       flex: 1 1 auto;
@@ -41,37 +65,5 @@
       font-family: var(--side-panel-title-font-family);
       letter-spacing: var(--side-panel-title-letter-spacing);
     }
-  }
-
-  /*
-    Inside a density scope the close button is a density cell, shorter than
-    the title box. Centring it would put its top half the difference down,
-    which is off the grid whenever that difference is an odd number of
-    baselines. Pin it to the top instead, offset by that half-difference
-    rounded to the grid, so both of its edges land on grid lines.
-
-    `:where()` keeps the base rule's specificity: the scope decides, not a
-    longer selector (the reasoning Button's density seat gives).
-  */
-  :where(.comfortable, .dense, .app, .site, .docs)
-    .ds.side-panel-header
-    > .close {
-    align-self: flex-start;
-    /* Never negative, should a smaller title tier make the button the taller. */
-    margin-block-start: max(
-      0px,
-      round(
-        nearest,
-        calc(
-          (
-            var(--side-panel-title-line-height) +
-            var(--baseline-height) -
-            var(--density-line-height-effective)
-          ) /
-          2
-        ),
-        var(--baseline-height)
-      )
-    );
   }
 }
