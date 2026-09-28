@@ -124,4 +124,6 @@ Provider.Content = Content;
 Provider.Footer = Footer;
 Provider.Header = Header;
 
+Provider.displayName = "SidePanel";
+
 export default Provider;
