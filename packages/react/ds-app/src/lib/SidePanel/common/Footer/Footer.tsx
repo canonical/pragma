@@ -16,6 +16,9 @@ const Footer = ({
   className,
   ...props
 }: FooterProps): React.ReactElement => {
+  // A <div>, not a <footer>: a <footer> inside a <dialog> is exposed as a
+  // page-level contentinfo landmark, and the panel is non-modal, so the page's
+  // own contentinfo stays reachable beside it and would be duplicated.
   return (
     <div
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
