@@ -29,14 +29,12 @@
 
     display: flex;
     /*
-      Top-aligned, not centred. The title's box and the close button's box are
-      each a whole number of baselines tall and both start at the row's top, so
-      every edge in the row lands on the grid whatever their heights, the
-      baseline engine in use, or the density cell. Centring would offset the
-      shorter one by half the difference, which is off the grid whenever that
-      difference is an odd number of baselines.
+      Baseline-aligned: the close button sits on the title's baseline. The
+      browser lines the two baselines up itself, so nothing here needs to know
+      where the typography engine puts the title's baseline or where Button's
+      density seat puts its own.
     */
-    align-items: flex-start;
+    align-items: baseline;
     gap: var(--side-panel-header-gap);
 
     padding-block: var(--side-panel-header-padding-block);
@@ -64,6 +62,33 @@
       --space-after: 0;
       font-family: var(--side-panel-title-font-family);
       letter-spacing: var(--side-panel-title-letter-spacing);
+    }
+
+    > .close {
+      flex: 0 0 auto;
+      /*
+        Button tightens padding-inline-start when it has an icon, which suits an
+        icon+label button but leaves an icon-only one lopsided (8px vs 16px).
+        Equalise both sides through Button's own custom-property API, as
+        Modal's header does.
+      */
+      --button-padding-inline-start: var(--dimension-100);
+      --button-padding-inline-end: var(--dimension-100);
+
+      /*
+        An icon-only button has no text, so it has no baseline of its own and
+        the browser would make one up from the icon's box. A zero-width
+        character gives it a line of text in its seat line, so its baseline
+        lands where a label's would. The pseudo-element is a flex item like the
+        icon, so the gap is cancelled to keep the button's size.
+
+        Temporary: remove once icon-only buttons carry a seated baseline of
+        their own.
+      */
+      &::before {
+        content: "\200b";
+        margin-inline-end: calc(-1 * var(--button-gap));
+      }
     }
   }
 }
