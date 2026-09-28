@@ -83,7 +83,7 @@ function withSidePanel<TProps extends WithSidePanelTriggerProps>(
     <tr>
       <td><code>Trigger</code></td>
       <td><code>ComponentType&lt;TProps&gt;</code></td>
-      <td>The component the user clicks. It must accept <code>onClick</code> and forward it to the element at its root — that is where the HOC hooks the toggle, with nothing wrapped around it. Your own <code>onClick</code> still runs, first, and then the panel toggles.</td>
+      <td>The component the user clicks. It must accept <code>onClick</code> and forward it to the element at its root — that is where the HOC hooks the toggle, with nothing wrapped around it. Your own <code>onClick</code> still runs, first, and then the panel toggles, unless it calls <code>event.preventDefault()</code>, which cancels the toggle.</td>
     </tr>
     <tr>
       <td><code>panel</code></td>
