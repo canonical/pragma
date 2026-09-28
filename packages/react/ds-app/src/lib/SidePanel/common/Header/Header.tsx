@@ -31,6 +31,9 @@ const Header = ({
 }: HeaderProps): React.ReactElement => {
   const context = useSidePanelContext();
 
+  // A <div>, not a <header>: a <header> inside a <dialog> is exposed as a
+  // page-level banner landmark, and the panel is non-modal, so the page's
+  // own banner stays reachable beside it and would be duplicated.
   return (
     <div
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
