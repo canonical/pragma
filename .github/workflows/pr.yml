@@ -127,7 +127,8 @@ jobs:
         # Bun silently skips a patch whose version no longer resolves, and the
         # release's package signing depends on this one.
       - name: Check the sigstore patch still applies
-        run: grep -qF '"sigstore@4.1.0": "patches/sigstore@4.1.0.patch"' bun.lock
+        run: |
+          grep -qF '"sigstore@4.1.0": "patches/sigstore@4.1.0.patch"' bun.lock
 
       - name: Check workspace sibling version ranges
         run: bun run check:ranges
