@@ -1,4 +1,11 @@
 @import url("@canonical/styles");
+/*
+ * The form package's package-level stylesheet: the `--form-*` tokens, the field
+ * grid, the shared input chrome and the control density rules. Each form
+ * component brings only its own sheet, so a consumer links this one once —
+ * as the SidePanel form story's host page does here.
+ */
+@import url("@canonical/react-ds-global-form/dist/esm/index.css");
 
 /*
  * The shared full-height chain (previewHead in @canonical/storybook-config, #649)
