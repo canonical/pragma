@@ -10,8 +10,9 @@ import type {
  * The dialog behaviour of the SidePanel provider: open/close bookkeeping,
  * focus handoff, Escape, and the imperative handle. It holds no open state —
  * the dialog's native state is the only source of truth — and returns only
- * the plumbing the provider's markup needs: the element ref, the consumer's
- * class name, the remaining native attributes, and the event wiring.
+ * the plumbing the provider needs: the element ref, the `close` action, the
+ * consumer's class name, the remaining native attributes, and the event
+ * wiring.
  */
 const useSidePanelDialog = ({
   onKeyDown,
@@ -143,7 +144,14 @@ const useSidePanelDialog = ({
     [onClose],
   );
 
-  return { className, dialogProps, dialogRef, handleKeyDown, handleClose };
+  return {
+    className,
+    close,
+    dialogProps,
+    dialogRef,
+    handleKeyDown,
+    handleClose,
+  };
 };
 
 export default useSidePanelDialog;

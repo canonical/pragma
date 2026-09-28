@@ -16,6 +16,8 @@ export type UseSidePanelDialogProps = Omit<SidePanelProviderProps, "children">;
 export type UseSidePanelDialogResult = {
   /** The consumer's class name, for the provider to merge with its own. */
   className: string | undefined;
+  /** Close the panel — the same action the imperative handle exposes. */
+  close: () => void;
   /** Every remaining native dialog attribute, spread onto the element. */
   dialogProps: Omit<
     UseSidePanelDialogProps,
