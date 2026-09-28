@@ -147,6 +147,10 @@ export const Default: Story = {
  * The fields are the design system's own `Form` and `Field`. The submit button
  * sits in the footer, outside the `<form>`, so it names the form through its
  * `form` attribute.
+ *
+ * A form in a panel is one column. That needs no surrounding grid: `Form`
+ * takes its columns from a parent grid when it has one, and on its own it
+ * lays its fields out in a single full-width column, keeping its row gap.
  */
 export const WithForm: Story = {
   render: () => (
