@@ -14,11 +14,14 @@ type OwnProps = {
    * consumer element.
    */
   children: ReactNode;
-  /** Accessible name for the close button. Defaults to "Close panel". */
+  /**
+   * Accessible name for the close button.
+   * @default "Close panel"
+   */
   dismissLabel?: string;
   /**
    * Hide the close button, for a panel dismissed only from its footer.
-   * Defaults to false, so the close button is shown.
+   * @default false
    */
   undismissible?: boolean;
 };

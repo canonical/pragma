@@ -41,7 +41,7 @@ const Header = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
-      <span className="title" id={context?.titleId}>
+      <span className="title p" id={context?.titleId}>
         {children}
       </span>
       {context && !undismissible && (

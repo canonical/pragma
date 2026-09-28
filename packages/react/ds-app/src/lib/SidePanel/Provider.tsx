@@ -1,8 +1,8 @@
 import type React from "react";
-import { Children, isValidElement } from "react";
+import { Children, isValidElement, useId, useMemo } from "react";
 import Context from "./Context.js";
 import { Content, Footer, Header } from "./common/index.js";
-import { useSidePanelContextValue, useSidePanelDialog } from "./hooks/index.js";
+import { useSidePanelDialog } from "./hooks/index.js";
 import type { SidePanelProviderProps } from "./types.js";
 import "./styles.css";
 
@@ -15,8 +15,7 @@ const componentCssClassName = "ds side-panel";
  * Structurally, the component is a context provider that renders the panel's
  * markup: it wraps the `<dialog>` in the context its composed parts read,
  * and keeps every piece of panel behaviour — open/close bookkeeping, focus
- * handoff, the imperative handle — in `useSidePanelDialog`, with the context
- * value itself built by `useSidePanelContextValue`.
+ * handoff, the imperative handle — in `useSidePanelDialog`.
  *
  * It renders a **non-modal** `<dialog>` opened with `show()`, so the
  * application behind stays clickable and tabbable.
@@ -71,9 +70,19 @@ const Provider = ({
   children,
   ...props
 }: SidePanelProviderProps): React.ReactElement => {
-  const { className, dialogProps, dialogRef, handleKeyDown, handleClose } =
-    useSidePanelDialog(props);
-  const contextValue = useSidePanelContextValue(dialogRef);
+  const {
+    className,
+    close,
+    dialogProps,
+    dialogRef,
+    handleKeyDown,
+    handleClose,
+  } = useSidePanelDialog(props);
+  // The header's title carries this id, and the dialog is labelled by it.
+  const titleId = useId();
+  // Memoised so the parts reading the context do not re-render every time
+  // the provider does.
+  const contextValue = useMemo(() => ({ close, titleId }), [close, titleId]);
 
   // The header is required: its title is the panel's accessible name, and a
   // panel without one cannot be named. Direct children only — a Header wrapped
@@ -101,7 +110,7 @@ const Provider = ({
         // `aria-label` still reaches the element through the spread, but
         // `aria-labelledby` wins the accessible-name computation, so the
         // title's word is final.
-        aria-labelledby={contextValue.titleId}
+        aria-labelledby={titleId}
         // Focusable so that opening can place focus on the panel itself.
         tabIndex={-1}
         onKeyDown={handleKeyDown}
