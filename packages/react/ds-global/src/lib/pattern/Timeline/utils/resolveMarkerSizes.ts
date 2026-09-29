@@ -48,12 +48,32 @@ function deriveMarkerSizes(
     );
   }
 
-  const typeRunStarts = firstIndexesOfRuns(items.map((item) => item.eventType));
-  return items.map((_, index) => {
-    if (actorRunStarts.has(index)) {
+  // All sizes: large for the first event of each actor run, then type runs
+  // counted afresh within each run's remaining events — medium for the first
+  // event of each type sequence there, small for the rest.
+  let currentActor: string | undefined;
+  let inActorRun = false;
+  let currentType: string | undefined;
+  return items.map((item) => {
+    if (
+      item.actorId !== undefined &&
+      (!inActorRun || item.actorId !== currentActor)
+    ) {
+      inActorRun = true;
+      currentActor = item.actorId;
+      currentType = undefined;
       return "large";
     }
-    if (typeRunStarts.has(index)) {
+    if (item.actorId === undefined) {
+      inActorRun = false;
+      currentActor = undefined;
+    }
+    if (item.eventType === undefined) {
+      currentType = undefined;
+      return "small";
+    }
+    if (item.eventType !== currentType) {
+      currentType = item.eventType;
       return "medium";
     }
     return "small";

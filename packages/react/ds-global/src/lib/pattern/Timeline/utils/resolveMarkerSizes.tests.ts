@@ -21,7 +21,7 @@ describe("resolveMarkerSizes", () => {
     expect(resolveMarkerSizes(items, "small")).toEqual(["small", "small"]);
   });
 
-  it("all-sizes: large per actor run, medium per type run, small for the rest", () => {
+  it("all-sizes: large per actor run, medium per type run within the run, small for the rest", () => {
     const items = [
       item("1", "jane", "comment"),
       item("2", "jane", "comment"),
@@ -32,11 +32,26 @@ describe("resolveMarkerSizes", () => {
     ];
     expect(resolveMarkerSizes(items, "all-sizes")).toEqual([
       "large",
-      "small",
+      "medium",
       "medium",
       "small",
       "large",
-      "small",
+      "medium",
+    ]);
+  });
+
+  it("all-sizes: type runs restart within each actor run", () => {
+    const items = [
+      item("1", "jane", "comment"),
+      item("2", "jane", "comment"),
+      item("3", "john", "comment"),
+      item("4", "john", "comment"),
+    ];
+    expect(resolveMarkerSizes(items, "all-sizes")).toEqual([
+      "large",
+      "medium",
+      "large",
+      "medium",
     ]);
   });
 
