@@ -539,6 +539,7 @@
         "@biomejs/biome": "2.5.14",
         "@canonical/biome-config": "^0.42.0",
         "@canonical/design-tokens": "0.10.0",
+        "@canonical/react-ds-global-form": "^0.42.0",
         "@canonical/router-core": "^0.42.0",
         "@canonical/router-react": "^0.42.0",
         "@canonical/storybook-addon-utils": "^0.42.0",

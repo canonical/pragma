@@ -20,6 +20,11 @@ const componentCssClassName = "ds side-panel-header";
  * right everywhere. The title names the panel through `aria-labelledby`
  * instead, which is what a screen reader announces when the panel opens.
  *
+ * You choose the title's content, not the element it renders in: `children`
+ * always lands inside a Header-owned `<span class="title">`, which carries the
+ * `id` the panel's `aria-labelledby` points at — so the wrapper is fixed and
+ * not replaceable.
+ *
  * @implements ds:apps.subcomponent.side_panel-header
  */
 const Header = ({
