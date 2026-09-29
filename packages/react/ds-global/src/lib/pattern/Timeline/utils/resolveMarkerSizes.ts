@@ -20,16 +20,8 @@ function firstIndexesOfRuns(
   return firsts;
 }
 
-/** Explicit `marker.size` wins, then the derived size, then "medium". */
-export function resolveMarkerSize(
-  item: { marker?: { size?: TimelineMarkerSize } },
-  derived: TimelineMarkerSize | undefined,
-): TimelineMarkerSize {
-  return item.marker?.size ?? derived ?? "medium";
-}
-
-/** Resolve each item's marker size from the combination rules. */
-export function resolveMarkerSizes(
+/** Marker sizes from the combination rules alone, before per-item overrides. */
+function deriveMarkerSizes(
   items: readonly TimelineItem[],
   combination: TimelineMarkerCombination,
 ): TimelineMarkerSize[] {
@@ -66,4 +58,16 @@ export function resolveMarkerSizes(
     }
     return "small";
   });
+}
+
+/**
+ * Resolve each item's marker size from the combination rules. An explicit
+ * `marker.size` on the item wins over the derived size.
+ */
+export default function resolveMarkerSizes(
+  items: readonly TimelineItem[],
+  combination: TimelineMarkerCombination,
+): TimelineMarkerSize[] {
+  const derived = deriveMarkerSizes(items, combination);
+  return items.map((item, index) => item.marker?.size ?? derived[index]);
 }

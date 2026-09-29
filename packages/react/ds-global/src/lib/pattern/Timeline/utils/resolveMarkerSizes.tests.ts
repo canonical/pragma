@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TimelineItem } from "../types.js";
-import { resolveMarkerSizes } from "./markerCombination.js";
+import resolveMarkerSizes from "./resolveMarkerSizes.js";
 
 const item = (
   id: string,
@@ -79,5 +79,14 @@ describe("resolveMarkerSizes", () => {
 
   it("handles an empty list", () => {
     expect(resolveMarkerSizes([], "all-sizes")).toEqual([]);
+  });
+
+  it("lets an explicit marker.size win over the combination", () => {
+    const items = [
+      { ...item("1", "jane", "comment"), marker: { size: "small" as const } },
+      item("2", "john", "comment"),
+    ];
+    expect(resolveMarkerSizes(items, "all-sizes")).toEqual(["small", "large"]);
+    expect(resolveMarkerSizes(items, "large")).toEqual(["small", "large"]);
   });
 });
