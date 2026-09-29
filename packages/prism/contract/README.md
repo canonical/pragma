@@ -185,8 +185,7 @@ holds no contract test.
 
 One gate exists in this package, with another arriving per provider package.
 
-It is, in `src/lib/satisfiesContract.test.ts`. It runs
-the check against hand-maintained illustrations of a compiler emission
+It lives in `src/lib/satisfiesContract.test.ts` and runs the check against hand-maintained illustrations of a compiler emission
 (`src/testing/__fixtures__/emitted*.sdl.txt` — approximations of the shape, not
 byte captures) and pins three properties:
 
@@ -197,16 +196,15 @@ byte captures) and pins three properties:
   `Query.node` — the control that proves the gate has teeth.
 
 Those fixtures are frozen, so on their own they would go on satisfying the
-fixture-era contract forever. `@canonical/ke-graphql`'s own golden SDLs, which
-it pins byte-for-byte against a live `compile()`, live in its source in
-[canonical/pragma-core](https://github.com/canonical/pragma-core) and are not
-published, so no gate here reads them: a change to the emitted shape is caught
-here only once a provider regenerates its SDL and that provider's gate, below,
-runs.
+fixture-era contract forever. The compiler's own golden SDLs live in its source
+in [canonical/pragma-core](https://github.com/canonical/pragma-core) and are not published, so the check against
+a real emission belongs to the providers.
 
 The other gate belongs to each provider package built on this contract:
-it calls `assertSatisfiesContract` on that provider's own SDL, so the gate
-fails the moment that provider drifts. Siting those there rather than here is
+it checks that provider's own SDL, so the gate fails the moment that provider
+drifts. `@canonical/prism-pragma-provider` checks the SDL it emits live from
+the `@canonical/ke-graphql` it pins, so a compiler bump that breaks
+conformance is red on the bump itself. Siting those there rather than here is
 what keeps this package free of any dependency on a particular provider.
 
 The SDL crosses every one of those boundaries as a **string**, so the
