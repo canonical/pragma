@@ -1443,6 +1443,9 @@
       "peerDependencies": {
         "typescript": "^5.9.3 || ^6.0.0 || ^7.0.0",
       },
+      "optionalPeers": [
+        "typescript",
+      ],
     },
     "packages/styles/vanilla-adapter": {
       "name": "@canonical/styles-vanilla-adapter",
