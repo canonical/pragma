@@ -75,19 +75,16 @@ export const StaticInfo: Story = {
     </>
   ),
   play: async ({ canvas }) => {
-    // Wait for the story to mount before clicking. In the composed Storybook
-    // the MSW addon shows a "Loading MSW..." placeholder while its service
-    // worker starts (about two seconds), and the play step starts during it;
-    // findByRole's default one-second wait is too short for that.
     await userEvent.click(
-      await canvas.findByRole(
-        "button",
-        { name: "Toggle panel" },
-        { timeout: 10000 },
-      ),
+      await canvas.findByRole("button", { name: "Toggle panel" }),
     );
   },
   parameters: {
+    // The story mocks no requests. In the composed Storybook the MSW addon
+    // otherwise renders a placeholder until its worker starts, and it starts
+    // the worker only after the play step has finished, so the play step
+    // would wait for a trigger that never renders.
+    msw: { disable: true },
     docs: {
       source: {
         code: `
