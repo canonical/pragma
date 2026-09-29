@@ -80,11 +80,6 @@ export const StaticInfo: Story = {
     );
   },
   parameters: {
-    // The story mocks no requests. In the composed Storybook the MSW addon
-    // otherwise renders a placeholder until its worker starts, and it starts
-    // the worker only after the play step has finished, so the play step
-    // would wait for a trigger that never renders.
-    msw: { disable: true },
     docs: {
       source: {
         code: `
