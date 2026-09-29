@@ -1,0 +1,36 @@
+/* Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.apps {
+  .ds.side-panel-footer {
+    /*
+      Never shrinks. It stays visible because only the content pane scrolls —
+      the footer sits beside it in the panel's flex column, not over it.
+    */
+    flex: none;
+
+    /*
+      Closes the scroll region, marking where the content pane ends and the
+      actions begin.
+
+      The colour is the panel's to own, and is read without a local fallback so
+      the two cannot state different defaults: `--side-panel-color-border` is
+      declared in the panel's `:root` block.
+    */
+    border-block-start: var(--dimension-stroke-thickness-medium) solid
+      var(--side-panel-color-border);
+    /*
+      Inset by margin rather than padding: a border spans the padding box, so
+      padding would run the hairline edge to edge. The margin keeps it stopping
+      short of both panel edges, in line with the text column.
+    */
+    margin-inline: var(--side-panel-padding-inline);
+
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--side-panel-footer-gap);
+    flex-wrap: wrap;
+
+    padding-block: var(--side-panel-footer-padding-block);
+  }
+}
