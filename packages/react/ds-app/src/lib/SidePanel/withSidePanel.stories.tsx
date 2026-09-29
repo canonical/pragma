@@ -75,7 +75,11 @@ export const StaticInfo: Story = {
     </>
   ),
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Toggle panel" }));
+    // findByRole waits for the story to mount; getByRole looks once and can run
+    // before the render lands (it does in the composed Storybook).
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Toggle panel" }),
+    );
   },
   parameters: {
     docs: {
