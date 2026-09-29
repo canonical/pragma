@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { useDateTimeFormats } from "./useDateTimeFormats.js";
+import useDateTimeFormats from "./useDateTimeFormats.js";
 
 describe("useDateTimeFormats", () => {
   it("defaults to absolute and toggles to relative", () => {

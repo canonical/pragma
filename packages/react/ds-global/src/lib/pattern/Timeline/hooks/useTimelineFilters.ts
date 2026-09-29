@@ -5,7 +5,7 @@ import type {
   TimelineItem,
   TimelineSortOrder,
 } from "../types.js";
-import { buildFilterOptions } from "../utils/buildFilterOptions.js";
+import buildFilterOptions from "../utils/buildFilterOptions.js";
 
 type UseTimelineFiltersProps = {
   items: readonly TimelineItem[];
@@ -71,7 +71,7 @@ function sortItems(
  * Filter and sort state for the data-driven Timeline. Filter options are
  * inferred from the items; all filtering and sorting is client-side.
  */
-export function useTimelineFilters({
+export default function useTimelineFilters({
   items,
   filters,
   defaultFilters,
