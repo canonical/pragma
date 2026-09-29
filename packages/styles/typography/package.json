@@ -56,13 +56,5 @@
     "@types/node": "^26.0.0",
     "typescript": "^7.0.2",
     "vitest": "^4.0.18"
-  },
-  "peerDependencies": {
-    "typescript": "^5.9.3 || ^6.0.0 || ^7.0.0"
-  },
-  "peerDependenciesMeta": {
-    "typescript": {
-      "optional": true
-    }
   }
 }
