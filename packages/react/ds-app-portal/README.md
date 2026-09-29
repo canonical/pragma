@@ -9,24 +9,20 @@ Portal-specific components for the Pragma design system. This package provides s
 ## Installation
 
 ```bash
-bun add @canonical/react-ds-app-portal
+bun add @canonical/react-ds-app-portal @canonical/styles
 ```
 
-The package builds on top of `@canonical/react-ds-global`.
-
-`@canonical/styles` comes with it as a dependency, but installing is not importing. Import it once, in your application's entry point:
+Import the design system's styles **first** in your application's entry, before anything that imports a component:
 
 ```ts
 import "@canonical/styles";
 ```
 
-or, from a stylesheet:
+Or, from a stylesheet: `@import url("@canonical/styles");`.
 
-```css
-@import url("@canonical/styles");
-```
+Then mark your root — `<html class="app comfortable">` — as the [`@canonical/styles` README](../../styles/main/README.md) describes. That one import is also what puts this package's stylesheets in a defined order against the rest of the design system's: see [Every component stylesheet is in `ds.components.apps-portal`](#every-component-stylesheet-is-in-dscomponentsapps-portal) below.
 
-Then mark your root — `<html class="ds app comfortable">` — as the [`@canonical/styles` README](../../styles/main/README.md) describes. That one import is also what puts this package's stylesheets in a defined order against the rest of the design system's: see [Every component stylesheet is in `ds.components.apps-portal`](#every-component-stylesheet-is-in-dscomponentsapps-portal) below.
+Each component brings its own stylesheet when you import it.
 
 ## Usage
 
