@@ -21,8 +21,14 @@ import {
 
 const dateTimeLabels = new Map<string, string>([
   [ago(25, 0), "25 days ago"],
+  [ago(25, 1), "25 days ago"],
+  [ago(25, 2), "25 days ago"],
+  [ago(25, 3), "25 days ago"],
   [ago(20, 0), "20 days ago"],
+  [ago(20, 1), "20 days ago"],
+  [ago(20, 2), "20 days ago"],
   [ago(5, 0), "5 days ago"],
+  [ago(5, 1), "5 days ago"],
   [ago(0, 4), "4 hours ago"],
 ]);
 
@@ -59,7 +65,7 @@ export const JD = { initials: "JD" };
 export const mergeProposalItems: TimelineItem[] = [
   {
     id: "commit-6392cf8",
-    dateTime: ago(25),
+    dateTime: ago(25, 3),
     actorId: "alvarez",
     actorName: "Alvarez Daniella",
     eventType: "commit",
@@ -80,7 +86,7 @@ export const mergeProposalItems: TimelineItem[] = [
   },
   {
     id: "edited-description",
-    dateTime: ago(25),
+    dateTime: ago(25, 2),
     actorId: "alvarez",
     actorName: "Alvarez Daniella",
     eventType: "description",
@@ -95,7 +101,7 @@ export const mergeProposalItems: TimelineItem[] = [
   },
   {
     id: "changed-draft",
-    dateTime: ago(25),
+    dateTime: ago(25, 1),
     actorId: "alvarez",
     actorName: "Alvarez Daniella",
     eventType: "status",
@@ -115,7 +121,7 @@ export const mergeProposalItems: TimelineItem[] = [
   },
   {
     id: "john-description",
-    dateTime: ago(20),
+    dateTime: ago(20, 2),
     actorId: "john",
     actorName: "John Santa Pietro di Doe",
     eventType: "description",
@@ -125,7 +131,7 @@ export const mergeProposalItems: TimelineItem[] = [
   },
   {
     id: "john-title",
-    dateTime: ago(20),
+    dateTime: ago(20, 1),
     actorId: "john",
     actorName: "John Santa Pietro di Doe",
     eventType: "title",
@@ -158,7 +164,7 @@ export const mergeProposalItems: TimelineItem[] = [
   }),
   {
     id: "commits-98a0c9a",
-    dateTime: ago(5),
+    dateTime: ago(5, 1),
     actorId: "alvarez",
     actorName: "Alvarez Daniella",
     eventType: "commit",
