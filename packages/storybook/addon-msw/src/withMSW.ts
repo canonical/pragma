@@ -1,18 +1,17 @@
 import { type SetupWorker, setupWorker } from "msw/browser";
-import React from "react";
 import {
   useEffect,
   useGlobals,
   useParameter,
   useRef,
-  useState,
 } from "storybook/internal/preview-api";
 import type {
+  LoaderFunction,
   Renderer,
   PartialStoryFn as StoryFunction,
 } from "storybook/internal/types";
 import { KEY, PARAM_KEY } from "./constants.js";
-import type { MswGlobals, MswParameter } from "./types.js";
+import type { MswParameter } from "./types.js";
 
 // Singleton worker instance
 let worker: SetupWorker | null = null;
@@ -42,67 +41,74 @@ const initializeWorker = async (): Promise<SetupWorker | null> => {
   return workerPromise;
 };
 
+/**
+ * Whether MSW should serve this story. The toolbar stores the global as a
+ * boolean, and only an explicit `false` turns it off; a story opts out with
+ * `parameters.msw.disable`.
+ */
+const isActive = (
+  globalValue: unknown,
+  parameter: MswParameter | undefined,
+): boolean => globalValue !== false && !(parameter?.disable ?? false);
+
+/**
+ * Install the story's handlers on a started worker, or clear them when MSW is
+ * off for the story. A worker that failed to start leaves the story to run
+ * against the network.
+ */
+const applyHandlers = async (
+  active: boolean,
+  handlers: MswParameter["handlers"],
+): Promise<void> => {
+  if (!active) {
+    worker?.resetHandlers();
+    return;
+  }
+  const activeWorker = await initializeWorker();
+  if (!activeWorker) return;
+  activeWorker.resetHandlers();
+  if (handlers && handlers.length > 0) {
+    activeWorker.use(...handlers);
+  }
+};
+
+/**
+ * Starts the worker and installs the story's handlers before the story
+ * renders. Storybook awaits loaders before it renders a story and before its
+ * play function runs, so the story's first render already has its mocks and a
+ * play function never waits on MSW.
+ */
+export const mswLoader: LoaderFunction<Renderer> = async ({
+  globals,
+  parameters,
+}) => {
+  const parameter = parameters[PARAM_KEY] as MswParameter | undefined;
+  await applyHandlers(isActive(globals[KEY], parameter), parameter?.handlers);
+  return {};
+};
+
+/**
+ * Keeps the handlers in step with the toolbar toggle while a story is shown.
+ * It never holds the story back: the loader has already started the worker,
+ * and preview-hook effects only run once the story and its play function have
+ * finished, so gating the render here would deadlock a play function.
+ */
 export const withMSW = (StoryFn: StoryFunction<Renderer>) => {
   const [globals] = useGlobals();
-  const mswGlobals = globals[KEY] as MswGlobals | undefined;
-  const mswParameter = useParameter<MswParameter>(PARAM_KEY);
+  const parameter = useParameter<MswParameter>(PARAM_KEY);
+  const active = isActive(globals[KEY], parameter);
 
-  const isEnabled = mswGlobals?.enabled ?? true;
-  const isDisabled = mswParameter?.disable ?? false;
-  const handlers = mswParameter?.handlers;
-
-  // Effects of Storybook preview hooks only run once the story has rendered,
-  // which includes its play function. When MSW is off there is nothing to wait
-  // for, so render the story straight away rather than a placeholder the play
-  // function would see instead of the story.
-  const [isWorkerReady, setIsWorkerReady] = useState(!isEnabled || isDisabled);
-
-  // Store handlers in a ref to avoid re-running effect on every render
-  // The handlers array reference changes on each render even if contents are same
-  const handlersRef = useRef(handlers);
-  handlersRef.current = handlers;
+  // The handlers array is a new reference on every render even when its
+  // contents are the same; read it through a ref so the effect does not re-run.
+  const handlersRef = useRef(parameter?.handlers);
+  handlersRef.current = parameter?.handlers;
 
   useEffect(() => {
-    if (!isEnabled || isDisabled) {
-      setIsWorkerReady(true);
-      return;
-    }
-
-    let cancelled = false;
-
-    const setupHandlers = async () => {
-      const activeWorker = await initializeWorker();
-      if (cancelled) return;
-
-      // If worker failed to initialize, just mark as ready and continue without MSW
-      if (!activeWorker) {
-        setIsWorkerReady(true);
-        return;
-      }
-
-      const currentHandlers = handlersRef.current;
-      if (currentHandlers && currentHandlers.length > 0) {
-        activeWorker.resetHandlers();
-        activeWorker.use(...currentHandlers);
-      } else {
-        activeWorker.resetHandlers();
-      }
-      setIsWorkerReady(true);
-    };
-
-    setupHandlers();
-
+    void applyHandlers(active, handlersRef.current);
     return () => {
-      cancelled = true;
-      if (worker) {
-        worker.resetHandlers();
-      }
+      worker?.resetHandlers();
     };
-  }, [isEnabled, isDisabled]);
-
-  if (!isWorkerReady) {
-    return React.createElement("div", {}, "Loading MSW...");
-  }
+  }, [active]);
 
   return StoryFn();
 };
