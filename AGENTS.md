@@ -27,7 +27,7 @@ there; once it is released, the pin here is bumped in every manifest that names 
 - **Conventional / semantic commits**, enforced. CI (`.github/workflows/pr-lint.yml`)
   rejects a PR whose **title** is not Conventional-Commits compliant, so the title
   needs a `type(scope): subject` form, e.g. `feat(ds-global): …`, `fix(router): …`,
-  `docs(tokens): …`, `chore(deps): …`, `refactor(cli): …`.
+  `docs(tokens): …`, `chore(deps): …`, `refactor(styles): …`.
 - **Keep commits atomic.** One logical change per commit; the diff should be reviewable
   on its own and tell a single story. Bundling unrelated items into one commit/PR is
   allowed but should be **rare** and called out in the PR body (a "drive-by" line).

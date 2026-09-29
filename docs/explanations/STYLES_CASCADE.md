@@ -287,7 +287,7 @@ the three element layers out of pragma's source files and compares them with the
 to the reset or the engine that the copy does not carry fails the adapter's build. The copy is
 written by hand and checked by machine — not maintained by memory, and not generated at build time,
 because nothing here is transformed between what a contributor writes and what the browser runs
-([no magic](https://github.com/canonical/pragma-core/blob/main/CONSTITUTION.md)).
+([no magic](https://github.com/canonical/pragma-core/blob/main/CONSTITUTION.md#vi-no-magic)).
 
 ### The one file with `@scope` in it
 

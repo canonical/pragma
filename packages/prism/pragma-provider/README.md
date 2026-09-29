@@ -131,7 +131,9 @@ contract on every run, so the structural head those captures are stale against i
 unmeasured. Its subject is a **committed artifact**, not a live emission, so it cannot
 see that file drift from what `createPragmaProvider` would emit today. Closing that
 second gap needs a boot with a populated refs cache; the test's own header states the
-same limit.
+same limit. What a live emission can show without one — that the compiler this package
+pins still satisfies the contract — `createPragmaProvider.test.ts` checks over the
+hermetic corpus.
 
 ---
 
