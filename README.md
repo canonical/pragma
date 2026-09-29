@@ -2,13 +2,15 @@
 
 Pragma is Canonical's implementation of the [Design System](https://github.com/canonical/design-system). It provides components, CSS styles, and developer tooling for building consistent user interfaces across Canonical's web properties. React and Svelte 5 are the supported frameworks.
 
+The toolchain these packages are built with — the `pragma` and `summon` command-line tools and their generators, the webarchitect linter, the shared Biome, TypeScript and Renovate configurations, the knowledge engine, the design tokens and the design-system models — lives in [canonical/pragma-core](https://github.com/canonical/pragma-core). This repository consumes those packages from npm, each pinned to an exact version. A change to one of them is a pull request in pragma-core; once it is released, the pin here is bumped.
+
 ## Quick Start
 
 Clone the repository and install dependencies. The installation step also builds all packages, which takes roughly 30 seconds on first run.
 
 ```bash
-git clone https://github.com/canonical/pragma
-cd pragma
+git clone https://github.com/canonical/pragma-web
+cd pragma-web
 bun install
 ```
 
@@ -51,8 +53,7 @@ See [Storybook](#storybook) below for how to run a package's Storybook server an
   Then use `summon application react my-app` to scaffold an app,
   `summon component react src/lib/MyComponent` to scaffold components, or `summon --help` for
   all installed generators.
-  (To iterate on the generators from this monorepo, run `bun packages/cli/summon/dist/src/bin.js`
-  after `bun run build`, or `bun link` the built package.)
+  (The generators are developed in [canonical/pragma-core](https://github.com/canonical/pragma-core).)
 
 
 **Nice to have:**
@@ -66,7 +67,7 @@ See [Storybook](#storybook) below for how to run a package's Storybook server an
 **Notes:**
 
 - Node 22.x earlier than 22.13 is not supported by Lerna, and versions before 22.12 also have module resolution issues.
-- Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/issues/226) and should be avoided; Lerna does not support it, nor Node 25.
+- Node 23 has a [known compatibility issue](https://github.com/canonical/pragma-web/issues/226) and should be avoided; Lerna does not support it, nor Node 25.
 - Installing Node via the snap package is not recommended as it may cause build issues.
 - Installing Bun via the snap package is not recommended as it may cause permission issues. This is a known [issue](https://github.com/shakeelansari63/snap-packages/issues/79). Use the official installation script instead.
 
@@ -135,7 +136,7 @@ These packages provide the foundation that component packages build upon.
 
 **@canonical/ds-assets** contains icons and shared visual assets. Icons use `currentColor` for fill, allowing them to inherit text colour from their context, and a 16x16 viewBox as the standard size.
 
-**@canonical/utils** provides battle-tested, framework-neutral utility functions: string casing, `invariant`, `indent` and `join`. Design-system helpers with a runtime of their own — navigation trees, `debounce`, `throttle`, `humanizeNumber`, `pluralize` — live in **@canonical/ds-utils** under Runtime. Functions only enter either package after proving useful across multiple packages; premature abstraction is actively avoided.
+**@canonical/utils**, from pragma-core, provides battle-tested, framework-neutral utility functions: string casing, `invariant`, `indent` and `join`. Design-system helpers with a runtime of their own — navigation trees, `debounce`, `throttle`, `humanizeNumber`, `pluralize` — live in **@canonical/ds-utils** under Runtime. Functions only enter either package after proving useful across multiple packages; premature abstraction is actively avoided.
 
 ### Styles Architecture
 
@@ -149,11 +150,11 @@ Component styles live with their components rather than in the styles packages. 
 
 ### Developer Tooling
 
-**@canonical/webarchitect** validates that packages conform to architectural standards. Rather than enforcing conventions through runtime magic, it uses JSON Schema-based rulesets to verify package.json structure, TypeScript configuration, Biome setup, and license compliance. Most packages run `bun run check:webarchitect` as part of their check script. The schemas serve as executable documentation: they describe what valid structure looks like while simultaneously enforcing it.
+**@canonical/webarchitect**, from pragma-core, validates that packages conform to architectural standards. Rather than enforcing conventions through runtime magic, it uses JSON Schema-based rulesets to verify package.json structure, TypeScript configuration, Biome setup, and license compliance. Most packages run `bun run check:webarchitect` as part of their check script. The schemas serve as executable documentation: they describe what valid structure looks like while simultaneously enforcing it.
 
-Three rulesets cover the common cases. The `library` ruleset targets reusable packages (LGPL-3.0 licensing by default). The `tool` ruleset targets CLI tools and applications (GPL-3.0). The `tool-ts` ruleset handles TypeScript-only tools that run directly with Bun without a build step. Further rulesets (`base`, `package`, `package-react`, `package-svelte`, `assets`) cover specialised cases; see [`packages/webarchitect/rulesets`](packages/webarchitect/rulesets).
+Three rulesets cover the common cases. The `library` ruleset targets reusable packages (LGPL-3.0 licensing by default). The `tool` ruleset targets CLI tools and applications (GPL-3.0). The `tool-ts` ruleset handles TypeScript-only tools that run directly with Bun without a build step. Further rulesets (`base`, `package`, `package-react`, `package-svelte`, `assets`) cover specialised cases; see [its rulesets](https://github.com/canonical/pragma-core/tree/main/packages/tools/webarchitect/rulesets).
 
-**Summon** scaffolds new code. The `@canonical/summon` CLI (at `packages/cli/summon`) is a small framework that discovers generator packages installed alongside it: `@canonical/summon-component` scaffolds React, Svelte, and Lit components (`summon component react src/lib/MyComponent`), `@canonical/summon-package` scaffolds monorepo packages, `@canonical/summon-application` scaffolds applications, domains, pages, and wrappers, and `@canonical/summon-monorepo` scaffolds entire monorepos — all built on the `@canonical/summon-core` framework (`packages/summon/*`). The component generator creates the component file, types, styles, stories, unit tests, and SSR tests following the [standard structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md). The `pragma` CLI mounts the summon generator tree under `create` — `pragma create component react src/components/Button` is `summon component react src/components/Button` wearing a different binary (same tree segments, same prompt-derived flags, same wizard, byte-identical output, `--dry-run`/`--undo`/`--yes` alike). Each generator package ships its own template tree, so `create component`, `create package`, and `create application` all run from a published install. Parity is EXECUTED rather than written down: `crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares what they emit. See the [Prerequisites](#prerequisites) section for installation.
+**Summon** scaffolds new code. The `@canonical/summon` CLI, from pragma-core, is a small framework that discovers generator packages installed alongside it: `@canonical/summon-component` scaffolds React, Svelte, and Lit components (`summon component react src/lib/MyComponent`), `@canonical/summon-package` scaffolds monorepo packages, `@canonical/summon-application` scaffolds applications, domains, pages, and wrappers, and `@canonical/summon-monorepo` scaffolds entire monorepos — all built on the `@canonical/summon-core` framework. The component generator creates the component file, types, styles, stories, unit tests, and SSR tests following the [standard structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md). The `pragma` CLI mounts the summon generator tree under `create` — `pragma create component react src/components/Button` is `summon component react src/components/Button` wearing a different binary (same tree segments, same prompt-derived flags, same wizard, byte-identical output, `--dry-run`/`--undo`/`--yes` alike). Each generator package ships its own template tree, so `create component`, `create package`, and `create application` all run from a published install. Parity is EXECUTED rather than written down: `crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares what they emit. See the [Prerequisites](#prerequisites) section for installation.
 
 ## Component Structure
 
@@ -206,7 +207,7 @@ Chromatic workflows run visual regression tests for component packages. Each Sto
 
 The release workflow runs manually from GitHub Actions. It prompts for a release type (experimental, alpha, beta, rc, or stable), runs the full test suite, bumps versions using Lerna's conventional commit analysis, and publishes to npm. See the [versioning guide](docs/VERSIONING.md) for commit message format and release process details.
 
-See the [webarchitect documentation](packages/webarchitect/README.md) for details on architecture validation and ruleset configuration.
+See the [webarchitect documentation](https://github.com/canonical/pragma-core/blob/main/packages/tools/webarchitect/README.md) for details on architecture validation and ruleset configuration.
 
 ## Documentation
 
@@ -214,7 +215,7 @@ The `docs/` folder contains guides for working with the monorepo:
 
 | Guide | Description |
 |-------|-------------|
-| [Constitution](CONSTITUTION.md) | Design principles and decision rationale |
+| [Constitution](https://github.com/canonical/pragma-core/blob/main/CONSTITUTION.md) | Design principles and decision rationale |
 | [Domains](docs/explanations/DOMAINS.md) | What each package folder is for, and why folder and npm name may differ |
 | [Component Folder Structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md) | Standard component anatomy and conventions |
 | [The Cascade Contract](docs/explanations/STYLES_CASCADE.md) | Why the stylesheets are layered the way they are, and where a mixed page's confinement lives |
@@ -226,7 +227,7 @@ The `docs/` folder contains guides for working with the monorepo:
 
 ## Package Reference
 
-The following tables list all workspace packages with their location and purpose. Packages marked **internal** have `"private": true` in their package.json and are not published to npm.
+The following tables list all workspace packages with their location and purpose. The packages consumed from pragma-core are listed in [its README](https://github.com/canonical/pragma-core#readme). Packages marked **internal** have `"private": true` in their package.json and are not published to npm.
 
 ### React Components
 
@@ -283,12 +284,8 @@ The following tables list all workspace packages with their location and purpose
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@canonical/ke` | `packages/runtime/ke` | Headless triple store runtime built on Oxigraph WASM |
-| `@canonical/ke-graphql` | `packages/runtime/ke-graphql` | OWL to GraphQL compiler for the ke triple store |
 | `@canonical/router-core` | `packages/runtime/router` | Framework-agnostic router core built on flat route triplets |
 | `@canonical/i18n-core` | `packages/runtime/i18n` | Framework-agnostic internationalization core built on native Intl |
-| `@canonical/task` | `packages/runtime/task` | Monadic effect framework for composable, testable, dry-runnable CLI operations |
-| `@canonical/harnesses` | `packages/runtime/harnesses` | AI harness detection and MCP config read/write (Claude Code, Cursor, Windsurf, Cline, Roo Code) |
 | `@canonical/ds-utils` | `packages/runtime/ds-utils` | Framework-agnostic design system helpers: navigation trees, debounce, throttle, humanizeNumber, pluralize |
 
 ### Prism
@@ -308,20 +305,6 @@ The documentation-site layer. The dependency arrow points one way — see "The d
 | `@canonical/ds-types` | `packages/ds-types` | TypeScript types for modifier families and component props |
 | `@canonical/ds-assets` | `packages/ds-assets` | Icons and shared visual assets |
 | `@canonical/ds-implementations` | `packages/semantics/ds-implementations` | The implementation graph as Turtle (RDF), generated from `@implements` annotations |
-| `@canonical/utils` | `packages/utils` | Utility functions: casing, invariant, indent, and join |
-
-### Developer Tooling
-
-| Package | Path | Description |
-|---------|------|-------------|
-| `@canonical/webarchitect` | `packages/webarchitect` | Architecture validation CLI with JSON Schema rulesets |
-| `@canonical/pragma-cli` | `packages/cli/pragma` | CLI and MCP server for querying the design system |
-| `@canonical/summon` | `packages/cli/summon` | Interactive code generator CLI with Ink UI and shell completion |
-| `@canonical/summon-core` | `packages/summon/core` | Code generation framework: generator definitions, templates, discovery |
-| `@canonical/summon-component` | `packages/summon/component` | React, Svelte, and Lit component generators |
-| `@canonical/summon-package` | `packages/summon/package` | Package generator for scaffolding npm packages |
-| `@canonical/summon-application` | `packages/summon/application` | Application scaffolding generators: application, domain, page, wrapper |
-| `@canonical/summon-monorepo` | `packages/summon/monorepo` | Monorepo generator: Bun + Lerna monorepos with CI and shared config |
 
 ### Storybook
 
@@ -338,9 +321,6 @@ The documentation-site layer. The dependency arrow points one way — see "The d
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@canonical/biome-config` | `configs/biome` | Shared Biome configuration for linting and formatting |
-| `@canonical/renovate-config` | `configs/renovate` | Shared Renovate configuration for Canonical monorepos |
-| `@canonical/typescript-config` | `configs/typescript` | Base TypeScript configuration |
 | `@canonical/typescript-config-react` | `configs/typescript-react` | TypeScript configuration extending base with React settings |
 | `@canonical/typescript-config-lit` | `configs/typescript-lit` | TypeScript configuration for Lit Web Components projects |
 | `@canonical/typescript-config-svelte` | `configs/typescript-svelte` | TypeScript configuration for Svelte projects |

@@ -2,7 +2,7 @@
 
 Framework-agnostic helpers for the Pragma design system. These are the utilities the design system's own components are built on — navigation-tree logic, rate limiting and number formatting — shared by the React and Svelte implementations alike.
 
-For generic string and assertion helpers with no design-system meaning (`casing`, `invariant`, `indent`, `join`), see [`@canonical/utils`](../../utils/README.md).
+For generic string and assertion helpers with no design-system meaning (`casing`, `invariant`, `indent`, `join`), see [`@canonical/utils`](https://github.com/canonical/pragma-core/blob/main/packages/shared/utils/README.md).
 
 ## Installation
 

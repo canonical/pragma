@@ -30,15 +30,15 @@ The generated package is ordinary code with no special relationship to the gener
 
 Not every piece of functionality deserves its own package. The overhead of separate configuration, versioning, and maintenance means that new packages should earn their existence. Consider creating a new package when the functionality has consumers beyond a single application, when it represents a coherent unit that could be versioned independently, or when it belongs to a different architectural layer than existing packages.
 
-Extend an existing package instead when the functionality is specific to one consumer, when it depends heavily on the internals of an existing package, or when splitting it would create circular dependencies. The `@canonical/utils` package, for example, grows when new utilities prove useful across multiple packages. Adding a function to utils is simpler than creating a new package for that function alone.
+Extend an existing package instead when the functionality is specific to one consumer, when it depends heavily on the internals of an existing package, or when splitting it would create circular dependencies. The `@canonical/ds-utils` package, for example, grows when new helpers prove useful across multiple packages. Adding a function to ds-utils is simpler than creating a new package for that function alone.
 
 ## Package locations
 
 Packages live in subdirectories of `packages/` based on their category. The location determines how consumers import the package and influences CI path filtering.
 
-The top level `packages/` directory contains core infrastructure packages like `ds-types`, `ds-assets`, `utils`, and `webarchitect`. These packages have few dependencies and serve as foundations for other packages.
+The top level `packages/` directory contains core infrastructure packages like `ds-types` and `ds-assets`. These packages have few dependencies and serve as foundations for other packages.
 
-Framework-agnostic runtime packages live in `packages/runtime/`. These are the engines the framework bindings are built on — `i18n-core`, `router-core` and `ds-utils` are shared by the React, Svelte and Lit implementations, while `task`, `harnesses` and `ke` are runtimes for Node and the CLI. If a library holds logic rather than markup, and more than one framework package needs it, it belongs here rather than at the top level.
+Framework-agnostic runtime packages live in `packages/runtime/`. These are the engines the framework bindings are built on — `i18n-core`, `router-core` and `ds-utils` are shared by the React, Svelte and Lit implementations. If a library holds logic rather than markup, and more than one framework package needs it, it belongs here rather than at the top level.
 
 React component packages live in `packages/react/`. The subdirectory structure mirrors the component tier hierarchy: `ds-global` for universal components, `ds-app` for application components, and specialized packages like `ds-app-launchpad` for domain-specific components.
 
@@ -46,7 +46,7 @@ Style packages live in `packages/styles/`. The structure reflects the CSS layeri
 
 Storybook addons live in `packages/storybook/`. These packages extend Storybook with project-specific functionality like the baseline grid overlay and MSW integration.
 
-Developer tools live directly in `packages/`. The `webarchitect` package is an example. If you are adding a new CLI tool or development utility, it belongs at this level.
+Developer tools — the command-line tools, the generators, the linters and the shared Biome and TypeScript configurations — live in [canonical/pragma-core](https://github.com/canonical/pragma-core). If you are adding a new CLI tool or development utility, it belongs there.
 
 ### A new category directory needs a new workspace glob
 
@@ -61,8 +61,6 @@ The root `package.json` `workspaces` array lists each category explicitly, and e
     "packages/react/*",
     "packages/runtime/*",
     "packages/storybook/*",
-    "packages/summon/*",
-    "packages/cli/*",
     "packages/styles/*",
     "packages/svelte/*",
     "packages/lit/*",
@@ -137,13 +135,13 @@ The package.json file defines the package identity, exports, scripts, and depend
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "tsc -p tsconfig.build.json",
@@ -357,7 +355,7 @@ The key differences: `module` and `types` point to TypeScript source files, `fil
 > `dist/esm` with `tsc -p tsconfig.build.json`, point `main`/`module`/`exports`/`bin` at the
 > built JS, set `files: ["dist"]`, and use `#!/usr/bin/env node`. Node cannot execute `.ts`,
 > and `__dirname`/`import pkg from "./package.json"` behave differently under Node ESM. See the
-> `@canonical/summon` / `@canonical/summon-application` packages for a worked example, including
+> `@canonical/summon` / `@canonical/summon-application` packages in [canonical/pragma-core](https://github.com/canonical/pragma-core) for a worked example, including
 > copying non-`.ts` template assets into `dist` (they are not compiled by `tsc`).
 
 The `bin` field declares the CLI entry point. After installation, users can run the tool by name.
@@ -404,7 +402,7 @@ The tag workflow publishes all public packages to npm. Packages with `"private":
 
 If your PR introduces a brand-new npm package, the first publish must be done manually before regular release automation can pick it up. **This is a manual human step — it requires interactive npm authentication (2FA) and access to npmjs.com, so it cannot be automated or performed by an AI agent.** From inside the package directory, run `npm publish --access public` when the package is ready. After publishing, run `bun run publish:status` from the repository root to confirm the package appears in the registry.
 
-The automated release workflow publishes via [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers), so after the first manual publish you must configure a trusted publisher for the new package on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`) and set its publishing access to disallow tokens. The order matters: the package must already be published, because the trusted-publisher settings live on the package's npm page, which does not exist until the first publish — you cannot configure OIDC in advance. Until the trusted publisher is configured, the tag workflow cannot publish new versions of the package. You can confirm which packages are publishing with provenance by running `bun run publish:status` from the repository root and reading the Provenance column. See [How to publish a package](./PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing) for the full procedure and [Verifying provenance](./PUBLISH_A_PACKAGE.md#verifying-provenance) for how to interpret the status output.
+The automated release workflow publishes via [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers), so after the first manual publish you must configure a trusted publisher for the new package on npmjs.com (repo `canonical/pragma-web`, workflow `tag.yml`) and set its publishing access to disallow tokens. The order matters: the package must already be published, because the trusted-publisher settings live on the package's npm page, which does not exist until the first publish — you cannot configure OIDC in advance. Until the trusted publisher is configured, the tag workflow cannot publish new versions of the package. You can confirm which packages are publishing with provenance by running `bun run publish:status` from the repository root and reading the Provenance column. See [How to publish a package](./PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing) for the full procedure and [Verifying provenance](./PUBLISH_A_PACKAGE.md#verifying-provenance) for how to interpret the status output.
 
 Chromatic workflows require explicit configuration because they run per-package with path filtering. If your package has a Storybook, create a workflow file that triggers on changes to the package and its dependencies. The workflow template at `.github/workflows/chromatic._template.yml` provides the common structure.
 
@@ -438,4 +436,4 @@ Integration:
 - License matches ruleset requirements (LGPL-3.0 for library, GPL-3.0 for tool)
 - check:webarchitect script uses the correct ruleset
 - First-time publish for new packages completed manually by running `npm publish --access public` from inside the package directory, then verified with `bun run publish:status`
-- Trusted publisher configured on npmjs.com for the new package (repo `canonical/pragma`, workflow `tag.yml`) and publishing access set to disallow tokens, so the automated workflow can publish future versions
+- Trusted publisher configured on npmjs.com for the new package (repo `canonical/pragma-web`, workflow `tag.yml`) and publishing access set to disallow tokens, so the automated workflow can publish future versions

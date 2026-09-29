@@ -1,8 +1,15 @@
 # AGENTS.md — Working on a Pragma PR
 
-Guidance for AI agents (and humans) contributing to `canonical/pragma`. For deeper
+Guidance for AI agents (and humans) contributing to `canonical/pragma-web`. For deeper
 setup and monorepo mechanics see [`old/CONTRIBUTING.md`](old/CONTRIBUTING.md); this
 file is the PR workflow contract.
+
+The toolchain packages — the `pragma` and `summon` command-line tools and generators,
+`webarchitect`, the Biome, TypeScript and Renovate configurations, `utils`, `task`, `ke`,
+`ke-graphql`, `harnesses`, the design tokens and the design-system models — live in
+[`canonical/pragma-core`](https://github.com/canonical/pragma-core) and are consumed
+here from npm, pinned to exact versions. A change to one of them is a pull request
+there; once it is released, the pin here is bumped in every manifest that names it.
 
 ## Toolchain
 
@@ -145,8 +152,8 @@ a new file should be indistinguishable in style from its neighbours.
 ### The documentation site depends on the runtime, never the reverse
 
 `packages/prism/*` and the documentation-site app are the site layer. They may
-depend on anything below them — `packages/runtime/*`, `packages/cli/*`,
-`packages/summon/*`, and the component packages.
+depend on anything below them — `packages/runtime/*`, the component packages, and
+the toolchain packages from npm (`@canonical/ke`, `@canonical/ke-graphql`).
 
 **Nothing in those depended-upon packages may depend on `packages/prism/*` —
 not even as a devDependency.** The usual pressure to reverse the arrow is a
@@ -157,9 +164,8 @@ be independent of. Site-side packages hold those gates instead, reading whatever
 they need to read.
 
 Nothing enforces this, so it is a review obligation: a new `@canonical/prism-*`
-entry in a manifest under `packages/runtime/`, `packages/cli/`,
-`packages/summon/` or a component package is a change to challenge, whatever it
-is for.
+entry in a manifest under `packages/runtime/` or a component package is a change
+to challenge, whatever it is for.
 
 ### Module imports — use relative paths, not `#` subpath aliases
 
@@ -180,9 +186,8 @@ This applies to every **`tsc`-built** package — the discriminator is the build
 not the directory. Most libraries under `packages/` are `tsc`-built and are in scope.
 Code that a **bundler** compiles may still use `#` aliases, because the bundler inlines
 them so nothing is published verbatim: this covers Vite-bundled apps (`apps/*` and
-scaffolded boilerplates) **and** Bun-bundled published packages under `packages/` (e.g.
-the CLI at `packages/cli/pragma`). When unsure, check whether the package's build script
-runs `tsc` or a bundler.
+scaffolded boilerplates) **and** Bun-bundled published packages under `packages/`.
+When unsure, check whether the package's build script runs `tsc` or a bundler.
 
 ## CI workflows are global — do not add checks for one package
 
@@ -207,12 +212,7 @@ precedent.
   does not, however important that package is.
 - **If you believe you need a workflow change, say why in the PR body** and
   expect it to be challenged.
-- **One target is deliberately off CI and must stay off it:** the `pragma`
-  CLI's perf-budget pass (`packages/cli/pragma`, `bun run test:perf`). Owner
-  ruling 2026-08-30, restated 2026-09-10 — a wall-clock spawn measurement
-  cannot mean anything on a shared runner. Nothing reaches it today: not
-  `test`, not an Nx target, not a hook. Putting it back on any CI target
-  reverses a ruling; see `docs/CI.md` and `packages/cli/pragma/BUDGETS.md`.
+
 ### React component props — extend the root element's native props
 
 A React component's props type **must extend the native props of the element it

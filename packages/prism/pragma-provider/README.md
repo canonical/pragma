@@ -1,7 +1,7 @@
 # @canonical/prism-pragma-provider
 
 **The pragma provider for the Prism docsite contract.** It reads pragma's Turtle
-corpus, compiles it with [`@canonical/ke-graphql`](../../runtime/ke-graphql) into an
+corpus, compiles it with [`@canonical/ke-graphql`](https://github.com/canonical/pragma-core/tree/main/packages/engine/ke-graphql) into an
 executable GraphQL schema, and serves it as a fetch-native handler.
 
 It exists because the docsite app should not. Until this package landed,
@@ -108,7 +108,8 @@ collector walks, small enough to read in one sitting and complete enough to make
 property falsifiable: two roots merging, dot-prefixed files skipped, the exclusion
 dropped, channel-dotted references escaped, prefixes harvested, both actionable failure
 messages, and the anatomy collision in both directions. See that directory's README for
-what each file is for. Precedent: `packages/runtime/ke-graphql/demo/graph.ttl`.
+what each file is for. Precedent: `demo/graph.ttl` in `@canonical/ke-graphql`
+(canonical/pragma-core).
 
 ### The two SDL captures are stale, and it is written down
 

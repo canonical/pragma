@@ -10,7 +10,7 @@ The reference standards that this guide fulfils are maintained in the [code-stan
 ### 3 Getting started
 1. Select a tier. For example, the core tier packages are located in [`packages/react/ds-global`](../../packages/react/ds-global) and [`packages/react/ds-global-form`](../../packages/react/ds-global-form).
 2. Navigate to the `src/ui` folder of the selected tier.
-3. Use the [summon generator](../../packages/summon/component/README.md) to generate starting files for your component: `summon component react --component-path src/lib/Button --yes`.
+3. Use the [summon generator](https://github.com/canonical/pragma-core/blob/main/packages/summon/component/README.md) to generate starting files for your component: `summon component react --component-path src/lib/Button --yes`.
 4. Your Button folder should now contain the following files:
 ```
    Button
