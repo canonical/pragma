@@ -1,6 +1,6 @@
 import type { Meta, StoryFn } from "@storybook/react-vite";
 import { useState } from "react";
-import { ago } from "../../../../../storybook/timeline/fixtures.js";
+import { ago } from "../../../../../storybook/timeline/story-utils.js";
 import Component from "./DateTime.js";
 
 const meta = {
