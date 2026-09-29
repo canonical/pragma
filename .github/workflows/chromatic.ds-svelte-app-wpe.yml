@@ -5,9 +5,7 @@ on:
     paths:
       - configs/storybook/**
       - packages/ds-assets/**
-      - packages/tokens/**
       - packages/styles/**
-      - packages/utils/**
       - packages/runtime/ds-utils/**
       # TODO: Uncomment once the wpe package consumes ds-global
       # - packages/svelte/ds-global/**
@@ -23,9 +21,7 @@ on:
     paths:
       - configs/storybook/**
       - packages/ds-assets/**
-      - packages/tokens/**
       - packages/styles/**
-      - packages/utils/**
       - packages/runtime/ds-utils/**
       # TODO: Uncomment once the wpe package consumes ds-global
       # - packages/svelte/ds-global/**
@@ -47,8 +43,6 @@ jobs:
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
-        "packages/tokens/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/styles/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
-        "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
         "packages/runtime/ds-utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)"
       ]'
