@@ -9,4 +9,3 @@
 
 /packages/svelte/ssr-test/    @canonical/launchpad-ui  @canonical/workplace-engineering-ui  @canonical/pragma
 /configs/typescript-svelte/   @canonical/launchpad-ui  @canonical/workplace-engineering-ui  @canonical/pragma
-/configs/biome/               @canonical/launchpad-ui  @canonical/workplace-engineering-ui  @canonical/pragma
