@@ -18,13 +18,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -65,10 +65,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@canonical/biome-config": "^0.42.0",
+    "@canonical/biome-config": "0.42.0",
     "@canonical/typescript-config-react": "^0.42.0",
     "@canonical/vitest-config-react": "^0.42.0",
-    "@canonical/webarchitect": "^0.42.0",
+    "@canonical/webarchitect": "0.42.0",
     "@types/express": "^5.0.6",
     "@types/node": "^26.0.0",
     "@types/react": "^19.2.14",
@@ -78,7 +78,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@canonical/utils": "^0.42.0",
+    "@canonical/utils": "0.42.0",
     "htmlparser2": "^10.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

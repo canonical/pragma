@@ -13,13 +13,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "scripts": {
     "build": "bun run build:package",
     "build:all": "bun run build:package && bun run build:storybook",
@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@canonical/biome-config": "^0.42.0",
+    "@canonical/biome-config": "0.42.0",
     "@canonical/design-tokens": "0.10.0",
     "@canonical/react-ds-global-form": "^0.42.0",
     "@canonical/router-core": "^0.42.0",
@@ -72,7 +72,7 @@
     "@canonical/storybook-helpers": "^0.42.0",
     "@canonical/typescript-config-react": "^0.42.0",
     "@canonical/vitest-config-react": "^0.42.0",
-    "@canonical/webarchitect": "^0.42.0",
+    "@canonical/webarchitect": "0.42.0",
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/addon-docs": "^10.6.0",
     "@storybook/react-vite": "^10.6.0",

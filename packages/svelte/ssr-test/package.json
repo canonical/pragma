@@ -28,13 +28,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -58,9 +58,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@canonical/biome-config": "^0.42.0",
-    "@canonical/typescript-config": "^0.42.0",
-    "@canonical/webarchitect": "^0.42.0",
+    "@canonical/biome-config": "0.42.0",
+    "@canonical/typescript-config": "0.42.0",
+    "@canonical/webarchitect": "0.42.0",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@types/jsdom": "^28.0.0",
     "typescript": "^7.0.2",

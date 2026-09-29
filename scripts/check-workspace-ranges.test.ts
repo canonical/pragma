@@ -227,7 +227,7 @@ describe("against the real repository", () => {
 		// Guards against the enumeration silently resolving an empty set and
 		// vacuously passing — the exact shape of the #901 incident.
 		expect(packages.length).toBeGreaterThan(20);
-		expect(packages.map((p) => p.name)).toContain("@canonical/summon-component");
+		expect(packages.map((p) => p.name)).toContain("@canonical/react-ds-global");
 		for (const p of packages) expect(p.file).not.toContain("node_modules");
 	});
 
