@@ -183,7 +183,7 @@ ds:implementation.react-ds-global.global.subcomponent.timeline-content a ds:Impl
 ds:implementation.react-ds-global.global.subcomponent.timeline-event a ds:ImplementationObject;
     ds:implementsBlock ds:global.subcomponent.timeline-event;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/pattern/Timeline/common/DateTime/DateTime.tsx";
-    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.40.0/packages/react/ds-global/src/lib/pattern/Timeline/common/DateTime/DateTime.tsx".
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.42.0/packages/react/ds-global/src/lib/pattern/Timeline/common/DateTime/DateTime.tsx".
 ds:implementation.react-ds-global.global.subcomponent.timeline-event.pattern-event a ds:ImplementationObject;
     ds:implementsBlock ds:global.subcomponent.timeline-event;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/pattern/Timeline/common/Event/Event.tsx";
@@ -191,7 +191,7 @@ ds:implementation.react-ds-global.global.subcomponent.timeline-event.pattern-eve
 ds:implementation.react-ds-global.global.subcomponent.timeline-expansion-indicator a ds:ImplementationObject;
     ds:implementsBlock ds:global.subcomponent.timeline-expansion-indicator;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/pattern/Timeline/common/ExpansionIndicator/ExpansionIndicator.tsx";
-    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.40.0/packages/react/ds-global/src/lib/pattern/Timeline/common/ExpansionIndicator/ExpansionIndicator.tsx".
+    ds:versionedLink "https://github.com/canonical/pragma/blob/v0.42.0/packages/react/ds-global/src/lib/pattern/Timeline/common/ExpansionIndicator/ExpansionIndicator.tsx".
 ds:implementation.react-ds-global.site.component.rule a ds:ImplementationObject;
     ds:implementsBlock ds:site.component.rule;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/react/ds-global/src/lib/_work_in_progress/Rule/Rule.tsx";
