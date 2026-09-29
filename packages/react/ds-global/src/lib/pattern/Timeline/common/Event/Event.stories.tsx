@@ -1,10 +1,10 @@
 import type { Meta, StoryFn } from "@storybook/react-vite";
+import { AD } from "../../../../../storybook/timeline/fixtures.js";
 import {
-  AD,
   ago,
   CommentThread,
   EntityList,
-} from "../../../../../storybook/timeline/fixtures.js";
+} from "../../../../../storybook/timeline/story-utils.js";
 import Component from "./Event.js";
 import type { EventDateTimeProps } from "./types.js";
 

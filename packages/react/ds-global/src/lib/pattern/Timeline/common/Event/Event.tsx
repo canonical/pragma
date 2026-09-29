@@ -1,5 +1,4 @@
 import type React from "react";
-import { resolveMarkerSize } from "../../utils/markerCombination.js";
 import { DateTime } from "../DateTime/index.js";
 import { Marker } from "../Marker/index.js";
 import type { EventProps } from "./types.js";
@@ -59,8 +58,11 @@ const Event = ({
      `trailing` keeps it at the end of the content row. */
   const rowDatetime = datetimePosition === "leading" ? null : datetimeNode;
 
+  // `markerSize` arrives resolved from `resolveMarkerSizes` (explicit
+  // `marker.size` already applied); a standalone Event falls back to the
+  // Marker's own "medium" default, with an explicit `marker.size` winning.
   const markerProps = {
-    size: resolveMarkerSize(item, markerSize),
+    size: markerSize,
     ...item.marker,
   };
   const markerNode = (

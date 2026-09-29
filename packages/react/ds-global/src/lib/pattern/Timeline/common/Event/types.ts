@@ -17,7 +17,7 @@ export type EventDateTimeProps = {
 
 type OwnProps = {
   item: TimelineItem;
-  /** Derived from `markerCombination`; `item.marker.size` wins. */
+  /** Resolved from `markerCombination`; already carries any explicit `marker.size`. */
   markerSize?: TimelineMarkerSize;
   dateTime?: EventDateTimeProps;
   /** Default "trailing". */
