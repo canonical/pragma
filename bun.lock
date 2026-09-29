@@ -1440,9 +1440,6 @@
         "typescript": "^7.0.2",
         "vitest": "^4.0.18",
       },
-      "peerDependencies": {
-        "typescript": "^5.9.3 || ^6.0.0 || ^7.0.0",
-      },
     },
     "packages/styles/vanilla-adapter": {
       "name": "@canonical/styles-vanilla-adapter",
