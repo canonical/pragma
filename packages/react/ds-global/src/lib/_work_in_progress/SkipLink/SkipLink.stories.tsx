@@ -94,8 +94,9 @@ export const Focused: Story = {
   // SkipLink stories are not visually tested by default - this test's purpose is to show a focused SkipLink for visual coverage.
   parameters: {
     chromatic: {
-      // TODO: re-enable once a passing baseline exists in Chromatic
-      disableSnapshot: true,
+      // The component's other stories skip the snapshot, since the link is
+      // hidden until focused; this one focuses it, so it is captured.
+      disableSnapshot: false,
     },
   },
   // Hide the story from sidebar and documentation views

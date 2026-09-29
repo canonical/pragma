@@ -11,7 +11,7 @@
 import type { ProjectAnnotations, Renderer } from "storybook/internal/types";
 
 import { KEY } from "./constants.js";
-import { withMSW } from "./withMSW.js";
+import { mswLoader, withMSW } from "./withMSW.js";
 
 /**
  * Note: if you want to use JSX in this file, rename it to `preview.tsx`
@@ -19,6 +19,7 @@ import { withMSW } from "./withMSW.js";
  */
 
 const preview: ProjectAnnotations<Renderer> = {
+  loaders: [mswLoader],
   decorators: [withMSW],
   initialGlobals: {
     [KEY]: true,
