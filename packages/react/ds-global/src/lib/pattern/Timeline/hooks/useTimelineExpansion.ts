@@ -28,7 +28,8 @@ type UseTimelineExpansionResult = {
 /**
  * Expansion state for the long-timeline collapsing methods. "bottom" shows
  * the first {initialVisible} events; "middle" shows the top and bottom halves.
- */ export function useTimelineExpansion({
+ */
+export default function useTimelineExpansion({
   count,
   method = "bottom",
   initialVisible = 8,

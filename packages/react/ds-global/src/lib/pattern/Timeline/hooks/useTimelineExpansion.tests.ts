@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { useTimelineExpansion } from "./useTimelineExpansion.js";
+import useTimelineExpansion from "./useTimelineExpansion.js";
 
 describe("useTimelineExpansion", () => {
   it("hides nothing below the initial visible count", () => {

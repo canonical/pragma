@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { TimelineItem } from "../types.js";
-import { useTimelineFilters } from "./useTimelineFilters.js";
+import useTimelineFilters from "./useTimelineFilters.js";
 
 const items: TimelineItem[] = [
   {

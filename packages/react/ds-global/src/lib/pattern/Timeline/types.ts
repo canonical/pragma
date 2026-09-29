@@ -69,6 +69,15 @@ export type TimelineFilterState = {
   eventType?: string;
 };
 
+/** Timeline state carried in URL query params. */
+export type TimelineUrlState = {
+  filters: TimelineFilterState;
+  sortOrder?: TimelineSortOrder;
+};
+
+/** How a URL write enters the history stack. */
+export type TimelineUrlWriteMode = "replace" | "push";
+
 export type TimelineExpansion = {
   method?: TimelineCollapsingMethod;
   /** Default 8. */

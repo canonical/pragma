@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TimelineDateTimeFormatProps } from "../types.js";
-import { formatRelative } from "../utils/formatRelative.js";
+import formatRelative from "../utils/formatRelative.js";
 
 type DateTimeMode = "absolute" | "relative";
 
@@ -42,7 +42,7 @@ function defaultFormatAbsolute(iso: string, locale: string): string {
  * DateTime format state for the Timeline: absolute by default, relative as
  * the secondary format; one shared mode for all events.
  */
-export function useDateTimeFormats(
+export default function useDateTimeFormats(
   config: TimelineDateTimeFormatProps | undefined,
 ): UseDateTimeFormatsResult {
   const {
