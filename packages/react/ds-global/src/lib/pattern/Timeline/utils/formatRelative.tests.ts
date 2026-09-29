@@ -46,6 +46,18 @@ describe("formatRelative", () => {
     );
   });
 
+  it("rounds before choosing the unit", () => {
+    expect(formatRelative("2024-06-15T11:59:00.400Z", NOW, "en")).toBe(
+      "1 minute ago",
+    );
+    expect(formatRelative("2024-06-14T12:00:00.400Z", NOW, "en")).toBe(
+      "yesterday",
+    );
+    expect(formatRelative("2024-06-08T12:00:00.400Z", NOW, "en")).toBe(
+      "last week",
+    );
+  });
+
   it("returns an empty string for invalid input", () => {
     expect(formatRelative("not-a-date", NOW, "en")).toBe("");
   });

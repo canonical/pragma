@@ -32,9 +32,12 @@ export default function formatRelative(
     return "";
   }
   let duration = (timestamp - now) / 1000;
+  // Round before choosing the unit, so 59.6 s is "1 minute ago" (and the
+  // same at the hour, day and week limits) rather than "60 seconds ago".
   for (const division of DIVISIONS) {
-    if (Math.abs(duration) < division.amount) {
-      return getFormatter(locale).format(Math.round(duration), division.unit);
+    const rounded = Math.round(duration);
+    if (Math.abs(rounded) < division.amount) {
+      return getFormatter(locale).format(rounded, division.unit);
     }
     duration /= division.amount;
   }
