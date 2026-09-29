@@ -3,28 +3,22 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Event } from "./common/Event/index.js";
 import { ExpansionIndicator } from "./common/ExpansionIndicator/index.js";
 import { Header } from "./common/Header/index.js";
-import { useDateTimeFormats } from "./hooks/useDateTimeFormats.js";
-import { useTimelineExpansion } from "./hooks/useTimelineExpansion.js";
-import { useTimelineFilters } from "./hooks/useTimelineFilters.js";
-import {
-  type TimelineUrlState,
-  useTimelineUrlParams,
-  writeTimelineUrlParams,
-} from "./hooks/useTimelineUrlParams.js";
+import useDateTimeFormats from "./hooks/useDateTimeFormats.js";
+import useTimelineExpansion from "./hooks/useTimelineExpansion.js";
+import useTimelineFilters from "./hooks/useTimelineFilters.js";
+import useTimelineUrlParams from "./hooks/useTimelineUrlParams.js";
+import writeTimelineUrlParams from "./hooks/writeTimelineUrlParams.js";
 import type {
-  TimelineFilterState,
   TimelineItem,
   TimelineProps,
   TimelineSortOrder,
+  TimelineUrlState,
 } from "./types.js";
-import {
-  resolveMarkerSize,
-  resolveMarkerSizes,
-} from "./utils/markerCombination.js";
+import resolveMarkerSizes from "./utils/resolveMarkerSizes.js";
 import "./styles.css";
 
-type AdoptedUrlState = {
-  filters: TimelineFilterState;
+/** URL state with the sort order resolved to a concrete value. */
+type AdoptedUrlState = TimelineUrlState & {
   sortOrder: TimelineSortOrder;
 };
 
@@ -195,10 +189,6 @@ const Timeline = ({
     () => resolveMarkerSizes(visible, markerCombination),
     [visible, markerCombination],
   );
-  const sizeByIndex = useMemo(
-    () => new Map(visible.map((item, index) => [item.id, markerSizes[index]])),
-    [visible, markerSizes],
-  );
 
   useEffect(() => {
     onVisibleItemsChange?.(visible);
@@ -218,7 +208,8 @@ const Timeline = ({
   const statusText = `Showing ${renderedCount} of ${visible.length} events`;
 
   const renderEvent = (item: TimelineItem, index: number) => {
-    const markerSize = resolveMarkerSize(item, sizeByIndex.get(item.id));
+    // resolveMarkerSizes already applied any explicit `marker.size`.
+    const markerSize = markerSizes[index];
     if (renderItem) {
       return (
         <li className="ds timeline-item" key={item.id}>
@@ -236,7 +227,7 @@ const Timeline = ({
       <li className="ds timeline-item" key={item.id}>
         <Event
           item={item}
-          markerSize={sizeByIndex.get(item.id)}
+          markerSize={markerSizes[index]}
           datetimePosition={dateTimePosition}
           dateTime={{
             format: dateTimeState.format,
