@@ -46,7 +46,7 @@ Style packages live in `packages/styles/`. The structure reflects the CSS layeri
 
 Storybook addons live in `packages/storybook/`. These packages extend Storybook with project-specific functionality like the baseline grid overlay and MSW integration.
 
-Developer tools — the command-line tools, the generators, the linters and the shared Biome and TypeScript configurations — live in [canonical/pragma-core](https://github.com/canonical/pragma-core). If you are adding a new CLI tool or development utility, it belongs there.
+Developer tools — the command-line tools, the generators, the linters and the base Biome and TypeScript configurations — live in [canonical/pragma-core](https://github.com/canonical/pragma-core). If you are adding a new CLI tool or development utility, it belongs there.
 
 ### A new category directory needs a new workspace glob
 
@@ -157,9 +157,9 @@ The package.json file defines the package identity, exports, scripts, and depend
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
-    "@canonical/biome-config": "^0.11.0",
-    "@canonical/typescript-config": "^0.11.0",
-    "@canonical/webarchitect": "^0.11.0",
+    "@canonical/biome-config": "0.42.0",
+    "@canonical/typescript-config": "0.42.0",
+    "@canonical/webarchitect": "0.42.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.17"
@@ -320,6 +320,8 @@ bun run check:webarchitect
 Webarchitect validates the package.json structure, license declaration, export configuration, and required scripts. Fix any validation errors before committing.
 
 ## Creating a tool package
+
+The command-line tools and development utilities are created in [canonical/pragma-core](https://github.com/canonical/pragma-core); this section describes their shape, for reference.
 
 Tool packages differ from libraries in three ways: they use GPL-3.0 licensing, they may not need a build step if they run directly with Bun, and they typically provide a CLI entry point.
 

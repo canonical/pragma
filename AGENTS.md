@@ -26,7 +26,7 @@ there; once it is released, the pin here is bumped in every manifest that names 
 
 - **Conventional / semantic commits**, enforced. CI (`.github/workflows/pr-lint.yml`)
   rejects a PR whose **title** is not Conventional-Commits compliant, so the title
-  needs a `type(scope): subject` form, e.g. `feat(pragma): …`, `fix(summon): …`,
+  needs a `type(scope): subject` form, e.g. `feat(ds-global): …`, `fix(router): …`,
   `docs(tokens): …`, `chore(deps): …`, `refactor(cli): …`.
 - **Keep commits atomic.** One logical change per commit; the diff should be reviewable
   on its own and tell a single story. Bundling unrelated items into one commit/PR is
@@ -192,7 +192,7 @@ When unsure, check whether the package's build script runs `tsc` or a bundler.
 ## CI workflows are global — do not add checks for one package
 
 The CI domain is global, always, without exception. If a package-scoped
-concern can earn a workflow step, every package can, and with 60+ packages
+concern can earn a workflow step, every package can, and with 50+ packages
 that becomes unbearable — the cost of one job is not one job, it is the
 precedent.
 

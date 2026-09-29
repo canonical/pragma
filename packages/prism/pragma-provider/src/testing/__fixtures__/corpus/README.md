@@ -8,8 +8,8 @@ This is what makes the package testable at all. Pragma's real corpus is the
 pragma CLI's refs cache (`~/.cache/pragma/refs/@canonical`, three packages,
 ~400 `.ttl`) plus a semantics working tree. Neither is obtainable in CI or in a
 fresh clone, so a suite that needed them would either not exist or be skipped —
-and a skipped gate is worse than no gate. Precedent in canonical/pragma-core:
-`packages/engine/ke-graphql/demo/graph.ttl` is exactly this, and that package
+and a skipped gate is worse than no gate. Precedent:
+[`demo/graph.ttl`](https://github.com/canonical/pragma-core/blob/main/packages/engine/ke-graphql/demo/graph.ttl) in `@canonical/ke-graphql` is exactly this, and that package
 holds 551 tests at 100%.
 
 ## What each file is for
