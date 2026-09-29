@@ -12,16 +12,19 @@ Form components for the Pragma design system. This package provides a field syst
 bun add @canonical/react-ds-global-form @canonical/styles
 ```
 
-Import the global styles and the form component styles in your application's root stylesheet:
+Import the design system's styles **first** in your application's entry, before anything that imports a component:
 
-```css
-@import url("@canonical/styles");
-@import url("@canonical/react-ds-global-form/dist/esm/index.css");
+```ts
+import "@canonical/styles";
 ```
 
-The global styles provide the CSS reset, typography baseline, and design tokens (colour, spacing, surfaces, states) that all form components depend on. The form stylesheet provides input chrome, field layout, and component-specific styles.
+Or, from a stylesheet: `@import url("@canonical/styles");`.
 
-The package builds on top of `@canonical/react-ds-global`.
+Each component brings its own stylesheet when you import it. The package stylesheet (field layout, input chrome, form tokens) is not imported by any component, so import it right after the styles:
+
+```ts
+import "@canonical/react-ds-global-form/dist/esm/index.css";
+```
 
 ### How component CSS reaches the page
 

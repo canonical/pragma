@@ -9,10 +9,16 @@ Universal React components for the Pragma design system. This package provides f
 ## Installation
 
 ```bash
-bun add @canonical/react-ds-global
+bun add @canonical/react-ds-global @canonical/styles
 ```
 
-The package depends on `@canonical/styles` for CSS.
+Import the design system's styles **first** in your application's entry, before anything that imports a component:
+
+```ts
+import "@canonical/styles";
+```
+
+Each component brings its own stylesheet when you import it.
 
 ## Usage
 
@@ -48,12 +54,6 @@ Several components accept appearance props that correspond to modifier families 
 The modifier classes integrate with CSS custom properties defined in `@canonical/styles`.
 
 ## Styles
-
-Import the main styles package in your application entry point:
-
-```tsx
-import "@canonical/styles";
-```
 
 `@canonical/styles` provides the global design tokens (colour, spacing, typography). Each component in this package co-locates its own component-level tokens in a `styles.css` file next to the component source. These component tokens reference the global tokens from `@canonical/design-tokens` and are included automatically when the component is imported.
 
