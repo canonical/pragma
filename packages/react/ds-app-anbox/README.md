@@ -20,6 +20,8 @@ import "@canonical/styles";
 
 Or, from a stylesheet: `@import url("@canonical/styles");`.
 
+Then mark your root — `<html class="app comfortable">` — as the [`@canonical/styles` README](../../styles/main/README.md) describes. That one import is also what puts this package's stylesheets in a defined order against the rest of the design system's: see [Every component stylesheet is in `ds.components.apps-anbox`](#every-component-stylesheet-is-in-dscomponentsapps-anbox) below.
+
 Each component brings its own stylesheet when you import it.
 
 ## Usage
