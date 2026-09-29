@@ -3,13 +3,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GetPromptRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { CONVENTIONS } from "../../../../capabilities/capabilities/catalog.js";
+import {
+  BLOCKS_SENTENCE,
+  CONVENTIONS,
+} from "../../../../capabilities/capabilities/catalog.js";
 import { capabilities } from "../../../../capabilities/index.js";
 import type { McpHarness } from "../../../../testing/helpers/projectMcp.js";
 import { projectMcp } from "../../../../testing/helpers/projectMcp.js";
 import type { PragmaRuntime } from "../../../runtime/types.js";
-import { emitSurface } from "../../../spec/emitSurface.js";
-import type { CapabilityModule } from "../../../spec/types.js";
+import { emitSurface, toolName } from "../../../spec/emitSurface.js";
+import type { CapabilityModule, VerbSpec } from "../../../spec/types.js";
 import { buildInstructions, INSTRUCTIONS_MAX_CHARS } from "../instructions.js";
 import { fillTemplate, promptProvider } from "./provider.js";
 import { readPrompts } from "./source.js";
@@ -31,26 +34,139 @@ afterEach(async () => {
 });
 
 describe("instructions — handshake orientation (PROTECTED)", () => {
-  it("is present, non-empty, mentions capabilities + the discovery flow", () => {
+  // A client may defer tools: the agent sees tool NAMES and this text, and a
+  // description it never loads cannot steer it. So the text carries a question →
+  // tool index GENERATED from each verb's `useWhen` (it replaced the prose
+  // "discovery sequence" this case used to look for).
+  const reads = capabilities
+    .flatMap((module) => module.verbs)
+    .filter(
+      (verb) =>
+        !verb.hidden && verb.capability.mcp.expose && !verb.capability.mutates,
+    );
+  const isTrio = (verb: VerbSpec): boolean =>
+    ["list", "lookup", "sample"].includes(verb.path[1] ?? "");
+
+  it("indexes every read tool outside a list/lookup/sample trio by the question it answers", () => {
     const text = buildInstructions(capabilities);
-    expect(text.length).toBeGreaterThan(0);
-    expect(text).toContain("capabilities");
-    expect(text.toLowerCase()).toContain("discovery sequence");
+    const standalone = reads.filter((verb) => !isTrio(verb));
+    expect(standalone.length).toBeGreaterThan(10);
+    for (const verb of standalone) {
+      const clause = (verb.useWhen as string).replace(/^when asked /, "");
+      expect(text).toContain(`${toolName(verb.path)} — ${clause}`);
+    }
+    // The story that failed: asked which components use a token.
+    expect(text).toMatch(/token_consumers — which components use a token/);
   });
 
-  it("stays under the length ceiling (cannot bloat)", () => {
-    expect(buildInstructions(capabilities).length).toBeLessThanOrEqual(
-      INSTRUCTIONS_MAX_CHARS,
+  it("explains the trio once, promising no noun a verb it lacks", () => {
+    const text = buildInstructions(capabilities);
+    expect(text.match(/<noun>_list/g)).toHaveLength(1);
+    expect(text).toMatch(/block\*/); // has a sample
+    expect(text).toMatch(/\btier,/); // list + lookup, no sample
+    expect(text).toMatch(/implementation†/); // list only
+  });
+
+  it("is generated: a new read verb adds its own line, a new write joins the plan-first list", () => {
+    const base = capabilities.find((m) => m.name === "info")
+      ?.verbs[0] as VerbSpec;
+    const added: CapabilityModule = {
+      name: "weather",
+      verbs: [
+        {
+          ...base,
+          path: ["weather", "today"],
+          useWhen: "when asked if it rains",
+        },
+        {
+          ...base,
+          path: ["weather", "seed"],
+          capability: { ...base.capability, mutates: true },
+        },
+      ],
+    };
+    const text = buildInstructions([...capabilities, added]);
+    expect(text).toMatch(/^weather_today — if it rains$/m);
+    expect(text).toMatch(/plan-first[^\n]*weather_seed/);
+    expect(buildInstructions([added])).toBe(""); // no module declares an orientation
+  });
+
+  it("fits the HARD ceiling clients cut server instructions at", () => {
+    // Unlike the catalogue budget this is not raised on measurement: text past
+    // about 2 KB is text no agent reads. Tighten a sentence instead.
+    expect(INSTRUCTIONS_MAX_CHARS).toBe(2000);
+    const dropped: number[] = [];
+    const text = buildInstructions(capabilities, (count) =>
+      dropped.push(count),
     );
+    expect(text.length).toBeLessThanOrEqual(INSTRUCTIONS_MAX_CHARS);
+    // Fitting is the safety net for a project's packs, not for the
+    // distribution: its own registry must fit WHOLE.
+    expect(
+      dropped,
+      "the distribution's own index no longer fits — tighten a useWhen sentence; the 2,000 ceiling is what clients keep",
+    ).toEqual([]);
+  });
+
+  it("when a project's packs overflow it, drops index lines from the end and says so", () => {
+    const base = capabilities.find((m) => m.name === "info")
+      ?.verbs[0] as VerbSpec;
+    const crowd: CapabilityModule = {
+      name: "crowd",
+      verbs: Array.from({ length: 12 }, (_, n) => ({
+        ...base,
+        path: ["crowd", `probe${n}`] as [string, string],
+        category: undefined,
+        useWhen: `when asked a long question number ${n} about the crowd`,
+      })),
+    };
+    const dropped: number[] = [];
+    const text = buildInstructions([...capabilities, crowd], (count) =>
+      dropped.push(count),
+    );
+    expect(text.length).toBeLessThanOrEqual(INSTRUCTIONS_MAX_CHARS);
+    expect(dropped).toHaveLength(1);
+    expect(text.endsWith(`… and ${dropped[0]} more: call capabilities.`)).toBe(
+      true,
+    );
+    // What is one line whatever the registry holds is never what gets cut …
+    expect(text).toContain(BLOCKS_SENTENCE);
+    expect(text).toMatch(/plan-first/);
+    expect(text).toMatch(/<noun>_list/);
+    // … and the verbs that read the store lead the index, so they survive.
+    expect(text).toMatch(/^token_consumers — /m);
+  });
+
+  it("emits no heading for an empty group, and skips a verb declaring no useWhen", () => {
+    const base = capabilities.find(
+      (m) => m.name === "capabilities",
+    ) as CapabilityModule;
+    const { useWhen: _useWhen, ...silent } = base.verbs[0] as VerbSpec;
+    const text = buildInstructions([{ ...base, verbs: [silent as VerbSpec] }]);
+    expect(text).not.toContain("When asked:");
+    expect(text).not.toContain("Also:");
+    expect(text).not.toContain("undefined");
   });
 
   it("opens with the shared catalog's conventions, verbatim and once", () => {
-    // The conventions are authored once (capabilities/catalog.ts); instructions
+    // The conventions are authored once (capabilities/catalog.ts) and handed to
+    // the kernel as the module's `mcpOrientation`; instructions
     // must OPEN with them, so a second hand-written preamble cannot creep back
     // in and drift from the `capabilities` tool the same handshake carries.
     expect(buildInstructions(capabilities).startsWith(CONVENTIONS.system)).toBe(
       true,
     );
+  });
+
+  it("says which tools read components, patterns, layouts and subcomponents", () => {
+    // People ask about "components"; the tools are named for blocks. An agent
+    // that went looking for a component tool found none and fell to raw SPARQL.
+    const text = buildInstructions(capabilities);
+    expect(text).toContain(BLOCKS_SENTENCE);
+    expect(BLOCKS_SENTENCE).toMatch(/components.*block_list/i);
+    // Said in the handshake and in `block_list`'s own description — not a third
+    // time in the catalogue's conventions.
+    expect(Object.values(CONVENTIONS)).not.toContain(BLOCKS_SENTENCE);
   });
 
   it("quotes the resource templates the MCP surface actually advertises", () => {
@@ -71,16 +187,16 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
     expect(text).toContain("confirm: true");
   });
 
-  it("orients a cold agent to check/build the store before any store read", () => {
-    // Store-blind guard: the handshake must point a cold agent at the store
-    // pre-check (sources_status → sources_update) BEFORE the sample/query steps,
-    // or it walks straight into STORE_UNAVAILABLE.
+  it("tells an agent which tool explains empty or stale answers, and which rebuilds", () => {
+    // This case used to pin POSITION (`sources_status` before any `_sample`),
+    // from when a cold store failed every read and the text was a numbered
+    // sequence. A fresh install now answers from the shipped snapshot, and the
+    // text is an index whose fixed lines come first so an overflow can only
+    // cut the index. What must still hold: the store check is indexed by the
+    // situation that calls for it, and the rebuild is among the writes.
     const text = buildInstructions(capabilities);
-    const storeCheck = text.indexOf("sources_status");
-    const sample = text.indexOf("_sample");
-    expect(storeCheck).toBeGreaterThanOrEqual(0);
-    expect(text).toContain("sources_update");
-    expect(storeCheck).toBeLessThan(sample);
+    expect(text).toMatch(/^sources_status — when results look empty or stale/m);
+    expect(text).toMatch(/plan-first[^\n]*sources_update/);
   });
 });
 

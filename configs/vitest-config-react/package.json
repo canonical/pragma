@@ -1,6 +1,6 @@
 {
   "name": "@canonical/vitest-config-react",
-  "version": "0.38.0",
+  "version": "0.42.0",
   "type": "module",
   "description": "Canonical's standard Vitest configuration factory for React packages",
   "main": "dist/esm/index.js",
@@ -37,16 +37,16 @@
     "check:ts": "tsc --noEmit"
   },
   "peerDependencies": {
-    "typescript": "^5.9.3",
+    "typescript": "^5.9.3 || ^6.0.0 || ^7.0.0",
     "vite": "^8.0.1",
     "vitest": "^4.0.18"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.13",
-    "@canonical/biome-config": "^0.38.0",
-    "@canonical/typescript-config": "^0.38.0",
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "^0.42.0",
+    "@canonical/typescript-config": "^0.42.0",
     "@types/node": "^26.0.0",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vite": "^8.0.1",
     "vitest": "^4.0.18"
   }

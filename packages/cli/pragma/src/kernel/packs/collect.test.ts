@@ -19,6 +19,7 @@ import type { CapabilityModule, VerbSpec } from "../spec/types.js";
 import {
   assembleEffectiveModules,
   loadEffectiveModules,
+  migrateLegacyRecoveries,
   validateStories,
 } from "./collect.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
@@ -208,6 +209,84 @@ describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
       "pkg/stories/broken.json",
       "pkg/stories/invalid.json",
     ]);
+  });
+
+  it("carries a package story's retired emptyRecovery.cli forward instead of losing the noun", () => {
+    // A pack built before the grammar changed still has `cli` on disk. The
+    // project config gets a hard error for it (its author can rename the key);
+    // a package is third-party data, so the hint is migrated when it IS a verb
+    // path and otherwise only the hint is dropped — never the noun.
+    const withCli = (noun: string, cli: string) => ({
+      noun,
+      list: {
+        ...validPack(noun).list,
+        emptyRecovery: { message: "None yet.", cli },
+      },
+      verbs: [
+        {
+          ...validPack(noun).list,
+          verb: "extras",
+          emptyRecovery: { message: "None yet.", cli },
+        },
+      ],
+    });
+    const result = validateStories(
+      [
+        record(
+          "pkg/stories/recipe.json",
+          JSON.stringify(withCli("recipe", "sources update")),
+        ),
+        record(
+          "pkg/stories/menu.json",
+          JSON.stringify(withCli("menu", "acme sources update --all")),
+        ),
+      ],
+      STATIC,
+    );
+    const [recipe, menu] = result.entries.map((entry) => entry.definition);
+    expect(recipe?.list?.emptyRecovery).toEqual({
+      message: "None yet.",
+      call: { verb: "sources update" },
+    });
+    expect(recipe?.verbs?.at(0)?.emptyRecovery?.call).toEqual({
+      verb: "sources update",
+    });
+    // Not a verb path: the story survives, the hint does not, and doctor hears.
+    expect(menu?.noun).toBe("menu");
+    expect(menu?.list?.emptyRecovery).toEqual({ message: "None yet." });
+    expect(result.problems.map((problem) => problem.source)).toEqual([
+      "pkg/stories/menu.json",
+      "pkg/stories/menu.json",
+    ]);
+    expect(result.problems.at(0)?.message).toMatch(
+      /story is kept.*emptyRecovery\.cli.*emptyRecovery\.call/,
+    );
+  });
+
+  it("leaves a story with nothing to migrate, and a non-object, untouched", () => {
+    const story = validPack("recipe");
+    expect(migrateLegacyRecoveries(story)).toEqual({ raw: story, dropped: [] });
+    expect(migrateLegacyRecoveries("nope")).toEqual({
+      raw: "nope",
+      dropped: [],
+    });
+    // A half that already names a call keeps it; the stale `cli` beside it goes.
+    const both = {
+      message: "m",
+      cli: "doctor",
+      call: { verb: "sources update" },
+    };
+    expect(
+      migrateLegacyRecoveries({ noun: "x", verbs: [{ emptyRecovery: both }] }),
+    ).toEqual({
+      raw: {
+        noun: "x",
+        verbs: [
+          { emptyRecovery: { message: "m", call: { verb: "sources update" } } },
+        ],
+      },
+      dropped: [],
+    });
   });
 
   it("last declaration wins for a noun, and the shadowed file is reported", () => {

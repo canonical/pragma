@@ -30,6 +30,7 @@ import type {
   InboundGroup,
   InspectResult,
   NestedRecord,
+  PredicateGroup,
   ReadTerm,
 } from "../runtime/readEntity.js";
 
@@ -120,6 +121,13 @@ function truncationNote(predicate: string, term: ReadTerm): string | undefined {
   return `  # ${predicate} — ${total} chars, showing ${term.value.length}`;
 }
 
+/** `# ds:hasTokenBinding — 24 objects, showing 10` — a cut group, stated as one. */
+function cutNote(group: PredicateGroup): string | undefined {
+  if (!group.truncated || group.count === undefined) return undefined;
+  const total = group.count.toLocaleString("en-US");
+  return `  # ${renderTerm(group.predicate)} — ${total} objects, showing ${group.objects.length}`;
+}
+
 /** Render one inlined blank node as a Turtle `[ … ]` record. */
 function renderNested(record: NestedRecord): string {
   const fields = Object.entries(record).map(([field, value]) => {
@@ -188,21 +196,33 @@ export function toTurtle(
     // Blank objects are written as their inlined records instead, so they are
     // skipped here — emitting both would assert the same edge twice.
     const objects = group.objects.filter((o) => o.termType !== "BlankNode");
+    // A group of blank objects is written further down, as its records — and
+    // says there that it was cut.
     if (objects.length === 0) continue;
     const keyword = predicate === "rdf:type" ? "a" : predicate;
     // Notes are folded INTO the element, above its statement, so the `;` the
     // join appends always lands on the statement line. Pushed as siblings they
     // would each take a separator of their own — into a comment, which runs to
     // end of line and eats it.
-    const notes = objects
-      .map((o) => truncationNote(keyword, o))
-      .filter((n): n is string => n !== undefined);
+    const notes = [
+      cutNote(group),
+      ...objects.map((o) => truncationNote(keyword, o)),
+    ].filter((n): n is string => n !== undefined);
     const rendered = objects.map(renderTerm).join(", ");
     predicates.push([...notes, `  ${keyword} ${rendered}`].join("\n"));
   }
   for (const [via, records] of Object.entries(result.nested)) {
+    const group = result.groups.find(
+      (g) => (g.predicate.prefixed ?? g.predicate.value) === via,
+    );
+    const hasNamed = group?.objects.some((o) => o.termType !== "BlankNode");
+    // Said once per predicate: a group with named objects too said it above.
+    const note = group && !hasNamed ? cutNote(group) : undefined;
     predicates.push(
-      `  ${via}\n    ${records.map(renderNested).join(",\n    ")}`,
+      [
+        ...(note ? [note] : []),
+        `  ${via}\n    ${records.map(renderNested).join(",\n    ")}`,
+      ].join("\n"),
     );
   }
   if (predicates.length > 0) {

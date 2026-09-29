@@ -3,7 +3,7 @@
 @layer ds.components.global {
   /* Component tokens — sourced from @canonical/design-tokens.
      Mapped strictly to the Figma "Contextual Menu" frame: white background
-     (color-background) on the modal surface, a drop shadow (no border), and a
+     (color-background), a drop shadow (no border), and a
      muted 1px divider between sections. */
   :root {
     --contextual-menu-color-divider: var(--color-border-muted);
@@ -30,6 +30,7 @@
     z-index: var(--z-index-overlay, 100);
     min-width: var(--contextual-menu-min-width);
     max-width: var(--contextual-menu-max-width);
+    inline-size: 100%;
     /* A menu (or submenu) taller than the viewport scrolls INSIDE itself instead
        of overflowing off-screen — otherwise keyboard-navigating to an item below
        the fold would move the highlight to an item that is not visible. The
@@ -37,9 +38,7 @@
     max-block-size: calc(100dvh - 2 * var(--dimension-200, 16px));
     overflow-y: auto;
     overscroll-behavior: contain;
-    /* Read the surface channel directly on this element so the `.modal` surface
-       applied here resolves (a :root intermediate would see it unset). */
-    background-color: var(--surface-color-background, var(--color-background));
+    background-color: var(--color-background);
     box-shadow: var(--contextual-menu-shadow);
 
     /* CSS-only enter/exit animation. */

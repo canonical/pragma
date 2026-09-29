@@ -16,12 +16,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ConfigLayers } from "../../kernel/config/types.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { createQueryFacade } from "../../kernel/runtime/facade.js";
+import { activePackPath, packDir } from "../../kernel/runtime/paths.js";
 import type {
   GlobalFlags,
   LazyStore,
@@ -210,6 +211,42 @@ describe("doctor — the pack-refs check", () => {
       // workflow prints, and short enough that four rows stay scannable.
       expect(item.detail ?? "").not.toMatch(/[0-9a-f]{40}/);
     }
+  });
+
+  it("still passes when a pack an older CLI built is passed over — and names it", async () => {
+    // The upgrade state. The check PASSES: the snapshot is answering and its
+    // answers are the current ones, so there is nothing to fix — only a pack to
+    // account for, and two ways to change it. Hence a detail, not a remedy.
+    const cwd = tmp("pragma-proj-");
+    const hash = "b".repeat(64);
+    const dir = packDir(hash);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
+    writeFileSync(join(dir, "schema.json"), "{}");
+    writeFileSync(join(dir, "index.json"), "{}");
+    writeFileSync(join(dir, "stories.json"), "[]");
+    writeFileSync(
+      join(dir, "manifest.json"),
+      JSON.stringify({
+        name: "pragma",
+        version: "0.1.0",
+        sourceRef: "t",
+        contentHash: hash,
+        prefixes: {},
+        createdAt: "2026-09-10T21:49:00.411Z",
+      }),
+    );
+    mkdirSync(dirname(activePackPath(cwd)), { recursive: true });
+    writeFileSync(activePackPath(cwd), hash);
+
+    const pkgRefs = await checkPackageRefs(bootRuntime(FLAGS, cwd));
+    expect(pkgRefs.status).toBe("pass");
+    expect(pkgRefs.detail).toContain("shipped with the CLI");
+    expect(pkgRefs.detail).toContain(
+      "a pack built by pragma 0.1.0 on 2026-09-10 is ignored",
+    );
+    expect(pkgRefs.detail).toContain("pragma sources reset");
+    expect(pkgRefs.remedy).toBeUndefined();
   });
 
   it("a project with its OWN packs and nothing built is an attributable fail", async () => {

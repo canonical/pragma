@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ISSUES_URL } from "../../constants.js";
 import { errorEnvelope, successEnvelope } from "../render/envelope.js";
 import { PragmaError } from "./PragmaError.js";
-import { cliRecovery } from "./recovery.js";
+import { callRecovery } from "./recovery.js";
 import { serializeError } from "./serialize.js";
 
 describe("PragmaError factories", () => {
@@ -76,13 +76,17 @@ describe("serializeError", () => {
   it("includes suggestions, recovery, validOptions, and filters when present", () => {
     const error = PragmaError.notFound("block", "Buton", {
       suggestions: ["Button"],
-      recovery: cliRecovery("block list", "List blocks."),
+      recovery: callRecovery({ verb: "block list" }, "List blocks."),
     });
     expect(serializeError(error)).toEqual({
       code: "ENTITY_NOT_FOUND",
       message: 'block "Buton" not found.',
       suggestions: ["Button"],
-      recovery: { cli: "pragma block list", message: "List blocks." },
+      recovery: {
+        cli: "pragma block list",
+        message: "List blocks.",
+        mcp: { tool: "block_list", params: {} },
+      },
     });
   });
 });

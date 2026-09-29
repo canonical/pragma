@@ -18,6 +18,8 @@ const showVerb: VerbSpec<Record<string, unknown>, ConfigShowData> = {
   path: ["config", "show"],
   summary: "Show the resolved config and per-field provenance.",
   doc: `Merges built-in defaults, the global XDG config, and the nearest ${PROJECT_CONFIG_FILENAME}, marking which layer supplied each value.`,
+  useWhen:
+    "when asked how the tool is configured and which file set each value",
   params: [],
   output: { formatters: configShowFormatters },
   examples: [

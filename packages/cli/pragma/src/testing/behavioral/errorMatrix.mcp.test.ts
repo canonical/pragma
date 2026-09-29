@@ -225,7 +225,8 @@ describe("empty ≠ silence on the machine surfaces", () => {
     expect(result.data).toEqual([]);
     const notice = (result.meta as { notice?: string }).notice ?? "";
     expect(notice).toContain(
-      "No standard matches `--search zzz-nothing-matches-this`.",
+      // Spelled as the MCP argument, not the CLI flag: this is a tool result.
+      'No standard matches `search: "zzz-nothing-matches-this"`.',
     );
     expect(notice).toContain("Category slugs come from the graph");
   });

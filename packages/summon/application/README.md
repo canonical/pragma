@@ -1,6 +1,6 @@
 # @canonical/summon-application
 
-Summon generators for scaffolding application structure: full applications, domains, routes, and wrappers. Produces code aligned with the [boilerplate reference app](../../../apps/react/boilerplate-vite/).
+Summon generators for scaffolding application structure: full applications, domains, pages, and wrappers. Produces code aligned with the [boilerplate reference app](../../../apps/react/boilerplate-vite/).
 
 ## Generators
 
@@ -175,29 +175,42 @@ import billingRoutes from "#domains/billing/routes.js";
 const [billing] = group(publicLayout, [billingRoutes.billing] as const);
 ```
 
-### `summon route <domain>/<name>`
+### `summon page <domain>/<name>`
 
-Adds a page component to an existing domain and wires it into the domain's `routes.ts` — no manual edit needed.
+Adds a page component to an existing domain. It writes one new file and edits nothing else: routing the page stays a hand edit, so the domain's `routes.ts` and `src/routes.tsx` only ever contain what you wrote.
 
 ```bash
-summon route billing/invoices
+summon page invoices/detail
 ```
 
 Produces:
 
 ```
-src/domains/billing/
-├── InvoicesPage.tsx   # New page component
-└── routes.ts          # Import + route entry inserted
+src/domains/invoices/
+└── DetailPage.tsx   # New page component
 ```
 
-The generator locates the `routes` object with the TypeScript AST and splices in both the import and the full entry:
+The argument is exactly two segments, the domain and then the page name in kebab-case (`order-lines` makes `OrderLinesPage.tsx`); the domain folder already carries the domain's name, so the file is `DetailPage.tsx`, not `InvoicesDetailPage.tsx`. The generator refuses to run when the domain does not exist (create it first with `summon domain <name>`) or when the page file already exists.
+
+After writing the page, it prints what to add by hand. For `invoices/detail`, that starts with the import and a route entry for `src/domains/invoices/routes.ts` (the url is an example to adapt):
 
 ```ts
-invoices: route({ url: "/billing/invoices", content: InvoicesPage }),
+import DetailPage from "./DetailPage.js";
+
+  detail: route({ url: "/invoices/detail", content: DetailPage }),
 ```
 
-Running with `--undo` removes that entry and import again — safe when the insertion actually added a new key. If the route key already existed the insertion was a no-op, and `--undo` would remove the pre-existing route (the generator help documents the same caveat). Create the domain first with `summon domain <name>`.
+and ends with the wiring for `src/routes.tsx`, where the comments stand for what the app names itself:
+
+```tsx
+import invoicesRoutes from "#domains/invoices/routes.js";
+const [detail] = group(/* your wrapper() */, [invoicesRoutes.detail] as const);
+const appRoutes = { /* …the routes already listed */ detail } as const;
+```
+
+The full guide printed at run time also shows a url with a `:param` and the page signature that reads `params`, and says where typed search parameters go (a Standard Schema as the route's `search`). Its route examples are type-checked against `@canonical/router-core` in this package's tests. The page and the guide are rendered from the generator's `.ejs` templates.
+
+`--undo` deletes the page file. It touches nothing else, because the generator changed nothing else; remove any lines you pasted by hand yourself.
 
 ### `summon wrapper <name>`
 

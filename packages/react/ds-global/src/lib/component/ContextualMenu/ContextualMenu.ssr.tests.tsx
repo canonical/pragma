@@ -12,7 +12,7 @@ const items: MenuEntry[] = [
 describe("ContextualMenu SSR", () => {
   it("renders the trigger button on the server without throwing", () => {
     const html = renderToString(
-      <ContextualMenu trigger="Actions" items={items} />,
+      <ContextualMenu items={items}>Actions</ContextualMenu>,
     );
 
     expect(html).toContain("ds contextual-menu");
@@ -24,7 +24,7 @@ describe("ContextualMenu SSR", () => {
 
   it("renders the menu closed and inert on the server", () => {
     const html = renderToString(
-      <ContextualMenu trigger="Actions" items={items} />,
+      <ContextualMenu items={items}>Actions</ContextualMenu>,
     );
 
     // The full APG menu is JS-required; on the server it renders a closed,

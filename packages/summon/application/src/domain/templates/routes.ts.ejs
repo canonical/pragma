@@ -1,0 +1,11 @@
+import { route } from "@canonical/router-core";
+import MainPage from "./MainPage.js";
+
+const routes = {
+  <%= routeKey %>: route({
+    url: "<%= routeUrl %>",
+    content: MainPage,
+  }),
+} as const;
+
+export default routes;

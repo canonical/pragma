@@ -44,7 +44,7 @@ import { bootRuntime } from "../kernel/runtime/boot.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
 import type { CapabilityModule, VerbSpec } from "../kernel/spec/types.js";
 import { TEST_FLAGS } from "../testing/helpers/projectCli.js";
-import { declaredStories } from "./distribution.js";
+import { declaredLookups, declaredStories } from "./distribution.js";
 
 const SOURCE = distributionSource("pragma.conf.ts");
 
@@ -55,7 +55,7 @@ const modules = new Map<string, CapabilityModule>(
   NOUNS.map((noun) => {
     const story = declaredStories.get(noun);
     if (!story) throw new Error(`pragma.conf.ts declares no "${noun}" story`);
-    return [noun, compileStoryModule(story, SOURCE, {})];
+    return [noun, compileStoryModule(story, SOURCE, {}, declaredLookups)];
   }),
 );
 
@@ -534,6 +534,18 @@ describe("the shipped nouns answer, end to end (PROTECTED)", () => {
     for (const row of answered) {
       expect(row.position ?? "").not.toContain("://");
     }
+  });
+
+  it("several mistyped symbols each get a share of the suggestions", async () => {
+    const refusal = await rows("token", "values", {
+      symbol: ["color.tex", "color.bordr"],
+    }).catch((error: unknown) => error);
+    expect(refusal).toMatchObject({
+      code: "INVALID_INPUT",
+      message: 'No token is named "color.tex", "color.bordr".',
+    });
+    const { suggestions } = refusal as { suggestions: string[] };
+    expect(suggestions.slice(0, 2)).toEqual(["color.text", "color.border"]);
   });
 
   it("a dash-stripped variable name resolves, with its declarations", async () => {

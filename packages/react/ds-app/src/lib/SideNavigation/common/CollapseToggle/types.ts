@@ -8,5 +8,10 @@ type OwnProps = {
   expanded?: boolean;
 };
 
+/**
+ * `type` is excluded in addition to `OwnProps`: this is always a disclosure
+ * trigger, never a form submit/reset control, so the DS fixes it to
+ * `"button"` rather than exposing it.
+ */
 export type CollapseToggleProps = OwnProps &
-  Omit<ComponentProps<"button">, keyof OwnProps>;
+  Omit<ComponentProps<"button">, keyof OwnProps | "type">;

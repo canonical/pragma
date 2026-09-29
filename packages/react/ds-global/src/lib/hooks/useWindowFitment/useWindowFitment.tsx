@@ -36,32 +36,52 @@ export const toPlacement = (
  * Map a LOGICAL placement to a PHYSICAL one for a writing direction. The inline
  * axis follows `dir` (mirrors in RTL); the block axis is dir-invariant.
  *
- * INVARIANT: `align` is passed through UNMODIFIED. This is only correct because
- * every `inline-*` side has a dir-invariant (block/vertical) cross-axis, and
- * every `block-*` side in use is `align: "center"` (dir-blind). If a future
- * `block-*` placement ever needs `start`/`end`, that align becomes dir-dependent
- * and MUST be flipped here for RTL — do not add one without handling it.
+ * `align` positions the popup along its side's CROSS axis, so whether it is
+ * dir-dependent follows from the side:
+ *
+ * - An `inline-*` side has a block (vertical) cross-axis. `start` is the top
+ *   edge in every writing direction, so align passes through UNMODIFIED.
+ * - A `block-*` side has an INLINE (horizontal) cross-axis — the reading axis.
+ *   There `start` means the LEADING edge: the left edge in LTR, the RIGHT edge
+ *   in RTL. So `start`/`end` are mirrored here for RTL, which is what makes a
+ *   leading-aligned dropdown (`MENU_ROOT_PLACEMENT`) open from the trigger's
+ *   right edge in RTL instead of its left. `center` is its own mirror.
  */
 export const resolveLogicalPlacement = (
   placement: WindowFitmentPlacement,
   dir: "ltr" | "rtl",
 ): PhysicalPlacement => {
   let direction: WindowFitmentDirection;
+  // Whether this side's cross-axis is the inline (reading) axis, making its
+  // `start`/`end` alignment dir-dependent.
+  let crossAxisIsInline: boolean;
   switch (placement.side) {
     case "inline-start":
       direction = dir === "rtl" ? "right" : "left";
+      crossAxisIsInline = false;
       break;
     case "inline-end":
       direction = dir === "rtl" ? "left" : "right";
+      crossAxisIsInline = false;
       break;
     case "block-start":
       direction = "top";
+      crossAxisIsInline = true;
       break;
     default:
       direction = "bottom";
+      crossAxisIsInline = true;
       break;
   }
-  return { direction, align: placement.align };
+
+  const mirrorAlign = dir === "rtl" && crossAxisIsInline;
+  let align: WindowFitmentAlign = placement.align;
+  if (mirrorAlign) {
+    if (align === "start") align = "end";
+    else if (align === "end") align = "start";
+  }
+
+  return { direction, align };
 };
 
 /**

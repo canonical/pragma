@@ -1,6 +1,6 @@
 /**
- * The `create` verbs — `component` / `package` / `application`, the THREE
- * binding-level VerbSpecs (the MCP/covenant/reference grammar). Their params
+ * The `create` verbs — `component` / `package` / `application` / `page`, the
+ * FOUR binding-level VerbSpecs (the MCP/covenant/reference grammar). Their params
  * DERIVE mechanically from the generators' own prompts, projected at build
  * time into `createSurface.generated.ts` — no hand mirrors, no flag aliases:
  * the prompt names ARE the param/MCP-arg names, the FLAG tokens are
@@ -128,12 +128,18 @@ const packageParams: ParamSpec[] = generatorToParams(
 const applicationParams: ParamSpec[] = generatorToParams(
   surfaceFor("application/react").prompts,
 );
+const pageParams: ParamSpec[] = generatorToParams(surfaceFor("page").prompts);
 
-/** The path param each noun jails (package writes into a name-derived subdir). */
+/**
+ * The path param each noun jails. `package` writes into a name-derived subdir;
+ * `page`'s answer is two name segments (letters, digits, hyphens), never a
+ * filesystem path, so neither has one to jail.
+ */
 const PATH_PARAM: Record<CreateKind, string | undefined> = {
   component: "componentPath",
   package: undefined,
   application: "appPath",
+  page: undefined,
 };
 
 /**
@@ -453,10 +459,12 @@ function createVerb(
   summary: string,
   params: ParamSpec[],
   examples: VerbSpec["examples"],
+  guidance: Required<Pick<VerbSpec, "useWhen" | "example">>,
 ): VerbSpec<Record<string, unknown>, GeneratorResult> {
   return {
     path: ["create", kind],
     summary,
+    ...guidance,
     params,
     output: CREATE_OUTPUT,
     examples,
@@ -507,6 +515,11 @@ export const createVerbs: Record<
         note: "preview the files without writing",
       },
     ],
+    {
+      useWhen:
+        "when asked to start a new React, Svelte or Lit component with its tests, stories and styles",
+      example: { framework: "react", componentPath: "src/components/Button" },
+    },
   ),
   package: createVerb(
     "package",
@@ -520,6 +533,10 @@ export const createVerbs: Record<
         cmd: `${BIN_NAME} create package --name @canonical/my-tool --no-run-install`,
       },
     ],
+    {
+      useWhen: "when asked to start a new npm package inside the monorepo",
+      example: { name: "@canonical/my-lib", type: "library" },
+    },
   ),
   application: createVerb(
     "application",
@@ -530,5 +547,30 @@ export const createVerbs: Record<
       { cmd: `${BIN_NAME} create application react my-app --relay` },
       { cmd: `${BIN_NAME} create application react my-app --rendering spa` },
     ],
+    {
+      useWhen:
+        "when asked to start a new React application, server-rendered or client-only",
+      example: { appPath: "my-app" },
+    },
+  ),
+  page: createVerb(
+    "page",
+    "Add a page component to an existing domain of a scaffolded application, and print how to route it.",
+    pageParams,
+    [
+      {
+        cmd: `${BIN_NAME} create page invoices/detail`,
+        note: "writes src/domains/invoices/DetailPage.tsx and prints route examples",
+      },
+      {
+        cmd: `${BIN_NAME} create page invoices/detail --undo`,
+        note: "delete the page again",
+      },
+    ],
+    {
+      useWhen:
+        "when asked to add a page to an existing domain of an application scaffolded with create application",
+      example: { pagePath: "invoices/detail" },
+    },
   ),
 };

@@ -8,7 +8,7 @@
 
 export { ERROR_CODES } from "./constants.js";
 export { PragmaError } from "./PragmaError.js";
-export { cliRecovery } from "./recovery.js";
+export { callRecovery } from "./recovery.js";
 export {
   renderErrorJson,
   renderErrorLlm,

@@ -1,43 +1,50 @@
 import { LightningIcon } from "@storybook/icons";
-import { createElement, memo, useCallback } from "react";
+import {
+  createElement,
+  memo,
+  type NamedExoticComponent,
+  useCallback,
+} from "react";
 import { ToggleButton } from "storybook/internal/components";
 import { type API, useGlobals } from "storybook/manager-api";
 import { KEY, TOOL_ID } from "../constants.js";
 
-export const Tool = memo(function MyAddonSelector(_props: { api: API }) {
-  const [globals, updateGlobals, storyGlobals] = useGlobals();
+export const Tool: NamedExoticComponent<{ api: API }> = memo(
+  function MyAddonSelector(_props: { api: API }) {
+    const [globals, updateGlobals, storyGlobals] = useGlobals();
 
-  const isLocked = KEY in storyGlobals;
-  const isActive = !!globals[KEY];
+    const isLocked = KEY in storyGlobals;
+    const isActive = !!globals[KEY];
 
-  const toggle = useCallback(() => {
-    updateGlobals({
-      [KEY]: !isActive,
-    });
-  }, [isActive, updateGlobals]);
+    const toggle = useCallback(() => {
+      updateGlobals({
+        [KEY]: !isActive,
+      });
+    }, [isActive, updateGlobals]);
 
-  // TODO: can be used to add keyboard shortcut
-  // useEffect(() => {
-  //   api.setAddonShortcut(ADDON_ID, {
-  //     label: "Toggle Baseline Grid",
-  //     defaultShortcut: ["O"],
-  //     actionName: "baseline",
-  //     showInMenu: false,
-  //     action: toggle,
-  //   });
-  // }, [toggle, api]);
+    // TODO: can be used to add keyboard shortcut
+    // useEffect(() => {
+    //   api.setAddonShortcut(ADDON_ID, {
+    //     label: "Toggle Baseline Grid",
+    //     defaultShortcut: ["O"],
+    //     actionName: "baseline",
+    //     showInMenu: false,
+    //     action: toggle,
+    //   });
+    // }, [toggle, api]);
 
-  return createElement(
-    ToggleButton,
-    {
-      key: TOOL_ID,
-      variant: "ghost",
-      pressed: isActive,
-      disabled: isLocked,
-      title: isActive ? "MSW Active" : "MSW Inactive",
-      onClick: toggle,
-      size: "small",
-    },
-    createElement(LightningIcon),
-  );
-});
+    return createElement(
+      ToggleButton,
+      {
+        key: TOOL_ID,
+        variant: "ghost",
+        pressed: isActive,
+        disabled: isLocked,
+        title: isActive ? "MSW Active" : "MSW Inactive",
+        onClick: toggle,
+        size: "small",
+      },
+      createElement(LightningIcon),
+    );
+  },
+);

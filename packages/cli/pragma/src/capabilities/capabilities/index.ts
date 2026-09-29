@@ -5,9 +5,11 @@
 
 import type { CapabilityModule } from "../../kernel/spec/index.js";
 import { capabilitiesSelfVerb } from "./capabilities.verb.js";
+import { ORIENTATION } from "./catalog.js";
 
 /** The `capabilities` capability module (a single storeless self-verb). */
 export const capabilitiesModule: CapabilityModule = {
   name: "capabilities",
   verbs: [capabilitiesSelfVerb],
+  mcpOrientation: ORIENTATION,
 };

@@ -11,6 +11,7 @@ import { toTurtle } from "../../kernel/render/turtle.js";
 import type {
   InboundGroup,
   InspectResult,
+  PredicateGroup,
   ReadTerm,
 } from "../../kernel/runtime/readEntity.js";
 import type { Formatters } from "../../kernel/spec/index.js";
@@ -39,6 +40,13 @@ function inboundHeading(group: InboundGroup): string {
   return `${short(group.predicate)} (${suffix})`;
 }
 
+/** `predicate (24 objects, showing 10)` — a cut group says what it was cut from. */
+function outboundHeading(group: PredicateGroup): string {
+  return group.truncated
+    ? `${short(group.predicate)} (${group.count} objects, showing ${group.objects.length})`
+    : short(group.predicate);
+}
+
 export const inspectFormatters: Formatters<InspectResult> = {
   plain(data) {
     const title = data.label
@@ -46,7 +54,7 @@ export const inspectFormatters: Formatters<InspectResult> = {
       : (data.prefixed ?? data.uri);
     const lines = [title, "═".repeat(Math.max(title.length, 24)), ""];
     for (const group of data.groups) {
-      lines.push(`  ${short(group.predicate)}:`);
+      lines.push(`  ${outboundHeading(group)}:`);
       for (const object of group.objects) lines.push(`    ${named(object)}`);
     }
     for (const [via, rows] of Object.entries(data.nested)) {

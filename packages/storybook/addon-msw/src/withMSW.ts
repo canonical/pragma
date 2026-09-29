@@ -43,7 +43,6 @@ const initializeWorker = async (): Promise<SetupWorker | null> => {
 };
 
 export const withMSW = (StoryFn: StoryFunction<Renderer>) => {
-  const [isWorkerReady, setIsWorkerReady] = useState(false);
   const [globals] = useGlobals();
   const mswGlobals = globals[KEY] as MswGlobals | undefined;
   const mswParameter = useParameter<MswParameter>(PARAM_KEY);
@@ -51,6 +50,12 @@ export const withMSW = (StoryFn: StoryFunction<Renderer>) => {
   const isEnabled = mswGlobals?.enabled ?? true;
   const isDisabled = mswParameter?.disable ?? false;
   const handlers = mswParameter?.handlers;
+
+  // Effects of Storybook preview hooks only run once the story has rendered,
+  // which includes its play function. When MSW is off there is nothing to wait
+  // for, so render the story straight away rather than a placeholder the play
+  // function would see instead of the story.
+  const [isWorkerReady, setIsWorkerReady] = useState(!isEnabled || isDisabled);
 
   // Store handlers in a ref to avoid re-running effect on every render
   // The handlers array reference changes on each render even if contents are same

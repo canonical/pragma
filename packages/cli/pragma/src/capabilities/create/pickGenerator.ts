@@ -25,6 +25,7 @@ const GENERATOR_MAPS: Record<CreateKind, GeneratorMap> = {
   component: componentGenerators as unknown as GeneratorMap,
   package: packageGenerators as unknown as GeneratorMap,
   application: applicationGenerators as unknown as GeneratorMap,
+  page: applicationGenerators as unknown as GeneratorMap,
 };
 
 /**

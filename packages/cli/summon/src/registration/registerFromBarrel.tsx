@@ -43,11 +43,14 @@ import {
 import {
   collectUndos,
   describeEffect,
-  dryRun,
   type Effect,
   type Task,
 } from "@canonical/task";
-import { hostExistsResolver, runCollectedUndos } from "@canonical/task/node";
+import {
+  hostExistsResolver,
+  runCollectedUndos,
+  runPreview,
+} from "@canonical/task/node";
 import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
@@ -196,17 +199,21 @@ async function runBatchUndo(
   }
 }
 
-/** Render the batch (non-interactive) dry-run in plain, llm, or json form. */
-function runBatchDryRun(
+/**
+ * Render the batch (non-interactive) dry-run in plain, llm, or json form. The
+ * plan is previewed against the real disk (reads real, writes recorded), so a
+ * generator that checks existing files plans what its run would do.
+ */
+async function runBatchDryRun(
   generator: GeneratorDefinition,
   answersWithDefaults: Record<string, unknown>,
   actualOptions: Record<string, unknown>,
-): void {
+): Promise<void> {
   const verbose = actualOptions.verbose === true;
   const showFiles = actualOptions.showFiles === true;
 
   const task = generateBatchTask(generator, answersWithDefaults);
-  const result = dryRun(task);
+  const result = await runPreview(task);
 
   if (actualOptions.llm === true) {
     const output = formatLlmMarkdown(
@@ -347,7 +354,7 @@ async function runGeneratorAction(
           actualOptions.dryRun === true,
         );
       } else {
-        runBatchDryRun(generator, answersWithDefaults, actualOptions);
+        await runBatchDryRun(generator, answersWithDefaults, actualOptions);
       }
     } catch (error) {
       // A generator-raised typed invalid answer (a cross-answer constraint

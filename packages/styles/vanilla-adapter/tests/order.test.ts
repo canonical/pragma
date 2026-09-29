@@ -82,10 +82,10 @@ const VANILLA_REACH_EXPECTED = [
  * table-layout utilities.
  */
 const SECOND_BOUNDARY = [
-  ":where(.u-text-max-width) :where(.ds, .ds *):is(ul, ol) max-width",
-  ":where(.u-table-layout--fixed) :where(.ds, .ds *):is(table) table-layout",
-  ":where(.p-content-card__author-and-date) > :where(.ds:first-child):not(h1, h2, h3, h4, h5, h6, p, .p, .code) margin-bottom",
-  ":where(.u-vertically-center) > :where(.ds):is(img) align-self",
+  ":where(.u-text-max-width) :where(:scope, :scope *):is(ul, ol) max-width",
+  ":where(.u-table-layout--fixed) :where(:scope, :scope *):is(table) table-layout",
+  ":where(.p-content-card__author-and-date) > :where(:scope:first-child):not(h1, h2, h3, h4, h5, h6, p, .p, .code) margin-bottom",
+  ":where(.u-vertically-center) > :where(:scope):is(img) align-self",
 ];
 
 /** Whether a layer name is one of the declared ones or a sublayer of one. */
@@ -143,7 +143,12 @@ describe("the order contract", () => {
     const [boundary, , bridge] = blocks;
     // Chromium drops the Gecko-only rules one by one, as designed, and must
     // never drop the list that names the WebKit parts and the placeholder.
-    const list = boundary?.cssRules[0];
+    // The boundary's rules sit inside the block's `@scope` limit, so its own
+    // first rule is that scope, not the style rule directly.
+    const scope = boundary?.cssRules[0];
+    expect(scope).toBeInstanceOf(CSSScopeRule);
+    if (!(scope instanceof CSSScopeRule)) return;
+    const list = scope.cssRules[0];
     expect(list).toBeInstanceOf(CSSStyleRule);
     if (!(list instanceof CSSStyleRule)) return;
     expect(list.selectorText).toContain("::placeholder");

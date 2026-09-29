@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from "vitest";
 import { PragmaError } from "../../error/index.js";
-import { buildListQuery } from "./buildListQuery.js";
+import { buildListQuery, buildTierCountQuery } from "./buildListQuery.js";
 
 /** The author query every case below wraps: aggregate, grouped, ordered. */
 const AUTHORED = [
@@ -340,5 +340,82 @@ describe("buildListQuery — a story it cannot serve", () => {
     expect(() => build("ASK { ?s ?p ?o }", false)).toThrow(
       /cannot be paged.*no SPARQL SELECT/s,
     );
+  });
+});
+
+describe("buildTierCountQuery — the whole filtered answer, per tier", () => {
+  const scope = {
+    entity: "uri",
+    via: "ds:tier",
+    tiers: ["https://ds.canonical.com/global"],
+  };
+  const build = (query = AUTHORED) =>
+    buildTierCountQuery({
+      query,
+      predicates: [{ variable: "category", match: "exact", terms: ["react"] }],
+      search: { variables: ["name"], term: "props" },
+      scope,
+      label,
+    }).text;
+
+  it("wraps the author query under the page's own filter and search clauses", () => {
+    const page = buildListQuery({
+      query: AUTHORED,
+      predicates: [{ variable: "category", match: "exact", terms: ["react"] }],
+      search: { variables: ["name"], term: "props" },
+      window,
+      label,
+    });
+    const clauses = page
+      .split("\n")
+      .filter((line) => line.startsWith("  FILTER EXISTS"));
+    expect(clauses).toHaveLength(2);
+    for (const clause of clauses) expect(build()).toContain(clause);
+    // The author's text is inside it verbatim, as it is inside the page.
+    expect(build()).toContain(AUTHORED);
+  });
+
+  it("groups by the row's tier, which is OPTIONAL so an untiered row counts", () => {
+    expect(build()).toMatch(
+      /SELECT \?(\w+) \(COUNT\(\*\) AS \?\w+\)[\s\S]*OPTIONAL \{ \?uri ds:tier \?\1 \}\n\}\nGROUP BY \?\1$/,
+    );
+  });
+
+  it("reads its rows as tier → row count, the unbound tier as the empty key", () => {
+    const query = buildTierCountQuery({
+      query: AUTHORED,
+      predicates: [],
+      scope,
+      label,
+    });
+    const [, tier, count] =
+      /SELECT \?(\w+) \(COUNT\(\*\) AS \?(\w+)\)/.exec(query.text) ?? [];
+    const rows = [
+      {
+        [tier as string]: "https://ds.canonical.com/apps",
+        [count as string]: "3",
+      },
+      { [count as string]: "1" },
+    ];
+    expect([...query.read(rows)]).toEqual([
+      ["https://ds.canonical.com/apps", 3],
+      ["", 1],
+    ]);
+  });
+
+  it("carries neither the page nor the scope it is the breakdown OF", () => {
+    expect(build()).not.toMatch(/\bLIMIT\b|\bOFFSET\b/);
+    expect(build()).not.toContain("https://ds.canonical.com/global");
+  });
+
+  it("refuses an author query already using the generated prefix, filtered or not", () => {
+    expect(() =>
+      buildTierCountQuery({
+        query: "SELECT ?uri ?__pragmaX WHERE { ?uri a ds:Thing }",
+        predicates: [],
+        scope,
+        label,
+      }),
+    ).toThrow(PragmaError);
   });
 });

@@ -34,6 +34,7 @@ import type {
   GlobalFlags,
   InteractionRuntime,
   PragmaRuntime,
+  StoreSession,
 } from "../../runtime/types.js";
 import { kebabCase, type ParamSpec, type VerbSpec } from "../../spec/index.js";
 import { EXIT, mapExitCode } from "./exitCodes.js";
@@ -175,9 +176,10 @@ function renderData(
     // is distinguishable from an unbuilt store or a mistyped filter, and an
     // ambiguous lookup hit from an unambiguous one. `data` keeps its uniform
     // shape, and MCP builds the same key from the same seam
-    // (`mcp/registerVerb.ts#noticeMeta`) — the two machine surfaces stay
-    // byte-equal.
-    const notice = verb.output.formatters.notice?.(data);
+    // (`mcp/registerVerb.ts#noticeMeta`). The two envelopes are equal EXCEPT
+    // for spelling inside this sentence: a next step reads as a command here
+    // and as a tool call there, because each is printed where it will be used.
+    const notice = verb.output.formatters.notice?.(data, "cli");
     // The machine half of the same seam: facts the read wants to hand an agent
     // as data rather than prose (`meta.scope`). MCP merges the same seam into
     // the same keys (`mcp/registerVerb.ts#readMeta`).
@@ -204,7 +206,9 @@ function renderData(
   const text = verb.output.formatters.plain(data, context);
   // The calm notice is success-path guidance — `--quiet` mutes it.
   const notice =
-    flags.quiet === true ? undefined : verb.output.formatters.notice?.(data);
+    flags.quiet === true
+      ? undefined
+      : verb.output.formatters.notice?.(data, "cli");
   return {
     stdout: text ? `${text}\n` : "",
     ...(notice ? { stderr: `${notice}\n` } : {}),
@@ -320,9 +324,9 @@ export async function executeVerb(
   // The lazy-store seam: boot the store (once, memoized) only for verbs that
   // declare they need it. A storeless verb never reaches the store factory, so
   // the storeless guarantee holds by construction (no STORE_SKIP triage).
-  if (verb.capability.needsStore) {
-    await runtime.store.get();
-  }
+  const session = verb.capability.needsStore
+    ? await runtime.store.get()
+    : undefined;
 
   if (verb.capability.mutates) {
     // Tell the verb whether this is a plan-only preview (`--dry-run`) or a real
@@ -468,7 +472,29 @@ export async function executeVerb(
   const data = await Promise.resolve(
     verb.run(params, runtime) as Promise<unknown>,
   );
-  return renderData(verb, flags, data, {});
+  return renderData(verb, flags, data, storeMeta(session));
+}
+
+/**
+ * The envelope facts about the STORE this read was answered from, as data.
+ *
+ * One fact so far: the project's own built pack, when the boot passed over it
+ * because an older CLI built it. An agent that reads `block lookup button` and
+ * gets the snapshot's answer has no way to learn from the payload that this
+ * directory also holds a pack — so the fact rides `meta`, from the session the
+ * answer came from, on every read verb at once.
+ *
+ * `meta` ONLY, deliberately: the read's answer is not wrong (the snapshot is the
+ * current graph, which is the whole point of passing the pack over), so the
+ * plain and llm renderings of every read stay byte for byte what they were, and
+ * the sentence a person reads stays where a person goes for it — `sources
+ * status` and `doctor`.
+ *
+ * @param session - The booted session, or `undefined` for a storeless verb.
+ * @returns The base `meta` for the envelope (empty for an ordinary read).
+ */
+function storeMeta(session: StoreSession | undefined): Record<string, unknown> {
+  return session?.ignoredPack ? { ignoredPack: session.ignoredPack } : {};
 }
 
 /**

@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+**Note:** Version bump only for package @canonical/svelte-ds-app
+
+
+
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Bug Fixes
+
+* **styles:** make the responsive grid 16 columns on desktop ([#1358](https://github.com/canonical/pragma/issues/1358)) ([4a58572](https://github.com/canonical/pragma/commit/4a58572a7a9bed8f1bb3c5f47ce1c4b269e8db63))
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+**Note:** Version bump only for package @canonical/svelte-ds-app
+
+
+
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/svelte-ds-app
+
+
+
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * refactor(ds-app)!: wrap the application-tier stylesheets the first four forges missed (#1133) ([eaaa63d](https://github.com/canonical/pragma/commit/eaaa63d2cef38637dabecf17b92642a16223a01d)), closes [#1133](https://github.com/canonical/pragma/issues/1133) [canonical/pragma#1122](https://github.com/canonical/pragma/issues/1122) [#1123](https://github.com/canonical/pragma/issues/1123) [#1127](https://github.com/canonical/pragma/issues/1127) [#1122](https://github.com/canonical/pragma/issues/1122) [canonical/pragma#1122](https://github.com/canonical/pragma/issues/1122) [#1120](https://github.com/canonical/pragma/issues/1120)

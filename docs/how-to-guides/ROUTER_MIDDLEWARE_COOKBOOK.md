@@ -213,7 +213,7 @@ Notes:
 ### Rationale
 
 - one place to enforce locale-aware URLs
-- pairs naturally with boilerplate/route generators
+- pairs naturally with the boilerplate's per-domain route maps
 - the codec rebuild means typed `Link`/`navigate` keep working after the URL changes
 
 ## Recipe: `withTiming(report)`

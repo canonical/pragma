@@ -38,6 +38,13 @@ describe("TextInput SSR", () => {
       expect(componentLocator(page).classList).toContain("text-input");
     });
 
+    it("applies the criticality class", () => {
+      const page = render(Component, {
+        props: { ...baseProps, criticality: "warning" },
+      });
+      expect(componentLocator(page).classList).toContain("warning");
+    });
+
     it("applies style", () => {
       const page = render(Component, {
         props: { ...baseProps, style: "color: orange;" },

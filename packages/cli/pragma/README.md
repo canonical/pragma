@@ -11,7 +11,7 @@
 | Know which tier something belongs to | `pragma tier list`, `pragma tier lookup <name>` |
 | Stay consistent with the modifiers that already exist | `pragma modifier list` — 11 families |
 | Check your code against the coding standards | `pragma standard list --category react` |
-| Scaffold a component, package, or application | `pragma create component react <path>` |
+| Scaffold a component, package, or application, or a page in an existing domain | `pragma create component react <path>` |
 | Ask the graph something the commands don't cover | `pragma graph query "<sparql>"` |
 | Set it up, and check it's healthy | `pragma setup`, then `pragma doctor` |
 | Give your AI agent the same access | `pragma setup mcp` |
@@ -119,7 +119,7 @@ pragma block lookup 'Nav*'
 pragma tier lookup Global
 ```
 
-**Build from it.** The `create` commands scaffold a component, package, or application. They run the `@canonical/summon-*` generator packages directly — those are regular dependencies of this package, so scaffolding works from a clean install. Preview any of them with `--dry-run`:
+**Build from it.** The `create` commands scaffold a component, package, or application, or a page in an existing domain. They run the `@canonical/summon-*` generator packages directly — those are regular dependencies of this package, so scaffolding works from a clean install. Preview any of them with `--dry-run`:
 
 ```bash
 pragma create component react src/components/Button
@@ -137,7 +137,7 @@ pragma standard list --category react
 pragma setup mcp
 ```
 
-This registers pragma as an MCP server (over stdio) with the AI coding tools it detects; `pragma mcp` is the manual entry point. The server projects the same reads and scaffolds as MCP tools, plus a `pragma:{+uri}` resource surface for entity reads. Its handshake tells agents to start with the `capabilities` tool and discover from there, and every mutating tool is plan-first: it returns the plan it would apply, and applies nothing until called again with `confirm: true`.
+This registers pragma as an MCP server (over stdio) with the AI coding tools it detects; `pragma mcp` is the manual entry point. The server projects the same reads and scaffolds as MCP tools, plus a `pragma:{+uri}` resource surface for entity reads. Its handshake carries the conventions and an index of tools by the question each answers, and every mutating tool is plan-first: it returns the plan it would apply, and applies nothing until called again with `confirm: true`.
 
 See [docs/mcp-integration.md](./docs/mcp-integration.md) for the full surface.
 

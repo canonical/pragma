@@ -24,7 +24,7 @@ describe("ContextualMenu (hydration)", () => {
   });
 
   it("hydrates server HTML with no recoverable error", () => {
-    const ui = <ContextualMenu trigger="Actions" items={items} />;
+    const ui = <ContextualMenu items={items}>Actions</ContextualMenu>;
 
     const container = document.createElement("div");
     container.innerHTML = renderToString(ui);

@@ -3,6 +3,8 @@
  * (the Task that resolves, builds, and points the project at a pack).
  */
 
+import type { IgnoredPack } from "../../kernel/runtime/resolveSources.js";
+
 /** The `sources status` payload — assembled without booting the store. */
 export interface SourcesStatusData {
   readonly cwd: string;
@@ -19,11 +21,35 @@ export interface SourcesStatusData {
   readonly builtAt: string | null;
   /** Total indexed entity count from the answering pack, or null. */
   readonly entityCount: number | null;
+  /**
+   * The project's own built pack when the boot passed over it — built by an
+   * older CLI, in a project that declares no packs of its own, so the embedded
+   * snapshot answers instead. `store` is `"embedded"` in that case (it reports
+   * which pack ANSWERS, and the snapshot does), and this is how status says the
+   * pack is still there and why it is not being read. Null whenever there is
+   * nothing passed over, which is every other state.
+   */
+  readonly ignoredPack: IgnoredPack | null;
   /** The configured pack declarations, as written in the config. */
   readonly sources: readonly {
     readonly name: string;
     readonly ref: string;
   }[];
+}
+
+/** The `sources reset` result payload. */
+export interface SourcesResetData {
+  /** Whether a pointer was there to remove (false = nothing was built). */
+  readonly removed: boolean;
+  /** The content hash the removed pointer named, or null when there was none. */
+  readonly contentHash: string | null;
+  /**
+   * What answers this project's reads now that the pointer is gone — the
+   * embedded snapshot, or nothing at all because the project declares its own
+   * packs and must build them. Resolved from config in the run body, so the
+   * result can say which of the two it left behind instead of guessing.
+   */
+  readonly answers: "embedded" | "unavailable";
 }
 
 /** One resolved source in the `sources update` result. */

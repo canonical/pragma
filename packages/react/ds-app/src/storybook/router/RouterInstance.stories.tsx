@@ -45,6 +45,9 @@ type Story = StoryObj<typeof meta>;
 
 /** Throws before rendering if provider and consumer are different instances. */
 export const SingleInstance: Story = {
+  // The probe makes no requests. Opting out of MSW in hosts that register it
+  // lets the play function see the story, not the worker's loading placeholder.
+  parameters: { msw: { disable: true } },
   play: async ({ canvas }) => {
     await expect(canvas.getByTestId("router-probe")).toHaveTextContent(
       "Router resolved from a single module instance: yes",

@@ -1,7 +1,6 @@
 {
   "extends": "../../../configs/typescript-react/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "src",
     "types": ["node", "react", "react-dom"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]

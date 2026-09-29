@@ -29,6 +29,13 @@ The module also exports `resolveOrientation`, `findAncestorPath`, `getParentItem
 `getFirstInteractiveChild`, `getLastInteractiveChild`, `isInteractive` and
 `createNavigationReducer`, plus the navigation action and orientation types.
 
+Every item's id — its `url`, else its `key` — must be unique within the tree.
+Two items sharing an id is off-contract input: only one can occupy the index
+slot, so the later entry wins and the earlier becomes unreachable from lookups
+(it can never be marked current). `prepareIndex` warns in development builds
+when it detects such a collision; production is silent and keeps the same
+last-write-wins behaviour.
+
 ### debounce
 
 Creates a debounced version of a function that waits until a specified delay has passed since the last call before executing. Useful for search inputs, resize handlers, and other high-frequency events.

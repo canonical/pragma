@@ -6,6 +6,6 @@ import type { TextInputPrimitiveProps } from "../common/index.js";
 
 export interface TextInputProps
   extends TextInputPrimitiveProps,
-    ModifierFamily<"severity"> {
+    ModifierFamily<"criticality"> {
   density?: Extract<ModifierFamilyValues["density"], "comfortable" | "dense">;
 }

@@ -7,7 +7,7 @@ import type { ComponentProps, ReactNode } from "react";
  * The grid preset laying out the content items — `GridPreset` from
  * \@canonical/ds-types, rendered by the `.grid` presets in
  * \@canonical/styles: `responsive` (fixed-responsive, breakpoint-driven
- * 4/8/12 columns) or `intrinsic` (fluid auto-fill groups of four
+ * 4/8/16 columns) or `intrinsic` (fluid auto-fill groups of four
  * `minmax(--grid-col-min, 1fr)` columns).
  */
 export type ContentLayoutGrid = GridPreset;

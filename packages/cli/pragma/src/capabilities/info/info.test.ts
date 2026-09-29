@@ -21,6 +21,10 @@ import type { InstallSource } from "../shared/index.js";
 import { infoModule } from "./index.js";
 import type { InfoData } from "./types.js";
 
+// These cases drive the real lookup against a stubbed `fetch`, so they opt
+// out of the suite-wide offline answer (`testing/setupOfflineRegistry.ts`).
+vi.unmock("../shared/registry.js");
+
 // Pin the install-source detection: the real detector reads THIS process
 // (whose entry is a source checkout — an honest `unknown`), and these tests
 // are about the enrichment around it, not the detection itself (covered by

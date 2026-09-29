@@ -2,8 +2,8 @@
  * The command-path ALLOWLIST of the `create` surface — the one list the
  * surface's mechanical copies derive from: the `CreateKind` union
  * (`types.ts`) and the generator lookup (`pickGenerator.ts`). Prose is NOT
- * derived: the verb summaries in `create.verb.ts` and
- * `capabilities/hints.ts` still name the frameworks by hand.
+ * derived: the verb summaries and `useWhen` sentences in `create.verb.ts`
+ * still name the frameworks by hand.
  *
  * This table is the SINGLE authoring point for which generator packages the
  * distribution ships: it binds each `create` noun to the command PATHS it
@@ -13,9 +13,9 @@
  * hand-written because it cannot be discovered:
  *  - surfacing a noun also needs prose and examples in `create.verb.ts`, so
  *    the surface is a deliberate SUBSET — `@canonical/summon-application`
- *    ships `application/react`, `domain`, `route` and `wrapper`, and `create`
- *    exposes one of them;
- *  - `pickGenerator` imports all three generators STATICALLY. A computed
+ *    ships `application/react`, `domain`, `page` and `wrapper`, and `create`
+ *    exposes `application/react` and `page`;
+ *  - `pickGenerator` imports all three generator packages STATICALLY. A computed
  *    `import(name)` is opaque to every bundler and analyser; the historical
  *    cost was measured under `bun build --compile`, which left the
  *    generators out of the artifact entirely.
@@ -37,6 +37,9 @@ export const CREATE_GENERATORS = {
   },
   application: {
     paths: ["application/react"],
+  },
+  page: {
+    paths: ["page"],
   },
 } as const;
 

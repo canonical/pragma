@@ -61,9 +61,10 @@ const PROJECT_CONFIG_FILENAME = `${identity.name}.config.ts`;
 /**
  * The distribution's name plus a space: the prefix a `recovery.cli` hint carries
  * so it quotes a command the installed binary answers to (D5). Kernel hints are
- * authored through `cliRecovery`, which prepends it; `packs/schema.ts` REJECTS
- * it in a user-authored pack's `emptyRecovery.cli`, because the CONSUMING
- * distribution's renderer supplies its own. Use {@link BIN_NAME} for prose —
+ * authored through `callRecovery`, whose call renderer prepends it; a pack's
+ * `emptyRecovery.call` names a verb path and never a binary (`packs/schema.ts`
+ * rejects a command line there), because the CONSUMING distribution's renderer
+ * supplies its own. Use {@link BIN_NAME} for prose —
  * this constant's trailing space belongs to the recovery invariant, not to
  * sentences.
  */

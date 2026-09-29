@@ -63,7 +63,7 @@ describe("the distribution's declared stories (PROTECTED)", () => {
     },
   );
 
-  it('every declared filter names "values" or a "vocabulary"', () => {
+  it('every declared filter names "values", a "vocabulary" or a "noun"', () => {
     // The rule the round-trip above already enforces, said OUT LOUD. It was
     // only implied there — a story satisfies the whole grammar or it does not,
     // and a reader looking for this particular property found no assertion
@@ -87,6 +87,7 @@ describe("the distribution's declared stories (PROTECTED)", () => {
       "implementation list --library",
       "implementation list --platform",
       "standard list --category",
+      "token consumers --block",
       "token consumers --key",
       "token consumers --state",
       "token consumers --symbol",
@@ -105,8 +106,10 @@ describe("the distribution's declared stories (PROTECTED)", () => {
     ]);
     for (const [label, filter] of filters) {
       expect(
-        filter.values !== undefined || filter.vocabulary !== undefined,
-        `${label} declares neither "values" nor a "vocabulary"`,
+        filter.values !== undefined ||
+          filter.vocabulary !== undefined ||
+          filter.noun !== undefined,
+        `${label} declares no "values", "vocabulary" or "noun"`,
       ).toBe(true);
       // And never both — a declared set IS the vocabulary.
       expect(

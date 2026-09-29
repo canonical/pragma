@@ -455,6 +455,9 @@ const setupAllVerb = setupVerb(
   "all",
   SELF_CAPABILITY,
   {
+    useWhen:
+      "when asked to install or repair the tool's integration: the config file, shell completions, MCP registration, skills and the editor extension",
+    example: { scope: "project" },
     doc: "Shows what each target needs, then applies the ones you keep. Everything is configured in your home directory by default; the scope option moves the run to this project alone, or covers both. Without an attended terminal the plan is printed and nothing is written unless the run is explicitly confirmed.",
     examples: [
       { cmd: `${BIN_NAME} setup` },
@@ -479,6 +482,7 @@ const configVerb = setupVerb(
   "Create your global config file, filled in with the defaults.",
   "config",
   SUB_CAPABILITY,
+  { useWhen: "when asked to create only the global config file" },
 );
 
 const mcpVerb = setupVerb(
@@ -486,6 +490,10 @@ const mcpVerb = setupVerb(
   `Register the ${BIN_NAME} MCP server with the AI harnesses on this machine.`,
   "mcp",
   SUB_CAPABILITY,
+  {
+    useWhen:
+      "when asked to connect only the MCP server to the AI tools on this machine",
+  },
 );
 
 const completionsVerb = setupVerb(
@@ -493,6 +501,7 @@ const completionsVerb = setupVerb(
   "Install TAB completion for the shell you are running.",
   "completions",
   SUB_CAPABILITY,
+  { useWhen: "when asked to install only TAB completion for the shell" },
 );
 
 const skillsVerb = setupVerb(
@@ -500,6 +509,10 @@ const skillsVerb = setupVerb(
   "Link the skills you have installed into every AI harness that reads them.",
   "skills",
   SUB_CAPABILITY,
+  {
+    useWhen:
+      "when asked to make only the installed skills visible to the AI tools on this machine",
+  },
 );
 
 const lspVerb = setupVerb(
@@ -507,6 +520,9 @@ const lspVerb = setupVerb(
   "Install the Terrazzo design-token extension into the VS Code-family editors on this machine (on PATH, under /Applications or ~/Applications, or by its user directory).",
   "lsp",
   SUB_CAPABILITY,
+  {
+    useWhen: "when asked to install only the design-token editor extension",
+  },
 );
 
 /** The `setup` capability module (run-all self-verb + five CLI-only sub-verbs). */

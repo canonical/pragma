@@ -150,6 +150,21 @@ An element with the class `ds`, and everything inside it, belongs to pragma. Van
 
 If you do put Vanilla markup inside a pragma component, it renders without Vanilla's styles, taking the browser's defaults and pragma's element baseline instead. That is the boundary working as intended rather than a bug. Migrate the content first, or leave its container Vanilla until you can.
 
+## Permeable components
+
+That default suits a component whose children are themselves pragma, such as a card's header and body. A layout component is often the opposite case: a grid or a responsive wrapper exists to arrange content, not to own it, and the content it arranges may still be Vanilla. Add `ds-permeable` alongside `ds` on such a root, and its territory stops at itself rather than extending to what it contains:
+
+```html
+<div class="ds grid ds-permeable">
+  <div class="col-6 p-card">…Vanilla, unchanged…</div>
+  <div class="ds card">…an ordinary pragma component, also unchanged…</div>
+</div>
+```
+
+The root is still pragma's: it gets the boundary and the confined baseline like any other island. What stops is the reach into what it contains. A plain Vanilla child keeps its Vanilla styles exactly as it would outside the grid, because neither the boundary nor the confined copy sees past a `ds-permeable` root into it. A pragma component nested inside one, the card above, is unaffected either way: it carries `ds` in its own right, which is what territory has always been keyed on, so it is a full island regardless of what it is nested inside.
+
+One thing does not stop at a `ds-permeable` root: inheritance. The root still declares pragma's own font, colour and line height for itself, the same as any island root, and a Vanilla child with no rule of its own for one of those properties inherits pragma's value rather than the host page's, the same way any CSS inheritance crosses any element. Most Vanilla content is not affected, because Vanilla's own components generally set their own typography rather than relying on inheriting it. Content that does rely on it, such as a bare paragraph with no Vanilla class, is not something `ds-permeable` was written for; wrap it in a Vanilla element that sets its own font and colour, or keep it outside the grid and place the grid's items as siblings instead.
+
 ## Rules
 
 The rules are numbered so that a review can point at one.
@@ -175,6 +190,10 @@ The rules are numbered so that a review can point at one.
 **What not to reach for**
 
 10. Four things this arrangement does not need, each of them a sign that something else is wrong. An `!important` to win an argument, which takes the decision away from the layers. This package writes four, in a layer called `vanilla.escapes`, and they are the exception that shows the rule. Together they are "the second boundary": Vanilla ships five important rules that reach inside an island, and an important declaration can only be answered by another one from a layer below it, so these sit below Vanilla rather than above. Each names a single property rather than `all`, and each fires only under the Vanilla class that leaks. A hand-written reset against Vanilla, when the boundary already does that and the real problem is in the territories. A wrapper or an island that lets Vanilla back inside `.ds`. A build step or a transform to make the two frameworks fit, which usually means something is on the wrong side of a boundary.
+
+**Permeable components**
+
+11. `ds-permeable` only ever narrows a territory, never widens one. It stops a root's own territory from reaching its children; it does not let Vanilla into `.ds` itself, and it does not exempt a nested pragma component from being one. Reach for it on a layout component that arranges Vanilla content, not on one whose children are meant to be pragma, and not as a way to quiet a styling difference you have not otherwise diagnosed.
 
 ## Design notes
 

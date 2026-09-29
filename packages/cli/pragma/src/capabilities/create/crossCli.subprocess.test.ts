@@ -41,6 +41,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   CONFORMANCE_FIXTURES,
+  type ConformanceFixture,
   diffTrees,
   flagizeAnswers,
   formatTreeDiff,
@@ -65,6 +66,40 @@ const summonBin = join(repoRoot, "packages/cli/summon/src/bin.tsx");
 
 const freshCwd = (prefix: string): string =>
   mkdtempSync(join(tmpdir(), prefix));
+
+/** A fixture plus the files that must already exist where it runs. */
+interface CrossCliFixture extends ConformanceFixture {
+  readonly seed?: Readonly<Record<string, string>>;
+}
+
+/**
+ * The shared fixtures, plus pragma's own for the one binding they do not
+ * name: `page` adds to an existing domain, so its cwd is seeded with the
+ * domain's routes.ts. The seed is identical for every producer, and it stays
+ * in each snapshot, so it cannot hide a difference.
+ */
+const FIXTURES: readonly CrossCliFixture[] = [
+  ...CONFORMANCE_FIXTURES,
+  {
+    name: "page",
+    generator: "page",
+    answers: { pagePath: "invoices/detail" },
+    seed: { "src/domains/invoices/routes.ts": "export default {};\n" },
+  },
+];
+
+/** A fresh cwd holding a fixture's seed files. */
+function seededCwd(
+  prefix: string,
+  seed: Readonly<Record<string, string>> = {},
+): string {
+  const cwd = freshCwd(prefix);
+  for (const [file, content] of Object.entries(seed)) {
+    mkdirSync(dirname(join(cwd, file)), { recursive: true });
+    writeFileSync(join(cwd, file), content);
+  }
+  return cwd;
+}
 
 /**
  * A one-file barrel package the summon bin discovers via `--generators`: it
@@ -102,8 +137,11 @@ function commandPathOf(fixtureGenerator: string): string {
 }
 
 /** Producer (1): the compiled pragma binary. */
-function producePragma(args: readonly string[]): TreeSnapshot {
-  const cwd = freshCwd("crosscli-pragma-");
+function producePragma(
+  args: readonly string[],
+  seed?: CrossCliFixture["seed"],
+): TreeSnapshot {
+  const cwd = seededCwd("crosscli-pragma-", seed);
   execFileSync(process.execPath, [pragmaEntry, "create", ...args], {
     cwd,
     stdio: "pipe",
@@ -113,8 +151,11 @@ function producePragma(args: readonly string[]): TreeSnapshot {
 }
 
 /** Producer (2): the real summon bin, served the same generators. */
-function produceSummonBin(args: readonly string[]): TreeSnapshot {
-  const cwd = freshCwd("crosscli-summon-");
+function produceSummonBin(
+  args: readonly string[],
+  seed?: CrossCliFixture["seed"],
+): TreeSnapshot {
+  const cwd = seededCwd("crosscli-summon-", seed);
   execFileSync("bun", [summonBin, "--generators", generatorsDir, ...args], {
     cwd,
     stdio: "pipe",
@@ -248,7 +289,8 @@ const PRAGMA_EXTRAS = new Set(["--dry-run", "--undo", "--yes", "--help"]);
 describe("cross-CLI conformance matrix (PROTECTED)", () => {
   // The matrix is COMPLETE by declaration, not by convention: the two loops
   // below iterate the shared fixture list (a literal in summon-core, whose
-  // own docblock says the ids are "conventional, not enforced"), so a SIXTH
+  // own docblock says the ids are "conventional, not enforced") plus
+  // pragma's own `FIXTURES` additions, so a new
   // declared binding path would otherwise add zero byte-equality and
   // help-parity cells, silently, while this describe's header claims "every
   // declared generator binding". This cell closes the loop — and makes
@@ -262,11 +304,7 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
       // one path may carry several fixtures — application/react is driven by
       // both the SSR arm and the SPA arm.
       [
-        ...new Set(
-          CONFORMANCE_FIXTURES.map((fixture) =>
-            commandPathOf(fixture.generator),
-          ),
-        ),
+        ...new Set(FIXTURES.map((fixture) => commandPathOf(fixture.generator))),
       ].sort(),
     ).toEqual(
       Object.values(CREATE_GENERATORS)
@@ -275,7 +313,7 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     );
   });
 
-  for (const fixture of CONFORMANCE_FIXTURES) {
+  for (const fixture of FIXTURES) {
     it(`${fixture.name}: summon bin ≡ pragma compiled binary ≡ the reference`, async () => {
       const commandPath = commandPathOf(fixture.generator);
       const { pickGenerator } = await import("./pickGenerator.js");
@@ -288,11 +326,12 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
         "--yes",
       ];
 
-      let pragma = producePragma(args);
-      let summon = produceSummonBin(args);
+      let pragma = producePragma(args, fixture.seed);
+      let summon = produceSummonBin(args, fixture.seed);
       let reference = await produceReference({
         generator,
         answers: fixture.answers,
+        cwd: seededCwd("crosscli-reference-", fixture.seed),
       });
 
       // The application fixture resolves its @canonical/* range through
@@ -322,7 +361,7 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     }, 120_000);
   }
 
-  for (const fixture of CONFORMANCE_FIXTURES) {
+  for (const fixture of FIXTURES) {
     it(`${fixture.name}: help/flag parity over the parity set + structurally equal generator sections`, async () => {
       const commandPath = commandPathOf(fixture.generator);
       const path = commandPath.split("/");

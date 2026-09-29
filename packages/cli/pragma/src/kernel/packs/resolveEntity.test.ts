@@ -32,7 +32,7 @@ import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { compilePack } from "./compile.js";
 import { lookupFormatters, lookupOptions } from "./renderPack.js";
-import type { LookupOutput } from "./resolveEntity.js";
+import { GLOB_EXPANSION_CAP, type LookupOutput } from "./resolveEntity.js";
 import type { PackDefinition, PackLookup } from "./types.js";
 import { distributionSource } from "./types.js";
 import { verbKey } from "./uniqueness.js";
@@ -259,6 +259,70 @@ describe("pack lookup addressing (PROTECTED)", () => {
     });
   });
 
+  describe("a glob with no prefix reads names AND IRI local names", () => {
+    it("reaches an entity through its local name", async () => {
+      // The recorded case: `*.component.meter` is a pattern over what every
+      // list prints, and it matched nothing while names were the only thing a
+      // prefix-less glob was tried against.
+      const out = await lookupVia(SPQ, "*.timeline");
+      expect(out.errors).toEqual([]);
+      expect(uris(out)).toEqual([`${DS}padded.timeline`]);
+    });
+
+    it("reaches an entity that carries no name at all", async () => {
+      expect(uris(await lookupVia(SPQ, "nameless.*"))).toEqual([
+        `${DS}nameless.widget`,
+      ]);
+    });
+
+    it("answers ONCE for an entity both its name and its local name match", async () => {
+      // `*chip` fits the name "Chip" and the local names `alpha.chip` and
+      // `zeta.chip`. The name match already reaches both, so neither is looked
+      // up a second time by IRI.
+      const out = await lookupVia(SPQ, "*chip");
+      expect(uris(out).sort()).toEqual([`${DS}alpha.chip`, `${DS}zeta.chip`]);
+    });
+
+    it("does not make a bare local name an address", async () => {
+      await expect(lookupVia(SPQ, "alpha.chip")).rejects.toMatchObject({
+        code: "ENTITY_NOT_FOUND",
+      });
+    });
+  });
+
+  describe("a miss suggests the real thing", () => {
+    const suggestionsFor = async (query: string): Promise<string[]> => {
+      const reason = await lookupVia(SPQ, query).catch(
+        (error: unknown) => error,
+      );
+      expect(reason).toMatchObject({ code: "ENTITY_NOT_FOUND" });
+      return (reason as { suggestions: string[] }).suggestions;
+    };
+
+    it("answers a pasted local name with its prefixed IRI, then the name inside it", async () => {
+      expect((await suggestionsFor("alpha.chip")).slice(0, 2)).toEqual([
+        "ds:alpha.chip",
+        "Chip",
+      ]);
+    });
+
+    it("answers a mistyped local name with the prefixed IRI it was near", async () => {
+      expect(await suggestionsFor("nameless.widgit")).toContain(
+        "ds:nameless.widget",
+      );
+    });
+
+    it("every suggestion it prints resolves", async () => {
+      const suggestions = await suggestionsFor("alpha.chip");
+      const out = await lookupVia(SPQ, ...suggestions);
+      expect(out.errors).toEqual([]);
+    });
+
+    it("keeps the five-suggestion cap", async () => {
+      expect((await suggestionsFor("a")).length).toBeLessThanOrEqual(5);
+    });
+  });
+
   describe("an ambiguous name answers with EVERY entity it reaches", () => {
     // `ds:zeta.chip` is declared BEFORE `ds:alpha.chip` in the fixture, so the
     // store enumerates it first while IRI order puts `alpha` first. Neither of
@@ -329,5 +393,110 @@ describe("pack lookup addressing (PROTECTED)", () => {
         lookupNoticeVia(SPQ, await lookupVia(SPQ, "Modal")),
       ).toBeUndefined();
     });
+  });
+});
+
+describe("a glob says what it did", () => {
+  /** More same-family entities than one lookup's patterns may expand to. */
+  const FAMILY = GLOB_EXPANSION_CAP + 12;
+  const pad = (index: number): string => String(index).padStart(3, "0");
+  const FAMILY_TTL = Array.from(
+    { length: FAMILY },
+    (_, index) =>
+      `ds:swatch.${pad(index)} a ds:Component ; ds:name "swatch.${pad(index)}" .`,
+  ).join("\n");
+
+  let rt: PragmaRuntime;
+  beforeAll(async () => {
+    ({ rt } = await buildFixtureRuntime({
+      ttl: BLOCK_TTL + AMBIGUOUS_TTL + FAMILY_TTL,
+      prefixes: BLOCK_PREFIXES,
+      detail: "detailed",
+    }));
+  });
+  afterAll(async () => {
+    (await rt.store.get()).store.dispose();
+  });
+
+  const lookup = (...name: string[]): Promise<LookupOutput> => {
+    const verb = compilePack(SPQ, distributionSource("t"), BLOCK_PREFIXES).find(
+      (v) => verbKey(v.path) === "sblock lookup",
+    );
+    if (!verb) throw new Error("no lookup verb");
+    return verb.run({ name }, rt) as Promise<LookupOutput>;
+  };
+  const formatters = lookupFormatters(SPQ.lookup as PackLookup, BLOCK_PREFIXES);
+
+  it("cuts a wide pattern at the cap and reports the true total", async () => {
+    const out = await lookup("swatch.*");
+    expect(out.results).toHaveLength(GLOB_EXPANSION_CAP);
+    expect(out).toMatchObject({ truncated: true, total: FAMILY });
+  });
+
+  it("says so in each surface's own spelling, and in the condensed body", async () => {
+    const out = await lookup("swatch.*");
+    const counted = `${GLOB_EXPANSION_CAP} of ${FAMILY} matches shown.`;
+    expect(formatters.notice?.(out, "cli")).toContain(counted);
+    expect(formatters.notice?.(out, "cli")).toContain("`--detail summary`");
+    expect(formatters.notice?.(out, "mcp")).toContain('`detail: "summary"`');
+    expect(formatters.llm(out).split("\n").at(-1)).toContain(counted);
+    expect(JSON.parse(formatters.json(out)).total).toBe(FAMILY);
+  });
+
+  it("does not advise summary to a caller already there", () => {
+    const out: LookupOutput = {
+      results: [],
+      errors: [],
+      truncated: true,
+      total: FAMILY,
+      detail: "summary",
+    };
+    expect(formatters.notice?.(out, "mcp")).toBe(
+      `0 of ${FAMILY} matches shown. Narrow the pattern to reach the rest.`,
+    );
+  });
+
+  it("counts ENTITIES: a name route and an IRI route to the same ones are one total", async () => {
+    const out = await lookup("swatch.*", "ds:swatch.*");
+    expect(out.total).toBe(FAMILY);
+    expect(out.results).toHaveLength(GLOB_EXPANSION_CAP);
+  });
+
+  it("cuts the same fifty every time, in name order", async () => {
+    const names = (await lookup("swatch.*")).results.map((e) => e.name);
+    expect(names).toEqual(
+      Array.from({ length: GLOB_EXPANSION_CAP }, (_, i) => `swatch.${pad(i)}`),
+    );
+    expect(
+      (await lookup("*.0*", "swatch.*")).results.map((e) => e.name),
+    ).toEqual(names);
+  });
+
+  it("says nothing about a pattern answered in full", async () => {
+    const out = await lookup("swatch.00*");
+    expect(out.results).toHaveLength(10);
+    expect(out.truncated).toBeUndefined();
+    expect(formatters.notice?.(out, "cli")).toBeUndefined();
+  });
+
+  it("counts an entry ONCE across overlapping patterns", async () => {
+    // Twenty-seven matches over twenty-five entries: `swatch.001` and
+    // `swatch.011` are each matched twice and answered once.
+    const out = await lookup("swatch.00*", "swatch.0*1", "swatch.01*");
+    expect(out.truncated).toBeUndefined();
+    expect(out.results.map((entity) => entity.name)).toHaveLength(25);
+    expect(new Set(out.results.map((entity) => entity.uri)).size).toBe(25);
+  });
+
+  it("answers once for an entity a name pattern and an IRI pattern both reach", async () => {
+    const out = await lookup("swatch.001", "ds:swatch.001", "ds:swatch.00*");
+    expect(out.results).toHaveLength(10);
+  });
+
+  it("never cuts a literal — not even one a cut pattern also matched", async () => {
+    const last = `swatch.${pad(FAMILY - 1)}`;
+    const out = await lookup("swatch.*", last);
+    expect(out.results.map((entity) => entity.name)).toContain(last);
+    expect(out.results).toHaveLength(GLOB_EXPANSION_CAP + 1);
   });
 });

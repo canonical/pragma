@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+**Note:** Version bump only for package @canonical/styles
+
+
+
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Bug Fixes
+
+* **styles:** make the responsive grid 16 columns on desktop ([#1358](https://github.com/canonical/pragma/issues/1358)) ([4a58572](https://github.com/canonical/pragma/commit/4a58572a7a9bed8f1bb3c5f47ce1c4b269e8db63))
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+**Note:** Version bump only for package @canonical/styles
+
+
+
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/styles
+
+
+
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * feat(styles)!: the component-tier layers follow the tier tree (#1153) ([dd99204](https://github.com/canonical/pragma/commit/dd99204020714c35752fb71f5d64715778a694c4)), closes [#1153](https://github.com/canonical/pragma/issues/1153)

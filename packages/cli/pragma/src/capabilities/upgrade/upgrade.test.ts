@@ -37,6 +37,10 @@ import { runUpgrade } from "./runUpgrade.js";
 import type { UpgradeData } from "./types.js";
 import { upgradeModule } from "./upgrade.verb.js";
 
+// These cases drive the real lookup against a stubbed `fetch`, so they opt
+// out of the suite-wide offline answer (`testing/setupOfflineRegistry.ts`).
+vi.unmock("../shared/registry.js");
+
 // Pin the install-source detection: the real detector reads THIS process
 // (whose entry is a source checkout — an honest `unknown` with no command,
 // which would starve every update-needed case of its exec). Detection itself

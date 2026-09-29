@@ -15,6 +15,14 @@ export function prepareIndex<T extends Item = Item>(root: _Item<T>): _Index<T> {
   // only exit is the empty-stack `undefined` — no unreachable guard branch.
   for (let item = stack.pop(); item !== undefined; item = stack.pop()) {
     const id = getItemId(item);
+    // Dev-only: ids are unique by contract (`ItemIdentity`); behaviour
+    // (last-write-wins) is unchanged.
+    const previous = index[id];
+    if (process.env.NODE_ENV !== "production" && previous !== undefined) {
+      console.warn(
+        `prepareIndex: duplicate item id "${id}" — "${previous.label ?? "(unnamed)"}" and "${item.label ?? "(unnamed)"}" share it. Item ids must be unique within a tree; the later entry overwrites the earlier in lookups.`,
+      );
+    }
     index[id] = item;
     if (item.items) {
       for (let i = item.items.length - 1; i >= 0; i--) {

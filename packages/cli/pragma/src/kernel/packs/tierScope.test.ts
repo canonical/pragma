@@ -25,7 +25,8 @@ import { executeVerb } from "../project/cli/dispatch.js";
 import type { GlobalFlags, PragmaRuntime } from "../runtime/types.js";
 import type { VerbSpec } from "../spec/types.js";
 import { compilePack } from "./compile.js";
-import type { LookupOutput } from "./resolveEntity.js";
+import { lookupFormatters } from "./renderPack.js";
+import { GLOB_EXPANSION_CAP, type LookupOutput } from "./resolveEntity.js";
 import { buildTierHierarchy, resolveTierScope } from "./tierScope.js";
 import {
   distributionSource,
@@ -334,6 +335,7 @@ describe("a scoped answer says so, in every format", () => {
   it("the page carries the scope as data", async () => {
     expect((await page({})).scope).toEqual({
       tiers: ["global", "apps", "sites"],
+      counts: { global: 2, apps: 1, sites: 1, apps_lxd: 2, "no tier": 1 },
     });
     expect((await page({ tier: "all" })).scope).toBeUndefined();
   });
@@ -346,7 +348,7 @@ describe("a scoped answer says so, in every format", () => {
       withTier(undefined, LLM),
     );
     expect(outcome.stdout).toContain(
-      "## Widget (5, tier scope: global, apps, sites)",
+      "## Widget (5, tier scope: global 2, apps 1, sites 1, no tier 1)",
     );
   });
 
@@ -358,7 +360,8 @@ describe("a scoped answer says so, in every format", () => {
       withTier(undefined, LLM),
     );
     expect(outcome.stdout).toContain(
-      "## Widget (2, more exist, tier scope: global, apps, sites)",
+      // The counts are of the WHOLE answer, not of the two rows in hand.
+      "## Widget (2, more exist, tier scope: global 2, apps 1, sites 1, no tier 1)",
     );
   });
 
@@ -372,7 +375,9 @@ describe("a scoped answer says so, in every format", () => {
       withTier(undefined, PLAIN),
     );
     expect(outcome.stdout).toContain("Button");
-    expect(outcome.stderr).toContain("Tier scope: global, apps, sites.");
+    expect(outcome.stderr).toContain(
+      "Tier scope: global 2, apps 1, sites 1, no tier 1.",
+    );
     expect(outcome.stderr).toContain("`--tier all` for every tier");
   });
 
@@ -384,10 +389,70 @@ describe("a scoped answer says so, in every format", () => {
       withTier(undefined, JSON_FLAGS),
     );
     const envelope = JSON.parse(outcome.stdout as string);
-    expect(envelope.meta.scope).toEqual({ tiers: ["global", "apps", "sites"] });
-    expect(envelope.meta.notice).toContain("Tier scope: global, apps, sites.");
+    expect(envelope.meta.scope).toEqual({
+      tiers: ["global", "apps", "sites"],
+      counts: { global: 2, apps: 1, sites: 1, apps_lxd: 2, "no tier": 1 },
+    });
+    expect(envelope.meta.notice).toContain("Tier scope: global 2, apps 1,");
     // `data` keeps its shape: the bare row array it has always been.
     expect(Array.isArray(envelope.data)).toBe(true);
+  });
+
+  it("counts the FILTERED answer, and names the tier a miss lives in", async () => {
+    // The case the breakdown is for: nothing in scope matches, and the answer
+    // still says which tier to pass.
+    const missed = await page({ search: "meter" });
+    expect(missed.rows).toEqual([]);
+    expect(missed.scope?.counts).toEqual({
+      global: 0,
+      apps: 0,
+      sites: 0,
+      apps_lxd: 1,
+    });
+    const outcome = await executeVerb(
+      verbFor(KIT, "list"),
+      { search: "meter" },
+      REAL,
+      withTier(undefined, LLM),
+    );
+    expect(outcome.stdout).toContain("other tiers: apps_lxd 1");
+  });
+
+  it("counts on the first page only, and a failed count never fails the list", async () => {
+    const first = await page({ limit: 2 });
+    expect(first.scope?.counts).toBeDefined();
+    const second = await page({ limit: 2, after: first.nextAfter });
+    expect(second.scope).toEqual({ tiers: ["global", "apps", "sites"] });
+
+    const failing: PragmaRuntime = {
+      ...rt,
+      query: {
+        ...rt.query,
+        sparql: (text: string) =>
+          text.includes("GROUP BY")
+            ? Promise.reject(new Error("count failed"))
+            : rt.query.sparql(text),
+      },
+    };
+    const answer = await page({}, failing);
+    expect(answer.rows).toHaveLength(5);
+    expect(answer.scope).toEqual({ tiers: ["global", "apps", "sites"] });
+  });
+
+  it("counts ROWS per tier: an entity in two tiers counts under each, and its row is returned once", async () => {
+    const { rt: twice } = await buildFixtureRuntime({
+      ttl: `${TTL}\nex:button ex:tier ex:apps .`,
+      prefixes: PREFIXES,
+    });
+    try {
+      const answer = (await verbFor(KIT, "list").run({}, twice)) as PackPage;
+      expect(answer.rows.filter((row) => row.name === "Button")).toHaveLength(
+        1,
+      );
+      expect(answer.scope?.counts).toMatchObject({ global: 2, apps: 2 });
+    } finally {
+      (await twice.store.get()).store.dispose();
+    }
   });
 
   it("an unscoped read says nothing about a scope", async () => {
@@ -424,6 +489,55 @@ describe("a lookup prefers the scope and falls back rather than refusing", () =>
       { name: [name], ...params },
       runtime,
     )) as LookupOutput;
+
+  it("a pattern applies the scope BEFORE the cap", async () => {
+    // Five LXD widgets sort ahead of 55 global ones; none of them takes a slot.
+    const wide = [
+      ...Array.from({ length: 5 }, (_, i) => ["a", i, "apps_lxd"] as const),
+      ...Array.from({ length: 55 }, (_, i) => ["w", i, "global"] as const),
+    ]
+      .map(
+        ([stem, i, tier]) =>
+          `ex:${stem}${i} a ex:Widget ; ex:name "${stem}.${String(i).padStart(2, "0")}" ; ex:tier ex:${tier} .`,
+      )
+      .join("\n");
+    const { rt: crowded } = await buildFixtureRuntime({
+      ttl: `${TTL}\n${wide}`,
+      prefixes: PREFIXES,
+    });
+    try {
+      const out = await lookup("*.*", {}, crowded);
+      // Cut inside the scope: the total is the scope's, the rest is named.
+      expect(out).toMatchObject({ total: 55, elsewhere: 5 });
+      expect(
+        lookupFormatters({ by: "ex:name" }, PREFIXES).notice?.(out, "mcp"),
+      ).toContain(
+        '50 of 55 matches shown, and 5 more in other tiers: pass `tier: "all"`.',
+      );
+      expect(out.results).toHaveLength(GLOB_EXPANSION_CAP);
+      expect(out.results.every((e) => String(e.name).startsWith("w."))).toBe(
+        true,
+      );
+      expect(out.outOfScope).toBeUndefined();
+    } finally {
+      (await crowded.store.get()).store.dispose();
+    }
+  });
+
+  it("a pattern answers a shared name with the in-scope one alone, and an out-of-scope one with a line", async () => {
+    expect((await lookup("Chi*")).results.map((e) => e.uri)).toEqual([
+      "https://example.org/kit#chip",
+    ]);
+    const out = await lookup("Met*");
+    expect(out.results.map((e) => e.name)).toEqual(["Meter"]);
+    expect(out.outOfScope?.at(0)).toMatchObject({ tiers: ["apps_lxd"] });
+    // The same redirect reached by a pattern AND by name is said once.
+    const both = (await verbFor(KIT, "lookup").run(
+      { name: ["Met*", "Meter"] },
+      rt,
+    )) as LookupOutput;
+    expect(both.outOfScope).toHaveLength(1);
+  });
 
   it("answers a shared name with the in-scope one alone", async () => {
     const out = await lookup("Chip");

@@ -19,6 +19,7 @@ import {
   VERSION,
 } from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/index.js";
+import { declareVerbs } from "../../spec/call.js";
 import { kebabCase } from "../../spec/index.js";
 import type { CliProjection, ParamSpec, VerbSpec } from "../../spec/types.js";
 import { MUTATION_FLAG_DOCS, negationFlagDoc } from "./constants.js";
@@ -302,6 +303,9 @@ export function buildProgram(
   const version = options.version ?? VERSION;
   const issuesUrl = options.issuesUrl ?? ISSUES_URL;
   const live = verbs.filter((verb) => !verb.hidden);
+  // A recovery or an example names a call; spelling it as a command needs the
+  // named verb's positionals, so the renderer is told which verbs exist.
+  declareVerbs(verbs);
 
   const program = new Command();
   program.name(programName).description(description);

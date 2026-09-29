@@ -21,7 +21,11 @@ export default defineConfig({
       // removes it after the last one exits. `setupXdgIsolation.ts` reads it.
       "./src/testing/tempRoot.globalSetup.ts",
     ],
-    setupFiles: ["./src/testing/setupXdgIsolation.ts"],
+    setupFiles: [
+      "./src/testing/setupXdgIsolation.ts",
+      "./src/testing/setupCallChecking.ts",
+      "./src/testing/setupOfflineRegistry.ts",
+    ],
     environment: "node",
     coverage: {
       provider: "v8",

@@ -445,3 +445,23 @@ describe("graphpack read — incomplete pack recovery (CLI + MCP)", () => {
     }
   });
 });
+
+describe("the builder version recorded on reuse", () => {
+  const stampedBy = async (version: string) =>
+    (
+      await buildPack([{ path: "stamp.ttl", content: `${TTL}\n# stamp` }], {
+        name: "test-pack",
+        version,
+        sourceRef: "test:inline",
+        prefixes: PREFIXES,
+      })
+    ).manifest.version;
+
+  it("moves up to a newer CLI and never down to an older one", async () => {
+    expect(await stampedBy("2.2.0")).toBe("2.2.0");
+    // The cache directory is shared between projects, so an older CLI reusing
+    // it must leave the record alone.
+    expect(await stampedBy("2.1.0")).toBe("2.2.0");
+    expect(await stampedBy("2.3.0")).toBe("2.3.0");
+  });
+});

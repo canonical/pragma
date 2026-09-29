@@ -243,7 +243,7 @@
   {/snippet}
 </Story>
 
-<!-- `cardSpan={4}` — wide cards (3 per row on a 12-column grid). -->
+<!-- `cardSpan={4}` — wide cards (4 per row on a 16-column grid). -->
 <Story name="Span Four" args={{ cardSpan: 4 }}>
   {#snippet template(args)}
     <Component {...args}>

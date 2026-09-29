@@ -29,6 +29,8 @@ pragma sources update
 pragma sources status
 ```
 
+A CLI upgrade brings a new snapshot with it, and it heals a store you built before the upgrade rather than letting it answer quietly: a pack an older CLI built, in a project that pins no packs of its own, is passed over — the new snapshot answers, and `sources status` and `doctor` both name the pack they are not reading and the two ways to change that. Run `pragma sources update` to rebuild it from your packs, or `pragma sources reset` to remove it and stay on the shipped snapshot. `sources reset` removes only the pointer that names the pack this project reads; the cached pack files stay, because the cache is shared with any other project built from the same sources. A project that **does** pin its own packs keeps reading them, upgrade or no upgrade — its graph is not the distribution's, and a snapshot of the distribution's is no substitute for it.
+
 To pin a pack to an exact revision, put the full 40-character commit SHA in its source ref (`git+https://github.com/org/repo.git#<sha>`). An abbreviated SHA is not a valid fetch target, and the update fails naming it.
 
 ## Blocks
@@ -40,11 +42,11 @@ A **block** is one reusable piece of UI, at any of four grains:
 - **pattern** — a composition of components serving one purpose (`ActionBar`)
 - **layout** — a page- or view-level arrangement (`ApplicationLayout`)
 
-This distribution's graph carries **252** blocks across fifteen tiers. `block list` shows the **173** in the five top-level tiers — the shared vocabulary — and says so in its heading:
+This distribution's graph carries **313** blocks across fifteen tiers. `block list` shows the **176** in the five top-level tiers — the shared vocabulary — and says so in its heading, which counts the whole answer tier by tier:
 
 ```console
 $ pragma block list
-## Block (173, tier scope: global, apps, documentation, sites, stores)
+## Block (176, tier scope: global 121, apps 39, documentation 2, sites 14, stores 0)
 
 - `ds:global.component.accordion` — **Accordion** component | global
 - `ds:global.subcomponent.accordion-item` — **Accordion.Item** subcomponent | global

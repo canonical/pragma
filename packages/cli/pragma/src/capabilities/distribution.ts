@@ -22,6 +22,7 @@ import conf from "../../pragma.conf.js";
 import { compileStoryModule } from "../kernel/packs/compile.js";
 import {
   distributionSource,
+  type NounLookups,
   type PackDefinition,
 } from "../kernel/packs/types.js";
 import { DEFAULT_PREFIX_MAP } from "../kernel/render/index.js";
@@ -33,6 +34,10 @@ export const declaredStories: ReadonlyMap<string, PackDefinition> = new Map(
     .flatMap((pack) => pack.stories ?? [])
     .map((story): readonly [string, PackDefinition] => [story.noun, story]),
 );
+
+/** The lookup each declared noun resolves names through, for a filter naming it. */
+export const declaredLookups: NounLookups = (noun) =>
+  declaredStories.get(noun)?.lookup;
 
 /**
  * Those stories compiled to capability modules, by noun.
@@ -49,6 +54,7 @@ export const storyModules: ReadonlyMap<string, CapabilityModule> = new Map(
       story,
       distributionSource("pragma.conf.ts"),
       DEFAULT_PREFIX_MAP,
+      declaredLookups,
     ),
   ]),
 );

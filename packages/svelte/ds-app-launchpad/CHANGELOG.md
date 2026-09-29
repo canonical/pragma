@@ -3,6 +3,55 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+* chore(monorepo)!: move to TypeScript 7 (#1374) ([713d307](https://github.com/canonical/pragma/commit/713d3071d3980539a849ea95823736e8b343a1b1)), closes [#1374](https://github.com/canonical/pragma/issues/1374) [#lib](https://github.com/canonical/pragma/issues/lib) [#domains](https://github.com/canonical/pragma/issues/domains) [#i18n](https://github.com/canonical/pragma/issues/i18n) [#relay](https://github.com/canonical/pragma/issues/relay) [#styles](https://github.com/canonical/pragma/issues/styles)
+
+### BREAKING CHANGES
+
+* the shared TypeScript configs, storybook-config,
+  vitest-config-react and styles-typography no longer accept TypeScript 5 as
+  a peer, and the tsconfig presets no longer set or expect baseUrl.
+
+  * chore(configs): keep TypeScript 5.9 and 6 in the typescript peer ranges
+
+  The shared configs, the Storybook config, the Vitest React config and
+  @canonical/typography now accept TypeScript ^5.9.3 || ^6.0.0 || ^7.0.0,
+  so consumers still on 5.9 or 6 are not pushed off by this upgrade. The
+  Svelte config keeps ^5.9.3 || ^6.0.0, because its consumers compile
+  declarations with TypeScript 6.
+
+  * chore(boilerplate-vite,summon-application): drop the tsconfig paths for # imports
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Features
+
+* **NumberInput:** migrate to design tokens ([#1320](https://github.com/canonical/pragma/issues/1320)) ([1530f31](https://github.com/canonical/pragma/commit/1530f31566fe3c4d2fc538f42e99c6909e88faaa))
+* **svelte:** migrate to design tokens ([#1311](https://github.com/canonical/pragma/issues/1311)) ([050550f](https://github.com/canonical/pragma/commit/050550fb345b09feef6ed7ba1aec9f26b21f8408))
+* **TextInput:** migrate to design tokens ([#1318](https://github.com/canonical/pragma/issues/1318)) ([8100cd2](https://github.com/canonical/pragma/commit/8100cd22cdc3554fb6989fbfa21b64f7204e3452))
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+**Note:** Version bump only for package @canonical/svelte-ds-app-launchpad
+
+
+
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+### Bug Fixes
+
+* **ButtonPrimitive:** Don't set border-color when disabled ([#1336](https://github.com/canonical/pragma/issues/1336)) ([04b67e4](https://github.com/canonical/pragma/commit/04b67e4d1823303e6d12eff6f3c940ac5e85cd25))
+
+### Features
+
+* **ds-app:** export transitions ([#1337](https://github.com/canonical/pragma/issues/1337)) ([f68039d](https://github.com/canonical/pragma/commit/f68039d422f778881048926a914b8e16271681cd))
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 ### Bug Fixes

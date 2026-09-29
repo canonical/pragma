@@ -4,7 +4,7 @@
 @layer ds.components.apps {
   .ds.content-layout {
     /* Column templates and gaps come from the .grid presets in
-  	   @canonical/styles (.responsive: breakpoint-driven 4/8/12 columns;
+  	   @canonical/styles (.responsive: breakpoint-driven 4/8/16 columns;
   	   .intrinsic: fluid auto-fill groups of four minmax(--grid-col-min, 1fr)
   	   columns). Knobs: --grid-gap (or per-axis --grid-row-gap /
   	   --grid-column-gap), --grid-col-min for the intrinsic mode. */

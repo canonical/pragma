@@ -44,7 +44,7 @@ export const SpanTwo: Story = {
   render: (args) => <Cards {...args}>{fixtureCards(4)}</Cards>,
 };
 
-/** `cardSpan={4}` — wide cards (3 per row on a 12-column grid). */
+/** `cardSpan={4}` — wide cards (4 per row on a 16-column grid). */
 export const SpanFour: Story = {
   args: { cardSpan: 4 },
   render: (args) => <Cards {...args}>{fixtureCards(6)}</Cards>,

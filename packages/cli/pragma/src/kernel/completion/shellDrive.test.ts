@@ -339,7 +339,7 @@ const STRUCTURE = [
     at: "pragma create <TAB>",
     words: ["pragma", "create", ""],
     cword: 2,
-    offers: ["application", "component", "package"],
+    offers: ["application", "component", "package", "page"],
   },
   {
     at: "pragma --format <TAB>",
@@ -546,7 +546,7 @@ describe.skipIf(!hasShell("fish"))(
       },
       {
         line: "pragma create ",
-        offers: ["application", "component", "package"],
+        offers: ["application", "component", "package", "page"],
       },
       // fish's own inline convention: it returns the whole `--flag=value` word,
       // not the bare value bash offers. Assert what fish returns.

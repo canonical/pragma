@@ -32,9 +32,9 @@ import {
   TIER_PARAM,
 } from "./types.js";
 
-/** The message a filter declaring neither `values` nor a `vocabulary` gets. */
+/** The message a filter declaring nothing to admit a value against gets. */
 const FILTER_VOCABULARY_MESSAGE =
-  'a filter must declare "values" or a "vocabulary" query — a value-free filter with neither has nothing to check a caller\'s value against';
+  'a filter must declare "values", a "vocabulary" query or a "noun" — a value-free filter with none has nothing to check a caller\'s value against';
 
 /** One reason a declaration cannot be compiled, and where in it to look. */
 export interface StoryIssue {
@@ -61,15 +61,28 @@ export function listShapeIssues(
 ): StoryIssue[] {
   const issues: StoryIssue[] = [];
   for (const [index, filter] of (shape.filters ?? []).entries()) {
-    if (filter.values === undefined && filter.vocabulary === undefined) {
+    if (
+      filter.values === undefined &&
+      filter.vocabulary === undefined &&
+      filter.noun === undefined
+    ) {
       issues.push({
         path: [...path, "filters", index],
         message: FILTER_VOCABULARY_MESSAGE,
       });
     }
+    if (filter.noun !== undefined && filter.entity === undefined) {
+      issues.push({
+        path: [...path, "filters", index],
+        message:
+          'a filter naming a "noun" must declare the "entity" variable its IRIs constrain',
+      });
+    }
   }
   const constrained = [
-    ...(shape.filters ?? []).map((filter) => filter.variable),
+    ...(shape.filters ?? []).flatMap((filter) =>
+      filter.entity ? [filter.variable, filter.entity] : [filter.variable],
+    ),
     ...(shape.search?.variables ?? []),
   ];
   const read = readAuthorQuery(shape.query);
@@ -105,6 +118,26 @@ export function listShapeIssues(
     }
   }
   return issues;
+}
+
+/**
+ * Every noun a story's cells and filters name, once each.
+ *
+ * @param definition - The story to read.
+ * @returns The named nouns, in declaration order.
+ */
+export function nounsNamed(definition: PackDefinition): string[] {
+  const lookup = definition.lookup;
+  const named = [
+    ...[
+      ...(definition.list ? [definition.list] : []),
+      ...(definition.verbs ?? []),
+    ].flatMap((shape) => [...shape.columns, ...(shape.filters ?? [])]),
+    ...(lookup?.fields ?? []),
+    ...(lookup?.sections ?? []),
+    ...(lookup?.expand ?? []).flatMap((expand) => expand.select),
+  ].flatMap((cell) => ("noun" in cell && cell.noun ? [cell.noun] : []));
+  return [...new Set(named)];
 }
 
 /**

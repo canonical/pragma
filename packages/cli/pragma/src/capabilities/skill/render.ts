@@ -2,14 +2,16 @@
  * Formatters for `skill list` and `skill lookup`.
  */
 
-import { BIN_NAME } from "../../constants.js";
-import type { Formatters } from "../../kernel/spec/index.js";
+import { renderNextStep } from "../../kernel/spec/call.js";
+import type { Formatters, Surface } from "../../kernel/spec/index.js";
+import { BUILD_STORE_CALL, LINK_SKILLS_CALL } from "../shared/calls.js";
 import type { DiscoveredSkill } from "./discover.js";
 import type { SkillLookup } from "./verbs.js";
 
 /** Empty-state guidance (U5) — where skills come from now that packs ship them. */
-const EMPTY_PLAIN = `No skills found.\nSkills come from design-system packs — add one to your config's packs, run \`${BIN_NAME} sources update\`, then \`${BIN_NAME} setup skills\`.`;
-const EMPTY_LLM = `## Skills (0)\n\nNo skills found. Skills come from design-system packs — add one to the project config's packs, run \`${BIN_NAME} sources update\`, then \`${BIN_NAME} setup skills\`.`;
+function describeEmpty(surface: Surface): string {
+  return `No skills found.\nSkills come from design-system packs — add one to the project config's packs, build the store, then link the skills. ${renderNextStep(BUILD_STORE_CALL, surface)} ${renderNextStep(LINK_SKILLS_CALL, surface)}`;
+}
 
 export const skillListFormatters: Formatters<DiscoveredSkill[]> = {
   // Zero skills: plain stdout stays empty — the guidance is `notice`,
@@ -21,10 +23,11 @@ export const skillListFormatters: Formatters<DiscoveredSkill[]> = {
           `${s.name}${s.frontmatter.prompt ? " (prompt)" : ""}  ${s.description}`,
       )
       .join("\n"),
-  notice: (skills) => (skills.length === 0 ? EMPTY_PLAIN : undefined),
+  notice: (skills, surface = "cli") =>
+    skills.length === 0 ? describeEmpty(surface) : undefined,
   llm: (skills) =>
     skills.length === 0
-      ? EMPTY_LLM
+      ? `## Skills (0)\n\n${describeEmpty("cli")}`
       : [
           `## Skills (${skills.length})`,
           "",

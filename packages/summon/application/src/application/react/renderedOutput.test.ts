@@ -23,8 +23,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderString, withHelpers } from "@canonical/summon-core";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import { formatWithBiome } from "../../testing/formatWithBiome.js";
 
 const templatesDir = fileURLToPath(new URL("./templates", import.meta.url));
 
@@ -73,6 +73,7 @@ describe("rendered template output is well-formed in every combination", () => {
   for (const combo of combos) {
     it(`${label(combo)}: every emitted file renders, parses, and is valid`, () => {
       const vars = varsFor(combo);
+      const typescript: Record<string, string> = {};
 
       for (const rel of templates) {
         const source = readFileSync(path.join(templatesDir, rel), "utf8");
@@ -90,26 +91,10 @@ describe("rendered template output is well-formed in every combination", () => {
 
         const dest = rel.slice(0, -".ejs".length);
 
-        // 2. Emitted TypeScript parses. `transpileModule` reports syntactic
-        //    diagnostics only, which is exactly the class a gate on rendered
-        //    text can honestly claim — no module resolution is involved.
+        // 2. Emitted TypeScript is collected here and parsed below, the whole
+        //    combination in one Biome process.
         if (dest.endsWith(".ts") || dest.endsWith(".tsx")) {
-          const { diagnostics } = ts.transpileModule(rendered, {
-            reportDiagnostics: true,
-            compilerOptions: {
-              jsx: ts.JsxEmit.Preserve,
-              target: ts.ScriptTarget.ESNext,
-              module: ts.ModuleKind.ESNext,
-            },
-            fileName: dest,
-          });
-          const messages = (diagnostics ?? []).map((d) =>
-            ts.flattenDiagnosticMessageText(d.messageText, " "),
-          );
-          expect(
-            messages,
-            `${dest} does not parse for ${label(combo)}`,
-          ).toEqual([]);
+          typescript[dest] = rendered;
         }
 
         // 3. Emitted JSON is JSON. The templates hand-manage commas around
@@ -121,6 +106,12 @@ describe("rendered template output is well-formed in every combination", () => {
           ).not.toThrow();
         }
       }
+
+      expect(Object.keys(typescript).length).toBeGreaterThan(0);
+      expect(
+        formatWithBiome(typescript).failures,
+        `emitted TypeScript does not parse for ${label(combo)}`,
+      ).toBeNull();
     });
   }
 });

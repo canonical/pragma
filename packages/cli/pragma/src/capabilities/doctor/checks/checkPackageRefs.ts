@@ -28,7 +28,10 @@ import {
 import { activeStories } from "../../../kernel/runtime/graphpack/stories.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import type { SourcesDecision } from "../../../kernel/runtime/resolveSources.js";
-import { resolveSources } from "../../../kernel/runtime/resolveSources.js";
+import {
+  describeIgnoredPack,
+  resolveSources,
+} from "../../../kernel/runtime/resolveSources.js";
 import type { CheckItem, CheckResult } from "../types.js";
 
 /**
@@ -148,6 +151,15 @@ export async function checkPackageRefs(
   const composition = `${packs.length} ${packs.length === 1 ? "pack" : "packs"}, ${entities} entities${suffix}`;
 
   if (decision.kind === "embedded") {
+    // A pack this project built, passed over because an older CLI built it. The
+    // check still PASSES — the snapshot is answering and its answers are the
+    // current ones — so the account of the pack goes in the detail, next to the
+    // account of what IS answering, and the remedy stays unset: there is
+    // nothing to fix, only two ways to change it, and the sentence names both.
+    const ignored =
+      decision.ignoredPack === undefined
+        ? ""
+        : ` · ${describeIgnoredPack(decision.ignoredPack)}`;
     return {
       name,
       status: "pass",
@@ -157,7 +169,7 @@ export async function checkPackageRefs(
       // neither. "shipped with the CLI" rather than "embedded snapshot" — the
       // reader needs to know where these packs came from, not what the build
       // calls the artefact.
-      detail: `shipped with the CLI — ${composition} · run \`${BIN_NAME} sources update\` to build from your own configured packs instead`,
+      detail: `shipped with the CLI — ${composition} · run \`${BIN_NAME} sources update\` to build from your own configured packs instead${ignored}`,
       ...(items.length > 0 ? { items } : {}),
     };
   }

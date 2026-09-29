@@ -3,6 +3,295 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+* chore(monorepo)!: move to TypeScript 7 (#1374) ([713d307](https://github.com/canonical/pragma/commit/713d3071d3980539a849ea95823736e8b343a1b1)), closes [#1374](https://github.com/canonical/pragma/issues/1374) [#lib](https://github.com/canonical/pragma/issues/lib) [#domains](https://github.com/canonical/pragma/issues/domains) [#i18n](https://github.com/canonical/pragma/issues/i18n) [#relay](https://github.com/canonical/pragma/issues/relay) [#styles](https://github.com/canonical/pragma/issues/styles)
+* feat(summon-application,pragma-cli)!: replace the route generator with a page generator (#1373) ([02ee6cd](https://github.com/canonical/pragma/commit/02ee6cd62835aa8b036e749b2dfcf71f07782b60)), closes [#1373](https://github.com/canonical/pragma/issues/1373)
+
+### Bug Fixes
+
+* **ci:** remove the registry reconcile and install twice after the version bump ([#1378](https://github.com/canonical/pragma/issues/1378)) ([99b5b67](https://github.com/canonical/pragma/commit/99b5b6785b66006d3f3cd0dd4609e4e8563b8a8b))
+* **deps:** stabilize bun.lock for the version-update workflow ([#1366](https://github.com/canonical/pragma/issues/1366)) ([452967d](https://github.com/canonical/pragma/commit/452967d2709c180e763d0856dc0f8017d76a2037))
+
+### BREAKING CHANGES
+
+* the `route` generator is removed. Use
+  `summon page <domain>/<name>` and add the printed import and route entry
+  to the domain's routes.ts by hand.
+
+  * docs(summon-application): document the page generator in place of the route generator
+
+  The package README documents `summon page`, including the routing
+  examples it prints. The conventions, the scaffolded app's README, the
+  repository README and the router middleware cookbook name the page
+  generator where they named the route generator.
+
+  * fix(summon-application): make the page path a required answer
+
+  The page generator's names come only from its argument. A default
+  "example/page" would let a run with --yes, or a tool call with no
+  arguments, pick a domain and page name nobody gave, so the prompt has no
+  default and a missing path is refused.
+
+  * fix(summon-application): refuse a page path with a leading slash
+
+  "/invoices/detail" reads as a url or an absolute path, and the page path
+  is neither: it is two name segments. Refusing it, instead of silently
+  stripping the slash, also keeps the page path prompt in line with the
+  other positional path prompts, which reject absolute paths.
+
+  * fix(summon-core): let a generator guard on a file that must already exist
+
+  Before running a generator, execute builds it once without touching the
+  disk to list its effects for the outcome summary. That walk cannot see
+  the host, so every existence check in it answers "absent", and a
+  generator that adds to existing code (one that refuses unless the folder
+  it adds to is there) failed in that walk however the host looked: it could
+  never run from either CLI.
+
+  When the plain walk fails, the summary walk is now repeated letting each
+  existence check take the other answer where the first led to a failure,
+  which is the plan of the run in which the guards pass. The real run that
+  follows still enforces every guard against the host, with the guard's own
+  message.
+
+  * fix(summon-application): report a missing domain or a taken page name as an invalid answer
+
+  The page generator's refusals are the answer's fault: the domain it names
+  does not exist, or the page name is already taken. They now carry summon's
+  invalid-answer code, so a host reports them as a usage error rather than
+  as an internal error to file a bug about.
+
+  * fix(summon-application): name no command in the missing-domain refusal
+
+  The page generator runs under more than one CLI, so its refusal and its
+  help text no longer tell the user to run a command the invoking CLI may
+  not have; they say the domain must be created first.
+
+  * feat(pragma-cli): add create page
+
+  `pragma create page <domain>/<name>` (MCP tool `create_page`) runs the
+  application generator package's page generator, like the other create
+* the shared TypeScript configs, storybook-config,
+  vitest-config-react and styles-typography no longer accept TypeScript 5 as
+  a peer, and the tsconfig presets no longer set or expect baseUrl.
+
+  * chore(configs): keep TypeScript 5.9 and 6 in the typescript peer ranges
+
+  The shared configs, the Storybook config, the Vitest React config and
+  @canonical/typography now accept TypeScript ^5.9.3 || ^6.0.0 || ^7.0.0,
+  so consumers still on 5.9 or 6 are not pushed off by this upgrade. The
+  Svelte config keeps ^5.9.3 || ^6.0.0, because its consumers compile
+  declarations with TypeScript 6.
+
+  * chore(boilerplate-vite,summon-application): drop the tsconfig paths for # imports
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Bug Fixes
+
+* **modal:** follow ups ([#1356](https://github.com/canonical/pragma/issues/1356)) ([04dd569](https://github.com/canonical/pragma/commit/04dd569a5de6cd234df69834cac618b25206c539))
+* **styles:** make the responsive grid 16 columns on desktop ([#1358](https://github.com/canonical/pragma/issues/1358)) ([4a58572](https://github.com/canonical/pragma/commit/4a58572a7a9bed8f1bb3c5f47ce1c4b269e8db63))
+
+### Features
+
+* **constitution:** stricter definition of magic ([#936](https://github.com/canonical/pragma/issues/936)) ([8a4cdfe](https://github.com/canonical/pragma/commit/8a4cdfe1e0a55318af58d2f64723bc2543f27ae1))
+* **NumberInput:** migrate to design tokens ([#1320](https://github.com/canonical/pragma/issues/1320)) ([1530f31](https://github.com/canonical/pragma/commit/1530f31566fe3c4d2fc538f42e99c6909e88faaa))
+* **styles:** Allow permeable pragma elements with the adapter ([#1362](https://github.com/canonical/pragma/issues/1362)) ([fe39f00](https://github.com/canonical/pragma/commit/fe39f007831609527b039b4bed99c6fde14594c3))
+* **svelte:** migrate to design tokens ([#1311](https://github.com/canonical/pragma/issues/1311)) ([050550f](https://github.com/canonical/pragma/commit/050550fb345b09feef6ed7ba1aec9f26b21f8408))
+* **TextInput:** migrate to design tokens ([#1318](https://github.com/canonical/pragma/issues/1318)) ([8100cd2](https://github.com/canonical/pragma/commit/8100cd22cdc3554fb6989fbfa21b64f7204e3452))
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+* refactor!: answer the SideNavigation stack's review threads (#1285) ([57096e6](https://github.com/canonical/pragma/commit/57096e694b18cbbacf74819a1465e0609f019e3d)), closes [#1285](https://github.com/canonical/pragma/issues/1285)
+
+### Bug Fixes
+
+* **ds-app:** harden the SideNavigation rail-collapse behaviour ([#1228](https://github.com/canonical/pragma/issues/1228)) ([f3d6279](https://github.com/canonical/pragma/commit/f3d6279676ad07ed230dff86f95a829a9f08beda)), closes [#1227](https://github.com/canonical/pragma/issues/1227) [#main-content](https://github.com/canonical/pragma/issues/main-content)
+* **ds-app:** render non-action footer rows as labels and stabilise element keys ([#1229](https://github.com/canonical/pragma/issues/1229)) ([0bebcd2](https://github.com/canonical/pragma/commit/0bebcd21042fd51ad84de92d494f16923aa0d3cb)), closes [canonical/pragma#1208](https://github.com/canonical/pragma/issues/1208) [#1208](https://github.com/canonical/pragma/issues/1208)
+* **ds-global:** mirror contextual menu alignment in RTL ([#1338](https://github.com/canonical/pragma/issues/1338)) ([e25a527](https://github.com/canonical/pragma/commit/e25a5278996f03f7ebe404586a9e758bb3bc0033))
+
+### Features
+
+* **pragma-cli:** a pack built by an older CLI yields to the shipped one, and sources reset removes it ([#1321](https://github.com/canonical/pragma/issues/1321)) ([7ba0efd](https://github.com/canonical/pragma/commit/7ba0efd1168529e47708cfc127c5650df3e494e2))
+
+### BREAKING CHANGES
+
+* pass the trigger content as ContextualMenu's children
+  (`<ContextualMenu items={…}>Actions</ContextualMenu>`) instead of the
+  `trigger` prop.
+
+  * refactor(ds-app): restructure ContextSwitcher around a real wrapper element
+
+  The component returned a Fragment pairing an optional GroupHeader with
+  the ContextualMenu — a root a consumer cannot address (no className, id,
+  or data attribute lands anywhere). The root is now the component's own
+  wrapper div carrying the DS class and the spread rest props; the
+  caption and the dropdown field are its children.
+
+  One renderer now serves both entry shapes (a context and the
+  create-context action), branching on renderLabel — the second
+  single-use content component folds away, and with it the
+  create-context row's layout moves onto a class only this component's
+  renderer emits (.create-context), replacing the surface-scoped selector
+  the surfaceClassName removal had orphaned.
+
+  The ContextualMenu passthrough props (open/onOpenChange/positioning)
+  are forwarded explicitly now that the rest spread lands on the wrapper,
+  and the dropdown's default max width stays the rail width minus its
+  row insets, overridable per instance.
+
+  * refactor(ds-app): let ItemExpandable's details element own its open state
+
+  The disclosure mirrored <details>'s native state into React and drove
+  the attribute back — a controlled circuit around an element that
+  already manages itself, with a toggle handler whose only job was to
+  keep the mirror in step. The element is now uncontrolled: the open
+  attribute is seeded from a mount-only snapshot of defaultExpanded
+  (SSR renders it, and a seed flipping back to false never force-closes
+  an open branch), and the two behaviours that genuinely need JS reach
+  the DOM through a ref instead of state — the one-way re-open when
+  navigation makes this branch the selected one, and the footer's
+  collapse-on-child-activation. Every existing behaviour test passes
+  unchanged.
+
+  * refactor(ds-app): move useCollapseShortcut into its domain and default-export it
+
+  The hook lived under common/hooks — a grab-bag nesting level below the
+  component it serves. It moves to SideNavigation/hooks/useCollapseShortcut,
+  the hooks folder of its domain, where the code standards place custom
+  hooks.
+
+  The module now has a single default export (the hook); COLLAPSE_SHORTCUT
+  was its only other consumer-facing name and is single-use, so it stays
+  as an unexported module constant. The boolean gate renames from
+  `enabled` to `condition` — the prop names the state it represents
+  (the keyboardShortcut prop SideNavigation feeds it), not a bare
+  on/off switch.
+
+  * chore(ds-app): trim the vitest setup's ResizeObserver comment
+
+  * chore(deps): regenerate the lockfile after the 0.39.0 bump
+
+  ---------
+* **ds-app:** SideNavigation's entire subcomponent surface changes —
+  there are no dot-static or named exports; the sidebar is consumed
+  data-only via root/footerRoot/contextSwitcher props, and the region and
+  row components render exclusively from that data.
+
+  - One navigation landmark: the root is a plain <div>; Content's <nav> is
+    the component's single navigation landmark (aria-label forwarded,
+    default "Main navigation") — branding, the context switcher and the
+    footer's actions sit outside it by design.
+  - A visually hidden "Skip to main content" link is the first focusable
+    element in the DOM order (target via skipTo, default #main-content).
+  - Four regions, all data-driven: Header (branding + collapse toggle), an
+    optional ContextSwitcher region (typed contextSwitcher props — a
+    role="menu" select-like widget is not navigation, so it renders in
+    its own plain-<div> region between Header and Content, outside the
+    landmark, and hides when the rail collapses), Content (the landmark;
+    links, plain labels and expandable disclosures only) and Footer
+    (free-form rows through footerRoot).
+  - Strict content vocabulary: interactive action rows belong to the
+    Footer, so the landmark's contents always read as destinations. There
+    is no JSX escape hatch — the API carries no children props.
+  - Footer vocabulary mirrors the content tree's type split: free-form
+    leaves (LeafFooterItem — label required, optional icon/url/control/
+    slot; action rows via control: "button" + onClick flow through data)
+    and depth-1 expandables (ExpandableFooterItem). Leaf rows render as
+    links (active when matching the current location, LinkComponent
+    integrated); action rows render as buttons.
+  - Rail state keys off data-expanded on the root — the single source of
+    truth. Collapsed: Content and the switcher region hide, the footer
+    degrades to icon-only, and any rendered ItemExpandable discloses its
+    sub-items into a floating popover on the inline-end with visible
+    labels. Where CSS anchor positioning is supported (Baseline 2026),
+    position-try-fallbacks flips the popover above its trigger on viewport
+    overflow — browser-measured, plus the mirrored 0.5rem gap; otherwise
+    it stays top-anchored. Native <details> throughout: no Esc-close or
+    outside-click dismissal by design, Tab navigation stays viable.
+  - A nested sub-item whose url becomes active re-opens its collapsed
+    parent (one-way: manual collapse is respected, never auto-closed) and
+    carries data-active + aria-current under the expanded parent.
+  - The rail-collapse shortcut is Ctrl+B, opt-in via keyboardShortcut and
+    off by default (pending approval).
+  - The sidenav architecture tokens are declared on the component's own
+    stylesheet (rail widths, logo sizing, the unified 0.5rem row inset,
+    the row-background channel), with motion-token durations.
+  - Storybook: data-driven MAAS/LXD stories; a practical
+    "with ContextSwitcher" story routes url'd contexts through the hash
+    router and shows both ItemExpandable flavours side by side; all root
+    fixtures live in storybook/navigation/fixtures.tsx.
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+* feat(ds-app)!: rebuild SideNavigation into a single data-driven region shell (#1227), closes [#1227](https://github.com/canonical/pragma/issues/1227) [#main-content](https://github.com/canonical/pragma/issues/main-content)
+
+### Bug Fixes
+
+* **ButtonPrimitive:** Don't set border-color when disabled ([#1336](https://github.com/canonical/pragma/issues/1336)) ([04b67e4](https://github.com/canonical/pragma/commit/04b67e4d1823303e6d12eff6f3c940ac5e85cd25))
+* **react-ds-global:** export TooltipEngine and add ContextualMenu surfaceClassName ([#1225](https://github.com/canonical/pragma/issues/1225)) ([a33a318](https://github.com/canonical/pragma/commit/a33a318b267793261d7401e2d7e2494573c64101))
+
+### Features
+
+* **ds-app:** add SideNavigation's data-driven subcomponents ([#1234](https://github.com/canonical/pragma/issues/1234)) ([78c2314](https://github.com/canonical/pragma/commit/78c23146a723c5a2e39649988634885139264127))
+* **ds-app:** export transitions ([#1337](https://github.com/canonical/pragma/issues/1337)) ([f68039d](https://github.com/canonical/pragma/commit/f68039d422f778881048926a914b8e16271681cd))
+
+### BREAKING CHANGES
+
+* SideNavigation's entire subcomponent surface changes —
+  there are no dot-static or named exports; the sidebar is consumed
+  data-only via root/footerRoot/contextSwitcher props, and the region and
+  row components render exclusively from that data.
+
+  - One navigation landmark: the root is a plain <div>; Content's <nav> is
+    the component's single navigation landmark (aria-label forwarded,
+    default "Main navigation") — branding, the context switcher and the
+    footer's actions sit outside it by design.
+  - A visually hidden "Skip to main content" link is the first focusable
+    element in the DOM order (target via skipTo, default #main-content).
+  - Four regions, all data-driven: Header (branding + collapse toggle), an
+    optional ContextSwitcher region (typed contextSwitcher props — a
+    role="menu" select-like widget is not navigation, so it renders in
+    its own plain-<div> region between Header and Content, outside the
+    landmark, and hides when the rail collapses), Content (the landmark;
+    links, plain labels and expandable disclosures only) and Footer
+    (free-form rows through footerRoot).
+  - Strict content vocabulary: interactive action rows belong to the
+    Footer, so the landmark's contents always read as destinations. There
+    is no JSX escape hatch — the API carries no children props.
+  - Footer vocabulary mirrors the content tree's type split: free-form
+    leaves (LeafFooterItem — label required, optional icon/url/control/
+    slot; action rows via control: "button" + onClick flow through data)
+    and depth-1 expandables (ExpandableFooterItem). Leaf rows render as
+    links (active when matching the current location, LinkComponent
+    integrated); action rows render as buttons.
+  - Rail state keys off data-expanded on the root — the single source of
+    truth. Collapsed: Content and the switcher region hide, the footer
+    degrades to icon-only, and any rendered ItemExpandable discloses its
+    sub-items into a floating popover on the inline-end with visible
+    labels. Where CSS anchor positioning is supported (Baseline 2026),
+    position-try-fallbacks flips the popover above its trigger on viewport
+    overflow — browser-measured, plus the mirrored 0.5rem gap; otherwise
+    it stays top-anchored. Native <details> throughout: no Esc-close or
+    outside-click dismissal by design, Tab navigation stays viable.
+  - A nested sub-item whose url becomes active re-opens its collapsed
+    parent (one-way: manual collapse is respected, never auto-closed) and
+    carries data-active + aria-current under the expanded parent.
+  - The rail-collapse shortcut is Ctrl+B, opt-in via keyboardShortcut and
+    off by default (pending approval).
+  - The sidenav architecture tokens are declared on the component's own
+    stylesheet (rail widths, logo sizing, the unified 0.5rem row inset,
+    the row-background channel), with motion-token durations.
+  - Storybook: data-driven MAAS/LXD stories; a practical
+    "with ContextSwitcher" story routes url'd contexts through the hash
+    router and shows both ItemExpandable flavours side by side; all root
+    fixtures live in storybook/navigation/fixtures.tsx.
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * feat(react-head)!: render head tags so server rendering emits them (#1192) ([76ac99d](https://github.com/canonical/pragma/commit/76ac99dde1d80790d8ac518c485548831a69c26a)), closes [#1192](https://github.com/canonical/pragma/issues/1192)

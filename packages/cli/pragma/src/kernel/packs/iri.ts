@@ -7,7 +7,7 @@
  * before it can be interpolated into a generated `<iri>` query token.
  */
 
-import { cliRecovery, PragmaError } from "../error/index.js";
+import { callRecovery, PragmaError } from "../error/index.js";
 
 /** Characters not allowed inside a SPARQL `<IRI>`. */
 const UNSAFE_IRI_PATTERN = /[<>"{}|\\^`\s]/;
@@ -86,9 +86,10 @@ function tryResolveUri(
 
   return PragmaError.invalidInput("prefix", prefix, {
     validOptions: Object.keys(prefixes),
-    recovery: cliRecovery("ontology list", "List known ontology prefixes.", {
-      tool: "ontology_list",
-    }),
+    recovery: callRecovery(
+      { verb: "ontology list" },
+      "List known ontology prefixes.",
+    ),
   });
 }
 

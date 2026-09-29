@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -7,9 +7,11 @@ import {
   dryRun,
   exists,
   fail,
+  flatMap,
   gen,
   ifElseM,
   mkdir,
+  pure,
   sequence_,
   type Task,
   writeFile,
@@ -105,6 +107,126 @@ describe("execute — the summon↔pragma seam", () => {
     ).rejects.toMatchObject({
       taskError: { code: "MISSING_REQUIRED_ANSWER" },
     });
+  });
+});
+
+describe("execute — a generator that adds to existing files", () => {
+  // Refuses unless `base.txt` is already there: the guard depends on the
+  // host, which the pure preview walk cannot see.
+  const addsTo: GeneratorDefinition = {
+    ...fixture,
+    prompts: [],
+    generate: () =>
+      ifElseM(
+        exists("base.txt"),
+        writeFile("added.txt", "added\n"),
+        fail({ code: "BASE_MISSING", message: "base.txt is missing" }),
+      ),
+  };
+  const run = (dir: string) =>
+    runGeneratorTask(execute(addsTo, { prompt: autoPrompt({}), params: {} }), {
+      cwd: dir,
+      promptHandler: autoPrompt({}),
+    });
+
+  it("runs when the file it adds to exists, and summarises the write", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "exec-adds-"));
+    writeFileSync(join(dir, "base.txt"), "base\n");
+    const result = await run(dir);
+    expect(readFileSync(join(dir, "added.txt"), "utf-8")).toBe("added\n");
+    expect(
+      result.effects.some(
+        (e) => e._tag === "WriteFile" && e.path === "added.txt",
+      ),
+    ).toBe(true);
+  });
+
+  it("fails with the guard's own message when that file is missing", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "exec-adds-"));
+    await expect(run(dir)).rejects.toMatchObject({
+      taskError: { code: "BASE_MISSING" },
+    });
+  });
+
+  it("rethrows a preview failure that is not a task failure, unchanged", () => {
+    // Each walk throws its own instance, so the one that comes back says
+    // which walk's error was rethrown: it must be the plain walk's, the first.
+    const thrown: RangeError[] = [];
+    const broken: GeneratorDefinition = {
+      ...addsTo,
+      generate: () =>
+        flatMap(pure(undefined), (): Task<void> => {
+          const error = new RangeError(`walk ${thrown.length + 1}`);
+          thrown.push(error);
+          throw error;
+        }),
+    };
+    let caught: unknown;
+    try {
+      dryRun(execute(broken, { prompt: autoPrompt({}), params: {} }));
+    } catch (error) {
+      caught = error;
+    }
+    expect(thrown.length).toBeGreaterThan(1);
+    expect(caught).toBe(thrown[0]);
+  });
+});
+
+describe("execute — the summary walk behind a guard on an existing file", () => {
+  const runIn = (dir: string, generate: GeneratorDefinition["generate"]) => {
+    const generator: GeneratorDefinition = {
+      ...fixture,
+      prompts: [],
+      generate,
+    };
+    return runGeneratorTask(
+      execute(generator, { prompt: autoPrompt({}), params: {} }),
+      { cwd: dir, promptHandler: autoPrompt({}) },
+    );
+  };
+
+  it("summarises a gen()-built generator's real effects (each walk builds afresh)", async () => {
+    // gen() is single-use: a retry that re-walked the first walk's task would
+    // drive its spent iterator, whose walk no longer passes the guard — the
+    // summary would lose the existence check between the two writes.
+    const dir = mkdtempSync(join(tmpdir(), "exec-gen-"));
+    writeFileSync(join(dir, "base.txt"), "base\n");
+    const result = await runIn(dir, () =>
+      gen(function* () {
+        yield* $(writeFile("first.txt", "first\n"));
+        const present = yield* $(exists("base.txt"));
+        if (!present) {
+          yield* $(
+            fail({ code: "BASE_MISSING", message: "base.txt is missing" }),
+          );
+        }
+        yield* $(writeFile("added.txt", "added\n"));
+      }),
+    );
+    const walked = result.effects.flatMap((e) =>
+      e._tag === "WriteFile" || e._tag === "Exists"
+        ? [`${e._tag} ${e.path}`]
+        : [],
+    );
+    expect(walked).toEqual([
+      "WriteFile first.txt",
+      "Exists base.txt",
+      "WriteFile added.txt",
+    ]);
+    expect(readFileSync(join(dir, "added.txt"), "utf-8")).toBe("added\n");
+  });
+
+  it("fails with the plain walk's error when no existence answer avoids a failure", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "exec-both-"));
+    await expect(
+      runIn(dir, () =>
+        ifElseM(
+          exists("a"),
+          fail({ code: "A_EXISTS", message: "a exists" }),
+          fail({ code: "B", message: "b" }),
+        ),
+      ),
+    ).rejects.toMatchObject({ taskError: { code: "B" } });
   });
 });
 

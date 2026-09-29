@@ -24,6 +24,7 @@ import {
   toolName,
   verbLabel,
 } from "./emitSurface.js";
+import { describeTool, useWhenSentence } from "./guidance.js";
 import type {
   CapabilityModule,
   Example,
@@ -31,6 +32,7 @@ import type {
   ReferenceCliSyntax,
   VerbSpec,
 } from "./types.js";
+import { formatWireType, wireType } from "./wireType.js";
 
 /** The reference doc set: relative path under `docs/reference/` → file content. */
 export type ReferenceDocs = ReadonlyMap<string, string>;
@@ -122,19 +124,11 @@ function formatFlagValue(param: ParamSpec): string {
 }
 
 /**
- * The tool-schema type label a param projects to (mirrors `buildZodSchema`).
- * Enum values are comma-joined (never pipe-joined) so the label is safe inside
- * a Markdown table cell without escaping.
+ * The tool-schema type label a param projects to: the SAME {@link wireType}
+ * `buildZodSchema` validates against, printed — never a mirror of it.
  */
 function formatParamType(param: ParamSpec): string {
-  switch (param.kind) {
-    case "enum":
-      return `enum(${param.values.join(", ")})`;
-    case "string[]":
-      return "string[]";
-    default:
-      return param.kind;
-  }
+  return formatWireType(wireType(param));
 }
 
 /** Render a default value for prose (strings verbatim, everything else stringified). */
@@ -260,6 +254,7 @@ function renderCommandSection(
     `### ${formatInvocation(verb)}`,
     verb.summary,
     verb.doc ?? "",
+    useWhenSentence(verb) ?? "",
     `\`\`\`\n${syntax ? `${BIN_NAME} ${syntax.usage}` : formatUsage(verb)}\n\`\`\``,
     formatArgsTable(verb.params, syntax?.positionalTokens),
     formatFlagsTable(verb.params, syntax?.flagTokens),
@@ -410,7 +405,8 @@ function formatToolAnnotations(verb: VerbSpec): string {
 function renderToolSection(verb: VerbSpec): string {
   const blocks = [
     `### ${toolName(verb.path)}`,
-    verb.doc ?? verb.summary,
+    // The description an agent is actually served, from the one generator.
+    describeTool(verb),
     formatToolAnnotations(verb),
     "**Input**",
     formatToolParams(verb),
@@ -451,7 +447,7 @@ function renderNonToolSurface(modules: readonly CapabilityModule[]): string {
     );
   }
   bullets.push(
-    "- **Instructions**: the server always sends handshake instructions describing the conventions and the discovery sequence.",
+    "- **Instructions**: the server always sends handshake instructions: the conventions, and a generated index of tools by the question each answers, fitted to 2,000 characters.",
   );
   return `## Non-tool surface\n\n${bullets.join("\n")}`;
 }

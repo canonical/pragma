@@ -9,15 +9,13 @@
  * margin-box) sums back to a bU multiple, so the overflow is purely visual and
  * doesn't push the header off-grid. The circle-of-friends mark is a baseline-
  * unit square, offset from the top by a baseline-unit margin.
- *
- * Layer: ds.components.apps (@canonical/styles README, "Cascade layers").
- */
-
+  *
+ * Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
 @layer ds.components.apps {
   .ds.canonical-logo {
     /* Mark geometry in baseline units (bU = --space-baseline). */
-    --mark-size: 2; /* mark side, in bU */
-    --mark-margin-top: 1; /* gap above the mark, in bU */
+    --mark-size: 4; /* mark side, in bU */
+    --mark-margin-top: 5; /* gap above the mark, in bU */
 
     /* Rectangle height = bU multiples + a small overflow past the baseline. */
     --logo-height: 4; /* base height, in bU */
@@ -26,14 +24,14 @@
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    inline-size: var(--sidenav-start, 1.5rem);
-    block-size: calc(
-      var(--space-baseline) *
-      var(--logo-height) +
-      var(--logo-overflow)
-    );
+    /* Sidenav geometry tokens are owned by SideNavigation/styles.css; the
+     fallbacks keep the standalone logo story sized when they aren't loaded.
+     2.5rem tall × 1.25rem wide (1:2 ratio) — a deliberate deviation from
+     the 24.04 spec's 2.25rem; see SideNavigation/styles.css. */
+    block-size: var(--sidenav-logo-block-size, 2.5rem);
+    inline-size: var(--sidenav-logo-inline-size, 1.25rem);
     /* Cancel the overshoot so the margin-box lands back on the grid: the rectangle
-       (logo-height bU + overflow) plus this margin sums to (logo-height + 1) bU. */
+     (logo-height bU + overflow) plus this margin sums to (logo-height + 1) bU. */
     margin-block-end: calc(var(--space-baseline) - var(--logo-overflow));
     padding: 0;
     background: var(--color-background-logo);

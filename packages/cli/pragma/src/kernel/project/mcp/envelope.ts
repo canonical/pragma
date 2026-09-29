@@ -4,8 +4,9 @@
  * The MCP projector returns the *same* `{ ok, data, meta }` / `{ ok, error }`
  * envelope the CLI emits under `--format json` — built by the shared
  * `successEnvelope` / `errorEnvelope` — serialized into a single text content
- * block (D4). Reusing the shared builders is what guarantees CLI-JSON and MCP
- * output are byte-identical.
+ * block (D4). Reusing the shared builders is what keeps CLI-JSON and MCP output
+ * the same envelope — equal in everything but the spelling of a next step
+ * inside `meta.notice`, which follows the surface it is printed on.
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";

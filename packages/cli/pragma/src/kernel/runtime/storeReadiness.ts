@@ -18,7 +18,8 @@
  */
 
 import type { ConfigLayers } from "../config/types.js";
-import { cliRecovery, PragmaError } from "../error/index.js";
+import { callRecovery, PragmaError } from "../error/index.js";
+import { BUILD_STORE_CALL } from "../spec/call.js";
 import { resolveSources } from "./resolveSources.js";
 
 /**
@@ -32,10 +33,9 @@ import { resolveSources } from "./resolveSources.js";
  */
 export function storeUnavailable(reason: string): PragmaError {
   return PragmaError.storeUnavailable(`${reason}.`, {
-    recovery: cliRecovery(
-      "sources update",
+    recovery: callRecovery(
+      BUILD_STORE_CALL,
       "Build the local store from the configured packs.",
-      { tool: "sources_update" },
     ),
   });
 }

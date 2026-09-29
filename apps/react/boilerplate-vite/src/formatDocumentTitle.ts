@@ -4,7 +4,7 @@
  * Every page names only itself — `<Head title="Account" />` — and the
  * application name is appended here, once. That keeps the name out of every
  * message catalog, and it is what makes a page added later by
- * `summon route <domain>/<name>` (whose scaffolded title is a bare noun) title
+ * `summon page <domain>/<name>` (whose scaffolded title is a bare noun) title
  * itself consistently with the rest of the app.
  *
  * The client and the server entries must pass the same function to

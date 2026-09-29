@@ -24,7 +24,7 @@
  * ── --card-span (columns per card) ──────────────────────────────────────────
  * `--card-span` (the `cardSpan` prop) is the NUMBER OF PARENT COLUMNS each card
  * spans — not a pixel width. `1` (default) packs the most cards per row; use 2
- * or 4 for fewer, wider cards on the 4/8/12-column responsive grid.
+ * or 4 for fewer, wider cards on the 4/8/16-column responsive grid.
  *
  * Layer: ds.components.global (@canonical/styles README, "Cascade layers").
  */

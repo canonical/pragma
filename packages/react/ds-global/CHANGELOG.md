@@ -3,6 +3,111 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+* chore(monorepo)!: move to TypeScript 7 (#1374) ([713d307](https://github.com/canonical/pragma/commit/713d3071d3980539a849ea95823736e8b343a1b1)), closes [#1374](https://github.com/canonical/pragma/issues/1374) [#lib](https://github.com/canonical/pragma/issues/lib) [#domains](https://github.com/canonical/pragma/issues/domains) [#i18n](https://github.com/canonical/pragma/issues/i18n) [#relay](https://github.com/canonical/pragma/issues/relay) [#styles](https://github.com/canonical/pragma/issues/styles)
+
+### BREAKING CHANGES
+
+* the shared TypeScript configs, storybook-config,
+  vitest-config-react and styles-typography no longer accept TypeScript 5 as
+  a peer, and the tsconfig presets no longer set or expect baseUrl.
+
+  * chore(configs): keep TypeScript 5.9 and 6 in the typescript peer ranges
+
+  The shared configs, the Storybook config, the Vitest React config and
+  @canonical/typography now accept TypeScript ^5.9.3 || ^6.0.0 || ^7.0.0,
+  so consumers still on 5.9 or 6 are not pushed off by this upgrade. The
+  Svelte config keeps ^5.9.3 || ^6.0.0, because its consumers compile
+  declarations with TypeScript 6.
+
+  * chore(boilerplate-vite,summon-application): drop the tsconfig paths for # imports
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Bug Fixes
+
+* **modal:** follow ups ([#1356](https://github.com/canonical/pragma/issues/1356)) ([04dd569](https://github.com/canonical/pragma/commit/04dd569a5de6cd234df69834cac618b25206c539))
+* **styles:** make the responsive grid 16 columns on desktop ([#1358](https://github.com/canonical/pragma/issues/1358)) ([4a58572](https://github.com/canonical/pragma/commit/4a58572a7a9bed8f1bb3c5f47ce1c4b269e8db63))
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+* refactor!: answer the SideNavigation stack's review threads (#1285) ([57096e6](https://github.com/canonical/pragma/commit/57096e694b18cbbacf74819a1465e0609f019e3d)), closes [#1285](https://github.com/canonical/pragma/issues/1285)
+
+### Bug Fixes
+
+* **ds-global:** mirror contextual menu alignment in RTL ([#1338](https://github.com/canonical/pragma/issues/1338)) ([e25a527](https://github.com/canonical/pragma/commit/e25a5278996f03f7ebe404586a9e758bb3bc0033))
+
+### BREAKING CHANGES
+
+* pass the trigger content as ContextualMenu's children
+  (`<ContextualMenu items={…}>Actions</ContextualMenu>`) instead of the
+  `trigger` prop.
+
+  * refactor(ds-app): restructure ContextSwitcher around a real wrapper element
+
+  The component returned a Fragment pairing an optional GroupHeader with
+  the ContextualMenu — a root a consumer cannot address (no className, id,
+  or data attribute lands anywhere). The root is now the component's own
+  wrapper div carrying the DS class and the spread rest props; the
+  caption and the dropdown field are its children.
+
+  One renderer now serves both entry shapes (a context and the
+  create-context action), branching on renderLabel — the second
+  single-use content component folds away, and with it the
+  create-context row's layout moves onto a class only this component's
+  renderer emits (.create-context), replacing the surface-scoped selector
+  the surfaceClassName removal had orphaned.
+
+  The ContextualMenu passthrough props (open/onOpenChange/positioning)
+  are forwarded explicitly now that the rest spread lands on the wrapper,
+  and the dropdown's default max width stays the rail width minus its
+  row insets, overridable per instance.
+
+  * refactor(ds-app): let ItemExpandable's details element own its open state
+
+  The disclosure mirrored <details>'s native state into React and drove
+  the attribute back — a controlled circuit around an element that
+  already manages itself, with a toggle handler whose only job was to
+  keep the mirror in step. The element is now uncontrolled: the open
+  attribute is seeded from a mount-only snapshot of defaultExpanded
+  (SSR renders it, and a seed flipping back to false never force-closes
+  an open branch), and the two behaviours that genuinely need JS reach
+  the DOM through a ref instead of state — the one-way re-open when
+  navigation makes this branch the selected one, and the footer's
+  collapse-on-child-activation. Every existing behaviour test passes
+  unchanged.
+
+  * refactor(ds-app): move useCollapseShortcut into its domain and default-export it
+
+  The hook lived under common/hooks — a grab-bag nesting level below the
+  component it serves. It moves to SideNavigation/hooks/useCollapseShortcut,
+  the hooks folder of its domain, where the code standards place custom
+  hooks.
+
+  The module now has a single default export (the hook); COLLAPSE_SHORTCUT
+  was its only other consumer-facing name and is single-use, so it stays
+  as an unexported module constant. The boolean gate renames from
+  `enabled` to `condition` — the prop names the state it represents
+  (the keyboardShortcut prop SideNavigation feeds it), not a bare
+  on/off switch.
+
+  * chore(ds-app): trim the vitest setup's ResizeObserver comment
+
+  * chore(deps): regenerate the lockfile after the 0.39.0 bump
+
+  ---------
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+### Bug Fixes
+
+* **react-ds-global:** export TooltipEngine and add ContextualMenu surfaceClassName ([#1225](https://github.com/canonical/pragma/issues/1225)) ([a33a318](https://github.com/canonical/pragma/commit/a33a318b267793261d7401e2d7e2494573c64101))
+
+
 # [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
 
 * fix(ds-global)!: a menu separator is presentational, not disabled (#1155) ([d7afbc7](https://github.com/canonical/pragma/commit/d7afbc7c4dc611f45e226c0120e1871370126d99)), closes [#1155](https://github.com/canonical/pragma/issues/1155) [#1150](https://github.com/canonical/pragma/issues/1150)

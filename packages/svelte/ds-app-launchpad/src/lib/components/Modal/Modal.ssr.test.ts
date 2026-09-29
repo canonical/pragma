@@ -116,27 +116,23 @@ describe("Modal SSR", () => {
   });
 
   describe("closedby", () => {
-    it("renders as any if `closeOnOutsideClick` is true", () => {
-      const page = render(Component, {
-        props: {
-          ...baseProps,
-          closeOnOutsideClick: true,
-        },
-      });
+    it("defaults to any", () => {
+      const page = render(Component, { props: baseProps });
       expect(componentLocator(page).getAttribute("closedby")).toBe("any");
     });
 
-    it("renders as closerequest if `closeOnOutsideClick` is false", () => {
-      const page = render(Component, {
-        props: {
-          ...baseProps,
-          closeOnOutsideClick: false,
-        },
-      });
-      expect(componentLocator(page).getAttribute("closedby")).toBe(
-        "closerequest",
-      );
-    });
+    it.each(["any", "closerequest", "none"] as const)(
+      "renders as %s when set",
+      (closedby) => {
+        const page = render(Component, {
+          props: {
+            ...baseProps,
+            closedby,
+          },
+        });
+        expect(componentLocator(page).getAttribute("closedby")).toBe(closedby);
+      },
+    );
   });
 });
 

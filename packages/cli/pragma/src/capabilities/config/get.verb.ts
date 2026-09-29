@@ -39,6 +39,8 @@ const getVerb: VerbSpec<Record<string, unknown>, ConfigGetData> = {
   path: ["config", "get"],
   summary: "Print one resolved config value.",
   doc: "Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell.",
+  useWhen: "when asked for the value of one setting",
+  example: { key: "tier" },
   params: [
     {
       kind: "enum",

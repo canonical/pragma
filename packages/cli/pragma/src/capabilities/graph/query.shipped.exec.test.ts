@@ -64,3 +64,47 @@ describe("a name pragma printed can be pasted back (PROTECTED)", () => {
     expect(prefixed).toEqual(absolute);
   });
 });
+
+describe("an invented namespace is named, not answered with silence", () => {
+  // The recorded failure: nine queries against a namespace that does not
+  // exist, nine "No results", and a guess. A declared PREFIX always parses, so
+  // only a check against the store's own prefix map can say why nothing matched.
+  const INVENTED =
+    "PREFIX tok: <https://example.invalid/tokens#> SELECT ?c WHERE { ?c tok:uses ?t }";
+
+  it("says exactly which prefix is not a namespace of this graph, on both surfaces", async () => {
+    const result = await queryVerb.run({ sparql: INVENTED }, rt);
+    const { notice, json } = queryVerb.output.formatters;
+    const cli = notice?.(result, "cli") as string;
+    expect(cli).toContain(
+      "Prefix `tok:` <https://example.invalid/tokens#> is not a namespace of this graph",
+    );
+    expect(cli).toContain("`pragma ontology list`");
+    expect(notice?.(result, "mcp")).toContain("`ontology_list {}`");
+    // The finding explains the emptiness; the payload stays the engine's shape.
+    const payload = JSON.parse(json(result));
+    expect(payload).toMatchObject({ type: "select", bindings: [] });
+    expect(payload).not.toHaveProperty("unknownPrefixes");
+  });
+
+  it("says nothing about prefixes when the query declares only real ones, or has rows", async () => {
+    const real = await queryVerb.run(
+      {
+        sparql:
+          "PREFIX ds: <https://ds.canonical.com/> SELECT ?s WHERE { ?s a ds:NoSuchClass }",
+      },
+      rt,
+    );
+    const notice = queryVerb.output.formatters.notice?.(real, "cli") as string;
+    expect(notice).toContain("the query ran and matched nothing");
+    expect(notice).not.toContain("is not a namespace");
+    const hit = await queryVerb.run(
+      {
+        sparql: `${INVENTED.replace("WHERE { ?c tok:uses ?t }", "WHERE { ?c ?p ?t } LIMIT 1")}`,
+      },
+      rt,
+    );
+    expect(queryVerb.output.formatters.notice?.(hit, "cli")).toBeUndefined();
+    expect(hit).not.toHaveProperty("unknownPrefixes");
+  });
+});

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { validateAppPath, validateCommandPath } from "./validators.js";
+import {
+  validateAppPath,
+  validateCommandPath,
+  validateKebabName,
+} from "./validators.js";
 
 describe("validateCommandPath", () => {
   const routePath = validateCommandPath({
@@ -33,6 +37,14 @@ describe("validateCommandPath", () => {
 
   it("enforces the maximum segment count", () => {
     expect(singleName("a/b")).toContain("single name");
+    const pagePath = validateCommandPath({
+      label: "Page path",
+      minSegments: 2,
+      maxSegments: 2,
+      example: "invoices/detail",
+    });
+    expect(pagePath("invoices/detail")).toBe(true);
+    expect(pagePath("invoices/detail/lines")).toContain("at most 2 segments");
   });
 
   it("rejects segments that would not survive as identifiers", () => {
@@ -40,6 +52,35 @@ describe("validateCommandPath", () => {
     expect(routePath("account/2fa")).toContain('"2fa"');
     expect(routePath("account/se ttings")).not.toBe(true);
     expect(singleName("_billing")).not.toBe(true);
+  });
+});
+
+describe("validateKebabName", () => {
+  const pageName = validateKebabName({
+    label: "Page name",
+    example: "order-lines",
+  });
+
+  it("accepts kebab-case names", () => {
+    expect(pageName("detail")).toBe(true);
+    expect(pageName("order-lines")).toBe(true);
+    expect(pageName("step-2")).toBe(true);
+  });
+
+  it("refuses anything a name mapping would have to guess at", () => {
+    for (const name of [
+      "DETAIL",
+      "Detail",
+      "orderLines",
+      "order--lines",
+      "-x",
+      "x-",
+      "2fa",
+      "",
+    ]) {
+      expect(pageName(name)).toContain("must be kebab-case");
+    }
+    expect(pageName(undefined)).toContain("must be kebab-case");
   });
 });
 

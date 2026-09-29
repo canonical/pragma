@@ -108,7 +108,7 @@ const longList: MenuEntry[] = Array.from({ length: 40 }, (_, i) => ({
 
 export const LongScrollable: Story = {
   args: {
-    trigger: "Timezone",
+    children: "Timezone",
     label: "Select a timezone",
     items: longList,
   },
@@ -121,7 +121,7 @@ export const LongScrollable: Story = {
  */
 export const Default: Story = {
   args: {
-    trigger: "Actions",
+    children: "Actions",
     label: "Instance actions",
     items: rowActions,
   },
@@ -133,7 +133,7 @@ export const Default: Story = {
  */
 export const AccountMenu: Story = {
   args: {
-    trigger: "abisola@canonical.com",
+    children: "abisola@canonical.com",
     label: "Account",
     items: [
       { key: "profile", label: "Your profile", url: "#profile" },
@@ -154,7 +154,7 @@ export const AccountMenu: Story = {
  */
 export const WithShortcuts_NotCoreApi: Story = {
   args: {
-    trigger: "Edit",
+    children: "Edit",
     label: "Edit",
     items: [
       { key: "undo", label: "Undo", url: "#undo", slot: "⌘Z" },
@@ -176,7 +176,7 @@ export const WithShortcuts_NotCoreApi: Story = {
  */
 export const CustomItems_NotCoreApi: Story = {
   args: {
-    trigger: "Switch organisation",
+    children: "Switch organisation",
     label: "Organisations",
     items: [
       {
@@ -249,7 +249,7 @@ const nestedActions: MenuEntry[] = [
 
 export const NestedSubmenus: Story = {
   args: {
-    trigger: "Actions",
+    children: "Actions",
     label: "Item actions",
     items: nestedActions,
   },
@@ -306,7 +306,7 @@ const rtlActions: MenuEntry[] = [
 export const RightToLeft: Story = {
   decorators: [rtl],
   args: {
-    trigger: "الإجراءات",
+    children: "الإجراءات",
     label: "إجراءات العنصر",
     items: rtlActions,
   },

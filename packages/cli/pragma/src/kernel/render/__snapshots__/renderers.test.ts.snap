@@ -17,7 +17,7 @@ Active filters:
 Valid options: stable, beta",
   },
   "notFound": {
-    "json": "{"ok":false,"error":{"code":"ENTITY_NOT_FOUND","message":"block \\"Buton\\" not found.","suggestions":["Button"],"recovery":{"message":"List available blocks.","cli":"pragma block list"}}}",
+    "json": "{"ok":false,"error":{"code":"ENTITY_NOT_FOUND","message":"block \\"Buton\\" not found.","suggestions":["Button"],"recovery":{"message":"List available blocks.","cli":"pragma block list","mcp":{"tool":"block_list","params":{}}}}}",
     "llm": "## Error: ENTITY_NOT_FOUND
 block "Buton" not found.
 Suggestions: Button

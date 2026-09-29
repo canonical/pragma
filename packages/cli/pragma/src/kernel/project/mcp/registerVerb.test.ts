@@ -74,6 +74,34 @@ describe("buildZodSchema (params → zod)", () => {
     ).toBe(true);
   });
 
+  it("a list param takes one bare value, and coercion does not skip the item type", () => {
+    const lists = z.object(
+      buildZodSchema([
+        { kind: "string[]", name: "name", doc: "n", required: true },
+        {
+          kind: "enum",
+          name: "kind",
+          doc: "k",
+          values: ["a", "b"],
+          repeatable: true,
+        },
+      ]),
+    );
+    expect(lists.parse({ name: "x", kind: "a" })).toEqual({
+      name: ["x"],
+      kind: ["a"],
+    });
+    expect(lists.parse({ name: ["x", "y"] })).toEqual({ name: ["x", "y"] });
+    expect(lists.safeParse({}).success).toBe(false);
+    expect(lists.safeParse({ name: "x", kind: "z" }).success).toBe(false);
+    expect(lists.safeParse({ name: "x", kind: ["a", 7] }).success).toBe(false);
+    // Only a STRING is coerced, so a wrong type is refused at the param itself.
+    for (const name of [5, { a: 1 }]) {
+      const refused = lists.safeParse({ name });
+      expect(refused.error?.issues.at(0)?.path).toEqual(["name"]);
+    }
+  });
+
   it("applies a declared default when the field is omitted (CLI parity)", () => {
     const withDefault = z.object(
       buildZodSchema([

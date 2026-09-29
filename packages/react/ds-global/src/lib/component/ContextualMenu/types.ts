@@ -24,7 +24,7 @@ type OwnProps = Pick<
    * The trigger content, rendered inside the trigger button. Clicking it opens
    * the menu.
    */
-  trigger: ReactNode;
+  children: ReactNode;
   /**
    * The menu entries: one flat list of items and separators
    * (`{ type: "separator", key: "…" }`). An item's own `items` form its submenu, which

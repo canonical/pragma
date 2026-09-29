@@ -333,3 +333,76 @@ describe("bounds and losslessness the review surfaced", () => {
     });
   });
 });
+
+describe("an outbound predicate is cut below `detailed`, and says so", () => {
+  // One subject asserting a wide predicate both ways: 14 named objects, and 12
+  // blank ones that inline as records.
+  const indexes = Array.from({ length: 14 }, (_, index) => index);
+  const WIDE_TTL = [
+    "@prefix ds: <https://ds.canonical.com/> .",
+    `ds:wide ds:name "Wide" ;`,
+    `  ds:uses ${indexes.map((index) => `ds:part.${index}`).join(", ")} ;`,
+    `  ds:binds ${indexes
+      .slice(0, 12)
+      .map((index) => `[ ds:rank ${index} ]`)
+      .join(", ")} .`,
+  ].join("\n");
+
+  const readAt = async (
+    detail: "summary" | "standard" | "detailed",
+  ): Promise<InspectResult> => {
+    const fixture = await buildFixtureRuntime({
+      ttl: WIDE_TTL,
+      prefixes: BLOCK_PREFIXES,
+      detail,
+    });
+    try {
+      return (await inspectVerb.run(
+        { uri: "ds:wide" },
+        fixture.rt,
+      )) as InspectResult;
+    } finally {
+      (await fixture.rt.store.get()).store.dispose();
+    }
+  };
+  const group = (result: InspectResult, local: string) =>
+    result.groups.find((g) => g.predicate.value === `${DS}${local}`);
+
+  it("lists the head and states the true count at standard", async () => {
+    const result = await readAt("standard");
+    expect(group(result, "uses")).toMatchObject({ truncated: true, count: 14 });
+    expect(group(result, "uses")?.objects).toHaveLength(10);
+    // The inlined records follow the objects that survived the cut.
+    expect(group(result, "binds")?.count).toBe(12);
+    expect(result.nested["ds:binds"]).toHaveLength(10);
+    // A predicate under the cap carries neither marker.
+    expect(group(result, "name")).not.toHaveProperty("truncated");
+    expect(group(result, "name")).not.toHaveProperty("count");
+  });
+
+  it("keeps a few at summary rather than none", async () => {
+    expect(group(await readAt("summary"), "uses")?.objects).toHaveLength(3);
+  });
+
+  it("cuts nothing at detailed", async () => {
+    const result = await readAt("detailed");
+    expect(group(result, "uses")?.objects).toHaveLength(14);
+    expect(group(result, "uses")).not.toHaveProperty("truncated");
+    expect(result.nested["ds:binds"]).toHaveLength(12);
+  });
+
+  it("prints the count in the plain and the Turtle forms", async () => {
+    const result = await readAt("standard");
+    const formatters = inspectVerb.output.formatters;
+    expect(formatters.plain(result)).toContain(
+      "ds:uses (14 objects, showing 10):",
+    );
+    const turtle = formatters.llm(result);
+    expect(turtle).toContain(
+      "  # ds:uses — 14 objects, showing 10\n  ds:uses ",
+    );
+    expect(turtle).toContain(
+      "  # ds:binds — 12 objects, showing 10\n  ds:binds\n",
+    );
+  });
+});

@@ -1,12 +1,11 @@
 .ds.table-th-sort.button-primitive {
-  padding: var(--lp-dimension-spacing-block-xxxs)
-    var(--lp-dimension-spacing-inline-xxxs);
+  padding: var(--dimension-025) var(--dimension-025);
   background: none;
   border: none;
   min-width: fit-content;
 
-  font-size: var(--lp-typography-font-size-m);
-  color: var(--lp-color-icon-status-queued);
+  font-size: var(--typography-text-primary-font-size);
+  color: var(--color-icon-muted);
 
   --color-background-button-hover: transparent;
   --color-background-button-active: transparent;
@@ -14,6 +13,6 @@
   &:hover,
   &:focus-visible,
   &.sorted {
-    color: var(--lp-color-text-default);
+    color: var(--color-text);
   }
 }

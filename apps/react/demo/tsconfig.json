@@ -1,7 +1,7 @@
 {
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
-    "baseUrl": "src",
+    "paths": { "*": ["./src/*"] },
     "skipLibCheck": true,
     "types": ["node", "react", "react-dom"],
     "noEmit": true

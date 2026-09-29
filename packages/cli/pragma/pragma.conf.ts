@@ -15,8 +15,8 @@
  * module's load runs on `--help`, `__complete` and `--version`. That also makes
  * the reverse edge impossible — importing `constants.js` from here is a
  * temporal-dead-zone cycle. It is also why no string below names the binary
- * except `name` itself: an `emptyRecovery.cli` is the command WITHOUT the
- * binary name, and the renderer prepends the consuming distribution's.
+ * except `name` itself: an `emptyRecovery.call` names a verb path, never the
+ * binary, and the renderer spells it for the consuming distribution.
  * `capabilities/lazy.test.ts` pins both halves of that.
  */
 
@@ -148,7 +148,10 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "block",
     description: "List all design system blocks.",
     toolDescription:
-      "List all design system blocks with their type, tier, and modifier families. Use when browsing which blocks exist. Example: block_list {}.",
+      "List all design system blocks with their type, tier, and modifier families.",
+    useWhen:
+      "when asked which components, patterns, layouts or subcomponents exist — all four are blocks, and every one of them is read through the block tools",
+    example: { tier: "all" },
     colophon: DESIGN_SYSTEM_COLOPHON,
     // Blocks are TIERED, so every read of them is SCOPED: `block list` answers
     // from the top-level tiers, `--tier apps_lxd` from that tier and its
@@ -220,13 +223,16 @@ const designSystemStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "No blocks in the store. Build it from the configured design-system packs.",
-        cli: "sources update",
+        call: { verb: "sources update" },
       },
     },
     lookup: {
       source: "graphql",
       toolDescription:
-        'Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { name: ["Button"] }.',
+        'Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. `detail: "summary"` trims to the base view.',
+      useWhen:
+        "when asked about one component, pattern or layout by name — its anatomy, properties, variants, or when to use it",
+      example: { name: ["Button", "Accordion"] },
       by: "ds:name",
       types: ["ds:Component", "ds:Pattern", "ds:Layout", "ds:Subcomponent"],
       // A subcomponent is a PART of a block, never the block someone means:
@@ -353,7 +359,7 @@ const designSystemStories: readonly PackDefinition[] = [
           relation: "ds:hasSubcomponent",
           level: "detailed",
           select: [
-            { name: "name", property: "ds:name" },
+            { name: "name", property: "ds:name", noun: "block" },
             { name: "uri", property: "ds:name", graphqlField: "uri" },
           ],
         },
@@ -404,7 +410,19 @@ const designSystemStories: readonly PackDefinition[] = [
             // The dotted name, not the symbol's IRI: it is the address
             // `token lookup` and `token consumers --symbol` both take, so a row
             // here is a query a reader can run.
-            { name: "symbol", property: "ds:consumesSymbol/rdfs:label" },
+            {
+              name: "symbol",
+              property: "ds:consumesSymbol/rdfs:label",
+              noun: "token",
+            },
+            // The CSS names that symbol is written as. `many`, so a second
+            // variable adds a name to the cell and not a row.
+            {
+              name: "variable",
+              property: "ds:consumesSymbol/^dt:ofSymbol/rdfs:label",
+              many: true,
+              noun: "variable",
+            },
             { name: "key", property: "anatomy:styleKey" },
             { name: "state", property: "anatomy:styleState" },
             { name: "rank", property: "ds:rank" },
@@ -428,7 +446,9 @@ const designSystemStories: readonly PackDefinition[] = [
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete design-system blocks as exemplars. Use BEFORE writing queries to see actual data shapes, anatomy, and property names. Example: block_sample {}.",
+          "Return randomly selected complete design-system blocks as exemplars.",
+        useWhen:
+          "before your first block query, to see what a real block record looks like instead of guessing field names",
       },
     },
   },
@@ -458,7 +478,10 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "token",
     description: "List the design-token symbols.",
     toolDescription:
-      'List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol\'s OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list. Example: token_list { type: "color" }.',
+      "List the design-token SYMBOLS — logical dotted names (`color.text`), with the type and description from the symbol's OWN definition, and the symbol a channel provisions. The CSS custom-property names a stylesheet declares are variable_list.",
+    useWhen:
+      "when asked which design tokens exist — colours, spacing, typography — or to find a token's exact name",
+    example: { type: ["color", "dimension"] },
     list: {
       // Type and description are DEFINITION-level facts, and 393 of the 745
       // symbols have more than one definition (`color.text` has 20). The one
@@ -497,7 +520,7 @@ const designSystemStories: readonly PackDefinition[] = [
       // 60-second timeout; over this query it takes 1.8 s, and the whole
       // population comes back in 71 ms rather than 1.1 s a page.
       query: [
-        "SELECT DISTINCT ?uri ?name ?type ?description ?channelOf",
+        "SELECT DISTINCT ?uri ?name ?type ?description ?channelOf ?channelOfUri",
         "WHERE {",
         "  ?uri a dt:TokenSymbol ;",
         "       rdfs:label ?name .",
@@ -506,7 +529,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // noun of its own. Bound to the base symbol's LABEL, not its IRI: the
         // filter column and the displayed column are one column, and an
         // unbound IRI cell renders as a full IRI.
-        "  OPTIONAL { ?uri dt:channelOf/rdfs:label ?channelOf }",
+        "  OPTIONAL { ?uri dt:channelOf ?channelOfUri . ?channelOfUri rdfs:label ?channelOf }",
         "  OPTIONAL {",
         "    ?resolved dt:forSymbol ?uri ;",
         "              dt:resolutionChain/rdf:first ?definition .",
@@ -520,7 +543,7 @@ const designSystemStories: readonly PackDefinition[] = [
       columns: [
         { field: "name", label: "Name" },
         { field: "type", label: "Type" },
-        { field: "channelOf", label: "Channel of" },
+        { field: "channelOf", label: "Channel of", noun: "token" },
         { field: "description", label: "Description" },
         { field: "uri", label: "IRI" },
       ],
@@ -545,22 +568,11 @@ const designSystemStories: readonly PackDefinition[] = [
         {
           param: "channelOf",
           variable: "channelOf",
-          // The dimension is "which SYMBOL", so the roster is EVERY symbol —
+          // The dimension is "which SYMBOL", so every symbol is admissible —
           // not the far smaller set that happens to have a channel today.
-          // Asking for a symbol nothing provisions is the documented calm empty
-          // list, which is the whole reason a vocabulary is read from the graph
-          // rather than from the rows a page returned.
-          //
-          // Keyed on `rdfs:label`, the same term the column binds and the same
-          // term the lookup resolves by. All three move together or not at all.
-          vocabulary: {
-            query: [
-              "SELECT DISTINCT ?channelOf WHERE {",
-              "  ?symbol a dt:TokenSymbol ;",
-              "          rdfs:label ?channelOf .",
-              "}",
-            ].join("\n"),
-          },
+          // Asking for a symbol nothing provisions is a calm empty list.
+          noun: "token",
+          entity: "channelOfUri",
           description: "Filter to one symbol's channels.",
         },
       ],
@@ -580,7 +592,10 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List the value each symbol resolves to at each position, with its chain or its derivation.",
         toolDescription:
-          'List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell. Example: token_values { symbol: "color.text" }.',
+          "List the resolved token VALUES — one row per (symbol, position) the graph materialises, with the value and either its resolution chain or the symbol it derives from. Only MATERIALISED positions appear, not the permutation space: a position with no row falls through to the base symbol. A derived row carries a derivation and no value cell.",
+        useWhen:
+          "when asked what value a token has, in light, dark or any other mode",
+        example: { symbol: ["color.text", "color.border"] },
         // The resolved-value shape admits exactly one of a chain or a
         // derivation, so BOTH are selected wherever a value is projected. A
         // surface that selected only the chain would show a blank row for every
@@ -602,7 +617,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // definition the value was authored in, and that is what the lookup's
         // `values` expand projects with `rdf:first`.
         query: [
-          "SELECT ?symbol ?position ?value ?derivedFrom",
+          "SELECT ?symbol ?position ?value ?derivedFrom ?symbolUri",
           '       (GROUP_CONCAT(DISTINCT ?chainItem; SEPARATOR=" ") AS ?chain)',
           "WHERE {",
           "  ?resolved a dt:ResolvedValue ;",
@@ -622,11 +637,11 @@ const designSystemStories: readonly PackDefinition[] = [
           // its cell is empty rather than a full IRI.
           '  BIND(REPLACE(REPLACE(STR(?coordinate), "^.*[/#]", ""), "^coordinate[.]", "") AS ?position)',
           "}",
-          "GROUP BY ?resolved ?symbol ?position ?value ?derivedFrom",
+          "GROUP BY ?resolved ?symbol ?position ?value ?derivedFrom ?symbolUri",
           "ORDER BY ?symbol ?position",
         ].join("\n"),
         columns: [
-          { field: "symbol", label: "Symbol" },
+          { field: "symbol", label: "Symbol", noun: "token" },
           { field: "position", label: "Position" },
           { field: "value", label: "Value" },
           { field: "chain", label: "Chain" },
@@ -636,14 +651,8 @@ const designSystemStories: readonly PackDefinition[] = [
           {
             param: "symbol",
             variable: "symbol",
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?symbol WHERE {",
-                "  ?s a dt:TokenSymbol ;",
-                "     rdfs:label ?symbol .",
-                "}",
-              ].join("\n"),
-            },
+            noun: "token",
+            entity: "symbolUri",
             description: "Filter to one symbol.",
           },
           {
@@ -672,7 +681,7 @@ const designSystemStories: readonly PackDefinition[] = [
         emptyRecovery: {
           message:
             "Resolved token values come from the @canonical/token-ontology pack, and a value is only addressable by symbol once that pack publishes its name literals — a store built without that pack carries none.",
-          cli: "sources update",
+          call: { verb: "sources update" },
         },
       },
       {
@@ -680,7 +689,10 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List which blocks consume which token symbol, at which style key, state and rank.",
         toolDescription:
-          'List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable). Answers empty until the packs record bindings. Example: token_consumers { variable: "color-text" }.',
+          "List the token BINDINGS the design system records — which block consumes which symbol, at which style key, state, rank and node. Every column is identity: two bindings differing only in state are different facts. The block is the CONSUMING block; via names the block whose anatomy the binding was authored in, and is blank when that is the consuming block itself. Name the symbol by its dotted name (symbol) or by a CSS variable standing for it (variable); narrow to the components a name reaches, or to one by IRI, with block. Answers empty until the packs record bindings.",
+        useWhen:
+          "when asked which components use a token, or what changing one affects",
+        example: { symbol: ["color.text", "color.border"] },
         // Seven identity columns, and not one of them is decoration: a binding
         // is identified by the whole tuple, so dropping `rank` or `node` would
         // publish rows a caller cannot tell apart — which is worse than a wide
@@ -707,7 +719,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // because "Button via Button" is not news and 24 of Button's rows
         // would say it.
         query: [
-          "SELECT ?block ?via ?symbol ?key ?state ?rank ?node ?uri",
+          "SELECT ?block ?via ?symbol ?key ?state ?rank ?node ?uri ?blockUri ?symbolUri",
           '       (GROUP_CONCAT(DISTINCT ?variableName; SEPARATOR=" ") AS ?variable)',
           "WHERE {",
           "  ?blockUri ds:hasTokenBinding ?uri .",
@@ -719,13 +731,9 @@ const designSystemStories: readonly PackDefinition[] = [
           "  OPTIONAL { ?uri ds:node ?node }",
           "  OPTIONAL { ?uri ds:viaBlock ?viaUri . OPTIONAL { ?viaUri ds:name ?viaName } }",
           "  OPTIONAL { ?blockUri ds:name ?blockName }",
-          // Every platform spelling of the consumed symbol, as a SET rather
-          // than a join that multiplies the row: 204 symbols carry both a
-          // kebab and a camelCase variable, and binding one row per variable
-          // would publish each binding twice under names a caller cannot tell
-          // apart. Aggregated, both spellings land in one cell and `--variable`
-          // set-matches either — which is also why the two spellings of one
-          // symbol return the SAME set rather than partitioning it.
+          // The variable standing for the consumed symbol, as a SET rather
+          // than a join: a second platform's variable must add a name to the
+          // cell, not a second row for one binding.
           "  OPTIONAL {",
           "    ?variableUri dt:ofSymbol ?symbolUri ;",
           "                 rdfs:label ?variableName .",
@@ -740,7 +748,7 @@ const designSystemStories: readonly PackDefinition[] = [
           '        COALESCE(?viaName, REPLACE(STR(?viaUri), "^.*[/#]", "")),',
           '        "") AS ?via)',
           "}",
-          "GROUP BY ?block ?via ?symbol ?key ?state ?rank ?node ?uri",
+          "GROUP BY ?block ?via ?symbol ?key ?state ?rank ?node ?uri ?blockUri ?symbolUri",
           // `?via` second, so a block's OWN bindings (blank via, which sorts
           // first) come before the ones it inherits, and the inherited ones
           // stay grouped by the block they come from.
@@ -758,10 +766,10 @@ const designSystemStories: readonly PackDefinition[] = [
         // in; a story cannot reorder that, so the column goes rather than the
         // block staying second to an unusable id.
         columns: [
-          { field: "block", label: "Block" },
+          { field: "block", label: "Block", noun: "block" },
           { field: "via", label: "Via" },
-          { field: "symbol", label: "Symbol" },
-          { field: "variable", label: "Variables" },
+          { field: "symbol", label: "Symbol", noun: "token" },
+          { field: "variable", label: "Variables", noun: "variable" },
           { field: "key", label: "Style key" },
           { field: "state", label: "State" },
           { field: "rank", label: "Rank" },
@@ -769,55 +777,30 @@ const designSystemStories: readonly PackDefinition[] = [
         ],
         filters: [
           {
+            param: "block",
+            variable: "block",
+            // By IRI, because a block name is not an address: 313 blocks
+            // share some 277 names. A name means every block it reaches, in
+            // every tier; a prefixed IRI means one.
+            noun: "block",
+            entity: "blockUri",
+            description:
+              "Filter to the blocks a name reaches (every tier), or to one block by IRI.",
+          },
+          {
             param: "symbol",
             variable: "symbol",
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?symbol WHERE {",
-                "  ?s a dt:TokenSymbol ;",
-                "     rdfs:label ?symbol .",
-                "}",
-              ].join("\n"),
-            },
+            noun: "token",
+            entity: "symbolUri",
             description: "Filter to one symbol.",
           },
           {
             param: "variable",
             variable: "variable",
-            // The SAME constraint as `--symbol`, named by the other spelling.
-            // A web implementer holds a CSS custom-property name, not a dotted
-            // symbol, so answering "what breaks if I change --color-text" used
-            // to take two calls and a spelling the caller did not start with.
-            // The join is in the query instead.
-            //
-            // `set`, because the cell is every platform spelling of the
-            // consumed symbol and one row legitimately belongs to all of them.
-            match: "set",
-            // The variable labels, the same source `variable lookup` resolves
-            // against — so a name that works there works here.
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?variable WHERE {",
-                "  ?v a dt:Variable ;",
-                "     rdfs:label ?variable .",
-                "}",
-              ].join("\n"),
-            },
-            // Two things a caller will otherwise assume, both wrong.
-            //
-            // A CHANNEL variable and its semantic sibling are DIFFERENT
-            // constraints: `--variable modifier-color-text` finds the blocks
-            // that bind the channel, `--variable color-text` those that bind
-            // the symbol, and neither includes the other. Whether a block's
-            // resolution eventually reaches the other through a fallback is a
-            // question about the consumed list, not about this single-symbol
-            // join, and blurring them here would answer a question nobody
-            // asked with rows nobody can check.
-            //
-            // And a variable standing for NO symbol has no answer down this
-            // path at all — 236 of them do — which is an empty answer for a
-            // reason the recovery below names, not evidence that nothing
-            // consumes it.
+            // Constrains the SYMBOL, through any variable standing for it.
+            noun: "variable",
+            entity: "symbolUri",
+            via: "^dt:ofSymbol",
             description:
               "A CSS variable name for the consumed symbol — the other spelling of the symbol parameter. A channel variable and its semantic sibling differ.",
           },
@@ -871,20 +854,10 @@ const designSystemStories: readonly PackDefinition[] = [
           variables: ["block", "via", "symbol", "key", "state", "node"],
           description: "Search block, via, symbol, key, state and node.",
         },
-        // Deliberately `sources update`: unlike `standard list`, this story's
-        // data does NOT ride the embedded snapshot — the binding records are
-        // written by the design-system packs, so an empty answer here can be a
-        // store that predates them.
-        //
-        // CAN be, not is — which is why the message opens on the two cases
-        // rather than asserting one. This text prints under a filtered miss too
-        // (`--symbol color.text`), where "nothing is recorded at all" would be a
-        // claim the answer cannot support, so it names both readings and hands
-        // the reader the one command that separates them.
         emptyRecovery: {
           message:
-            "Either no component uses this token, or no component is recorded as using any token yet — which components use which tokens comes from the component anatomies in the design-system document, and a copy of the graph built before any anatomy named its tokens is empty for every token. Run the same command without `--symbol` to tell the two apart: an empty unfiltered answer means the graph predates the anatomies and fills in once they are written and the graph is rebuilt. If you asked about a CSS variable rather than a token: some variables are computed from others (the `--hover--…` and `--disabled--…` ones, for example) and stand for no token, so nothing is ever recorded as using them; `pragma variable chain --variable <name>` shows what such a variable ends up as.",
-          cli: "sources update",
+            "Which components use which tokens is recorded from the component anatomies, and not every component's anatomy names its tokens yet, so a component with no rows may simply not be recorded. A CSS variable computed from others (the `--hover--…` and `--disabled--…` ones, for example) stands for no token and is never recorded as used; the variable chain read shows what it ends up as. If this list is empty with no filter at all, the graph predates the anatomies and a rebuild fills it in.",
+          call: { verb: "sources update" },
         },
       },
     ],
@@ -899,13 +872,17 @@ const designSystemStories: readonly PackDefinition[] = [
       description:
         "Look up one or more token symbols by dotted name, IRI, or glob.",
       toolDescription:
-        'Get one design-token symbol in full: its own type and description, every definition behind it with that definition\'s own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob. Example: token_lookup { name: ["color.text"] }.',
+        "Get one design-token symbol in full: its own type and description, every definition behind it with that definition's own type and description, the modifier families that may rebind it, and the value it resolves to at each position. Address it by the dotted name token_list publishes (`color.text`), by prefixed name, by IRI, or by a glob.",
+      useWhen:
+        "when asked everything about one token by name: where it is defined, what can change it, and its values",
+      example: { name: ["color.text", "color.border"] },
       fields: [
         // Single-valued: a channel provisions exactly one symbol.
         {
           name: "channelOf",
           property: "dt:channelOf/rdfs:label",
           label: "Channel of",
+          noun: "token",
         },
         // The same pair `token list` publishes, reached the same way: the head
         // of a resolved value's chain is the definition that value was authored
@@ -936,9 +913,21 @@ const designSystemStories: readonly PackDefinition[] = [
       ],
       expand: [
         {
+          name: "variables",
+          heading: "CSS variables",
+          // Without their leading dashes — the address `variable lookup` takes.
+          // Tokens whose name has a capital carry an older camelCase twin
+          // variable until canonical/design-tokens#141 lands.
+          relation: "^dt:ofSymbol",
+          level: "summary",
+          orderBy: ["name"],
+          select: [{ name: "name", property: "rdfs:label", noun: "variable" }],
+        },
+        {
           name: "definitions",
           heading: "Definitions",
           kind: "table",
+          level: "standard",
           // The inverse edge: definitions point AT the symbol
           // (`?definition dt:symbol ?uri`), so the relation from the symbol is
           // `^dt:symbol`. 1,311 definitions stand behind 745 symbols.
@@ -952,17 +941,30 @@ const designSystemStories: readonly PackDefinition[] = [
         {
           name: "coverage",
           heading: "Covered by",
+          level: "standard",
           // Coverage hangs on the FAMILY, not on the symbol
           // (`?family dt:covers ?symbol`), so this is the inverse too. The
           // family is a `ds:` entity, so its name comes from the
           // design-system pack rather than the token ontology.
           relation: "^dt:covers",
-          select: [{ name: "family", property: "ds:name" }],
+          select: [{ name: "family", property: "ds:name", noun: "modifier" }],
+        },
+        {
+          name: "channels",
+          heading: "Channels",
+          level: "standard",
+          // The symbols that provision this one, at most two. What a channel
+          // derives from at each position is that channel's own `values`
+          // table: a second hop here would repeat each channel once per
+          // position.
+          relation: "^dt:channelOf",
+          select: [{ name: "name", property: "rdfs:label", noun: "token" }],
         },
         {
           name: "values",
           heading: "Values",
           kind: "table",
+          level: "standard",
           relation: "^dt:forSymbol",
           // BOTH the chain and the derivation, for the reason `token values`
           // states: the shape admits exactly one of them, and selecting only
@@ -983,14 +985,24 @@ const designSystemStories: readonly PackDefinition[] = [
             { name: "position", property: "dt:coordinate" },
             { name: "value", property: "dt:resolvesTo" },
             { name: "chain", property: "dt:resolutionChain/rdf:first" },
-            { name: "derivedFrom", property: "dt:derivedFrom/rdfs:label" },
+            {
+              name: "derivedFrom",
+              property: "dt:derivedFrom/rdfs:label",
+              noun: "token",
+            },
           ],
         },
       ],
+      disclosure: {
+        levels: ["summary", "standard", "detailed"],
+        default: "detailed",
+      },
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars. Use BEFORE writing queries to see real data shapes. Example: token_sample {}.",
+          "Return random complete design-token symbols — definitions, coverage and resolved values — as exemplars.",
+        useWhen:
+          "before your first token query, to see what a real token record looks like",
       },
     },
   },
@@ -1018,15 +1030,18 @@ const designSystemStories: readonly PackDefinition[] = [
     description:
       "List the platform variables the design tokens are emitted as.",
     toolDescription:
-      'List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`). Example: variable_list { symbol: "color.text" }.',
+      "List the platform VARIABLES a stylesheet declares as CSS custom properties, with the symbol each stands for, its tier, visibility and the coordinates it is selected at. 236 stand for no symbol, so token_list cannot reach them. Address one WITHOUT its leading dashes (`color-text`).",
+    useWhen:
+      "when asked which CSS custom properties (variables) exist, or which CSS variable stands for a token",
+    example: { symbol: ["color.text", "color.border"] },
     list: {
       query: [
-        "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility",
+        "SELECT ?uri ?name ?platform ?symbol ?tier ?visibility ?symbolUri",
         '       (GROUP_CONCAT(DISTINCT ?coordinateName; SEPARATOR=" ") AS ?coordinate)',
         "WHERE {",
         "  ?uri a dt:Variable ;",
         "       rdfs:label ?name .",
-        "  OPTIONAL { ?uri dt:ofSymbol/rdfs:label ?symbol }",
+        "  OPTIONAL { ?uri dt:ofSymbol ?symbolUri . ?symbolUri rdfs:label ?symbol }",
         "  OPTIONAL { ?uri dt:tier ?tierUri }",
         "  OPTIONAL { ?uri dt:visibility ?visibilityUri }",
         // A variable is selected at a coordinate two ways, and both count: the
@@ -1049,12 +1064,12 @@ const designSystemStories: readonly PackDefinition[] = [
         '  BIND(REPLACE(REPLACE(STR(?tierUri), "^.*[/#]", ""), "^tier[.]", "") AS ?tier)',
         '  BIND(REPLACE(REPLACE(STR(?visibilityUri), "^.*[/#]", ""), "^visibility[.]", "") AS ?visibility)',
         "}",
-        "GROUP BY ?uri ?name ?platform ?symbol ?tier ?visibility",
+        "GROUP BY ?uri ?name ?platform ?symbol ?tier ?visibility ?symbolUri",
         "ORDER BY ?name",
       ].join("\n"),
       columns: [
         { field: "name", label: "Name" },
-        { field: "symbol", label: "Symbol" },
+        { field: "symbol", label: "Symbol", noun: "token" },
         { field: "tier", label: "Tier" },
         { field: "visibility", label: "Visibility" },
         { field: "platform", label: "Platform" },
@@ -1083,16 +1098,8 @@ const designSystemStories: readonly PackDefinition[] = [
         {
           param: "symbol",
           variable: "symbol",
-          // The symbol roster, read the same way `token list`'s `channelOf`
-          // filter reads it: every symbol, keyed on `rdfs:label`.
-          vocabulary: {
-            query: [
-              "SELECT DISTINCT ?symbol WHERE {",
-              "  ?s a dt:TokenSymbol ;",
-              "     rdfs:label ?symbol .",
-              "}",
-            ].join("\n"),
-          },
+          noun: "token",
+          entity: "symbolUri",
           description: "Filter to one symbol.",
         },
         {
@@ -1147,8 +1154,7 @@ const designSystemStories: readonly PackDefinition[] = [
       },
       emptyRecovery: {
         message:
-          "Platform variables come from the @canonical/token-ontology pack, and a variable is only addressable once that pack publishes its name literals — a store built without that pack carries none.",
-        cli: "sources update",
+          "Some tokens, such as the composite typography ones (`typography.heading.1`), have no CSS variable of their own; the token values read shows their value.",
       },
     },
     verbs: [
@@ -1157,7 +1163,9 @@ const designSystemStories: readonly PackDefinition[] = [
         description:
           "List the walk from a variable to every symbol it reaches, through every variable in between.",
         toolDescription:
-          'List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs. Example: variable_chain { variable: "modifier-color-text" }.',
+          "List the resolution WALK: every (variable, symbol) pair a variable reaches through what its declarations reference, transitively — what a variable finally means. The closure runs over every declaration of every hop, so one variable can reach dozens of pairs.",
+        useWhen: "when asked which tokens a CSS variable ends up referring to",
+        example: { variable: ["modifier-color-text", "modifier-color-border"] },
         // ONE property path carries the whole walk, which is why this is a
         // query and not a traversal in code. `dt:references` is an rdf:List of
         // the variables a declaration's value reads, so each hop is
@@ -1165,7 +1173,7 @@ const designSystemStories: readonly PackDefinition[] = [
         // the whole thing transitive. The terminal is a variable that stands
         // for a symbol, which is what `dt:ofSymbol` reads.
         query: [
-          "SELECT ?variable ?reaches ?symbol",
+          "SELECT ?variable ?reaches ?symbol ?uri ?symbolUri",
           "WHERE {",
           "  ?uri a dt:Variable ;",
           "       rdfs:label ?variable .",
@@ -1177,47 +1185,30 @@ const designSystemStories: readonly PackDefinition[] = [
           "ORDER BY ?variable ?reaches ?symbol",
         ].join("\n"),
         columns: [
-          { field: "variable", label: "Variable" },
+          { field: "variable", label: "Variable", noun: "variable" },
           { field: "reaches", label: "Reaches" },
-          { field: "symbol", label: "Symbol" },
+          { field: "symbol", label: "Symbol", noun: "token" },
         ],
         filters: [
           {
             param: "variable",
             variable: "variable",
-            // The variable roster, keyed on the same `rdfs:label` the column
-            // binds and the lookup resolves by — the CSS name with its leading
-            // `--` already stripped, which is the only form typable as a
-            // positional. `variable.parity.test.ts` pins that the stripping is
-            // injective and collides with no symbol name.
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?variable WHERE {",
-                "  ?v a dt:Variable ;",
-                "     rdfs:label ?variable .",
-                "}",
-              ].join("\n"),
-            },
+            noun: "variable",
+            entity: "uri",
             description: "Filter to one variable.",
           },
           {
             param: "symbol",
             variable: "symbol",
-            vocabulary: {
-              query: [
-                "SELECT DISTINCT ?symbol WHERE {",
-                "  ?s a dt:TokenSymbol ;",
-                "     rdfs:label ?symbol .",
-                "}",
-              ].join("\n"),
-            },
+            noun: "token",
+            entity: "symbolUri",
             description: "Filter to one symbol.",
           },
         ],
         emptyRecovery: {
           message:
             "A resolution walk follows the declarations the @canonical/token-ontology pack provides, and the walk is only addressable by name once that pack publishes its name literals — a store built without that pack carries none.",
-          cli: "sources update",
+          call: { verb: "sources update" },
         },
       },
     ],
@@ -1232,9 +1223,17 @@ const designSystemStories: readonly PackDefinition[] = [
       description:
         "Look up one or more platform variables by name (without the leading dashes), IRI, or glob.",
       toolDescription:
-        'Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`). Example: variable_lookup { name: ["color-text"] }.',
+        "Get one platform variable in full: its symbol, tier, visibility, and EVERY place it is declared — the selector and at-rule stack, the emitted value, the source location, the coordinate it also applies at, and the derivation. Address it by the CSS name WITHOUT its leading dashes (`color-text`).",
+      useWhen:
+        "when asked about one CSS variable by name: what it stands for and everywhere it is declared",
+      example: { name: ["color-text", "color-border"] },
       fields: [
-        { name: "symbol", property: "dt:ofSymbol/rdfs:label", label: "Symbol" },
+        {
+          name: "symbol",
+          property: "dt:ofSymbol/rdfs:label",
+          label: "Symbol",
+          noun: "token",
+        },
         { name: "tier", property: "dt:tier", label: "Tier" },
         { name: "visibility", property: "dt:visibility", label: "Visibility" },
       ],
@@ -1244,6 +1243,7 @@ const designSystemStories: readonly PackDefinition[] = [
           heading: "Declarations",
           kind: "table",
           relation: "dt:declaredAt",
+          level: "standard",
           // 927 variables are declared once; the rest up to 17 times, which is
           // why this is an expand and not a set of fields.
           select: [
@@ -1267,11 +1267,39 @@ const designSystemStories: readonly PackDefinition[] = [
             { name: "derives", property: "dt:derives" },
           ],
         },
+        {
+          name: "values",
+          heading: "Values",
+          kind: "table",
+          // What the variable's symbol resolves to, one row per position the
+          // graph materialises: the base row has no position, a channel's rows
+          // carry the symbol each position derives from and no value. A
+          // declaration's `emits` is the stylesheet's expression; this is the
+          // value that expression comes to.
+          relation: "dt:ofSymbol/^dt:forSymbol",
+          level: "detailed",
+          orderBy: ["position"],
+          select: [
+            { name: "position", property: "dt:coordinate" },
+            { name: "value", property: "dt:resolvesTo" },
+            {
+              name: "derivedFrom",
+              property: "dt:derivedFrom/rdfs:label",
+              noun: "token",
+            },
+          ],
+        },
       ],
+      disclosure: {
+        levels: ["summary", "standard", "detailed"],
+        default: "detailed",
+      },
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars. Use BEFORE writing queries to see real data shapes. Example: variable_sample {}.",
+          "Return random complete platform variables — symbol, tier, visibility and every declaration — as exemplars.",
+        useWhen:
+          "before your first variable query, to see what a real CSS variable record looks like",
       },
     },
   },
@@ -1284,8 +1312,10 @@ const designSystemStories: readonly PackDefinition[] = [
   {
     noun: "modifier",
     description: "List all modifier families.",
-    toolDescription:
-      "List all modifier families with their values. Use when browsing which modifier families exist and the values each allows. Example: modifier_list {}.",
+    toolDescription: "List all modifier families with their values.",
+    useWhen:
+      "when asked which variants or options components can take — importance, size, density and the like — and the values each allows",
+    example: { tier: "all" },
     // Tiered like blocks — 11 of the modifier families carry a `ds:tier` — so
     // the same scope, declared with the same four terms. The scope is per NOUN
     // because being tiered is a fact about the entities, and the design
@@ -1319,7 +1349,7 @@ const designSystemStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "No modifier families in the store. Build it from the configured design-system packs.",
-        cli: "sources update",
+        call: { verb: "sources update" },
       },
     },
     lookup: {
@@ -1327,19 +1357,80 @@ const designSystemStories: readonly PackDefinition[] = [
       by: "ds:name",
       type: "ds:ModifierFamily",
       toolDescription:
-        'Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { name: ["importance"] }.',
+        "Get values and usage details for one or more modifier families by name.",
+      useWhen:
+        "when asked which values one option allows, such as the levels of importance",
+      example: { name: ["Importance", "Density"] },
       expand: [
         {
           name: "values",
           heading: "Values",
           relation: "ds:hasModifier",
+          level: "standard",
           select: [{ name: "name", property: "ds:name" }],
         },
+        // The token side of the family, joined on the family's own IRI — an
+        // axis is not named after its family (`theme` encodes Mode). SPARQL
+        // lane: three of the four start on an inverse edge, which a generated
+        // document cannot walk.
+        {
+          name: "axis",
+          heading: "Token axis",
+          relation: "^dt:encodes",
+          source: "sparql",
+          level: "standard",
+          select: [{ name: "name", property: "w3c-tokens:name" }],
+        },
+        {
+          name: "positions",
+          heading: "Positions",
+          kind: "table",
+          relation: "^dt:encodes/w3c-tokens:context",
+          source: "sparql",
+          level: "standard",
+          orderBy: ["context"],
+          select: [
+            { name: "context", property: "w3c-tokens:name" },
+            { name: "position", property: "dt:encodes" },
+            { name: "value", property: "dt:encodes/dt:concept/ds:name" },
+          ],
+        },
+        {
+          name: "contract",
+          heading: "Token contract",
+          kind: "table",
+          relation: "dt:contract",
+          source: "sparql",
+          level: "standard",
+          select: [
+            { name: "level", property: "dt:level" },
+            { name: "provision", property: "dt:provision" },
+            { name: "providesType", property: "dt:providesType" },
+          ],
+        },
+        {
+          name: "tokens",
+          heading: "Covered tokens",
+          // The symbols a value of this family may rebind. A block can declare
+          // the family and consume none of them; `token consumers` says which
+          // do. At `detailed` only: Mode covers 354 of them.
+          relation: "dt:covers",
+          source: "sparql",
+          level: "detailed",
+          orderBy: ["name"],
+          select: [{ name: "name", property: "rdfs:label", noun: "token" }],
+        },
       ],
+      disclosure: {
+        levels: ["summary", "standard", "detailed"],
+        default: "detailed",
+      },
       sample: {
         fixedCount: true,
         toolDescription:
-          "Return randomly selected complete modifier families (with value lists) as exemplars. Use BEFORE writing queries to see actual data shapes. Example: modifier_sample {}.",
+          "Return randomly selected complete modifier families (with value lists) as exemplars.",
+        useWhen:
+          "before your first modifier query, to see what a real modifier family record looks like",
       },
     },
   },
@@ -1356,7 +1447,9 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "tier",
     description: "List all tiers in the design system ontology.",
     toolDescription:
-      "List all tiers in the design-system ontology. Use when picking the tier to read with: the `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself. Example: tier_list {}.",
+      "List all tiers in the design-system ontology. The `tier` parameter scopes a read to one tier plus its ancestors, and this list is never scoped itself.",
+    useWhen:
+      "when asked which tiers the design system has — global, apps, a single product — or before passing `tier` to another tool",
     list: {
       query: [
         "SELECT ?uri ?name WHERE {",
@@ -1375,7 +1468,9 @@ const designSystemStories: readonly PackDefinition[] = [
       type: "ds:Tier",
       description: "Show tiers by name, with the blocks scoped to each.",
       toolDescription:
-        'Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { name: ["apps/lxd"] }.',
+        "Get one or more tiers by name, with the blocks scoped directly to each.",
+      useWhen: "when asked which components belong to one tier or product",
+      example: { name: ["apps/lxd", "global"] },
       expand: [
         {
           name: "blocks",
@@ -1399,7 +1494,10 @@ const conceptStory: PackDefinition = {
   noun: "concept",
   description: "List design-system concepts.",
   toolDescription:
-    'List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search. Example: concept_list { type: "Explanation" }.',
+    "List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.",
+  useWhen:
+    "when asked for design guidance that is not about one component — foundations, how-to guides, decision guides",
+  example: { type: ["Explanation", "How to guide"] },
   // Concepts carry a `ds:tier` too (4 of them do), so they are scoped on the
   // same terms as blocks and modifier families. Its `list` publishes no tier
   // COLUMN and does not need to: the scope constrains the entity through
@@ -1455,7 +1553,7 @@ const conceptStory: PackDefinition = {
     emptyRecovery: {
       message:
         "Concepts come from the @canonical/design-system pack, and a local store built without it carries none — refresh it.",
-      cli: "sources update",
+      call: { verb: "sources update" },
     },
   },
   lookup: {
@@ -1465,7 +1563,9 @@ const conceptStory: PackDefinition = {
     description:
       "Look up a concept's full documentation by name, IRI, or glob.",
     toolDescription:
-      'Get a design-system concept\'s full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob. Example: concept_lookup { name: ["Foundations: Grid"] }.',
+      "Get a design-system concept's full Markdown documentation. Address concepts by the name concept_list publishes, by prefixed name (ds:concept.…), by absolute IRI, or by a glob.",
+    useWhen: "when asked to read one guide or foundation in full",
+    example: { name: ["Foundations: Spacing", "Foundations: Surfaces"] },
     fields: [
       { name: "type", property: "ds:conceptType/ds:name", label: "Type" },
       { name: "tier", property: "ds:tier", label: "Tier" },
@@ -1516,7 +1616,10 @@ const implementationStory: PackDefinition = {
   noun: "implementation",
   description: "List which library implements which design-system block.",
   toolDescription:
-    'List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.',
+    "List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search.",
+  useWhen:
+    "when asked whether a component is implemented in React, Svelte or another library, or where its source code lives",
+  example: { platform: ["react", "svelte"] },
   list: {
     // The library is the subject that carries the platform, so the row is
     // assembled from BOTH ends of `ds:hasImplementation`. `?block` prefers the
@@ -1584,7 +1687,7 @@ const implementationStory: PackDefinition = {
     emptyRecovery: {
       message:
         "Implementations come from the @canonical/ds-implementations pack, and a local store built without it carries none — refresh it.",
-      cli: "sources update",
+      call: { verb: "sources update" },
     },
   },
   verbs: [
@@ -1592,7 +1695,9 @@ const implementationStory: PackDefinition = {
       verb: "libraries",
       description: "List the implementation libraries.",
       toolDescription:
-        "List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.",
+        "List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements.",
+      useWhen:
+        "when asked which component libraries exist and what each covers",
       // `ds:implementationCount` is asserted by the aggregate index on the SAME
       // subject the per-library file describes, so the two merge in the store
       // and the count needs no aggregation here.
@@ -1620,7 +1725,7 @@ const implementationStory: PackDefinition = {
       emptyRecovery: {
         message:
           "No implementation libraries in the store. The @canonical/ds-implementations pack provides them; refresh the local store.",
-        cli: "sources update",
+        call: { verb: "sources update" },
       },
     },
   ],
@@ -1640,7 +1745,10 @@ const codeStandardsStories: readonly PackDefinition[] = [
     noun: "standard",
     description: "List all code standards.",
     toolDescription:
-      'List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row\'s `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term. Example: standard_list { category: "react" }.',
+      "List code standards: one ROW per standard — its IRI, name, category and description — not the standards themselves. Take a row's `name` VERBATIM to standard_lookup for the dos and donts. Optionally filter by category slug (a parent slug answers for its whole branch; standard_categories lists them) or by search term.",
+    useWhen:
+      "when asked which coding rules or conventions apply — for React, CSS, testing, documentation and so on",
+    example: { category: ["react", "css"] },
     list: {
       query: [
         // `?category` is the LEAF a standard is filed under — what a row
@@ -1723,7 +1831,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "Category slugs come from the graph, and a parent slug answers for its whole branch — read them out rather than guessing.",
-        cli: "standard categories",
+        call: { verb: "standard categories" },
       },
     },
     verbs: [
@@ -1732,7 +1840,8 @@ const codeStandardsStories: readonly PackDefinition[] = [
         description:
           "List all standard categories with counts (a parent counts its whole branch).",
         toolDescription:
-          "List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering. Example: standard_categories {}.",
+          "List all code standard categories with the number of standards each covers. Categories are a hierarchy: a parent's count includes every descendant, and `standard_list { category }` answers for the same set. Use this to pick a valid slug before filtering.",
+        useWhen: "when asked which areas the code standards cover",
         query: [
           // The same reflexive roll-up `list` filters with — written the other
           // way round (every category whose broader-chain reaches ?cat), so the
@@ -1762,7 +1871,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
         emptyRecovery: {
           message:
             "The code standards ship with the CLI itself, so no categories at all means the store did not load — not that it is out of date.",
-          cli: "doctor",
+          call: { verb: "doctor" },
         },
       },
     ],
@@ -1805,7 +1914,12 @@ const codeStandardsStories: readonly PackDefinition[] = [
       description:
         "Look up one or more standards by name, IRI, or glob. --detail standard adds the dos, --detail detailed adds the don'ts.",
       toolDescription:
-        'Get one or more code standards in full, with dos and don\'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don\'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those. Example: standard_lookup { name: ["react/component/tsdoc"], detail: "detailed" }.',
+        'Get one or more code standards in full, with dos and don\'ts as code examples. `detail` DEFAULTS to "summary", which returns neither: pass detail: "standard" for the dos and detail: "detailed" for dos AND don\'ts. Address a standard by the name standard_list publishes (`react/component/tsdoc`), by prefixed name (`cs:react.component.tsdoc`), by absolute IRI, or by a glob over any of those.',
+      useWhen: "when asked how code should be written under one rule",
+      example: {
+        name: ["cs:react.component.tsdoc", "cs:react.component.props"],
+        detail: "detailed",
+      },
       fields: [
         {
           name: "category",
@@ -1851,7 +1965,10 @@ const codeStandardsStories: readonly PackDefinition[] = [
         description:
           "Return randomly selected complete standard instances as exemplars for shape discovery.",
         toolDescription:
-          "Return 1–5 randomly selected complete code standard instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances. Example: standard_sample { count: 2 }.",
+          "Return 1–5 randomly selected complete code standard instances as exemplars. Each call returns different instances.",
+        useWhen:
+          "before your first standards query, to see what a real code standard record looks like",
+        example: { count: "2" },
       },
     },
   },

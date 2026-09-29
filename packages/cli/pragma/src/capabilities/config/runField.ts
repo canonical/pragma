@@ -12,7 +12,7 @@
 
 import { map, type Task } from "@canonical/task";
 import { writeConfigField } from "../../kernel/config/index.js";
-import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
+import { callRecovery, PragmaError } from "../../kernel/error/index.js";
 import { type ConfigFieldSpec, RESERVED_CLEAR_VALUES } from "./fields.js";
 import type { ConfigFieldResult } from "./types.js";
 
@@ -34,8 +34,8 @@ export function runField(
 
   if (spec.kind === "string" && RESERVED_CLEAR_VALUES.includes(value)) {
     throw PragmaError.invalidInput(spec.field, value, {
-      recovery: cliRecovery(
-        `config unset ${spec.field}`,
+      recovery: callRecovery(
+        { verb: "config unset", params: { key: spec.field } },
         "Clear the field with the unset command.",
       ),
     });

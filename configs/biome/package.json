@@ -1,6 +1,6 @@
 {
   "name": "@canonical/biome-config",
-  "version": "0.38.0",
+  "version": "0.42.0",
   "main": "biome.json",
   "author": {
     "email": "webteam@canonical.com",
@@ -25,9 +25,9 @@
     "check:biome:fix": "biome check --write *.json"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.13"
+    "@biomejs/biome": "2.5.14"
   },
   "peerDependencies": {
-    "@biomejs/biome": "2.5.13"
+    "@biomejs/biome": "2.5.14"
   }
 }
