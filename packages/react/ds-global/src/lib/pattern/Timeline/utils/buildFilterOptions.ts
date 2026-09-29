@@ -1,7 +1,7 @@
 import type { TimelineFilterOption, TimelineItem } from "../types.js";
 
 /** Unique filter options in first-seen order; label from the first carrier. */
-export function buildFilterOptions(
+export default function buildFilterOptions(
   items: readonly TimelineItem[],
   getValue: (item: TimelineItem) => string | undefined,
   getLabel: (item: TimelineItem) => string | undefined,

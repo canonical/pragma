@@ -22,7 +22,7 @@ function getFormatter(locale: string): Intl.RelativeTimeFormat {
 }
 
 /** Format an ISO timestamp relative to `now` (e.g. "2 hours ago"). */
-export function formatRelative(
+export default function formatRelative(
   iso: string,
   now: number,
   locale: string,

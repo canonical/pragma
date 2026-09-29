@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TimelineItem } from "../types.js";
-import { buildFilterOptions } from "./buildFilterOptions.js";
+import buildFilterOptions from "./buildFilterOptions.js";
 
 const items: TimelineItem[] = [
   {

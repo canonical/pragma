@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRelative } from "./formatRelative.js";
+import formatRelative from "./formatRelative.js";
 
 const NOW = Date.parse("2024-06-15T12:00:00Z");
 
