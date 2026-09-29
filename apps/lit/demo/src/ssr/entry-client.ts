@@ -1,3 +1,5 @@
+import "../index.css";
+
 // Must be imported before any Lit component imports.
 // It installs hydration support on LitElement so that when components
 // are registered below, they know to attach to existing server-rendered
@@ -10,7 +12,6 @@ import "@canonical/lit-ds-prototype";
 import { hydrate } from "@lit-labs/ssr-client";
 import { render } from "lit";
 import { getTemplateForPath } from "../routes.js";
-import "../index.css";
 
 const root = document.getElementById("root")!;
 const template = getTemplateForPath(window.location.pathname);
