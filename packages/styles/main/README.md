@@ -17,7 +17,7 @@ bun add @canonical/styles
 
 ## Usage
 
-Import once, in your application's entry point:
+Import once, as the first import of your application's entry point, before any component:
 
 ```css
 @import url("@canonical/styles");
@@ -64,8 +64,8 @@ package or the markup of a page that does not need it.
 ## Entry points
 
 Five. `@canonical/styles` is the one an ordinary page wants: the whole stylesheet, in the order
-above. Three more are that stylesheet in parts, and the fifth is the order statement on its own, for a
-package rather than a page.
+above. Three more are that stylesheet in parts, and the fifth is the order statement on its own, which
+the other four import.
 
 | Entry | What it is |
 | --- | --- |
@@ -73,7 +73,7 @@ package rather than a page.
 | `@canonical/styles/tokens.css` | every custom property the design system declares, and not one rule that selects an element. Nothing here changes the page until something reads a value from it, with one exception noted below. |
 | `@canonical/styles/elements.css` | every rule the design system applies to a plain element: the reset, the root's baseline, and the typography with its baseline engine. |
 | `@canonical/styles/layout.css` | the layout presets — `grid`, `subgrid`, `responsive`, `intrinsic` and `content-flow` — which claim those five class names in a page's namespace. |
-| `@canonical/styles/layers.css` | the order statement and nothing else: no rule, no import, no declaration. The same statement the four above open with, for a package that needs the order fixed before it declares a layer of its own. A page never needs it. |
+| `@canonical/styles/layers.css` | the order statement and nothing else: no rule, no import, no declaration. The same statement the four above open with; each imports it as its first rule. A page never needs it on its own. |
 
 One exception to "changes nothing", and it is worth knowing before you import `tokens.css`. The design
 tokens' generated theme sheet declares `color-scheme` on `:root`, `.light` and `.dark` alongside the
@@ -158,31 +158,20 @@ order. A package in one of those tiers wraps its stylesheets in its own name and
 else.
 
 **A sub-tier declares its own layer, and that is what sorts it above.** One application's own package
-— the LXD tier, say — writes its CSS entry in this order, and the order is the whole recipe:
+— the LXD tier, say — writes its CSS entry in two steps:
 
 ```css
-@import url("@canonical/styles/layers.css");
-@layer ds.components.apps-lxd;
+@layer ds.components.apps-lxd;       /* 1. name your layer */
 
-@import url("./Button/styles.css");
+@import url("./Button/styles.css");  /* 2. then import your stylesheets */
 /* … the rest of the package's sheets, each wrapped in that layer … */
 ```
 
-The first line is what makes the second mean the same thing every time. A layer name is placed the
-moment the browser first meets it, so a name met *before* this package's statement is read is placed
-**below** the tier names that statement declares — and the sub-tier would sit under the very tiers it
-is meant to beat. Whether that happened depended on which file the application's bundler emitted
-first, which is not something the package can control from inside itself. Reading the statement first
-settles it: the thirteen names are fixed, and `ds.components.apps-lxd`, being new, is appended after
-them inside `ds.components`, where it sorts above every tier. That is the tree's own rule — the more
-specific tier wins — and it means this stylesheet never has to know which applications exist.
-
-Importing `layers.css` costs a page nothing: it is the same statement the other four entries open
-with, and a second identical statement names no layer the first has not already fixed.
-
-Measured on a scratch package entry in all four emission orders a bundler can produce: with the import
-first, a rule in `ds.components.apps-lxd` beats the same rule in `ds.components.apps` and in
-`ds.components.global` in 4 of 4; without it, in 1 of 4.
+The order statement comes from the application loading `@canonical/styles` first (see
+[Usage](#usage)). A layer name is placed the moment the browser first meets it, so with the thirteen
+names already fixed, `ds.components.apps-lxd`, being new, is appended after them inside
+`ds.components`, where it sorts above every tier. That is the tree's own rule — the more specific tier
+wins — and it means this stylesheet never has to know which applications exist.
 
 **Nothing is ever written directly into `ds.components`.** A declaration in a parent layer sits in
 that layer's implicit final sublayer, which is above every named sublayer, so a rule written there

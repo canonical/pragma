@@ -126,10 +126,11 @@ able to overrule this?"
 An application adds one more name above all of these for its own CSS. The migration guide shows the
 shape.
 
-The statement only comes first if the application loads it first. An application's entry imports
-`@canonical/styles` before anything that reaches a component, and declares its own layers after it.
-Otherwise a component's stylesheet reaches the page first, its layer takes the first position, and the
-rest of the order follows from that accident:
+**Load `@canonical/styles` first**, in the application's entry, before anything that imports a
+component. It carries the order statement (the layer order statement). A layer takes its position the
+first time the browser sees it, so a component stylesheet that arrives first takes the first position,
+and the rest of the order follows from that accident. The application declares its own layers after
+the import:
 
 ```ts
 import { App } from "./App.js"; import "./styles/index.css"; // wrong: a component's layer comes first
@@ -170,27 +171,18 @@ fixes it anyway, so that it can never come to depend on which package a bundler 
 each of them needs is only to sit above `ds.components.global`, and that is what the statement
 guarantees.
 
-**A sub-tier package declares its own layer**, and the order of three lines in its CSS entry is the
-whole of the recipe:
+**A sub-tier package declares its own layer**, in two steps in its CSS entry:
 
 ```css
-@import url("@canonical/styles/layers.css");   /* 1. fix the thirteen */
-@layer ds.components.apps-lxd;                 /* 2. then name your own */
-/* 3. then import your stylesheets */
+@layer ds.components.apps-lxd;        /* 1. name your layer */
+@import url("./Button/styles.css");   /* 2. then import your stylesheets */
 ```
 
-The sub-tier name is not in pragma's statement, and does not need to be: a name the statement does not
-carry is placed where it first appears, so a name that first appears *after* the thirteen lands above
-them, which is where a sub-tier belongs. Nothing has to be reserved in advance, and pragma does not
-have to know which sub-tiers exist.
-
-What the first line buys is that "after" stops depending on the bundler. Without it, the sub-tier's
-declaration is read wherever the bundler happened to emit that package: emitted before the design
-system's entry, the sub-tier name is first and therefore lowest, and every design-system layer is
-appended above it — the exact inversion the tier is meant to prevent. Measured over the four emission
-orders a bundler can produce for one such package: declared before the statement is read, the
-application tier won in one of the four; with the import first, in four of four. The import costs
-nothing, because the statement is idempotent — the second reading of the same order changes no rank.
+The order statement is not the package's to load: it comes from the application loading
+`@canonical/styles` first, as above. The sub-tier name is not in pragma's statement, and does not need
+to be: a name the statement does not carry is placed where it first appears, so a name that first
+appears *after* the thirteen lands above them, which is where a sub-tier belongs. Nothing has to be
+reserved in advance, and pragma does not have to know which sub-tiers exist.
 
 **The names are flat, and the hyphen is load-bearing.** `ds.components.apps-lxd` is a sublayer of
 `ds.components`, a sibling of `ds.components.apps`. Written as `ds.components.apps.lxd` it would be a
@@ -243,7 +235,7 @@ statement, and the adapter carries a copy of one of them:
 | `@canonical/styles/tokens.css` | Four layers of values — `ds.tokens`, `ds.modifiers`, `ds.surfaces`, `ds.states` — and the classes that set them. No rule that selects an element, with the one exception below. | (in the whole) | imports this |
 | `@canonical/styles/elements.css` | `normalize`, `ds.reset`, `ds.typography` — what bare elements get. | (in the whole) | takes the adapter's copy instead |
 | `@canonical/styles/layout.css` | The layout presets, `content-flow` among them, which claim five class names in a page's namespace. | (in the whole) | imports this |
-| `@canonical/styles/layers.css` | The order statement and nothing else: no rule, no import, no declaration, and no layer opened — a statement places names in an order, it does not put a rule in one. It is there for a package that has to fix the order before declaring a layer of its own — a sub-tier component package, below. | — | — |
+| `@canonical/styles/layers.css` | The order statement and nothing else: no rule, no import, no declaration, and no layer opened — a statement places names in an order, it does not put a rule in one. Every other entry imports it as its first rule. | — | — |
 
 One exception is worth knowing before you import the values on their own: the design tokens' generated
 theme sheet declares `color-scheme` on `:root`, `.light` and `.dark` beside the colour tokens, and that
