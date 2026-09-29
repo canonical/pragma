@@ -65,7 +65,7 @@ export const mergeProposalItems: TimelineItem[] = [
     eventType: "commit",
     eventLabel: "Commit",
     description: "added 1 commit",
-    marker: { ...AD, size: "large" },
+    marker: { ...AD },
     customContent: (
       <EntityList
         entries={[
@@ -85,7 +85,6 @@ export const mergeProposalItems: TimelineItem[] = [
     actorName: "Alvarez Daniella",
     eventType: "description",
     description: "edited the description",
-    marker: { size: "small" },
     customContent: (
       <CommentThread
         author="Alvarez Daniella"
@@ -102,7 +101,6 @@ export const mergeProposalItems: TimelineItem[] = [
     eventType: "status",
     eventLabel: "Status change",
     description: "changed this merge proposal to Draft",
-    marker: { size: "small" },
     customContent: <TextBlock />,
   },
   {
@@ -113,7 +111,6 @@ export const mergeProposalItems: TimelineItem[] = [
     eventType: "title",
     eventLabel: "Title change",
     description: "changed the title to Update IBugTarget for template",
-    marker: { size: "small" },
     customContent: <TextBlock />,
   },
   {
@@ -123,7 +120,7 @@ export const mergeProposalItems: TimelineItem[] = [
     actorName: "John Santa Pietro di Doe",
     eventType: "description",
     description: "edited the description",
-    marker: { ...JD, size: "large" },
+    marker: { ...JD },
     customContent: <TextBlock />,
   },
   {
@@ -133,7 +130,6 @@ export const mergeProposalItems: TimelineItem[] = [
     actorName: "John Santa Pietro di Doe",
     eventType: "title",
     description: "edited the title",
-    marker: { size: "small" },
     customContent: <TextBlock />,
   },
   {
@@ -143,7 +139,7 @@ export const mergeProposalItems: TimelineItem[] = [
     actorName: "John Santa Pietro di Doe",
     eventType: "status",
     description: "changed status to “Ready for review”",
-    marker: { ...JD, size: "medium" },
+    marker: { ...JD },
     customContent: <TextBlock />,
   },
   ...Array.from({ length: 42 }, (_, index): TimelineItem => {
@@ -158,7 +154,6 @@ export const mergeProposalItems: TimelineItem[] = [
       eventType: "update",
       eventLabel: "Update",
       description: "made an update to this merge proposal",
-      marker: { size: "small" },
     };
   }),
   {
@@ -168,7 +163,7 @@ export const mergeProposalItems: TimelineItem[] = [
     actorName: "Alvarez Daniella",
     eventType: "commit",
     description: "added 2 commits",
-    marker: { ...AD, size: "large" },
+    marker: { ...AD },
     customContent: (
       <EntityList
         entries={[
@@ -190,7 +185,6 @@ export const mergeProposalItems: TimelineItem[] = [
     eventType: "comment",
     eventLabel: "Comment",
     description: "commented on the proposal",
-    marker: { size: "small" },
     customContent: (
       <CommentThread
         author="grummys"
@@ -206,7 +200,7 @@ export const mergeProposalItems: TimelineItem[] = [
     actorName: "Alvarez Daniella",
     eventType: "commit",
     description: "added 1 commit",
-    marker: { ...AD, size: "large" },
+    marker: { ...AD },
     customContent: (
       <EntityList
         entries={[
@@ -239,7 +233,7 @@ export const anatomyItems: TimelineItem[] = [
     actorName: "Name",
     eventType: "comment",
     description: "description",
-    marker: { initials: "NA", size: "large" },
+    marker: { initials: "NA" },
     customContent: <TextBlock />,
   },
   ...Array.from({ length: 4 }, (_, index) => ({
@@ -249,7 +243,6 @@ export const anatomyItems: TimelineItem[] = [
     actorName: index % 2 === 0 ? "Name" : "John Doe",
     eventType: index % 2 === 0 ? "comment" : "approval",
     description: "description",
-    marker: { size: "small" as const },
   })),
   {
     id: "anatomy-last",
@@ -258,7 +251,7 @@ export const anatomyItems: TimelineItem[] = [
     actorName: "Name",
     eventType: "approval",
     description: "description",
-    marker: { initials: "NA", size: "large" },
+    marker: { initials: "NA" },
   },
 ];
 
