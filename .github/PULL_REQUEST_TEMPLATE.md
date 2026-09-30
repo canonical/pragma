@@ -18,7 +18,7 @@ Fixes [list issues/bugs if needed]
   - [ ] All packages: `check`, `check:fix`, and `test`.
   - [ ] Packages with build steps: `build` to build the package for development or distribution, `build:all` to build **all** artifacts. See [CONTRIBUTING.md](../old/CONTRIBUTING.md#24-full-artifact-builds-buildall) for details.
 - [ ] If this PR introduces a **new package**: first-time publish has been done manually from inside the package directory using `npm publish --access public` (first-time publishing is not automated). Run `bun run publish:status` from the repo root to verify. Then configure an OIDC [trusted publisher](https://docs.npmjs.com/trusted-publishers) for the package on npmjs.com (this repository, workflow `tag.yml`; from the CLI: `npm trust github <package> --file tag.yml --repository <owner>/<repo> --allow-publish --allow-stage-publish --otp <code>`) and set publishing access to disallow tokens, so the automated release workflow can publish future versions.
-- [ ] If this PR does not require visual testing, add the `Chromatic: skip` label to skip Chromatic.
+- [ ] In canonical/pragma-web, if this PR does not require visual testing, add the `Chromatic: skip` label to skip Chromatic (canonical/pragma-core has no Chromatic).
 
 ## Screenshots
 

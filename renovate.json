@@ -1,4 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>canonical/pragma-core//configs/renovate/default.json"]
+  "extends": ["github>canonical/pragma-core//configs/renovate/default.json"],
+  "packageRules": [
+    {
+      "description": "Toolchain-only updates cannot change rendered UI. Chromatic workflows skip builds on this label",
+      "matchPackageNames": [
+        "@biomejs/biome",
+        "@canonical/biome-config",
+        "vitest",
+        "@vitest/{/,}**",
+        "renovate"
+      ],
+      "addLabels": ["Chromatic: skip"]
+    }
+  ]
 }
