@@ -1,60 +1,23 @@
 # Preface
 
-Storybook conventions for `@canonical/react-ds-global-form`: the decorators, the
-per-tier story shape, and how field state (touched, error) is set up. Read this
-before adding or changing a `*.stories.tsx` here. For the component architecture see
-`.kb/architecture.md`.
+How stories are written in `@canonical/react-ds-global-form`: titles and decorators per tier, the shared helpers, and how a field's error state is shown. Read this before adding or changing a `*.stories.tsx` file in this package.
 
 Read the top-level `.kb/agents.md` file before continuing below.
 
 # Overview
 
-Stories live next to their component as `*.stories.tsx`. Shared Storybook helpers are
-in `src/storybook/` and imported via the `storybook/*` alias (from
-`@canonical/storybook-config`), e.g. `import * as decorators from
-"storybook/decorators.js"`. Fixtures (option lists) are in
-`storybook/fixtures.options.js`.
+Stories sit next to what they show, as `*.stories.tsx`. The shared helpers are in `src/storybook/`: `decorators.tsx` and the fixtures `fixtures.options.ts` (option lists) and `fixtures.fields.ts` (field definitions). Stories import them as `storybook/decorators.js` and similar; the package `tsconfig.json` maps bare specifiers to `src/`, and stories and `src/storybook/` are excluded from the `tsc` build, so this never reaches the published package. Storybook documentation pages are MDX files in `src/docs/`.
 
-# Architecture
+`decorators.tsx` has two helpers:
 
-## Per-tier story shape
+- `form(options?)` - a decorator that renders the story inside `FormProvider` and a `<form class="ds form subgrid">`, with `useForm({ mode: "onChange" })`, and sends the form state to the form-state addon panel. Its options are `defaultValues`, `className` for extra classes on the form, and `touchedFields`, a list of field names it marks as touched with `setValue(…, { shouldTouch: true })`, because react-hook-form has no way to declare fields touched by default.
+- `surfaces(renderAtLevel)` - renders content in three nested `.surface` bands, to show how a control looks on each surface level. `src/docs/Surfaces.stories.tsx` uses it.
 
-- **`subcomponent/` (presentational inputs)** render **bare** — no form decorator,
-  no Wrapper. They demonstrate the input's own markup/states (Default, Disabled,
-  Checked, …). Titled `subcomponents/<Name>`.
-- **`component/` (`*Field`)** always run inside the `form()` decorator (they are
-  react-hook-form-bound and need a `FormProvider`). Titled `components/<Name>`.
-- **`pattern/`** (`Field`, `Form`) also use `form()`. Titled `patterns/<Name>`.
+# Important
 
-## Decorators (`src/storybook/decorators.tsx`)
-
-- **`form(options?)`** — wraps the story in `FormProvider` + `<form class="ds form
-  subgrid">` with `useForm({ mode: "onChange" })` and emits state to the form-state
-  addon. Options: `defaultValues`, `className`, and `touchedFields: string[]` — the
-  listed fields are marked touched (via `setValue(..., { shouldTouch: true })`) so
-  validation errors surface immediately (react-hook-form has no `defaultTouched`).
-- **`grid()`** — wraps the story in `.grid.responsive` (the 4/8/12-column design-system
-  grid). `.ds.form` is a `subgrid`, so column-based field layouts (ChoicesField's
-  `--choices-span`, SimpleChoicesField's `"columns"`) only resolve real column tracks
-  inside a parent `.grid`. Compose grid-outside-form: `decorators: [grid(), form()]`.
-
-## Showing the error state
-
-Error state is owned by the field Wrapper (it adds `.danger` when react-hook-form
-reports an error), so it is a **field-tier** concern:
-
-- On a `*Field`, an error story renders the field inside `form({ touchedFields:
-  [name] })` with a validation rule that fails for the (empty) value — so RHF reports
-  the error, the Wrapper adds `.danger`, and the `FieldError` message shows. Prefer a
-  shared factory over hand-rolling each one. Note a field with a non-empty registered
-  default (e.g. ColorField's `#000000`) needs a `validate` rule, not a bare
-  `required`, since `required` can never fail for it.
-- A presentational subcomponent has no Wrapper, so its error story reproduces the
-  `<div class="ds field danger"><div class="payload">…</div></div>` ancestor context
-  via a decorator (plus a `FieldError` message) — showing the visual error layer the
-  subcomponent owns without faking RHF state.
-
-> Note: the shared error-story helpers (`errorStory()` and the `danger()` decorator)
-> and the per-component `WithError` / `ErrorState` stories land via a separate PR; this
-> section describes the intended convention. Until then, `form()` + `touchedFields`
-> is the mechanism for a field error story.
+- Title a story by its tier: `subcomponents/<Name>`, `components/<Name>` or `patterns/<Name>`. The field machinery and utilities use `common/<Name>` and `utils/<name>`. A work-in-progress input or field is titled `_work_in_progress/subcomponent/<Name>` or `_work_in_progress/component/<Name>`, even though its source is in the normal tier folder.
+- Render presentational inputs bare: no `form()` decorator and no wrapper, showing only the input's own states (default, disabled, checked and so on).
+- Render every field and pattern inside `decorators: [decorators.form()]`, because they need the react-hook-form context.
+- Show a field's error state as a `WithError` story: give the field a rule that fails for its starting value, and list its name in `form({ touchedFields: [name] })`. The wrapper then adds `.danger` and renders the error message. See `WithError` in `DateField.stories.tsx` and `Field.stories.tsx`.
+- A field with a non-empty registration default, such as `ColorField` with `"#000000"`, can never fail a bare `required` rule; its error story needs a `validate` rule instead.
+- Presentational inputs have no error stories, since the error state belongs to the wrapper.

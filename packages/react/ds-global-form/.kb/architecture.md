@@ -1,116 +1,88 @@
 # Preface
 
-The tier architecture of `@canonical/react-ds-global-form`, the machinery every
-field is composed from, and the field-level conventions (required/optional marking,
-error state, input chrome). Read this before adding or moving an input, field, or
-pattern, or before touching the `common/` machinery. For Storybook see
-`.kb/storybook.md`.
+How `@canonical/react-ds-global-form` is put together: the tiers and which may depend on which, the public surface, the machinery every field is composed from, and the conventions every field shares for required marking, error state and input chrome. Read this before adding or moving an input, a field or a pattern, or before changing anything in `src/lib/common/`.
 
 Read the top-level `.kb/agents.md` file before continuing below.
 
 # Overview
 
-`src/lib/` is organised in ontology tiers plus two non-tier support folders. Each
-tier may only depend *downward*; the machinery in `common/` is depended on by all
-tiers but depends on none of them.
+A form input exists at three levels. A presentational input renders markup and knows nothing about react-hook-form. A field binds one input to react-hook-form and wraps it in the label, description and error message. A pattern is what consumers use: `Field` picks a field from an `inputType`, and `Form` provides the react-hook-form context. The binding and the wrapping are shared machinery, so a new field is mostly a choice of input, binding mode and wrapper.
 
-- `subcomponent/` — presentational inputs, **no** react-hook-form. One folder per
-  input (`TextInput`, `CheckboxInput`, `SelectInput`, `PhoneInput`, …) plus the field
-  chrome `Field/{Label,Description,Error}`. May import only shared types.
-- `component/` — the RHF-bound `*Field` wrappers, one per input (`TextField`,
-  `CheckboxField`, `RangeField`, …), each built by composing `common/` + a
-  `subcomponent/` input.
-- `pattern/` — `Field` (a discriminated-union switch that routes an `inputType` to
-  the right `*Field`, with a custom passthrough) and `Form` (the `FormProvider`
-  wrapper). This tier is the public surface.
-- `common/` — the machinery: `bindField/`, `Wrapper/` (+ `withWrapper`), and the
-  shared prop types (`BaseInputProps`, `InputProps<T>`, `WrapperProps<T>`).
-- `utils/` — `hooks/` (`useFieldAriaProperties`, `useFieldError`), `middleware/`
-  (REST options/validation), and `countries/` (phone dial codes + masks).
+# Important
 
-**Public surface:** `src/lib/index.ts` exports only `pattern/*` and
-`utils/middleware/*`. The `component/` and `subcomponent/` tiers are internal —
-consumers reach inputs through `<Field inputType="…">` or `<Form>`, never by deep
-import. Renaming a `*Field` is therefore not a breaking change.
+- Build a new field by composing the machinery described below; do not call `register` or `useController` in a field or an input by hand.
+- A presentational input must not import react-hook-form.
+- The public surface is chosen in `src/lib/index.ts`. Adding a field does not make it public: consumers reach it through `<Field inputType="…">`, so the `Field` switch and its props union are part of adding one.
+- `isOptional` is the single source of required-ness. Do not add a separate `required` prop or rule to a field.
+- Error styling hangs off the wrapper's `.danger` class. An input never decides by itself that it is in error.
 
 # Architecture
 
-## The composition machinery
+## Tiers and dependencies
 
-Every `*Field` is `withWrapper(bindField(Input, mode, options?))`.
+`src/lib/` has three tier folders and two support folders.
 
-`bindField<P>(Presentational, mode, options?)` (`common/bindField/bindField.ts`)
-turns a presentational input into an RHF-bound one. `BindMode` is `"native" |
-"controlled"`:
+- `subcomponent/` - Presentational inputs, one folder per input (`TextInput`, `CheckboxInput`, `PhoneInput`, …), and the field chrome `Field/` (`Label`, `Description`, `Error`). They may use `utils/` (formatters, country data, `mergeRefs`) but no other tier.
+- `component/` - One field per input (`TextField`, `CheckboxField`, `RangeField`, …), each composed from `common/` and a `subcomponent/` input. A field with private parts keeps them in its own `common/` subfolder, as `ChoicesField/common/Option` does.
+- `pattern/` - `Field`, a switch on the `inputType` prop that renders the matching field, with `inputType="custom"` rendering a `CustomComponent` prop; and `Form`, which wraps its children in react-hook-form's `FormProvider`.
+- `common/` - The field machinery: `bindField/`, `Wrapper/` with the `withWrapper` and `withToggleWrapper` helpers, and the shared prop types (`BaseInputProps`, `InputProps`, `WrapperProps`, `Middleware`, `Condition`).
+- `utils/` - The react-hook-form hooks (`useFieldAriaProperties`, `useFieldError`, `useFormattedValue`), value formatters, phone country data, and the REST middleware for options and validation.
 
-- `"native"` — spreads `register(name, registerProps)` onto the input (uncontrolled;
-  the default for most inputs).
-- `"controlled"` — lifts `useController()` and passes `value`/`onChange`/`onBlur`/
-  `ref`, for inputs that need a live value (e.g. Color, FileUpload).
+Dependencies point from `pattern/` to `component/`, and from `component/` to `common/` and `subcomponent/`. `common/` is not independent of the tiers: `Wrapper` renders the `subcomponent/Field` chrome and `common/types.ts` imports prop types from `subcomponent/`, even though the comment in `common/index.ts` says `common/` never depends on a tier.
 
-`BindFieldOptions`:
+## Public surface
 
-- `registerDefaults?: RegisterOptions` — merged *under* the consumer's
-  `registerProps` (`{ ...registerDefaults, ...registerProps }`), so the consumer
-  always wins. Example: `RangeField` passes `{ valueAsNumber: true }` so RHF stores a
-  number, not the string the input reports.
-- `injectValue?: boolean` — supplies a live `value` prop via a watch (Range's
-  `<output>`).
-- `defaultValue?` — the registration default in controlled mode.
+`src/lib/index.ts` exports the `pattern/` tier (which also re-exports the machinery types `Field` accepts), the formatter utilities and `useFormattedValue`, the middleware, and `RatingInput`, the one input exposed directly while it is a work in progress. `component/` and the rest of `subcomponent/` are internal, so renaming a field or an input is not a breaking change as long as the `inputType` it serves stays the same.
 
-`withWrapper(Component, options?, Wrapper?)` wraps the bound field in the field
-chrome. `Wrapper` (`common/Wrapper/Wrapper.tsx`) renders `.ds.field` (a subgrid,
-gains `.danger` on error) containing the `<Label>` and a `.payload` div
-(description + input + error message), and threads the aria props from
-`useFieldWrapper` onto the input.
+Some fields and inputs are works in progress (Color, Combobox and Rating). They live in the normal tier folders but their stories are filed under `_work_in_progress/` in Storybook.
 
-## Required / optional marking
+## Composing a field
 
-`isOptional` is the source of truth. `useFieldWrapper` maps `!isOptional` to an RHF
-`required` rule *and* to `aria-required` on the input (independent of error state).
-The visual marker is chosen by the Label-level `requiredIndicator` prop, forwarded
-from the field:
+A field is a wrapper helper applied to a bound input:
 
-- `"required"` (default) — required fields get a `*` marker rendered as a CSS
-  `::before` pseudo-element keyed off a `data-required` attribute, so it stays out of
-  the accessible name (the required semantic is carried by `aria-required`). Colour
-  defaults to the label colour via `--form-required-marker-color`.
-- `"optional"` — optional fields get a muted ` (optional)` **text** suffix (real
-  text, so it belongs in the accessible name).
-
-## Input chrome + error state
-
-The shared `.ds.input.chrome` rule (`src/index.css`) provides border, height, and
-**block** padding. **Inline** padding lives on the text-bearing leaf, single-sourced:
-composite wrappers (text/number/password/phone) put it on their inner `<input>`;
-direct-chrome inputs (date/time/datetime/select/textarea) set it on the element
-itself; `.ds.input.chrome` never sets inline padding (that would double it).
-
-Error state is applied by the Wrapper, not the input: on an RHF error the `.ds.field`
-container gains `.danger`, and inputs style themselves red via the ancestor selector
-`.danger > .payload .ds.input.chrome` (Color/FileUpload re-implement it on their own
-`.color-trigger` / `.drop-zone`). Controls without a chrome border (checkbox, radio,
-range slider) show the error only through the `FieldError` message.
-
-The checkbox checkmark is a masked pseudo-element, not a `background-image` SVG (which
-CSS can't recolour): `::before` with `mask-image` + `background-color:
-var(--color-foreground-checkbox-checkmark)`, with the colour+mask set together only
-under `:checked`/`:indeterminate` so the unchecked box paints nothing.
-
-## The `#lib/*` import alias
-
-Package-internal cross-tier imports use `#lib/*` (e.g.
-`#lib/common/bindField/index.js`) instead of deep relative paths. `package.json`
-`imports` maps it with a **publish-safe conditional map**:
-
-```jsonc
-"#lib/*": {
-  "development": "./src/lib/*",   // local dev (source)
-  "types":       "./dist/types/lib/*",
-  "default":     "./dist/esm/lib/*" // published runtime
-}
+```ts
+export default withWrapper<TextFieldProps>(
+  bindField<TextFieldProps>(TextInput, "native"),
+);
 ```
 
-This resolves correctly at every stage (source during dev, `dist` when published), so
-a shipped tarball doesn't break. It requires `customConditions: ["development"]` in
-tsconfig and matching `resolve.conditions` in the Vite/Storybook config.
+`bindField(Input, mode, options?)` (`common/bindField/bindField.ts`) binds a presentational input to react-hook-form. The mode is either:
+
+- `"native"` - spreads `register(name, rules)` onto the input. Most inputs use it: text, number, password, textarea, select, date, time, date-time, range, checkbox, switch and hidden.
+- `"controlled"` - runs `useController` and passes `value`, `onChange`, `onBlur` and `ref`. Inputs that manage their own value use it: choices, rich choices, combobox, color, file upload, phone and rating.
+
+Its options are:
+
+- `additionalRegisterProps` - `register()` rules merged under the consumer's `registerProps`, so the consumer wins on a conflict. It is either an object, as in `NumberField` and `RangeField` passing `{ valueAsNumber: true }`, or a function of the field's props, as in `DateField` turning `min` and `max` into rules and `FileUploadField` turning its file limits into a `validate` rule.
+- `defaultValue` - the registration default in controlled mode, such as `"#000000"` for `ColorField` and `[]` for `FileUploadField`.
+- `injectValue` - in native mode, also passes the watched value as a `value` prop.
+
+The wrapper helper chooses the chrome around the bound input:
+
+- `withWrapper(Component, options?, Wrapper?)` renders the default `Wrapper`: a `.ds.field` subgrid holding the `Label` and a `.payload` element with the description, the input and the error message. The third argument swaps the wrapper; `HiddenField` passes `InvisibleWrapper`, which registers the field but renders no chrome.
+- `withToggleWrapper(Component, defaults?)` renders `ToggleWrapper`, which puts a checkbox or switch inline with its label, and requires at least one of `label` and `controlLabel`. `CheckboxField` and `SwitchField` use it.
+
+Both helpers also accept, per use, a `middleware` array of higher-order components applied between the wrapper and the input, and a `condition` prop (`[dependencies, predicate]`) that hides the field when the predicate returns false for the watched dependency values.
+
+The wrappers call `useFieldWrapper` (`common/Wrapper/hooks/`), which builds the field's `register()` rules, reads its error, produces the ARIA attributes for the label, description, input and error message, and unregisters the field on unmount unless `unregisterOnUnmount` is false.
+
+## Required and optional marking
+
+`useFieldWrapper` turns `isOptional` (default false) into a react-hook-form `required` rule with the message from `common/Wrapper/messages.ts`, and into `aria-required` on the input. The consumer's `registerProps` are merged last and can override that rule.
+
+How the label shows it is chosen by the `requiredIndicator` prop, which the wrapper forwards to `Label`. The two values are alternative conventions; use one per form.
+
+- `"required"` (the default) marks required fields. `Label` sets `data-required`, and its stylesheet draws the marker as an `::after` pseudo-element, `var(--form-required-marker, "*")`, so the marker stays out of the accessible name; `aria-required` carries the meaning. It takes the label colour unless `--form-required-marker-color` is set.
+- `"optional"` marks optional fields with a muted ` (optional)` suffix. It is real text, so it is part of the accessible name.
+
+## Error state and input chrome
+
+When react-hook-form reports an error for the field, the wrapper adds `.danger` to the `.ds.field` element and renders the `Error` subcomponent with the message. Inputs are styled from that ancestor:
+
+- `.ds.input.chrome` (`src/index.css`) is the shared bordered chrome. On `.danger > .payload .ds.input.chrome` only the bottom border takes the error colour, and focus rings all four sides in the error colour. The color and file-upload inputs apply the same treatment to their own `.color-trigger`, `.hex-input-row` and `.drop-zone` elements.
+- A choices group has no single border, so `ChoicesField` and `RichChoicesField` render their label as a `<legend>` (the wrapper's `mockLabel` option), and `.danger > legend.ds.field-label` turns that label and its required marker the error colour. A plain `<label>` does not change colour.
+- Checkboxes, radios and range sliders have no chrome border and show the error only through the message.
+
+`.ds.input.chrome` sets the height, border and block padding, never the inline padding. Inline padding goes on the element that holds the text: the inner `<input>` of composite inputs (text, number, password, phone), or the element itself for inputs that carry the chrome directly (date, time, date-time, select, textarea). Setting it on both would inset the text twice.
+
+The checkbox glyph is a masked `::before` pseudo-element coloured by `--surface-color-foreground-checkbox-checkmark` (falling back to `--color-foreground-checkbox-checkmark`), not a `background-image`, because CSS cannot recolour a background image. Only the `:checked` and `:indeterminate` rules give it both a mask and a colour, so an unchecked box paints nothing.
