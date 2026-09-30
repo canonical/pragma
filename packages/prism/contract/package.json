@@ -52,7 +52,7 @@
     "@canonical/biome-config": "0.43.0",
     "@canonical/typescript-config": "0.43.0",
     "@canonical/webarchitect": "0.43.0",
-    "@types/node": "^24.12.0",
+    "@types/node": "^26.0.0",
     "@vitest/coverage-v8": "^5.0.0",
     "graphql": "^16.11.0",
     "typescript": "^7.0.2",
