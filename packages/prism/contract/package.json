@@ -1,7 +1,7 @@
 {
   "name": "@canonical/prism-contract",
   "description": "The minimal GraphQL surface a Prism docsite provider must offer, plus a semantic-subsumption check that a provider's SDL satisfies it",
-  "version": "0.42.0",
+  "version": "0.43.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",

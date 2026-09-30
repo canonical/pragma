@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-ds-app-lxd",
   "description": "LXD-specific components for the Pragma design system",
-  "version": "0.42.0",
+  "version": "0.43.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -43,9 +43,9 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.42.0",
-    "@canonical/storybook-config": "^0.42.0",
-    "@canonical/styles": "^0.42.0",
+    "@canonical/react-ds-global": "^0.43.0",
+    "@canonical/storybook-config": "^0.43.0",
+    "@canonical/styles": "^0.43.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
@@ -53,9 +53,9 @@
     "@biomejs/biome": "2.5.14",
     "@canonical/biome-config": "0.43.0",
     "@canonical/design-tokens": "0.43.0",
-    "@canonical/storybook-helpers": "^0.42.0",
-    "@canonical/typescript-config-react": "^0.42.0",
-    "@canonical/vitest-config-react": "^0.42.0",
+    "@canonical/storybook-helpers": "^0.43.0",
+    "@canonical/typescript-config-react": "^0.43.0",
+    "@canonical/vitest-config-react": "^0.43.0",
     "@canonical/webarchitect": "0.43.0",
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/addon-docs": "^10.6.0",
