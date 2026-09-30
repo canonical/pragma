@@ -658,6 +658,32 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
     ],
     categories: ["object"],
   },
+  devtools: {
+    tags: [
+      "developer tools",
+      "code",
+      "angle brackets",
+      "inspect",
+      "console",
+      "web inspector",
+    ],
+    categories: ["action"],
+    description: "A pair of angle brackets: open the developer tools.",
+  },
+  "devtools-off": {
+    tags: [
+      "developer tools",
+      "devtools",
+      "code",
+      "angle brackets",
+      "close",
+      "disable",
+      "off",
+    ],
+    categories: ["action"],
+    description:
+      "Angle brackets struck through: close or disable the developer tools.",
+  },
   disconnected: {
     tags: [
       "broken",
@@ -853,6 +879,20 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
       "preferences",
     ],
     categories: ["action"],
+  },
+  "fit-to-screen": {
+    tags: [
+      "fit",
+      "scale",
+      "zoom to fit",
+      "contain",
+      "window",
+      "frame",
+      "shrink",
+      "size",
+    ],
+    categories: ["action"],
+    description: "Scale the view so all of it fits the available space.",
   },
   folder: {
     tags: ["directory", "storage", "organize", "organise", "browse"],
@@ -1069,6 +1109,37 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
     ],
     categories: ["product"],
     description: "An ISO disc image.",
+  },
+  keyboard: {
+    tags: [
+      "keys",
+      "typing",
+      "input",
+      "type",
+      "virtual keyboard",
+      "on screen keyboard",
+    ],
+    categories: ["object"],
+  },
+  "keyboard-off": {
+    tags: ["keyboard", "keys", "typing", "input", "hide", "disable", "off"],
+    categories: ["object"],
+    description:
+      "A keyboard struck through: the keyboard is hidden or disabled.",
+  },
+  "layout-grid": {
+    tags: [
+      "grid",
+      "tiles",
+      "squares",
+      "layout",
+      "arrangement",
+      "dashboard",
+      "view",
+      "multiview",
+    ],
+    categories: ["action"],
+    description: "Four tiles in a frame: switch to a grid layout.",
   },
   "light-theme": {
     tags: [
@@ -1622,6 +1693,33 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
     ],
     categories: ["object"],
   },
+  resize: {
+    tags: [
+      "scale",
+      "stretch",
+      "dimensions",
+      "size",
+      "diagonal",
+      "arrow",
+      "drag corner",
+    ],
+    categories: ["action"],
+    description:
+      "A dashed frame with a diagonal arrow: change the size of the view.",
+  },
+  "resize-off": {
+    tags: [
+      "resize",
+      "scale",
+      "fixed size",
+      "locked size",
+      "disable",
+      "off",
+      "dimensions",
+    ],
+    categories: ["action"],
+    description: "The resize glyph struck through: resizing is disabled.",
+  },
   restart: {
     tags: ["refresh", "reload", "reset", "update", "arrow", "cycle"],
     categories: ["action"],
@@ -1642,6 +1740,33 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
     categories: ["product"],
     description: "Revisions of a charm or package over time.",
   },
+  "rotate-left": {
+    tags: [
+      "rotate",
+      "anticlockwise",
+      "counterclockwise",
+      "turn",
+      "orientation",
+      "portrait",
+      "landscape",
+      "device",
+    ],
+    categories: ["action"],
+    description: "Rotate the view a quarter turn anticlockwise.",
+  },
+  "rotate-right": {
+    tags: [
+      "rotate",
+      "clockwise",
+      "turn",
+      "orientation",
+      "portrait",
+      "landscape",
+      "device",
+    ],
+    categories: ["action"],
+    description: "Rotate the view a quarter turn clockwise.",
+  },
   rss: {
     tags: [
       "feed",
@@ -1653,6 +1778,24 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
       "web feed",
     ],
     categories: ["object"],
+  },
+  "screen-record": {
+    tags: ["record", "recording", "capture", "video", "screencast", "rec"],
+    categories: ["action"],
+    description: "A record button inside capture corners: record the screen.",
+  },
+  screenshot: {
+    tags: [
+      "screen capture",
+      "capture",
+      "camera",
+      "snapshot",
+      "screen grab",
+      "picture",
+    ],
+    categories: ["action"],
+    description:
+      "A camera inside capture corners: capture a still image of the screen.",
   },
   search: {
     tags: [
@@ -1942,6 +2085,20 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
     ],
     categories: ["action"],
   },
+  "stop-fill": {
+    tags: [
+      "stop",
+      "square",
+      "media",
+      "player",
+      "button",
+      "control",
+      "halt",
+      "end",
+      "filled",
+    ],
+    categories: ["action"],
+  },
   success: {
     tags: [
       "check",
@@ -1974,6 +2131,20 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
       "ok",
     ],
     categories: ["status"],
+  },
+  swap: {
+    tags: [
+      "exchange",
+      "bidirectional",
+      "two way",
+      "arrows",
+      "switch",
+      "transfer",
+      "sync",
+    ],
+    categories: ["action"],
+    description:
+      "Two opposing arrows: a two-way exchange, such as a bidirectional link.",
   },
   switcher: {
     tags: [
@@ -2230,6 +2401,45 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
       "profiles",
     ],
     categories: ["object"],
+  },
+  "volume-down": {
+    tags: [
+      "volume",
+      "sound",
+      "audio",
+      "speaker",
+      "quieter",
+      "decrease",
+      "lower",
+      "minus",
+    ],
+    categories: ["action"],
+  },
+  "volume-mute": {
+    tags: [
+      "volume",
+      "sound",
+      "audio",
+      "speaker",
+      "mute",
+      "silent",
+      "off",
+      "unmute",
+    ],
+    categories: ["action"],
+  },
+  "volume-up": {
+    tags: [
+      "volume",
+      "sound",
+      "audio",
+      "speaker",
+      "louder",
+      "increase",
+      "raise",
+      "plus",
+    ],
+    categories: ["action"],
   },
   waiting: {
     tags: [

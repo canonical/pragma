@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="devtools-off">
+    <path d="M14.7803 2.28027L12.8936 4.16602L15.9609 8L11.5859 13.4688L10.4141 12.5312L14.0391 8L11.8262 5.2334L2.28027 14.7803L1.21973 13.7197L13.7197 1.21973L14.7803 2.28027Z" fill="currentColor"/>
+    <path d="M5.58594 3.46875L1.96094 8L3.28418 9.6543L2.2168 10.7217L0.0390625 8L4.41406 2.53125L5.58594 3.46875Z" fill="currentColor"/>
+  </g>
+</svg>
