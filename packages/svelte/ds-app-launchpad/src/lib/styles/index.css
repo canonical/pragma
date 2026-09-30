@@ -4,19 +4,6 @@
 html {
   color: var(--color-text);
   background-color: var(--color-background);
-
-  /* 
-  TODO: Should the color be controlled on the level of modifiers (criticality)? If so, how?
-  Outline colors, according to vanilla should:
-    - on `Chip` stay default no matter the modifier,
-      - OK, we just don't subscribe to the context at all;
-    - on `TextInput` follow the values of the secondary context,
-      - OK, we subscribe to the secondary context;
-  */
-  --focus-outline: var(--dimension-stroke-thickness-large) solid
-    var(--color-focusRing);
-  /* Most elements have the outline on the inside of the element. Needs to be adjusted for specific cases (e.g. checkbox, radio) */
-  --focus-outline-offset: calc(var(--dimension-stroke-thickness-large) * -1);
 }
 
 body {
@@ -24,8 +11,9 @@ body {
 }
 
 *:focus-visible {
-  outline: var(--focus-outline);
-  outline-offset: var(--focus-outline-offset);
+  outline: var(--dimension-stroke-thickness-large) solid
+    var(--modifier-color-focus-ring, var(--color-focusRing));
+  outline-offset: var(--dimension-stroke-thickness-large);
 }
 
 .visually-hidden {
