@@ -2,17 +2,37 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Timeline from "./Timeline.js";
 
+const dateTime = {
+  format: (iso: string) => ({ display: iso, alternate: iso }),
+  toggleable: false,
+  tooltip: false,
+  pressed: false,
+  onToggle: () => {},
+};
+
 describe("Timeline SSR", () => {
   it("renders without errors on server", () => {
     const html = renderToString(
       <Timeline>
         <Timeline.Content>
-          <Timeline.Event actor="John" datetime="2024-01-15">
-            Created document
-          </Timeline.Event>
-          <Timeline.Event actor="Jane" datetime="2024-01-16">
-            Approved document
-          </Timeline.Event>
+          <Timeline.Event
+            dateTime={dateTime}
+            item={{
+              id: "e1",
+              dateTime: "2024-01-15",
+              actorName: "John",
+              description: "Created document",
+            }}
+          />
+          <Timeline.Event
+            dateTime={dateTime}
+            item={{
+              id: "e2",
+              dateTime: "2024-01-16",
+              actorName: "Jane",
+              description: "Approved document",
+            }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
@@ -26,7 +46,9 @@ describe("Timeline SSR", () => {
     const html = renderToString(
       <Timeline>
         <Timeline.Content>
-          <Timeline.Event>Event</Timeline.Event>
+          <Timeline.Event
+            item={{ id: "e1", dateTime: "2024-01-15", description: "Event" }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
@@ -38,7 +60,14 @@ describe("Timeline SSR", () => {
     const html = renderToString(
       <Timeline>
         <Timeline.Content>
-          <Timeline.Event criticality="error">Error event</Timeline.Event>
+          <Timeline.Event
+            item={{
+              id: "e1",
+              dateTime: "2024-01-15",
+              description: "Error event",
+              criticality: "error",
+            }}
+          />
         </Timeline.Content>
       </Timeline>,
     );
