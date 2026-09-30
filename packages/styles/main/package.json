@@ -41,11 +41,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@canonical/biome-config": "0.43.0-experimental.0",
-    "@canonical/webarchitect": "0.43.0-experimental.0"
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/webarchitect": "0.43.0"
   },
   "dependencies": {
-    "@canonical/design-tokens": "0.43.0-experimental.1",
+    "@canonical/design-tokens": "0.43.0",
     "@canonical/styles-typography": "^0.42.0"
   },
   "peerDependencies": {

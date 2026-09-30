@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@canonical/biome-config": "0.43.0-experimental.0",
-    "@canonical/webarchitect": "0.43.0-experimental.0"
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/webarchitect": "0.43.0"
   }
 }
