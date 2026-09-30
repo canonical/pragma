@@ -16,7 +16,7 @@ These goals require certain infrastructure to be in place.
 - `CHROMATIC_TOKEN_DS_APP` - Project token for ds-app
 - `CHROMATIC_TOKEN_DS_APP_LAUNCHPAD` - Project token for ds-app-launchpad
 
-npm publishing requires **no token secret**. It uses [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers): the publish job has `id-token: write` permission and GitHub mints a short-lived npm token at publish time. Each package must have a trusted publisher configured once on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
+npm publishing requires **no token secret**. It uses [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers): the publish job has `id-token: write` permission and GitHub mints a short-lived npm token at publish time. Each package must have a trusted publisher configured once on npmjs.com (repo `canonical/pragma-web`, workflow `tag.yml`). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
 
 ### Repository Settings
 
@@ -232,7 +232,7 @@ For partial publish failures, consider publishing the remaining packages manuall
 
 npm publishing uses OIDC trusted publishing, not a token. An `E404 Not found` or auth failure on `lerna publish` usually means the OIDC trust is not set up correctly:
 
-1. Confirm the package has a trusted publisher configured on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`, environment blank). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
+1. Confirm the package has a trusted publisher configured on npmjs.com (repo `canonical/pragma-web`, workflow `tag.yml`, environment blank). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
 2. Confirm the publish job in `tag.yml` has `permissions: id-token: write`.
 3. Confirm the runner's npm is `>= 11.5.1` (Node 24 ships a compatible npm).
 4. For a brand-new package never published before, OIDC cannot be pre-configured — do the first publish manually, then add the trusted publisher.

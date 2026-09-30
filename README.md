@@ -7,8 +7,8 @@ Pragma is Canonical's implementation of the [Design System](https://github.com/c
 Clone the repository and install dependencies. The installation step also builds all packages, which takes roughly 30 seconds on first run.
 
 ```bash
-git clone https://github.com/canonical/pragma
-cd pragma
+git clone https://github.com/canonical/pragma-web
+cd pragma-web
 bun install
 ```
 
@@ -66,7 +66,7 @@ See [Storybook](#storybook) below for how to run a package's Storybook server an
 **Notes:**
 
 - Node 22.x earlier than 22.13 is not supported by Lerna, and versions before 22.12 also have module resolution issues.
-- Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/issues/226) and should be avoided; Lerna does not support it, nor Node 25.
+- Node 23 has a [known compatibility issue](https://github.com/canonical/pragma-web/issues/226) and should be avoided; Lerna does not support it, nor Node 25.
 - Installing Node via the snap package is not recommended as it may cause build issues.
 - Installing Bun via the snap package is not recommended as it may cause permission issues. This is a known [issue](https://github.com/shakeelansari63/snap-packages/issues/79). Use the official installation script instead.
 

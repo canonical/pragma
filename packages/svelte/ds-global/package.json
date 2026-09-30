@@ -25,13 +25,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/canonical/pragma.git"
+    "url": "git+https://github.com/canonical/pragma-web.git"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma/tree/main/packages/svelte/ds-global#readme",
+  "homepage": "https://github.com/canonical/pragma-web/tree/main/packages/svelte/ds-global#readme",
   "publishConfig": {
     "access": "public"
   },

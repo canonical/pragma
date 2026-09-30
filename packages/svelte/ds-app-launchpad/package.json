@@ -30,13 +30,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma/tree/main/packages/svelte/ds-app-launchpad#readme",
+  "homepage": "https://github.com/canonical/pragma-web/tree/main/packages/svelte/ds-app-launchpad#readme",
   "publishConfig": {
     "access": "public"
   },

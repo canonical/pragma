@@ -1,6 +1,6 @@
 # AGENTS.md — Working on a Pragma PR
 
-Guidance for AI agents (and humans) contributing to `canonical/pragma`. For deeper
+Guidance for AI agents (and humans) contributing to `canonical/pragma-web`. For deeper
 setup and monorepo mechanics see [`old/CONTRIBUTING.md`](old/CONTRIBUTING.md); this
 file is the PR workflow contract.
 
