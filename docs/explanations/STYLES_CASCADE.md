@@ -126,6 +126,16 @@ able to overrule this?"
 An application adds one more name above all of these for its own CSS. The migration guide shows the
 shape.
 
+The statement only comes first if the application loads it first. An application's entry imports
+`@canonical/styles` before anything that reaches a component, and declares its own layers after it.
+Otherwise a component's stylesheet reaches the page first, its layer takes the first position, and the
+rest of the order follows from that accident:
+
+```ts
+import { App } from "./App.js"; import "./styles/index.css"; // wrong: a component's layer comes first
+import "./styles/index.css"; import { App } from "./App.js"; // right: the statement comes first
+```
+
 ### Nothing may be written directly into `ds.components`
 
 A rule written straight into a parent layer does not sit beside its sublayers — it sits in the layer's

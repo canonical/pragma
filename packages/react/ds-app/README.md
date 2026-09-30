@@ -9,10 +9,16 @@ Application-level UI components for the Pragma design system. This package provi
 ## Installation
 
 ```bash
-bun add @canonical/react-ds-app
+bun add @canonical/react-ds-app @canonical/styles
 ```
 
-The package builds on top of `@canonical/react-ds-global`.
+Import the design system's styles **first** in your application's entry, before anything that imports a component:
+
+```ts
+import "@canonical/styles";
+```
+
+Each component brings its own stylesheet when you import it.
 
 ## Usage
 
@@ -52,7 +58,7 @@ The component layers follow the design system's tier tree, flat, one name per ti
 
 Once both are layered, no selector this package declares is also declared by `@canonical/react-ds-global`, so nothing changes hands. What the layer buys is the answer to the next collision, and that answer is fixed rather than emitted: today specificity settles the `.application-layout` near-miss, one seat apart; a global rule written at the same seat as this package's would have been settled by whichever bundle a loader emitted last, and is now settled by layer, in this package's favour, whatever the emit order and without a longer selector or an `!important`.
 
-The guarantee needs `@canonical/styles` on the page, and needs its statement first. An order statement is what fixes the relative order of two sublayers; without it they fall back to the order they first appear in, and a bundle that emits this package before `@canonical/react-ds-global` hands the win back to the global tier. One nuance, measured: `ds.components.apps` is not a name the statement contains yet — it still names the retired `ds.components.app`, and gains the second level in full with the rework of the styles package — but a sublayer the statement does not name is appended after every name it fixed, so with the statement on the page this package already beats `@canonical/react-ds-global` in both emit orders. Nothing under `src/lib` imports `@canonical/styles` — an application imports it once, as the installation instructions above say.
+The guarantee needs `@canonical/styles` on the page, and needs its statement first. An order statement is what fixes the relative order of two sublayers; without it they fall back to the order they first appear in, and a bundle that emits this package before `@canonical/react-ds-global` hands the win back to the global tier. The statement names `ds.components.apps` above `ds.components.global`, so with the statement on the page this package beats `@canonical/react-ds-global` in both emit orders. Nothing under `src/lib` imports `@canonical/styles` — an application imports it once, as the installation instructions above say.
 
 An application's own **unlayered** CSS now beats every rule in this package, whatever the selectors on either side, because an unlayered author rule outranks every layered one. That is CSS working as designed, and it is the deliberate escape hatch: an application that needs to override a component writes a plain rule and it wins. An application that does *not* want to win by accident puts its CSS in `@layer app`.
 

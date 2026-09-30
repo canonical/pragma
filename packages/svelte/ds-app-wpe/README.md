@@ -8,8 +8,16 @@ This package provides Svelte UI components for the Workplace v2 application.
 ## Installation
 
 ```bash
-bun add @canonical/svelte-ds-app-wpe
+bun add @canonical/svelte-ds-app-wpe @canonical/styles
 ```
+
+Import the design system's styles **first** in your application's entry, before anything that imports a component:
+
+```ts
+import "@canonical/styles";
+```
+
+Each component brings its own stylesheet when you import it.
 
 ## Dependency notes
 
