@@ -1226,7 +1226,7 @@
         "@canonical/webarchitect": "0.43.0-experimental.0",
       },
       "peerDependencies": {
-        "@canonical/design-tokens": "0.43.0-experimental.1",
+        "@canonical/design-tokens": ">=0.10.0 <1.0.0",
       },
       "optionalPeers": [
         "@canonical/design-tokens",
@@ -1339,6 +1339,7 @@
       "name": "@canonical/svelte-ds-app-launchpad",
       "version": "0.42.0",
       "dependencies": {
+        "@canonical/design-tokens": "0.43.0-experimental.1",
         "@canonical/launchpad-design-tokens": "^1.1.1",
         "@canonical/styles": "^0.42.0",
         "@canonical/svelte-icons": "^0.0.9",
@@ -1347,7 +1348,6 @@
       "devDependencies": {
         "@biomejs/biome": "2.5.14",
         "@canonical/biome-config": "0.43.0-experimental.0",
-        "@canonical/design-tokens": "0.43.0-experimental.1",
         "@canonical/storybook-config": "^0.42.0",
         "@canonical/storybook-helpers": "^0.42.0",
         "@canonical/svelte-ssr-test": "^0.42.0",
