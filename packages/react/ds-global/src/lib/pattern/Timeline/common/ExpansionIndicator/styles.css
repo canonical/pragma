@@ -1,0 +1,55 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /*
+   * Expansion indicator (Figma): 12px rails above and below carry the
+   * connector line past the bordered summary strip.
+   */
+  .ds.timeline-expansion {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    /* Summary strip (Figma "Wrapper"): rule above and below, 8px/16px
+       padding. */
+    & > .wrapper {
+      display: flex;
+      align-items: center;
+      gap: var(--dimension-100);
+      padding: var(--dimension-100) var(--dimension-200);
+      border-block: var(--dimension-stroke-thickness-medium) solid
+        var(--color-border-muted);
+      font-size: var(--typography-text-secondary-font-size);
+      line-height: var(--typography-text-secondary-line-height);
+
+      & > .summary {
+        color: var(--color-text);
+      }
+
+      & > .separator {
+        color: var(--color-text-muted);
+      }
+
+      & > .link {
+        padding: 0;
+        border: none;
+        background: none;
+        font: inherit;
+        font-weight: var(--typography-weight-semi-bold);
+        color: var(--color-text-link);
+        text-decoration: underline;
+        cursor: pointer;
+
+        &:focus-visible {
+          outline: var(--dimension-stroke-thickness-medium) solid
+            var(--color-focus-ring);
+          outline-offset: var(--dimension-025);
+        }
+      }
+    }
+  }
+
+  /* The connector-line rails around the strip live with the Timeline's row
+     structure in Timeline/styles.css. */
+}
