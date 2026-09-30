@@ -1,0 +1,70 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /* Control bar (Figma "Timeline header"): 44px tall, rule underneath. */
+  .ds.timeline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--dimension-100) var(--dimension-200);
+    padding: var(--dimension-100) 0;
+    border-bottom: var(--dimension-stroke-thickness-medium) solid
+      var(--color-border-muted);
+
+    & > .filters {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--dimension-100);
+
+      & .trigger-content {
+        display: flex;
+        align-items: center;
+        gap: var(--dimension-100);
+      }
+    }
+
+    /* One neutral-button recipe for triggers, sort, and reset; the trigger
+       rule reaches into the ContextualMenu's internals. */
+    & > .filters > .control,
+    & > .control,
+    & > .filters > .ds.contextual-menu > .trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--dimension-050);
+      padding: var(--dimension-050) var(--dimension-100);
+      border: var(--dimension-stroke-thickness-medium) solid
+        var(--color-border-muted);
+      border-radius: 0.125rem;
+      background-color: var(--color-background);
+      color: var(--color-text);
+      font-family: inherit;
+      font-size: var(--typography-text-primary-font-size);
+      line-height: var(--typography-text-primary-line-height);
+      cursor: pointer;
+    }
+
+    & > .filters > .control:hover,
+    & > .control:hover,
+    & > .filters > .ds.contextual-menu > .trigger:hover {
+      background-color: var(--color-background-layer2);
+    }
+
+    & > .filters > .control:focus-visible,
+    & > .control:focus-visible,
+    & > .filters > .ds.contextual-menu > .trigger:focus-visible {
+      outline: var(--dimension-stroke-thickness-medium) solid
+        var(--color-focus-ring);
+      outline-offset: var(--dimension-025);
+    }
+
+    /* Small breakpoint: the controls lose their labels. */
+    @container (max-width: 620px) {
+      & > .control > .label,
+      & > .filters > .control > .label {
+        display: none;
+      }
+    }
+  }
+}
