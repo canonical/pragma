@@ -6,7 +6,7 @@ Read the top-level `.kb/agents.md` file before continuing below.
 
 # Overview
 
-The repository builds with TypeScript 7, except the four Svelte packages under `packages/svelte/` (`ds-app`, `ds-app-launchpad`, `ds-app-wpe` and `ds-global`), which stay on TypeScript 6 until the Svelte packaging tool supports TypeScript 7.
+The repository builds with TypeScript 7, except the four Svelte packages under `packages/svelte/` (`ds-app`, `ds-app-launchpad`, `ds-app-wpe` and `ds-global`).
 
 # Important
 
