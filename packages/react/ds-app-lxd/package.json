@@ -73,5 +73,9 @@
     "typescript": "^7.0.2",
     "vite": "^8.0.1",
     "vitest": "^5.0.0"
+  },
+  "summon": {
+    "componentLayer": "ds.components.apps-lxd",
+    "layerOrderFrom": "@canonical/styles/layers.css"
   }
 }
