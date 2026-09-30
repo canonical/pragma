@@ -21,10 +21,10 @@ jobs:
         uses: ./.github/actions/setup-env
         with:
           node-version: ${{ matrix.node-version }}
-          build-command: bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
+          build-command: bunx nx run-many -t build:all
 
       - name: Code quality checks
-        run: bunx nx affected -t check --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
+        run: bunx nx run-many -t check
 
         # Detection runs HERE — after setup has already run nx (build) — so
         # the project graph is warm: the same conditions under which the Test
@@ -36,7 +36,7 @@ jobs:
       - name: Detect Playwright need
         id: pw
         run: |
-          if ! AFFECTED=$(bunx nx show projects --affected --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD); then
+          if ! AFFECTED=$(bunx nx show projects); then
             echo "affected query failed — failing open"; echo "required=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           if ! UNIVERSE=$(bunx nx show projects --projects tag:playwright); then
@@ -68,7 +68,7 @@ jobs:
         run: bash .github/actions/setup-env/install-playwright.sh
 
       - name: Test
-        run: bunx nx affected -t test --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
+        run: bunx nx run-many -t test
 
     # The implementation graph data (data/*.ttl) is committed and must match
     # what the collector generates from the @implements annotations in-tree.
