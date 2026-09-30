@@ -1,284 +1,38 @@
-# AGENTS.md — Working on a Pragma PR
+# Preface
 
-Guidance for AI agents (and humans) contributing to `canonical/pragma-web`. For deeper
-setup and monorepo mechanics see [`old/CONTRIBUTING.md`](old/CONTRIBUTING.md); this
-file is the PR workflow contract.
+This file is the entry point for agents and humans working in either pragma repository, `canonical/pragma-core` or `canonical/pragma-web`. It states the rules every change follows and names the topic files that hold the detail. Read it before changing anything in this repository.
 
-The toolchain packages — the `pragma` and `summon` command-line tools and generators,
-`webarchitect`, the Biome, TypeScript and Renovate configurations, `utils`, `task`, `ke`,
-`ke-graphql`, `harnesses`, the design tokens and the design-system models — live in
-[`canonical/pragma-core`](https://github.com/canonical/pragma-core) and are consumed
-here from npm, pinned to exact versions. A change to one of them is a pull request
-there; once it is released, the pin here is bumped in every manifest that names it.
+This file is identical in canonical/pragma-core and canonical/pragma-web; change both in paired pull requests.
 
-## Toolchain
+Read the top-level `.kb/agents.md` file before continuing below.
 
-- **Bun is required** and is the canonical package manager/runner (`bun install`,
-  `bun run <script>`). Node.js `^22.13.0 || ^24.0.0 || ^26.0.0` must also be
-  present — the range Lerna requires, and therefore the range the root gate
-  runs under. Node 20, 23 and 25 are all excluded: 23 additionally has a known
-  compatibility issue. The root `package.json` declares this range, so
-  `bun install` warns when the local Node is outside it.
-- **npm appears only for first-time package publishing** (`npm publish --access public`
-  from inside a new package dir) — never for day-to-day dev. Don't use `npm install`.
+# Overview
 
-## Commits
+pragma is built in two repositories. `canonical/pragma-core` holds the toolchain: the `pragma` and `summon` command-line tools and the generators, `webarchitect`, the Biome, TypeScript and Renovate configurations, `utils`, `task`, `ke`, `ke-graphql`, `harnesses`, the design tokens and the design-system models. `canonical/pragma-web` holds everything that renders: the React, Svelte and Lit components, the stylesheets, Storybook, the runtime packages, the applications and the documentation site. Anything that renders belongs to pragma-web, even when a generator in pragma-core emits it.
 
-- **Conventional / semantic commits**, enforced. CI (`.github/workflows/pr-lint.yml`)
-  rejects a PR whose **title** is not Conventional-Commits compliant, so the title
-  needs a `type(scope): subject` form, e.g. `feat(ds-global): …`, `fix(router): …`,
-  `docs(tokens): …`, `chore(deps): …`, `refactor(styles): …`.
-- **Keep commits atomic.** One logical change per commit; the diff should be reviewable
-  on its own and tell a single story. Bundling unrelated items into one commit/PR is
-  allowed but should be **rare** and called out in the PR body (a "drive-by" line).
-- The allowed types are `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `ci` and
-  `revert`; the **type label** is derived from the title by CI, so never add one by hand.
-  A breaking change is marked with `!` in the title (`feat(router)!: …`), which is what
-  applies the `breaking` label. Every other label is a human judgement — see
-  [docs/references/LABELS.md](docs/references/LABELS.md).
-- The release CHANGELOG is Lerna-generated from commit history — write commit subjects
-  for the changelog reader, not just yourself.
+pragma-web consumes the pragma-core packages from npm, pinned to exact versions. A change to one of them is a pull request in pragma-core; once it is released, pragma-web bumps the pin in every manifest that names it. A change that spans both repositories is two pull requests, and the pragma-core one lands first.
 
-## Branches & worktrees (local development)
+Both repositories are Bun and Lerna monorepos with the same toolchain, the same commit, issue and pull-request rules, and the same CI shape. The topic files listed below are identical in both repositories. What is specific to this repository is in `.kb/this-repository.md`.
 
-- **Branch names follow `type/semantic-description`** — the `type` matches the
-  conventional-commit types (`feat/`, `fix/`, `docs/`, `chore/`, `refactor/`, …) and
-  the description is kebab-case and meaningful, e.g. `feat/minor-cli-improvements`,
-  `fix/storybook-subpath-imports`. Every branch carries a `/`.
-- **Work in a git worktree, not by switching the main checkout.** Create one per branch
-  under `.claude/worktrees/`. Name the worktree directory after the branch, with the
-  `/` replaced by `-` (a `/` can't be a single path segment). So:
+# Important
 
-  ```bash
-  # branch feat/minor-cli-improvements  →  worktree dir feat-minor-cli-improvements
-  git worktree add -b feat/minor-cli-improvements \
-    .claude/worktrees/feat-minor-cli-improvements origin/main
-  ```
+- Every change lands through a pull request from a `type/description` branch; nobody pushes to `main` directly.
+- A change is push-ready only when `bun run check` and `bun run test` pass from the repository root.
+- Pull request bodies and commit subjects stand on their own and cite no internal planning document.
+- CI workflows are global: never add a workflow job or step for one package.
+- Regenerate `bun.lock` only with the Bun version pinned in `.bun-version`.
+- When unsure how something should be structured, look for the existing convention first: read a sibling package or domain and match its layout, naming, error handling and test placement rather than inventing a new pattern. A new file should be indistinguishable in style from its neighbours.
+- Comments explain the code, not where it came from. Never leave provenance markers that trace a file back to the spec, DSL, graph or plan it was generated from, such as `{/* DSL edges[0]: content (cardinality: 1) */}`.
 
-  This keeps each line of work isolated, lets several proceed in parallel, and leaves the
-  main checkout untouched. Branch from an up-to-date `origin/main`. Note a fresh worktree
-  has no `node_modules` — run `bun install` inside it before the first `check`/`test`.
+# Documents
 
-## Where to run commands
-
-- **Before pushing, always run the full gate from the repo ROOT.** Root scripts fan out
-  across every affected package via Lerna (with Nx caching), so the root is the only
-  place that covers the whole change. Per-package runs can miss cross-package breakage.
-- **During focused development**, it's fine to run a single package's scripts from inside
-  that package dir (`cd packages/<area> && bun run check`/`test`) for a faster loop —
-  but the root run is the gate of record before pushing.
-
-## Pre-push checklist (run from the repo root, in order)
-
-```bash
-# 0. clean install if deps changed (the prepare hook builds linked packages)
-bun install
-
-# 1. lint + format + type-check + architecture rules, every package
-bun run check          # → lerna run check  (biome + tsc --noEmit + webarchitect)
-
-# 2. if check reports fixable issues, apply and re-run check
-bun run check:fix      # → lerna run check:fix
-
-# 3. tests, every package
-bun run test           # → lerna run test  (vitest run)
-
-# 4. only if the change affects build artifacts / a publishable package
-bun run build          # → lerna run build   (dev/link build)
-# full artifact build (Storybook, docs, etc.) is a CI concern via each
-# package's build:all; run locally only when validating release artifacts
-```
-
-A change is push-ready when `bun run check` and `bun run test` both pass from the root.
-That mirrors what CI runs, so green locally → green CI (modulo Chromatic visual review
-and environment-only tests). If a single test fails for environment reasons unrelated to
-the diff, confirm it fails the same way on a clean `origin/main` before discounting it.
-
-> **Do not treat per-package green as push-ready.** CI runs `check`/`test` across **all
-> ~53 projects** via Nx, so a change can break a *dependent* package you didn't touch (a
-> bumped lint/biome version, a shared config, a coverage gate). The root `bun run check`
-> is the only thing that catches this. Running it once before the first push is cheaper
-> than a CI round-trip.
-
-## Revising before pushing to a PR
-
-CI round-trips are expensive — get the branch right locally first.
-
-1. **Sync to a moved base before pushing.** `git fetch origin main`; if the branch is
-   behind, **rebase** (never merge) onto `origin/main`. The lockfile is the usual conflict:
-   resolve `bun.lock` by regenerating (`bun install`) — never hand-merge it — and commit
-   the regenerated lockfile.
-2. **Re-run the full root gate after the rebase**, not just before. A rebase replays your
-   commits onto new code: a lint rule, biome version, or coverage threshold that moved on
-   `main` can now fail commits that were green on the old base.
-3. **Tidy the history.** Reword `WIP`/`fix typo` commits into Conventional-Commit subjects
-   and squash noise (`git rebase -i origin/main`) so each commit is atomic and the
-   Lerna-generated CHANGELOG reads cleanly. Do this *before* the first push when possible.
-4. **Push safely.** First push: plain `git push`. After a rebase/reword (history rewrite):
-   `git push --force-with-lease` — it refuses if someone else pushed to the branch
-   meanwhile (then rebase on their work first). Never plain `--force`.
-5. **Watch the actual CI run** after pushing. Green locally is necessary, not sufficient:
-   pull the failing job's log (`gh run view <id> --log-failed`), fix at the source, and
-   repeat from step 2. Don't push speculative "maybe this fixes CI" commits.
-
-**Gotchas this repo has actually hit:**
-- A biome **version bump** without updating `"$schema"` in a `biome.json` → `biome check`
-  fails to deserialize. Keep the schema string in lockstep with the `@biomejs/biome` version.
-- Trading a lint violation for coverage (e.g. a `!` non-null assertion to drop an
-  uncovered `?? ""` branch) trips `noNonNullAssertion`. Rewrite to satisfy **both**
-  (e.g. iterate `Map.entries()` instead of `keys()` + `get()`).
-- A **new package** needs a first manual `npm publish --access public` (a human step,
-  npm 2FA) before release automation works — merging it does not make it releasable.
-
-> Per-package `check` = `check:biome` (lint+format) → `check:ts` (`tsc --noEmit`) →
-> `check:webarchitect` (architecture ruleset). `check:fix` auto-fixes biome then
-> re-runs tsc. Every package must define `check`, `check:fix`, and `test`; packages
-> with build steps also define `build` and `build:all`.
-
-## Conventions
-
-This is a **convention-heavy monorepo**. Most conventions are documented — in
-`old/CONTRIBUTING.md`, `docs/`, the package-folder-structure doc, and the
-`pragma-adrs` repo (the `session/I.*` "Pragma Maturity" decisions). **When unsure how
-something should be structured, look for the existing convention first** — read a
-sibling package/domain and match its layout, naming, error handling, and test
-placement — rather than inventing a new pattern. Match the surrounding code's idioms;
-a new file should be indistinguishable in style from its neighbours.
-
-- **Comments explain the code, not where it came from.** Never leave provenance
-  markers tracing a file back to the spec, DSL, graph, or plan it was generated
-  from — e.g. `{/* DSL edges[0]: content (cardinality: 1) */}`.
-
-### The documentation site depends on the runtime, never the reverse
-
-`packages/prism/*` and the documentation-site app are the site layer. They may
-depend on anything below them — `packages/runtime/*`, the component packages, and
-the toolchain packages from npm (`@canonical/ke`, `@canonical/ke-graphql`).
-
-**Nothing in those depended-upon packages may depend on `packages/prism/*` —
-not even as a devDependency.** The usual pressure to reverse the arrow is a
-conformance check: the site authors a contract, and it is tempting to have the
-package that must satisfy the contract assert that it does. That is the package
-marking its own homework, and it costs it a dependency on the site it exists to
-be independent of. Site-side packages hold those gates instead, reading whatever
-they need to read.
-
-Nothing enforces this, so it is a review obligation: a new `@canonical/prism-*`
-entry in a manifest under `packages/runtime/` or a component package is a change
-to challenge, whatever it is for.
-
-### Module imports — use relative paths, not `#` subpath aliases
-
-Do **not** use `#`-prefixed `package.json` `"imports"` (Node subpath imports) for
-package-internal modules in packages we build and publish with `tsc`. `tsc` never
-rewrites module specifiers, so a `#alias` written in source is emitted **verbatim**
-into `dist`. The published package then leaks its private `imports` map as part of
-its public contract: every consumer's bundler/test-runner has to resolve those `#`
-specifiers itself, and mismatched resolve conditions (for example Vite/Vitest
-activating the `development` condition, which points at unpublished `src`) break the
-build downstream.
-
-Use ordinary relative imports (`../../subcomponent/Spinner/index.js`) with the `.js`
-extension (NodeNext). They need zero config in any consumer and survive `tsc` emit
-unchanged.
-
-This applies to every **`tsc`-built** package — the discriminator is the build tool,
-not the directory. Most libraries under `packages/` are `tsc`-built and are in scope.
-Code that a **bundler** compiles may still use `#` aliases, because the bundler inlines
-them so nothing is published verbatim: this covers Vite-bundled apps (`apps/*` and
-scaffolded boilerplates) **and** Bun-bundled published packages under `packages/`.
-When unsure, check whether the package's build script runs `tsc` or a bundler.
-
-## CI workflows are global — do not add checks for one package
-
-The CI domain is global, always, without exception. If a package-scoped
-concern can earn a workflow step, every package can, and with 50+ packages
-that becomes unbearable — the cost of one job is not one job, it is the
-precedent.
-
-- **Shared workflows (`pr.yml` and friends) are global infrastructure.** Do
-  not add a job or step for a single package's concern. This is not a style
-  preference: a new required check applies to every PR in the repo, including
-  other teams' and outside contributors'.
-- **A package-scoped check rides the package's own `check` / `test` targets.**
-  Root `check` is `lerna run check`, which fans out to every package, and the
-  build matrix already runs it — so a package target is covered everywhere
-  *and* only runs when nx says the package is affected. That is cheaper and
-  correctly scoped than a dedicated job.
-- **The bar for a shared job is a genuine repo-wide invariant**, not merely
-  something that happens to be run from the root.
-  `scripts/check-workspace-ranges.ts` earns its shared step because it asserts
-  something true of every workspace sibling. One package's data provenance
-  does not, however important that package is.
-- **If you believe you need a workflow change, say why in the PR body** and
-  expect it to be challenged.
-
-### React component props — extend the root element's native props
-
-A React component's props type **must extend the native props of the element it
-renders as its root**, so every attribute that element accepts (`data-*`,
-`aria-*`, `onMouseEnter`, `id`, `style`, …) reaches the DOM for free. Write it as
-a DS-owned `OwnProps` intersected with the root tag's `ComponentProps`, tag-indexed:
-
-```ts
-import type { ComponentProps } from "react";
-
-type OwnProps = {
-  /* DS-owned props */
-};
-
-// Change "button" to the component's actual root element tag.
-export type ButtonProps = OwnProps & Omit<ComponentProps<"button">, keyof OwnProps>;
-```
-
-Rules:
-
-1. Use **`ComponentProps<"tag">`** — the tag-indexed form. Not the per-element
-   `XxxHTMLAttributes<T>` interfaces (easy to mis-instantiate against the wrong
-   element), and not `ComponentPropsWithoutRef` (the repo peers React 19, where
-   `ref` is an ordinary prop and belongs in the surface).
-2. Use a **`type` alias with an intersection**, never `interface … extends`.
-   Intersections distribute over unions and compose predictably; `interface
-   extends` does not, and mixing it with union members silently collapses props
-   to `any` (the `FieldProps` lesson from issue #235).
-3. Always `Omit<ComponentProps<"tag">, keyof OwnProps>` so the DS-owned keys win
-   by construction. Any *further* exclusion the component deliberately controls
-   (e.g. `| "type"` when the DS fixes the button type) gets a doc comment saying
-   why.
-4. **Runtime obligation:** destructure every `OwnProps` member out, spread the
-   remaining `{...rest}` onto the root element, and set DS-controlled attributes
-   *after* the spread so they win. Merge `className`/`style` rather than letting
-   either side clobber — the repo pattern is
-   `[componentCssClassName, className].filter(Boolean).join(" ")`. No DS-internal
-   prop may leak onto the DOM node.
-5. **Variable-root components** (the root element depends on a prop) use a small
-   discriminated union of two such intersections (issue #628 precedent), one per
-   possible root tag. No polymorphic `as` generics.
-6. **Components with no single root element** (fragments, portals, pure
-   composition/wrappers) are exempt — say so in a one-line doc comment.
-
-## PR mechanics
-
-- Branch from up-to-date `origin/main`; never push to `main` directly — **all changes
-  land via PR** on a feature branch.
-- Fill in `.github/PULL_REQUEST_TEMPLATE.md` (Done / QA / readiness checklist).
-- **A PR description must stand on its own. Never cite an internal planning
-  document in it** — no ADR rung numbers, session ledgers, `pragma-adrs` paths, or
-  any other coordinate into a repo the reader may not be able to open. Outside
-  contributors and other teams review these PRs; sending them looking for a
-  document they do not have access to costs them time and tells them nothing. A
-  citation is not a reason. State what the change does and why, in full, in the PR
-  itself. The same goes for commit subjects, which Lerna puts in the CHANGELOG.
-  Internal sequencing stays in the planning repo; when merge order matters, name
-  the PR that must land first **by number** and say why in one line.
-- Add `Chromatic: skip` to skip Chromatic when there's no visual diff.
-- New package? First-time publish is manual (`npm publish --access public` from the
-  package dir); verify with `bun run publish:status` from the root.
-- **New packages need OIDC trusted-publisher setup — a manual human step, agents cannot
-  do it.** Automated releases (`tag.yml`) publish via npm OIDC trusted publishing, but a
-  trusted publisher *cannot be configured until a package's first publish* (the npm
-  settings page doesn't exist yet). So a new package's first publish is manual, and a
-  human must then configure its trusted publisher on npmjs.com — until they do, the
-  automated workflow cannot publish future versions. Beware: merging a new package does
-  not make it releasable on its own. See
-  [`docs/how-to-guides/PUBLISH_A_PACKAGE.md`](docs/how-to-guides/PUBLISH_A_PACKAGE.md).
+- `.kb/agents.md` - Rules for reading and writing this knowledge base.
+- `.kb/toolchain.md` - The pinned Bun, the supported Node lines, when npm is used, and regenerating the lockfile.
+- `.kb/branches-and-worktrees.md` - Branch names and one git worktree per branch.
+- `.kb/commits.md` - Semantic, atomic commits and the generated changelog.
+- `.kb/pre-push.md` - The root gate, the pre-push checklist, and revising a branch before pushing.
+- `.kb/pull-requests.md` - The template, semantic titles, labels, and bodies that stand alone.
+- `.kb/issues.md` - Issue titles, type labels, and which repository an issue belongs in.
+- `.kb/ci.md` - Why workflows are global, and why CI never codes against remote services.
+- `.kb/module-imports.md` - Relative imports, and no `#` aliases in `tsc`-built packages.
+- `.kb/this-repository.md` - In this repository: what is specific to it, and the topic files that cover it.
