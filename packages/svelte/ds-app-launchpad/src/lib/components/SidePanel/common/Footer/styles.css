@@ -1,0 +1,9 @@
+.ds.side-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--dimension-200);
+  padding-block: var(--dimension-200);
+  padding-inline: var(--dimension-300);
+}

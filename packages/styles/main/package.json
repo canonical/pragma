@@ -15,6 +15,7 @@
     "./modifiers.criticality.shim.css": "./src/modifiers.criticality.shim.css",
     "./modifiers.density.css": "./src/modifiers.density.css",
     "./spacing.css": "./src/spacing.css",
+    "./motion.css": "./src/motion.css",
     "./package.json": "./package.json"
   },
   "files": [
