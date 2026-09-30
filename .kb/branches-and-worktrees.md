@@ -1,8 +1,9 @@
+<!-- Copied from https://github.com/canonical/pragma-core/blob/main/.kb/branches-and-worktrees.md; change it there first. -->
 # Preface
 
 How to name a branch and where to check it out for local development. Read this before starting a new line of work.
 
-This file is identical in canonical/pragma-core and canonical/pragma-web; change both in paired pull requests.
+The original of this file lives in canonical/pragma-core; canonical/pragma-web carries a copy that links to it. Change the original first, then the copy, in paired pull requests.
 
 Read the top-level `.kb/agents.md` file before continuing below.
 

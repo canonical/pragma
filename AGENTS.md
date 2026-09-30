@@ -1,8 +1,9 @@
+<!-- Copied from https://github.com/canonical/pragma-core/blob/main/AGENTS.md; change it there first. -->
 # Preface
 
 This file is the entry point for agents and humans working in either pragma repository, `canonical/pragma-core` or `canonical/pragma-web`. It states the rules every change follows and names the topic files that hold the detail. Read it before changing anything in this repository.
 
-This file is identical in canonical/pragma-core and canonical/pragma-web; change both in paired pull requests.
+The original of this file lives in canonical/pragma-core; canonical/pragma-web carries a copy that links to it. Change the original first, then the copy, in paired pull requests.
 
 Read the top-level `.kb/agents.md` file before continuing below.
 
@@ -12,7 +13,7 @@ pragma is built in two repositories. `canonical/pragma-core` holds the toolchain
 
 pragma-web consumes the pragma-core packages from npm, pinned to exact versions. A change to one of them is a pull request in pragma-core; once it is released, pragma-web bumps the pin in every manifest that names it. A change that spans both repositories is two pull requests, and the pragma-core one lands first.
 
-Both repositories are Bun and Lerna monorepos with the same toolchain, the same commit, issue and pull-request rules, and the same CI shape. The topic files listed below are identical in both repositories. What is specific to this repository is in `.kb/this-repository.md`.
+Both repositories are Bun and Lerna monorepos with the same toolchain, the same commit, issue and pull-request rules, and the same CI shape. This file and the topic files listed below are shared: canonical/pragma-core holds the originals, and canonical/pragma-web carries copies that link to them. What is specific to this repository is in `.kb/this-repository.md`.
 
 # Important
 

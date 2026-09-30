@@ -1,3 +1,4 @@
+<!-- Copied from https://github.com/canonical/pragma-core/blob/main/.kb/agents.md; change it there first. -->
 # Preface
 
 This repository follows strict conventions for organizing agent-oriented knowledge documents, and this document is required reading for any agent that wants to read or write these.
