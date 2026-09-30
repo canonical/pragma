@@ -9,7 +9,7 @@ Read the top-level `.kb/agents.md` file before continuing below.
 
 # Overview
 
-pragma is built in two repositories. `canonical/pragma-core` holds the toolchain: the command-line tools, the generators, the configurations, `ke` and `ke-graphql`, the design tokens and the design-system models. `canonical/pragma-web` holds everything that renders, and consumes the pragma-core packages from npm. Both are Bun and Lerna monorepos with the same toolchain and the same rules for commits, issues, pull requests and CI. What is specific to this repository is in `.kb/this-repository.md`.
+pragma is built in two repositories. `canonical/pragma-core` holds the toolchain: the command-line tools, the generators, the configurations, the knowledge engine (`ke` and `ke-graphql`), the design tokens and the design-system models. `canonical/pragma-web` holds everything that renders, and consumes the pragma-core packages from npm. Both are Bun and Lerna monorepos with the same toolchain and the same rules for commits, issues, pull requests and CI. What is specific to this repository is in `.kb/this-repository.md`.
 
 # Important
 
