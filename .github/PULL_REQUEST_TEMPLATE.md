@@ -13,7 +13,7 @@ Fixes [list issues/bugs if needed]
 - [ ] PR title follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format, using one of the allowed types: `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `ci`, `revert`.
   - The matching type label is applied automatically from the title — there is no type label to add by hand.
   - Breaking changes are marked with `!` in the title (e.g. `feat(router)!: …`), which adds the `breaking` label.
-- [ ] The code follows the appropriate [code standards](https://github.com/canonical/web-code-standards)
+- [ ] The code follows the appropriate [code standards](https://github.com/canonical/pragma-core/tree/main/packages/semantics/code-standards)
 - [ ] All packages define the required scripts in `package.json`:
   - [ ] All packages: `check`, `check:fix`, and `test`.
   - [ ] Packages with build steps: `build` to build the package for development or distribution, `build:all` to build **all** artifacts. See [CONTRIBUTING.md](../old/CONTRIBUTING.md#24-full-artifact-builds-buildall) for details.

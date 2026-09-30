@@ -86,7 +86,7 @@ After the first manual publish and trusted-publisher configuration, use the auto
 ## Automated Publishing
 
 1. **Open the Tag workflow**
-   - Go to the [Tag workflow action](https://github.com/canonical/ds25/actions/workflows/tag.yml).
+   - Go to the [Tag workflow action](https://github.com/canonical/pragma-web/actions/workflows/tag.yml).
    - Click "Run workflow".
 
 2. **Select release type**

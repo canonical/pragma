@@ -84,7 +84,7 @@ export class CanButton extends LitElement {
 
 ### Why Separate CSS Files
 
-Keeping styles in `.css` files restores the full CSS authoring experience: syntax highlighting, IntelliSense, linting, and autocomplete all work as expected. It also keeps component files focused — logic stays in `.ts`, presentation stays in `.css` — which matches how every other package in the monorepo is structured and aligns with the conventions in [styling standards](https://github.com/canonical/code-standards).
+Keeping styles in `.css` files restores the full CSS authoring experience: syntax highlighting, IntelliSense, linting, and autocomplete all work as expected. It also keeps component files focused — logic stays in `.ts`, presentation stays in `.css` — which matches how every other package in the monorepo is structured and aligns with the conventions in [styling standards](https://github.com/canonical/pragma-core/blob/main/packages/semantics/code-standards/docs/styling.md).
 
 
 ### Trade-offs Accepted
@@ -181,7 +181,7 @@ ds-button {
 
 **Decision:** Apply the `ds` namespace class **inside the component template**, not on the host element.
 
-Following [styling standards](https://github.com/canonical/code-standards), this maintains consistency with React components while working within Shadow DOM constraints. 
+Following [styling standards](https://github.com/canonical/pragma-core/blob/main/packages/semantics/code-standards/docs/styling.md), this maintains consistency with React components while working within Shadow DOM constraints. 
 
 
 ## 5. Testing Architectural Considerations

@@ -16,7 +16,7 @@ import "./PackageInfo.css";
  *   status="stable"
  *   dependencies={["@canonical/ds-types", "@canonical/styles"]}
  *   links={{
- *     source: "https://github.com/canonical/design-system",
+ *     source: "https://github.com/canonical/pragma-core/tree/main/packages/semantics/design-system",
  *   }}
  * />
  * ```

@@ -56,11 +56,14 @@ describe("PackageInfo", () => {
         name="@canonical/test"
         tier="global"
         framework="react"
-        links={{ source: "https://github.com/canonical/pragma" }}
+        links={{ source: "https://github.com/canonical/pragma-web" }}
       />,
     );
-    const link = screen.getByRole("link", { name: "canonical/pragma" });
-    expect(link).toHaveAttribute("href", "https://github.com/canonical/pragma");
+    const link = screen.getByRole("link", { name: "canonical/pragma-web" });
+    expect(link).toHaveAttribute(
+      "href",
+      "https://github.com/canonical/pragma-web",
+    );
   });
 
   it("has accessible section label", () => {

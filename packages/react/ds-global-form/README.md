@@ -252,4 +252,4 @@ The Storybook configuration includes MSW integration for mocking backend respons
 
 ## Component Specifications
 
-Form component specifications are defined in the [Design System Ontology](https://github.com/canonical/design-system).
+Form component specifications are defined in the [Design System Ontology](https://github.com/canonical/pragma-core/tree/main/packages/semantics/design-system).
