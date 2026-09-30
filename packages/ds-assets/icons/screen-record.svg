@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="screen-record">
+    <path d="M13.5 10.25V13.5H10.25V15H13.5C14.3284 15 15 14.3284 15 13.5V10.25H13.5Z" fill="currentColor"/>
+    <path d="M1 13.5C1 14.3284 1.67157 15 2.5 15H5.75V13.5H2.5V10.25H1V13.5Z" fill="currentColor"/>
+    <path d="M8 6C6.89543 6 6 6.89543 6 8C6 9.10457 6.89543 10 8 10C9.10457 10 10 9.10457 10 8C10 6.89543 9.10457 6 8 6Z" fill="currentColor"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M8 3.5C5.51472 3.5 3.5 5.51472 3.5 8C3.5 10.4853 5.51472 12.5 8 12.5C10.4853 12.5 12.5 10.4853 12.5 8C12.5 5.51472 10.4853 3.5 8 3.5ZM8 5C9.65685 5 11 6.34315 11 8C11 9.65685 9.65685 11 8 11C6.34315 11 5 9.65685 5 8C5 6.34315 6.34315 5 8 5Z" fill="currentColor"/>
+    <path d="M10.25 2.5H13.5V5.75H15V2.5C15 1.67157 14.3284 1 13.5 1H10.25V2.5Z" fill="currentColor"/>
+    <path d="M2.5 1C1.67157 1 1 1.67157 1 2.5V5.75H2.5V2.5H5.75V1H2.5Z" fill="currentColor"/>
+  </g>
+</svg>
