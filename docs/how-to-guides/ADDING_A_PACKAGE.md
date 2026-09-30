@@ -4,9 +4,10 @@ This guide explains how to add a new package to the pragma monorepo. It covers w
 
 ## Quick path: `pragma create package`
 
-The fastest way to add a package is through the generator. It produces all required files---`package.json`, `tsconfig.json`, `tsconfig.build.json`, `biome.json`, `vitest.config.ts`, barrel export, and README---configured for the monorepo with correct dependencies, scripts, and webarchitect ruleset.
+The fastest way to add a package is through the generator. It produces all required files---`package.json`, `tsconfig.json`, `tsconfig.build.json`, `biome.json`, `vitest.config.ts`, barrel export, and README---configured for the monorepo with correct dependencies, scripts, and webarchitect ruleset. It needs the `pragma` CLI installed (see the [README's prerequisites](../../README.md#prerequisites)):
 
 ```bash
+npm install -g @canonical/pragma-cli
 pragma create package
 ```
 
@@ -166,6 +167,8 @@ The package.json file defines the package identity, exports, scripts, and depend
   }
 }
 ```
+
+The `@canonical/biome-config`, `typescript-config` and `webarchitect` versions above are illustrative: copy the exact pins from any sibling manifest, because the whole tree pins one release of each pragma-core package and a re-pin rewrites every manifest at once.
 
 The `exports` field defines the public API. The structure shown here exposes a single entry point at the package root. Packages with multiple entry points add additional keys like `"./utils"` or `"./types"`.
 

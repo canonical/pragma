@@ -21,9 +21,10 @@ function pkg(
 }
 
 describe("the regression that broke main", () => {
-	// This is the exact shape of packages/summon/component/package.json after
-	// commit 5198c5399: the package moved to 0.35.0, the sibling moved to
-	// 0.35.0, and the peerDependencies range stayed at ^0.34.0.
+	// This is the exact shape summon-component's package.json had, when it
+	// still lived in this repository, after commit 5198c5399: the package
+	// moved to 0.35.0, the sibling moved to 0.35.0, and the peerDependencies
+	// range stayed at ^0.34.0.
 	const workspace = [
 		pkg("@canonical/summon-component", "0.35.0", {
 			dependencies: { "@canonical/utils": "^0.35.0" },

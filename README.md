@@ -38,6 +38,10 @@ See [Storybook](#storybook) below for how to run a package's Storybook server an
 **Recommended:**
 
 - **MCP-capable environment** such as Claude Code, Cursor, or Windsurf. The repository includes an `.mcp.json` configuration that enables AI assistants to query the codebase semantically, access Nx workspace intelligence, and retrieve up-to-date documentation.
+- **The `pragma` CLI** (`@canonical/pragma-cli`, developed in [canonical/pragma-core](https://github.com/canonical/pragma-core)) for querying the design system and scaffolding with `pragma create`. The repository's `.mcp.json` starts it as an MCP server with `pragma mcp serve`, and the how-to guides use it.
+  ```bash
+  npm install -g @canonical/pragma-cli   # or: bun add -g @canonical/pragma-cli
+  ```
 - **Summon generators** for scaffolding new applications, packages, and components. The
   `@canonical/summon` CLI is the framework: it runs under plain Node (no Bun required) and
   ships only with an example generator plus `summon init` (to scaffold your own generator):
