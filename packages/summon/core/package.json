@@ -72,7 +72,7 @@
     "@types/react": "^19.2.14",
     "ink-testing-library": "^4.0.0",
     "typescript": "^7.0.2",
-    "vitest": "^4.0.18"
+    "vitest": "^5.0.0"
   },
   "dependencies": {
     "@canonical/task": "^0.42.0",
