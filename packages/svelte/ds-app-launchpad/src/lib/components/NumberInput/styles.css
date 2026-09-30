@@ -17,7 +17,7 @@
   );
   --color-border-input: var(--modifier-color-border, var(--color-border));
   --color-outline-input: var(
-    --modifier-color-focusRing,
+    --modifier-color-focus-ring,
     var(--color-focusRing)
   );
 }
