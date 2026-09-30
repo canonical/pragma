@@ -9,8 +9,8 @@ jobs:
       fail-fast: false
       matrix:
         # Bun is pinned once in .bun-version; only Node varies here.
-        # Node 20 EOL is April 2026. Testing on 22 (LTS) and 24 (current).
-        node-version: ['22', '24']
+        # The lines engines.node declares: 22 and 24 (LTS) and 26 (current).
+        node-version: ['22', '24', '26']
     steps:
       - name: Checkout repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
