@@ -323,7 +323,7 @@ The `@canonical/ds-types` package derives its types from the ontology. When a co
 
 This connection between ontology and implementation ensures that component APIs remain consistent with design specifications. Changes to modifier families in the ontology propagate to TypeScript types, which surface as compile errors in components that need updating.
 
-The ontology is available at [github.com/canonical/design-system](https://github.com/canonical/design-system). Query it to understand which components exist, what modifiers they support, and how they relate to each other.
+The ontology is available at [the design-system package in pragma-core](https://github.com/canonical/pragma-core/tree/main/packages/semantics/design-system). Query it to understand which components exist, what modifiers they support, and how they relate to each other.
 
 ## Code Standards
 
@@ -335,4 +335,4 @@ The component structure implements patterns codified in the code-standards ontol
 
 **Class Name Construction** (react/component/class-name-construction): CSS classes are built from an array containing namespace, component class, modifiers, and consumer classes, filtered for truthiness and joined with spaces.
 
-These standards exist in machine-readable form at [github.com/canonical/web-code-standards](https://github.com/canonical/web-code-standards). Tooling can query the standards to generate scaffolding, validate implementations, or produce documentation.
+These standards exist in machine-readable form at [the code-standards package in pragma-core](https://github.com/canonical/pragma-core/tree/main/packages/semantics/code-standards). Tooling can query the standards to generate scaffolding, validate implementations, or produce documentation.

@@ -15,7 +15,7 @@ import {
  * `@canonical/storybook-addon-shell-theme` never reaches them. Left alone they
  * fall back to Storybook's stock light theme, which is why every docs page
  * rendered as unbranded grey regardless of branding or OS setting
- * (canonical/pragma#962). This supplies the theme they are missing. The full
+ * (canonical/pragma-web#962). This supplies the theme they are missing. The full
  * reasoning is in this package's README.
  *
  * Keep this component in this package. Moving it into the shell-theme addon,

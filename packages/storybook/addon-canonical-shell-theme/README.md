@@ -59,7 +59,7 @@ docs container. `@canonical/storybook-config` does that — see its README.
 ## Design tokens
 
 Theme colors are defined in `src/theme/tokens.ts` and sourced from
-[`@canonical/design-tokens`](https://github.com/canonical/design-tokens).
+[`@canonical/design-tokens`](https://github.com/canonical/pragma-core/tree/main/packages/tokens/tokens).
 
 **All values must be hex.** Storybook's UI uses
 [polished.js](https://polished.js.org/) (`opacify`, `darken`, `lighten`,
@@ -157,7 +157,7 @@ In July a workaround pinned documentation *content* to light, because the docs
 chrome was stuck on Storybook's stock light theme and OS-driven dark content
 inside it looked broken. It treated the symptom; the cause was the missing half.
 
-Issue [#962](https://github.com/canonical/pragma/issues/962) was filed in August
+Issue [#962](https://github.com/canonical/pragma-web/issues/962) was filed in August
 against that same missing half. It was closed by adding the docs container to
 `@canonical/storybook-config` and retiring the workaround.
 

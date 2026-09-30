@@ -18,7 +18,7 @@ const config: StorybookConfig = {
   // genuinely cannot take the shared preview config — `storybook-config`
   // depends on THIS package, so depending back on it would be a cycle, which Nx
   // rejects. The documentation pages here therefore keep Storybook's stock
-  // chrome; see canonical/pragma#962.
+  // chrome; see canonical/pragma-web#962.
   addons: [
     "./local-preset.cjs",
     getAddonPath("@canonical/storybook-addon-shell-theme"),

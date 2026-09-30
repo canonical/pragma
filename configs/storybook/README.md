@@ -45,7 +45,7 @@ that most theming confusion here reduces to.
   theme never reaches them. Given no theme of their own, Storybook falls back to
   its built-in light theme, so every docs page renders as unbranded Storybook
   grey no matter what the frame around it looks like. That was
-  [#962](https://github.com/canonical/pragma/issues/962).
+  [#962](https://github.com/canonical/pragma-web/issues/962).
 
 This package closes that gap: `previewConfig` sets `parameters.docs.container`
 to `src/DocsContainer.tsx`, which passes the Canonical theme into the docs page

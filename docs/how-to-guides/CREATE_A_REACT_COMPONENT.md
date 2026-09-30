@@ -5,7 +5,7 @@ This document will guide you through the process of creating a new React compone
 with our folder structure and naming conventions.
 
 ### 2 Reference Material
-The reference standards that this guide fulfils are maintained in the [code-standards](https://github.com/canonical/code-standards) repository, covering code, React, styling, and testing conventions.
+The reference standards that this guide fulfils are maintained in the [code-standards](https://github.com/canonical/pragma-core/tree/main/packages/semantics/code-standards) package, covering code, React, styling, and testing conventions.
 
 ### 3 Getting started
 1. Select a tier. For example, the core tier packages are located in [`packages/react/ds-global`](../../packages/react/ds-global) and [`packages/react/ds-global-form`](../../packages/react/ds-global-form).
@@ -25,7 +25,7 @@ The reference standards that this guide fulfils are maintained in the [code-stan
 ```bash
 bun run storybook
 ```
-6. Open the [storybook docs](http://localhost:6006/?path=/docs/button--docs) for your new component You should see that a component with our [standard React props](https://github.com/canonical/code-standards) has been generated. A "Docs" page contains high-level information about the component, a reference table of all of its props, and embeds each of the component's stories.
+6. Open the [storybook docs](http://localhost:6006/?path=/docs/button--docs) for your new component You should see that a component with our [standard React props](https://github.com/canonical/pragma-core/blob/main/packages/semantics/code-standards/docs/react.md) has been generated. A "Docs" page contains high-level information about the component, a reference table of all of its props, and embeds each of the component's stories.
 ![A screenshot of a Storybook project showing a starter "Button" component's documentation. An example of the component is rendered in a "Default" story, which is a simple line of text reading "Hello world!".](assets/react-component-storybook-default.png)
 
 7. Edit the component files as needed to implement your desired functionality.
@@ -37,11 +37,11 @@ To create a subcomponent, follow the following steps:
 
 1. Create a folder `common` inside a component's directory. 
 2. Set your active directory to `common`. 
-3. Use the generator as in step #3 of the [getting started section](#3-getting-started) to generate a subcomponent. Per the [React standards](https://github.com/canonical/code-standards), subcomponent names should not be prefixed with their parent component name. For example, if your parent component is called `Button`, you might name a subcomponent `Icon` instead of `ButtonIcon`.
+3. Use the generator as in step #3 of the [getting started section](#3-getting-started) to generate a subcomponent. Per the [React standards](https://github.com/canonical/pragma-core/blob/main/packages/semantics/code-standards/docs/react.md), subcomponent names should not be prefixed with their parent component name. For example, if your parent component is called `Button`, you might name a subcomponent `Icon` instead of `ButtonIcon`.
 4. The generator should create `common/index.ts` which re-exports each subcomponent. This will the top-level component (or other subcomponents) to import subcomponents from `common/index.js`. If you would also like to expose the subcomponents outside of the component, you can either re-export `common/index.js` from `index.ts`, or re-export only the subcomponents that you'd like to expose.
 
 ### 5 State
-As noted in the [React standards](https://github.com/canonical/code-standards), we recommend that React component
+As noted in the [React standards](https://github.com/canonical/pragma-core/blob/main/packages/semantics/code-standards/docs/react.md), we recommend that React component
 files themselves be kept as stateless as possible for optimal readability and usability. 
 If your component needs to hold or manage state, we recommend delegating this to custom hooks or context providers, invoking the hooks/context providers in the component file, and binding the resulting state to the component's JSX.
 

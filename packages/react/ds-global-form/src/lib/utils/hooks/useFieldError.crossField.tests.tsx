@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { renderWithForm } from "../../../testing/renderWithForm.js";
 import { TextField } from "../../component/TextField/index.js";
 
-// Regression test for https://github.com/canonical/pragma/issues/236 —
+// Regression test for https://github.com/canonical/pragma-web/issues/236 —
 // cross-field revalidation: changing one field (country) tightens another
 // field's minimum-age constraint. The age field stays in an error state, but
 // its error MESSAGE text must re-render rather than remain stale.

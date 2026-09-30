@@ -73,4 +73,4 @@ bun run storybook
 
 ## Component Specifications
 
-Component specifications are defined in the [Design System Ontology](https://github.com/canonical/design-system).
+Component specifications are defined in the [Design System Ontology](https://github.com/canonical/pragma-core/tree/main/packages/semantics/design-system).

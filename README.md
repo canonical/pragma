@@ -1,6 +1,6 @@
 # Pragma
 
-Pragma is Canonical's implementation of the [Design System](https://github.com/canonical/design-system). It provides components, CSS styles, and developer tooling for building consistent user interfaces across Canonical's web properties. React and Svelte 5 are the supported frameworks.
+Pragma is Canonical's implementation of the [Design System](https://github.com/canonical/pragma-core/tree/main/packages/semantics/design-system). It provides components, CSS styles, and developer tooling for building consistent user interfaces across Canonical's web properties. React and Svelte 5 are the supported frameworks.
 
 The toolchain these packages are built with — the `pragma` and `summon` command-line tools and their generators, the webarchitect linter, the shared Biome, TypeScript and Renovate configurations, the knowledge engine, the design tokens and the design-system models — lives in [canonical/pragma-core](https://github.com/canonical/pragma-core). This repository consumes those packages from npm, each pinned to an exact version. A change to one of them is a pull request in pragma-core; once it is released, the pin here is bumped.
 
@@ -130,7 +130,7 @@ React components are organised into tiers based on their scope of applicability.
 | Apps | `@canonical/react-ds-app` | Application-level UI such as ApplicationLayout, SideNavigation, and ContentLayout, suited for internal tools. |
 | Apps (product-specific) | `@canonical/react-ds-app-*` | Components specific to a single product: Launchpad (`-launchpad`), LXD (`-lxd`), Anbox (`-anbox`), Landscape (`-landscape`), and Portal (`-portal`). |
 
-The tiers correspond to the [Design System Ontology](https://github.com/canonical/design-system), which models the design system as structured, queryable data. Each component has a formal specification including usage guidelines, modifier families, and anatomy definitions. This semantic approach enables tooling to understand design intent, not just implementation details.
+The tiers correspond to the [Design System Ontology](https://github.com/canonical/pragma-core/tree/main/packages/semantics/design-system), which models the design system as structured, queryable data. Each component has a formal specification including usage guidelines, modifier families, and anatomy definitions. This semantic approach enables tooling to understand design intent, not just implementation details.
 
 ### Core Infrastructure
 

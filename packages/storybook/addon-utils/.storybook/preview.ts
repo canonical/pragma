@@ -8,7 +8,7 @@ import "@canonical/styles-debug/baseline-grid";
 // storybook-config depends on this package, and Nx rejects a circular project
 // graph — so it themes its own documentation pages here.
 //
-// Without this, removing `forceLightDocs` reintroduces canonical/pragma#962
+// Without this, removing `forceLightDocs` reintroduces canonical/pragma-web#962
 // exactly here: story content follows the OS, while the docs page around it
 // stays on Storybook's stock light theme, so a dark OS renders dark-scheme
 // content on light chrome.
