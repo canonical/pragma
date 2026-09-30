@@ -1,5 +1,3 @@
-> Copied from [canonical/pragma-core/CONSTITUTION.md](https://github.com/canonical/pragma-core/blob/main/CONSTITUTION.md); change it there first.
-
 # Constitution
 
 Thirteen principles govern how pragma is built. Each principle is a constraint that resolves a recurring category of decision---when two valid approaches exist, these principles determine which one wins.
