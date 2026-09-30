@@ -155,6 +155,7 @@ export const ICON_NAMES = [
   "stop-fill",
   "success",
   "success-fill",
+  "swap",
   "switcher",
   "switcher-dashboard",
   "switcher-environments",

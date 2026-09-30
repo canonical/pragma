@@ -2132,6 +2132,20 @@ export const ICON_METADATA: Readonly<Record<IconName, IconMetadata>> = {
     ],
     categories: ["status"],
   },
+  swap: {
+    tags: [
+      "exchange",
+      "bidirectional",
+      "two way",
+      "arrows",
+      "switch",
+      "transfer",
+      "sync",
+    ],
+    categories: ["action"],
+    description:
+      "Two opposing arrows: a two-way exchange, such as a bidirectional link.",
+  },
   switcher: {
     tags: [
       "switch",
