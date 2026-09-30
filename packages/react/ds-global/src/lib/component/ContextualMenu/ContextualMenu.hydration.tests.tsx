@@ -1,7 +1,7 @@
 import { act } from "@testing-library/react";
-import { hydrateRoot } from "react-dom/client";
+import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ContextualMenu from "./ContextualMenu.js";
 import type { MenuEntry } from "./types.js";
 
@@ -19,7 +19,12 @@ const items: MenuEntry[] = [
  * a mismatch surfaces through React 19's `onRecoverableError`.
  */
 describe("ContextualMenu (hydration)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -31,13 +36,21 @@ describe("ContextualMenu (hydration)", () => {
     document.body.appendChild(container);
 
     const onRecoverableError = vi.fn();
+    let root: Root | undefined;
     act(() => {
-      hydrateRoot(container, ui, { onRecoverableError });
+      root = hydrateRoot(container, ui, { onRecoverableError });
     });
 
     expect(onRecoverableError).not.toHaveBeenCalled();
     // The trigger is still present after hydration — the tree was reused, not
     // replaced by a mismatch recovery.
     expect(container.querySelector(".trigger")?.textContent).toBe("Actions");
+
+    // Unmounting runs the effect cleanups, which cancel pending debounced work;
+    // a timer left behind would fire after the test environment is torn down.
+    act(() => {
+      root?.unmount();
+    });
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

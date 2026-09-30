@@ -1,7 +1,7 @@
 import { act } from "@testing-library/react";
-import { hydrateRoot } from "react-dom/client";
+import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withTooltip } from "./index.js";
 
 /**
@@ -12,7 +12,12 @@ import { withTooltip } from "./index.js";
  * message must portal into the document body only after mount.
  */
 describe("withTooltip (hydration)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -30,8 +35,9 @@ describe("withTooltip (hydration)", () => {
 
     // A hydration mismatch surfaces here in React 19; assert it never fires.
     const onRecoverableError = vi.fn();
+    let root: Root | undefined;
     act(() => {
-      hydrateRoot(container, ui, { onRecoverableError });
+      root = hydrateRoot(container, ui, { onRecoverableError });
     });
     expect(onRecoverableError).not.toHaveBeenCalled();
 
@@ -40,5 +46,12 @@ describe("withTooltip (hydration)", () => {
     const message = document.body.querySelector(".ds.tooltip .text");
     expect(message?.textContent).toBe("Helpful message");
     expect(message?.closest(".ds.tooltip-area")).toBeNull();
+
+    // Unmounting runs the effect cleanups, which cancel pending debounced work;
+    // a timer left behind would fire after the test environment is torn down.
+    act(() => {
+      root?.unmount();
+    });
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
