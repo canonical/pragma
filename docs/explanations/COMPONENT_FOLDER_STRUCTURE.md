@@ -52,7 +52,7 @@ summon component react --component-path src/lib/MyComponent --yes
 
 The generator creates the component file, types, styles, stories, unit tests, and SSR tests. The generated code follows all conventions described in this document, so you can start implementing immediately rather than setting up boilerplate.
 
-See the [summon-component README](../../packages/summon/component/README.md) for all available options.
+See the [summon-component README](https://github.com/canonical/pragma-core/blob/main/packages/summon/component/README.md) for all available options.
 
 ## Why This Structure
 

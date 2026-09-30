@@ -1,8 +1,8 @@
 # Domains
 
-Almost every package in this repository lives under a directory that names a **concern**: `packages/styles/` holds the stylesheets, `packages/runtime/` holds the framework-agnostic engines, `packages/semantics/` holds the machine-readable description of the design system. That directory is the package's **domain**. Four packages sit outside every domain, and `configs/` and `apps/` sit outside `packages/` altogether; each has a section of its own below.
+Almost every package in this repository lives under a directory that names a **concern**: `packages/styles/` holds the stylesheets, `packages/runtime/` holds the framework-agnostic engines, `packages/semantics/` holds the machine-readable description of the design system. That directory is the package's **domain**. Two packages sit outside every domain, and `configs/` and `apps/` sit outside `packages/` altogether; each has a section of its own below.
 
-This is [principle II](../../CONSTITUTION.md#ii-domain-driven-design) applied to the filesystem: the system is organised around domains, not around technical layers. The practical payoff is that a question about the repository can be answered by opening a folder. Someone looking for the icons does not need to know that they are published as `@canonical/ds-assets`; they need to know that assets are a concern, and that concerns are folders. A domain with a single package in it is fine — `packages/semantics/` has one — because the folder is a statement about what the concern is, not a bin that has to be filled.
+This is [principle II](https://github.com/canonical/pragma-core/blob/main/CONSTITUTION.md#ii-domain-driven-design) applied to the filesystem: the system is organised around domains, not around technical layers. The practical payoff is that a question about the repository can be answered by opening a folder. Someone looking for the icons does not need to know that they are published as `@canonical/ds-assets`; they need to know that assets are a concern, and that concerns are folders. A domain with a single package in it is fine — `packages/semantics/` has one — because the folder is a statement about what the concern is, not a bin that has to be filled.
 
 Two things a domain is deliberately **not**:
 
@@ -107,7 +107,7 @@ What does not belong: a story, and the configuration a Storybook is assembled fr
 
 ## `packages/runtime`: Framework-Agnostic Engines
 
-Libraries that hold logic rather than markup, and that more than one consumer needs. Two kinds live here: the engines the framework bindings are built on (`router`, `i18n`, `ds-utils`) and the runtimes the tooling is built on (`task`, `ke`, `ke-graphql`, `harnesses`).
+Libraries that hold logic rather than markup, and that more than one consumer needs: the engines the framework bindings are built on (`router`, `i18n`, `ds-utils`). The runtimes the toolchain is built on (`task`, `ke`, `ke-graphql`, `harnesses`) are in [canonical/pragma-core](https://github.com/canonical/pragma-core).
 
 The test is dependency-freedom: nothing in this domain may import React, Svelte or Lit. A package that needs a framework belongs in that framework's domain.
 
@@ -116,12 +116,8 @@ The test is dependency-freedom: nothing in this domain may import React, Svelte 
 | `runtime/router` | `@canonical/router-core` | `runtime-router` |
 | `runtime/i18n` | `@canonical/i18n-core` | `runtime-i18n` |
 | `runtime/ds-utils` | `@canonical/ds-utils` | `runtime-ds-utils` |
-| `runtime/task` | `@canonical/task` | `runtime-task` |
-| `runtime/ke` | `@canonical/ke` | `runtime-ke` |
-| `runtime/ke-graphql` | `@canonical/ke-graphql` | `runtime-ke-graphql` |
-| `runtime/harnesses` | `@canonical/harnesses` | `runtime-harnesses` |
 
-Every name in this domain disagrees with its folder, for the same reason. The names say what the thing *is* (`task`, `ke`, the `-core` half of a pair); the folder says where the thing may not reach.
+Every name in this domain disagrees with its folder, for the same reason. The names say what the thing *is* (`ds-utils`, the `-core` half of a pair); the folder says where the thing may not reach.
 
 ## `packages/semantics`: The Design System as Data
 
@@ -133,36 +129,13 @@ This is the domain for meaning about the design system, not the domain for desig
 |---|---|---|
 | `semantics/ds-implementations` | `@canonical/ds-implementations` | `semantics-ds-implementations` |
 
-## `packages/cli`: The Shipped Binaries
-
-The two commands a consumer installs and runs: `pragma` (the design-system CLI and MCP server) and `summon` (the interactive code generator).
-
-What does not belong: the machinery a binary is assembled from. The generator framework is in `packages/summon/`, the effect runtime in `packages/runtime/`.
-
-| Folder | npm name | Folder-derived |
-|---|---|---|
-| `cli/pragma` | `@canonical/pragma-cli` | `cli-pragma` |
-| `cli/summon` | `@canonical/summon` | `cli-summon` |
-
-## `packages/summon`: The Code-Generation Framework
-
-The generator framework and the generator packages it discovers. Splitting the binary from the generators means a consumer can install one generator without installing all of them, and means `pragma create` can mount the same generator tree under a different binary.
-
-What does not belong: the binaries themselves — they are in `packages/cli/`.
-
-| Folder | npm name | Folder-derived |
-|---|---|---|
-| `summon/core` | `@canonical/summon-core` | same |
-| `summon/component` | `@canonical/summon-component` | same |
-| `summon/package` | `@canonical/summon-package` | same |
-| `summon/application` | `@canonical/summon-application` | same |
-| `summon/monorepo` | `@canonical/summon-monorepo` | same |
-
 ## `configs`: The Shared Configuration Packages
 
 Not under `packages/`, and deliberately so. They configure the toolchain, which is a concern the repository has but the design system does not, so they sit at the root rather than under a design-system domain.
 
-How they are consumed varies, and is not the line. Six are inherited by name — a package puts one in `extends`, in its `tsconfig.json`, its `biome.json`, or Renovate's — while `vitest-config-react` and `storybook` are factories a package imports and calls. Either way, what the package gets back is settings.
+The generic ones every package extends — Biome, TypeScript and Renovate — are in [canonical/pragma-core](https://github.com/canonical/pragma-core) and consumed from npm; the ones here are flavoured for a framework or a tool this repository runs.
+
+How they are consumed varies, and is not the line. Three are inherited by name — a package puts one in `extends` in its `tsconfig.json` — while `vitest-config-react` and `storybook` are factories a package imports and calls. Either way, what the package gets back is settings.
 
 `configs/storybook` is the one that reaches past the toolchain. The Storybook factory composes `@canonical/ds-assets`, `@canonical/styles-debug` and two of the addons into a running Storybook, so it holds design-system dependencies its neighbours here do not. It stays anyway: it is configuration, and it is kept on its own rather than folded in beside the packages that consume it.
 
@@ -172,13 +145,10 @@ Their names follow a second, equally consistent rule: `<tool>-config`, with a fl
 
 | Folder | npm name |
 |---|---|
-| `configs/biome` | `@canonical/biome-config` |
-| `configs/typescript` | `@canonical/typescript-config` |
 | `configs/typescript-react` | `@canonical/typescript-config-react` |
 | `configs/typescript-svelte` | `@canonical/typescript-config-svelte` |
 | `configs/typescript-lit` | `@canonical/typescript-config-lit` |
 | `configs/vitest-config-react` | `@canonical/vitest-config-react` |
-| `configs/renovate` | `@canonical/renovate-config` |
 | `configs/storybook` | `@canonical/storybook-config` |
 
 `vitest-config-react` is the one folder that does not follow the rule; under it the folder would be `configs/vitest-react`.
@@ -198,24 +168,20 @@ What does not belong: anything a consumer would install. Code that proves reusab
 
 ## Packages Without a Domain
 
-Four packages sit directly in `packages/`, outside every domain:
+Two packages sit directly in `packages/`, outside every domain:
 
 | Folder | npm name |
 |---|---|
 | `packages/ds-types` | `@canonical/ds-types` |
 | `packages/ds-assets` | `@canonical/ds-assets` |
-| `packages/utils` | `@canonical/utils` |
-| `packages/webarchitect` | `@canonical/webarchitect` |
 
-They are here for two different reasons. `utils` and `webarchitect` are general-purpose engineering tools rather than design-system code — `utils` is a set of framework-neutral string and assertion helpers, `webarchitect` the architecture linter whose rulesets most packages' `check` script runs. Neither serves a design-system concern, so there is no folder here that could name one, and neither is waiting to move.
+Both serve a concern that can be named, and both are expected to move. They have not yet, and this document describes the tree as it is — see [Planned, not yet made](#planned-not-yet-made).
 
-`ds-types` and `ds-assets` are the other reason: both serve a concern that can be named, and both are expected to move. They have not yet, and this document describes the tree as it is — see [Planned, not yet made](#planned-not-yet-made).
-
-What does not belong: anything else. This section is a residue, not a bin. A new tool that fits no existing domain is a sign that a domain is missing, not a reason to add a fifth loose package — propose the domain instead.
+What does not belong: anything else. This section is a residue, not a bin. A new tool that fits no existing domain is a sign that a domain is missing, not a reason to add a third loose package — propose the domain instead.
 
 ## Planned, not yet made
 
-Two of the packages in the section above have a domain waiting for them. Neither move is in this change:
+Both packages in the section above have a domain waiting for them. Neither move is in this change:
 
 - `packages/ds-types` into `packages/contracts/`. The types more than one package must agree on — modifier families, grid definitions, navigation shapes — are a concern, and naming it would let a reader find the shared vocabulary by opening a folder.
 - `packages/ds-assets` into `packages/assets/`. The icon set and the Ubuntu Sans files are content, shipped rather than executed, which is a different concern from anything that renders them.

@@ -53,7 +53,7 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/design-tokens": "0.10.0",
+    "@canonical/design-tokens": "0.43.0",
     "@canonical/ds-assets": "^0.42.0",
     "@canonical/ds-utils": "^0.42.0",
     "@canonical/react-hooks": "^0.42.0",
@@ -64,7 +64,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@canonical/biome-config": "^0.42.0",
+    "@canonical/biome-config": "0.43.0",
     "@canonical/ds-types": "^0.42.0",
     "@canonical/router-core": "^0.42.0",
     "@canonical/router-react": "^0.42.0",
@@ -72,7 +72,7 @@
     "@canonical/storybook-helpers": "^0.42.0",
     "@canonical/typescript-config-react": "^0.42.0",
     "@canonical/vitest-config-react": "^0.42.0",
-    "@canonical/webarchitect": "^0.42.0",
+    "@canonical/webarchitect": "0.43.0",
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/addon-docs": "^10.6.0",
     "@storybook/react-vite": "^10.6.0",

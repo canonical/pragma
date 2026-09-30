@@ -183,10 +183,10 @@ homework, and the repository's layering rule settles it independently — see
 `AGENTS.md`. So `@canonical/ke-graphql` does not depend on this package and
 holds no contract test.
 
-Two gates exist today, with a third arriving per provider package.
+One gate exists in this package, with another arriving per provider package.
 
-The first is in this package, in `src/lib/satisfiesContract.test.ts`. It runs
-the check against hand-maintained illustrations of a compiler emission
+It lives in `src/lib/satisfiesContract.test.ts` and runs the check against
+hand-maintained illustrations of a compiler emission
 (`src/testing/__fixtures__/emitted*.sdl.txt` — approximations of the shape, not
 byte captures) and pins three properties:
 
@@ -196,17 +196,16 @@ byte captures) and pins three properties:
 - `relay: false` fails by **exactly one** violation, `FIELD_REMOVED` on
   `Query.node` — the control that proves the gate has teeth.
 
-The second, `src/testing/integration/emittedGoldens.test.ts`, is the currency
-gate. The fixtures above are frozen captures, so on their own they would go on
-satisfying the fixture-era contract forever. This one reads
-`@canonical/ke-graphql`'s own golden SDLs — which that package regenerates and
-pins byte-for-byte against a live `compile()` — and checks all of them against
-`schema/contract.graphql` as read live. Both halves move on their own, so it
-turns red when they stop agreeing.
+Those fixtures are frozen, so on their own they would go on satisfying the
+fixture-era contract forever. The compiler's own golden SDLs live in its
+source in [canonical/pragma-core](https://github.com/canonical/pragma-core) and are not
+published, so the check against a real emission belongs to the providers.
 
-A third belongs to each provider package built on this contract, as those land:
-it calls `assertSatisfiesContract` on that provider's own SDL, so the gate
-fails the moment that provider drifts. Siting those there rather than here is
+The other gate belongs to each provider package built on this contract:
+it checks that provider's own SDL, so the gate fails the moment that provider
+drifts. `@canonical/prism-pragma-provider` checks the SDL it emits live over its test
+corpus from the `@canonical/ke-graphql` it pins, so a compiler bump that breaks
+conformance is red on the bump itself. Siting those there rather than here is
 what keeps this package free of any dependency on a particular provider.
 
 The SDL crosses every one of those boundaries as a **string**, so the

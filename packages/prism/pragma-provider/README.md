@@ -1,7 +1,8 @@
 # @canonical/prism-pragma-provider
 
 **The pragma provider for the Prism docsite contract.** It reads pragma's Turtle
-corpus, compiles it with [`@canonical/ke-graphql`](../../runtime/ke-graphql) into an
+corpus, compiles it with
+[`@canonical/ke-graphql`](https://github.com/canonical/pragma-core/tree/main/packages/engine/ke-graphql) into an
 executable GraphQL schema, and serves it as a fetch-native handler.
 
 It exists because the docsite app should not. Until this package landed,
@@ -108,7 +109,8 @@ collector walks, small enough to read in one sitting and complete enough to make
 property falsifiable: two roots merging, dot-prefixed files skipped, the exclusion
 dropped, channel-dotted references escaped, prefixes harvested, both actionable failure
 messages, and the anatomy collision in both directions. See that directory's README for
-what each file is for. Precedent: `packages/runtime/ke-graphql/demo/graph.ttl`.
+what each file is for. Precedent: [`demo/graph.ttl`](https://github.com/canonical/pragma-core/blob/main/packages/engine/ke-graphql/demo/graph.ttl)
+in `@canonical/ke-graphql`.
 
 ### The two SDL captures are stale, and it is written down
 
@@ -129,7 +131,9 @@ contract on every run, so the structural head those captures are stale against i
 unmeasured. Its subject is a **committed artifact**, not a live emission, so it cannot
 see that file drift from what `createPragmaProvider` would emit today. Closing that
 second gap needs a boot with a populated refs cache; the test's own header states the
-same limit.
+same limit. What a live emission can show without one — that the compiler this package
+pins still satisfies the contract — `createPragmaProvider.test.ts` checks over the
+hermetic corpus.
 
 ---
 

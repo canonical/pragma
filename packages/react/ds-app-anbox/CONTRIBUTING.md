@@ -17,7 +17,7 @@ Storybook will automatically reload when you make changes to the components, usi
 
 ### 1.1 Building a component
 
-The [component generator](../../summon/component/README.md) scaffolds new components.
+The [component generator](https://github.com/canonical/pragma-core/blob/main/packages/summon/component/README.md) scaffolds new components.
 Install the Summon CLI and generator (`npm install -g @canonical/summon @canonical/summon-component`), then run
 `summon component react src/lib/MyNewComponent` from the package root to generate a new component.
 You can also run `summon component react --help` to see more available options.

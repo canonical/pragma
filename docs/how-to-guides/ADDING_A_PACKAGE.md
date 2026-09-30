@@ -4,9 +4,10 @@ This guide explains how to add a new package to the pragma monorepo. It covers w
 
 ## Quick path: `pragma create package`
 
-The fastest way to add a package is through the generator. It produces all required files---`package.json`, `tsconfig.json`, `tsconfig.build.json`, `biome.json`, `vitest.config.ts`, barrel export, and README---configured for the monorepo with correct dependencies, scripts, and webarchitect ruleset.
+The fastest way to add a package is through the generator. It produces all required files---`package.json`, `tsconfig.json`, `tsconfig.build.json`, `biome.json`, `vitest.config.ts`, barrel export, and README---configured for the monorepo with correct dependencies, scripts, and webarchitect ruleset. It needs the `pragma` CLI installed (see the [README's prerequisites](../../README.md#prerequisites)):
 
 ```bash
+npm install -g @canonical/pragma-cli
 pragma create package
 ```
 
@@ -30,15 +31,15 @@ The generated package is ordinary code with no special relationship to the gener
 
 Not every piece of functionality deserves its own package. The overhead of separate configuration, versioning, and maintenance means that new packages should earn their existence. Consider creating a new package when the functionality has consumers beyond a single application, when it represents a coherent unit that could be versioned independently, or when it belongs to a different architectural layer than existing packages.
 
-Extend an existing package instead when the functionality is specific to one consumer, when it depends heavily on the internals of an existing package, or when splitting it would create circular dependencies. The `@canonical/utils` package, for example, grows when new utilities prove useful across multiple packages. Adding a function to utils is simpler than creating a new package for that function alone.
+Extend an existing package instead when the functionality is specific to one consumer, when it depends heavily on the internals of an existing package, or when splitting it would create circular dependencies. The `@canonical/ds-utils` package, for example, grows when new helpers prove useful across multiple packages. Adding a function to ds-utils is simpler than creating a new package for that function alone.
 
 ## Package locations
 
 Packages live in subdirectories of `packages/` based on their category. The location determines how consumers import the package and influences CI path filtering.
 
-The top level `packages/` directory contains core infrastructure packages like `ds-types`, `ds-assets`, `utils`, and `webarchitect`. These packages have few dependencies and serve as foundations for other packages.
+The top level `packages/` directory contains core infrastructure packages like `ds-types` and `ds-assets`. These packages have few dependencies and serve as foundations for other packages.
 
-Framework-agnostic runtime packages live in `packages/runtime/`. These are the engines the framework bindings are built on — `i18n-core`, `router-core` and `ds-utils` are shared by the React, Svelte and Lit implementations, while `task`, `harnesses` and `ke` are runtimes for Node and the CLI. If a library holds logic rather than markup, and more than one framework package needs it, it belongs here rather than at the top level.
+Framework-agnostic runtime packages live in `packages/runtime/`. These are the engines the framework bindings are built on — `i18n-core`, `router-core` and `ds-utils` are shared by the React, Svelte and Lit implementations. If a library holds logic rather than markup, and more than one framework package needs it, it belongs here rather than at the top level.
 
 React component packages live in `packages/react/`. The subdirectory structure mirrors the component tier hierarchy: `ds-global` for universal components, `ds-app` for application components, and specialized packages like `ds-app-launchpad` for domain-specific components.
 
@@ -46,7 +47,7 @@ Style packages live in `packages/styles/`. The structure reflects the CSS layeri
 
 Storybook addons live in `packages/storybook/`. These packages extend Storybook with project-specific functionality like the baseline grid overlay and MSW integration.
 
-Developer tools live directly in `packages/`. The `webarchitect` package is an example. If you are adding a new CLI tool or development utility, it belongs at this level.
+Developer tools — the command-line tools, the generators, the linters and the base Biome and TypeScript configurations — live in [canonical/pragma-core](https://github.com/canonical/pragma-core). If you are adding a new CLI tool or development utility, it belongs there.
 
 ### A new category directory needs a new workspace glob
 
@@ -61,8 +62,6 @@ The root `package.json` `workspaces` array lists each category explicitly, and e
     "packages/react/*",
     "packages/runtime/*",
     "packages/storybook/*",
-    "packages/summon/*",
-    "packages/cli/*",
     "packages/styles/*",
     "packages/svelte/*",
     "packages/lit/*",
@@ -159,15 +158,17 @@ The package.json file defines the package identity, exports, scripts, and depend
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
-    "@canonical/biome-config": "^0.11.0",
-    "@canonical/typescript-config": "^0.11.0",
-    "@canonical/webarchitect": "^0.11.0",
+    "@canonical/biome-config": "0.42.0",
+    "@canonical/typescript-config": "0.42.0",
+    "@canonical/webarchitect": "0.42.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.17"
   }
 }
 ```
+
+The `@canonical/biome-config`, `typescript-config` and `webarchitect` versions above are illustrative: copy the exact pins from any sibling manifest, because the whole tree pins one release of each pragma-core package and a re-pin rewrites every manifest at once.
 
 The `exports` field defines the public API. The structure shown here exposes a single entry point at the package root. Packages with multiple entry points add additional keys like `"./utils"` or `"./types"`.
 
@@ -323,6 +324,8 @@ Webarchitect validates the package.json structure, license declaration, export c
 
 ## Creating a tool package
 
+The command-line tools and development utilities are created in [canonical/pragma-core](https://github.com/canonical/pragma-core); this section describes their shape, for reference.
+
 Tool packages differ from libraries in three ways: they use GPL-3.0 licensing, they may not need a build step if they run directly with Bun, and they typically provide a CLI entry point.
 
 For a TypeScript-only tool that runs with Bun (the `tool-ts` ruleset), the package.json differs from a library:
@@ -357,7 +360,7 @@ The key differences: `module` and `types` point to TypeScript source files, `fil
 > `dist/esm` with `tsc -p tsconfig.build.json`, point `main`/`module`/`exports`/`bin` at the
 > built JS, set `files: ["dist"]`, and use `#!/usr/bin/env node`. Node cannot execute `.ts`,
 > and `__dirname`/`import pkg from "./package.json"` behave differently under Node ESM. See the
-> `@canonical/summon` / `@canonical/summon-application` packages for a worked example, including
+> `@canonical/summon` / `@canonical/summon-application` packages in [canonical/pragma-core](https://github.com/canonical/pragma-core) for a worked example, including
 > copying non-`.ts` template assets into `dist` (they are not compiled by `tsc`).
 
 The `bin` field declares the CLI entry point. After installation, users can run the tool by name.

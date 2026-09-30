@@ -1,5 +1,5 @@
 {
-  "extends": "../../../configs/typescript/tsconfig.json",
+  "extends": "@canonical/typescript-config",
   "compilerOptions": {
     "types": ["node"],
     "resolveJsonModule": true,

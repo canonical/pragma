@@ -23,8 +23,6 @@
     "packages/react/*",
     "packages/runtime/*",
     "packages/storybook/*",
-    "packages/summon/*",
-    "packages/cli/*",
     "packages/styles/*",
     "packages/svelte/*",
     "packages/lit/*",
@@ -49,7 +47,7 @@
     "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules **/dist **/node_modules"
   },
   "devDependencies": {
-    "@canonical/design-system": "^0.2.5",
+    "@canonical/design-system": "0.43.0",
     "@vitest/coverage-v8": "^5.0.0",
     "lerna": "^10.0.0",
     "nx": "^23.0.0",
@@ -61,7 +59,6 @@
     ]
   },
   "patchedDependencies": {
-    "ejs@5.0.1": "patches/ejs@5.0.1.patch",
     "relay-runtime-network@0.1.0": "patches/relay-runtime-network@0.1.0.patch",
     "react-relay@21.0.1": "patches/react-relay@21.0.1.patch",
     "relay-runtime@21.0.1": "patches/relay-runtime@21.0.1.patch",

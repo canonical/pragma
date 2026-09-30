@@ -46,6 +46,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { createStore, type Plugin } from "@canonical/ke";
 import { createSchemaPlugin } from "@canonical/ke-graphql";
+import { satisfiesContract } from "@canonical/prism-contract";
 import { describe, expect, it, vi } from "vitest";
 import {
   CORPUS_REFS_ROOT,
@@ -68,6 +69,15 @@ describe("createPragmaProvider over both roots", () => {
     expect(api.sdl).toContain("type Component");
     // `Job` comes only from the semantics tree — proof the second root merged.
     expect(api.sdl).toContain("type Job");
+  });
+
+  it("satisfies the documentation site's contract as emitted, not as committed", async () => {
+    // The committed schema's own gate cannot see the compiler drift away from
+    // the contract until someone regenerates it; this reads the live emission
+    // of the ke-graphql this package pins, so a bump that breaks conformance
+    // is red on the bump itself.
+    const { api } = await booted;
+    expect(satisfiesContract(api.sdl).violations).toEqual([]);
   });
 
   it("keeps the excluded shim out of the compiled schema", async () => {

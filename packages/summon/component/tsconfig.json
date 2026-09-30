@@ -1,9 +1,0 @@
-{
-  "extends": "@canonical/typescript-config",
-  "compilerOptions": {
-    "types": ["node", "@types/bun"],
-    "jsx": "react-jsx",
-    "skipLibCheck": true
-  },
-  "include": ["src/**/*.ts"]
-}

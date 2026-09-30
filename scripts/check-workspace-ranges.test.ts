@@ -21,9 +21,10 @@ function pkg(
 }
 
 describe("the regression that broke main", () => {
-	// This is the exact shape of packages/summon/component/package.json after
-	// commit 5198c5399: the package moved to 0.35.0, the sibling moved to
-	// 0.35.0, and the peerDependencies range stayed at ^0.34.0.
+	// This is the exact shape summon-component's package.json had, when it
+	// still lived in this repository, after commit 5198c5399: the package
+	// moved to 0.35.0, the sibling moved to 0.35.0, and the peerDependencies
+	// range stayed at ^0.34.0.
 	const workspace = [
 		pkg("@canonical/summon-component", "0.35.0", {
 			dependencies: { "@canonical/utils": "^0.35.0" },
@@ -227,7 +228,7 @@ describe("against the real repository", () => {
 		// Guards against the enumeration silently resolving an empty set and
 		// vacuously passing — the exact shape of the #901 incident.
 		expect(packages.length).toBeGreaterThan(20);
-		expect(packages.map((p) => p.name)).toContain("@canonical/summon-component");
+		expect(packages.map((p) => p.name)).toContain("@canonical/react-ds-global");
 		for (const p of packages) expect(p.file).not.toContain("node_modules");
 	});
 
