@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="volume-down">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M6.3418 2.45122C6.98837 1.88587 7.99991 2.34519 8 3.20415V12.7959C7.99994 13.655 6.98837 14.1144 6.3418 13.5489L3.42871 11H1.5C0.671598 11 4.00712e-05 10.3284 0 9.50005V6.50005C0.000101912 5.67171 0.671636 5.00005 1.5 5.00005H3.42871L6.3418 2.45122ZM3.99219 6.50005H1.5V9.50005H3.99219L6.5 11.6944V4.30474L3.99219 6.50005Z" fill="currentColor"/>
+    <path d="M16 8.75005H10V7.25005H16V8.75005Z" fill="currentColor"/>
+  </g>
+</svg>
