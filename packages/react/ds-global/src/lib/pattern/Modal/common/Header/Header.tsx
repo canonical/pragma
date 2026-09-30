@@ -42,6 +42,7 @@ const Header = ({
       </span>
       {!undismissible && (
         <Button
+          type="button"
           className="close"
           importance="tertiary"
           icon="close"
