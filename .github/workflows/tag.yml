@@ -28,13 +28,6 @@ jobs:
             echo "This action can only be run on the main branch"
             exit 1
           fi
-          # npm refuses a provenance publish whose repository.url names another
-          # repository, and every manifest names canonical/pragma-web: stop here,
-          # before anything is versioned or tagged, if this runs anywhere else.
-          if [[ "${{ github.repository }}" != "canonical/pragma-web" ]]; then
-            echo "This action publishes as canonical/pragma-web, not ${{ github.repository }}"
-            exit 1
-          fi
 
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
