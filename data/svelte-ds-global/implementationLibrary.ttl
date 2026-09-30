@@ -6,7 +6,7 @@
 ds:implementation.library.svelte-ds-global a ds:ImplementationLibrary;
     ds:libraryName "@canonical/svelte-ds-global";
     ds:platform "svelte";
-    ds:link "https://github.com/canonical/pragma/tree/main/packages/svelte/ds-global";
+    ds:link "https://github.com/canonical/pragma-web/tree/main/packages/svelte/ds-global";
     ds:summary "Global components for the Pragma design system.";
     ds:documentation "https://pragma.canonical.com/svelte";
     ds:libraryTier ds:global;

@@ -6,7 +6,7 @@
 ds:implementation.library.react-ds-global a ds:ImplementationLibrary;
     ds:libraryName "@canonical/react-ds-global";
     ds:platform "react";
-    ds:link "https://github.com/canonical/pragma/tree/main/packages/react/ds-global";
+    ds:link "https://github.com/canonical/pragma-web/tree/main/packages/react/ds-global";
     ds:documentation "https://pragma.canonical.com/react";
     ds:libraryTier ds:global;
     ds:version "0.42.0".
