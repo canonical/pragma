@@ -6,7 +6,6 @@ import Component from "./Group.js";
 
 const meta = {
   title: "MarkdownEditor/Toolbar/Group",
-  tags: ["autodocs"],
   component: Component,
   decorators: [
     (Story, { args }) => (

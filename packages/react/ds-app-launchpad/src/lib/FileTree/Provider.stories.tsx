@@ -7,7 +7,6 @@ import type { FileTreeData, ProviderOptions } from "./types.js";
 
 const meta = {
   title: "FileTree",
-  tags: ["autodocs"],
   component: FileTree,
   argTypes: {
     expandable: {

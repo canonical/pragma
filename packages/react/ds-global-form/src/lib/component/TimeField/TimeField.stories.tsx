@@ -7,7 +7,6 @@ import { TimeField } from "./index.js";
 const meta = {
   title: "components/TimeField",
   component: TimeField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof TimeField>;
 

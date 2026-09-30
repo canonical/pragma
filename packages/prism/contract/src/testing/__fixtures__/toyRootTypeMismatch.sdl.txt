@@ -1,0 +1,29 @@
+# The provider `findBreakingChanges` alone cannot catch: every type the toy
+# contract names is present and unchanged, so the type-map comparison is empty
+# — but queries are served from `RootQuery`, and the conforming `Query` sitting
+# in the type map is unreachable. Structurally conformant, serves nothing.
+schema {
+  query: RootQuery
+}
+
+type RootQuery {
+  widget(id: ID!): Widget
+  widgets: [Widget!]!
+}
+
+type Query {
+  widget(id: ID!): Widget
+  widgets: [Widget!]!
+}
+
+type Widget {
+  id: ID!
+  label: String
+  size: Int!
+  kind: WidgetKind!
+}
+
+enum WidgetKind {
+  ROUND
+  SQUARE
+}

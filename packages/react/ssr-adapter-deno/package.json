@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ssr-adapter-deno",
   "description": "Deno Deploy adapter for @canonical/react-ssr",
-  "version": "0.29.0-experimental.0",
+  "version": "0.43.0",
   "private": true,
   "type": "module",
   "module": "dist/esm/index.js",
@@ -15,13 +15,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "exports": {
     ".": {
       "import": "./dist/esm/index.js",
@@ -31,7 +31,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:ts",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
@@ -41,15 +42,17 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/react-ssr": "^0.29.0-experimental.0"
+    "@canonical/react-ssr": "^0.43.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
-    "@canonical/typescript-config": "^0.28.0",
-    "@types/node": "^24.12.0",
-    "@vitest/coverage-v8": "^4.0.18",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/typescript-config": "0.43.0",
+    "@canonical/vitest-config-react": "^0.43.0",
+    "@canonical/webarchitect": "0.43.0",
+    "@types/node": "^26.0.0",
+    "@vitest/coverage-v8": "^5.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
   }
 }

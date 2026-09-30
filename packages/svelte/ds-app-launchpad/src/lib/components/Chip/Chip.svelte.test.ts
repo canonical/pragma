@@ -84,13 +84,11 @@ describe("Chip component", () => {
         ...baseProps,
         value: "Styled Chip",
         class: "extra-class",
-        density: "dense",
-        severity: "caution",
+        criticality: "warning",
       });
 
       await expect.element(componentLocator(page)).toHaveClass("extra-class");
-      await expect.element(componentLocator(page)).toHaveClass("dense");
-      await expect.element(componentLocator(page)).toHaveClass("caution");
+      await expect.element(componentLocator(page)).toHaveClass("warning");
     });
 
     it("should not render a button when dismiss is provided", async () => {

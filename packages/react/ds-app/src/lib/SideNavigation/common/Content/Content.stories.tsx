@@ -1,22 +1,21 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { maasContentRoot } from "#storybook/navigation/fixtures.js";
+import { maasContentRoot } from "../../../../storybook/navigation/fixtures.js";
 import {
   navDecorators,
   withNavigationRouterProps,
   withSideNavShell,
-} from "#storybook/navigation/story-utils.js";
+} from "../../../../storybook/navigation/story-utils.js";
 import Content from "./Content.js";
 
 const meta: Meta<typeof Content> = {
   title: "Components/SideNavigation/Content",
   component: Content,
-  tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },
   // withNavigationRouterProps is self-contained (owns its RouterProvider), so
   // decorator order isn't load-bearing here. withSideNavShell provides the
-  // .ds.side-navigation context so the shared row-grid var + surface tokens
+  // .ds.side-navigation context so the shared row-inset vars + surface tokens
   // resolve when Content renders in isolation.
   decorators: [...navDecorators, withNavigationRouterProps, withSideNavShell],
 };

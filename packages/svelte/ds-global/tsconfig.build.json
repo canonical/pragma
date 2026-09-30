@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "src/**/*.stories.ts",
+    "src/**/*.stories.svelte",
+    "src/**/*.test.ts",
+    "vite.config.ts",
+    "vitest-setup-client.ts",
+    ".storybook"
+  ]
+}

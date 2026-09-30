@@ -1,6 +1,6 @@
-import bindField from "#lib/common/bindField/index.js";
-import withWrapper from "#lib/common/Wrapper/withWrapper.js";
-import { PhoneInput } from "#lib/subcomponent/PhoneInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import withWrapper from "../../common/Wrapper/withWrapper.js";
+import { PhoneInput } from "../../subcomponent/PhoneInput/index.js";
 import type { PhoneFieldProps } from "./types.js";
 
 /**
@@ -12,6 +12,10 @@ import type { PhoneFieldProps } from "./types.js";
  * No static `defaultValue` is passed to `bindField`: the registration default
  * depends on `valueFormat`, which the binding cannot know statically, so the
  * presentational PhoneInput defaults defensively from an undefined initial value.
+ *
+ * `import { PhoneField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.phone_field
  */
 export default withWrapper<PhoneFieldProps>(
   bindField<PhoneFieldProps>(PhoneInput, "controlled"),

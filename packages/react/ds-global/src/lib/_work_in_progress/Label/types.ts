@@ -1,0 +1,57 @@
+import type { ModifierFamily } from "@canonical/ds-types";
+import type { ComponentProps, ReactNode } from "react";
+
+type OwnProps = {
+  /**
+   * The label text content
+   */
+  children?: ReactNode;
+  /**
+   * Visual anticipation modifier - indicates expected outcome
+   * - constructive: Positive outcome
+   * - caution: Potentially risky
+   * - destructive: Negative/irreversible outcome
+   */
+  anticipation?: ModifierFamily<"anticipation">;
+  /**
+   * Visual importance modifier - indicates hierarchy
+   * - primary: High prominence
+   * - secondary: Medium prominence
+   * - tertiary: Low prominence
+   */
+  importance?: ModifierFamily<"importance">;
+  /**
+   * Visual criticality modifier - indicates status/severity
+   * - success: Positive status
+   * - error: Error status
+   * - warning: Warning status
+   * - information: Informational status
+   */
+  criticality?: ModifierFamily<"criticality">;
+  /**
+   * Lifecycle modifier - indicates temporal state
+   * - planned: Future/upcoming
+   * - in_progress: Active/ongoing
+   * - completed: Finished successfully
+   * - failed: Terminal failure
+   */
+  lifecycle?: ModifierFamily<"lifecycle">;
+};
+
+/**
+ * Props for the Label component
+ *
+ * @implements ds:global.component.label
+ *
+ * Anatomy (from DSL):
+ * - layout.display: inline
+ * - typography.size: font/size/label
+ * - typography.weight: font/weight/medium
+ *
+ * Modifier families (from DSL):
+ * - anticipation: constructive, caution, destructive
+ * - importance: primary, secondary, tertiary
+ * - criticality: success, error, warning, information
+ */
+export type LabelProps = OwnProps &
+  Omit<ComponentProps<"span">, keyof OwnProps>;

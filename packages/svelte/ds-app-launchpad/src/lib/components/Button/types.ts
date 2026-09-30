@@ -6,6 +6,8 @@ export type ButtonProps = ButtonPrimitiveProps & {
   iconLeft?: Snippet;
   iconRight?: Snippet;
   loading?: boolean;
-  severity?: ModifierFamilyValues["severity"] | "base" | "brand";
+  importance?: ModifierFamilyValues["importance"];
+  anticipation?: ModifierFamilyValues["anticipation"];
+  emphasis?: Extract<ModifierFamilyValues["emphasis"], "branded">;
   density?: ModifierFamilyValues["density"];
 };

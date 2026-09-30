@@ -7,7 +7,7 @@
 
   let {
     class: className,
-    severity,
+    criticality,
     density,
     value = $bindable(),
     ...rest
@@ -15,7 +15,7 @@
 </script>
 
 <InputPrimitive
-	class={[componentCssClassName, className, severity, density]}
+	class={[componentCssClassName, className, criticality, density]}
 	type="number"
 	bind:value
 	{...rest}

@@ -1,7 +1,10 @@
 /* ── Page shell ────────────────────────────────────────────────── */
 
 html {
-  --font-size: 32px;
+  /* Root font-size defines the rem unit. 16px so `--font-size: 1rem` on p is
+     16px (not 32px — the old value made 1rem = 32px, doubling every rem size).
+     Still overridable via the sidebar if a demo wants a different root. */
+  --font-size: 16px;
   font-size: var(--font-size);
   height: 100%;
 }
@@ -117,9 +120,27 @@ main {
   min-height: 100vh;
   padding: 0 1rem;
 
-  /* Baseline grid overlay */
-  background-image: linear-gradient(to bottom, #df1f00 1px, transparent 1px);
-  background-size: 100% var(--baseline-height);
+  /* Baseline grid overlay — strict stepped bands, five hard-edged steps per
+     cycle (level 1 faint → level 5 strong), matching the styles-debug plugin
+     used in the Storybook testbed. Copied inline (rather than linking the debug
+     package) so the static example needs no cross-package path, and driven
+     directly by --baseline-height so it is LINKED TO THE SIDEBAR INPUT: change
+     the "Baseline grid → Height" control and the bands resize with it. */
+  --bl: var(--baseline-height, 0.25rem);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(223, 31, 0, 0.08) 0,
+    rgba(223, 31, 0, 0.08) var(--bl),
+    rgba(223, 31, 0, 0.14) var(--bl),
+    rgba(223, 31, 0, 0.14) calc(var(--bl) * 2),
+    rgba(223, 31, 0, 0.2) calc(var(--bl) * 2),
+    rgba(223, 31, 0, 0.2) calc(var(--bl) * 3),
+    rgba(223, 31, 0, 0.28) calc(var(--bl) * 3),
+    rgba(223, 31, 0, 0.28) calc(var(--bl) * 4),
+    rgba(223, 31, 0, 0.38) calc(var(--bl) * 4),
+    rgba(223, 31, 0, 0.38) calc(var(--bl) * 5)
+  );
+  background-size: 100% calc(var(--bl) * 5);
   background-repeat: repeat;
   background-attachment: local;
 }

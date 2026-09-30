@@ -6,7 +6,6 @@ import { NumberInput } from "./NumberInput.js";
 const meta: Meta<typeof NumberInput> = {
   title: "subcomponents/NumberInput",
   component: NumberInput,
-  tags: ["autodocs"],
 };
 
 export default meta;

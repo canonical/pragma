@@ -1,14 +1,12 @@
 .ds.timeline-title-row {
-  --dimension-gap-timeline-event-title-row: var(
-    --lp-dimension-spacing-inline-xs
-  );
+  --dimension-gap-timeline-event-title-row: var(--dimension-100);
   /* TODO(@Enzo): Add a missing token */
   --dimension-basis-timeline-event-title-row-description: 10rem;
 
   display: flex;
   align-items: baseline;
 
-  font: var(--lp-typography-paragraph-s);
+  font: var(--ds-typography-text-secondary);
   line-height: var(--typography-line-height-timeline-event-title-row);
   gap: var(--dimension-gap-timeline-event-title-row);
 
@@ -21,18 +19,18 @@
     gap: var(--dimension-gap-timeline-event-title-row);
 
     > .leading-text {
-      color: var(--lp-color-text-default);
+      color: var(--color-text);
     }
 
     > .description {
-      color: var(--lp-color-text-muted);
+      color: var(--color-text-muted);
       flex-basis: var(--dimension-basis-timeline-event-title-row-description);
       flex-grow: 1;
     }
   }
 
   > .date {
-    color: var(--lp-color-text-muted);
+    color: var(--color-text-muted);
     flex: none;
   }
 }

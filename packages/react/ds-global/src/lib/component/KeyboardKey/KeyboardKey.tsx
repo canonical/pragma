@@ -1,0 +1,41 @@
+import type React from "react";
+import { ARIA_LABELS, KEY_LABELS } from "./constants.js";
+import type { KeyboardKeyProps } from "./types.js";
+import "./styles.css";
+
+// The key establishes its own `.surface`, so it consumes a full surface step
+// rather than hard-wiring a layer: nested inside an ambient surface it picks up
+// the next layer's ghost fill (surface+1, "like inputs"), and it composes
+// correctly at any depth instead of being pinned to layer2.
+const componentCssClassName = "ds keyboard-key surface";
+
+/**
+ * The KeyboardKey component renders a single keyboard key as a styled
+ * kbd element. It maps a key identifier (letters, digits, modifiers,
+ * function keys, navigation keys, and action keys) to its display label
+ * and presents it as a compact, inline visual indicator. Use it to
+ * represent keyboard shortcuts, key bindings, or individual keys within
+ * instructional or reference content. It is non-interactive and purely
+ * informational.
+ *
+ * `import { KeyboardKey } from "@canonical/react-ds-global";`
+ *
+ * @implements ds:global.component.keyboard_key
+ */
+const KeyboardKey = ({
+  keyValue,
+  className,
+  ...props
+}: KeyboardKeyProps): React.ReactElement => (
+  <kbd
+    className={[componentCssClassName, "code", className]
+      .filter(Boolean)
+      .join(" ")}
+    aria-label={ARIA_LABELS[keyValue]}
+    {...props}
+  >
+    {KEY_LABELS[keyValue] ?? keyValue}
+  </kbd>
+);
+
+export default KeyboardKey;

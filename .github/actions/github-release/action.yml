@@ -1,0 +1,16 @@
+name: GitHub Release
+description: Creates the GitHub Release for a tag and attaches the release artifacts.
+inputs:
+  version:
+    description: "The released version number (without tag prefix)."
+    required: true
+  tag_prefix:
+    description: "Prefix for the git tag. Default is 'v'."
+    required: false
+    default: "v"
+runs:
+  using: composite
+  steps:
+    - name: Create release and upload artifacts
+      shell: bash
+      run: ${{ github.action_path }}/release.sh ${{ inputs.version }} ${{ inputs.tag_prefix }}

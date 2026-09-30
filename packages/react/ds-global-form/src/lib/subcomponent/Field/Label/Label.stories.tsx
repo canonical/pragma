@@ -11,7 +11,6 @@ import Component from "./Label.js";
 const meta = {
   title: "subcomponents/Field.Label",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -24,7 +23,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Default ("required") marking: a required field gets a "*" marker before the
+ * Default ("required") marking: a required field gets a "*" marker after the
  * label, drawn as a CSS pseudo-element so it never enters the accessible name.
  */
 export const Default: Story = {

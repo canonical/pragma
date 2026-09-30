@@ -23,11 +23,14 @@ export interface ModalProps extends BaseProps {
    */
   trigger?: Snippet<[triggerProps: ModalTriggerProps]>;
   /**
-   * Whether to close the modal when clicking outside of it.
+   * Which user actions close the modal. See [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#closedby).
+   * - `"any"`: outside click, close requests (e.g. Escape) and programmatic close.
+   * - `"closerequest"`: close requests and programmatic close.
+   * - `"none"`: programmatic close only.
    *
-   * @default true
+   * @default "any"
    */
-  closeOnOutsideClick?: boolean;
+  closedby?: BaseProps["closedby"];
   /**
    * Content of the modal.
    *

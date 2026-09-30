@@ -1,13 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useExampleRHFInterface } from "hooks/index.js";
-import { FormProvider } from "react-hook-form";
+import { FORM_DEFAULT_VALUES } from "data/index.js";
+import { FormProvider, useForm } from "react-hook-form";
 import Component from "./Showcase.js";
 
 const meta = {
   title: "Showcase",
   component: Component,
   decorators: (Story) => {
-    const { methods } = useExampleRHFInterface();
+    const methods = useForm({
+      mode: "onChange",
+      defaultValues: FORM_DEFAULT_VALUES,
+    });
 
     return (
       <FormProvider {...methods}>

@@ -1,44 +1,35 @@
-import { useMemo } from "react";
 import {
   type FieldError,
-  type FieldErrors,
-  type FieldErrorsImpl,
   type FieldValues,
+  get,
+  type Path,
   useFormState,
 } from "react-hook-form";
 
+/**
+ * Field-scoped subscription to a single field's error.
+ *
+ * Subscribes via `useFormState({ name })` so only this field's slice of form
+ * state triggers a re-render, then resolves the error at `name` from the
+ * (possibly nested) `errors` tree on every render with RHF's own `get`.
+ *
+ * Resolving on render — rather than memoising against a fixed, hand-unrolled
+ * list of parent references — is what lets a *message-only* change surface: on
+ * cross-field revalidation a field can stay errored while its message text
+ * changes (e.g. a min-age constraint tightens), and `get` reflects the new
+ * message at any nesting depth. `useFormState`'s field-scoped subscription
+ * still gates the re-render, so efficiency is preserved.
+ */
 function useFieldError<TFieldValues extends FieldValues = FieldValues>(
   name: string,
-) {
-  type ErrorTree = FieldErrors<TFieldValues> | FieldError | undefined;
+): FieldError | undefined {
+  // `errors` is correctly typed as FieldErrors<TFieldValues> from the generic;
+  // only the runtime `name` path is asserted to a Path of the field values.
+  const { errors } = useFormState<TFieldValues>({
+    name: name as Path<TFieldValues>,
+  });
 
-  const { errors } = useFormState({ name }) as FieldErrorsImpl<TFieldValues>;
-
-  const fieldTree = name.split(".");
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: using a proxy
-  const fieldError = useMemo(
-    (): FieldError | undefined =>
-      // @ts-expect-error TODO
-      fieldTree.reduce<ErrorTree>((acc: FieldErrors<TFieldValues>, key) => {
-        if (acc) {
-          return acc[key];
-        }
-        return undefined;
-      }, errors),
-    [
-      name, //proxy for errors
-      // Below, those dependencies are lazily referenced, hence the need to explicitly evaluate them
-      // We assume that three levels of nesting is enough for most use cases
-      // @ts-expect-error TODO
-      errors[fieldTree[0]],
-      // @ts-expect-error TODO
-      errors[fieldTree[0]]?.[fieldTree[1]],
-      // @ts-expect-error TODO
-      errors[fieldTree[0]]?.[fieldTree[1]]?.[fieldTree[2]],
-    ],
-  );
-  return fieldError;
+  return get(errors, name) as FieldError | undefined;
 }
 
 export default useFieldError;

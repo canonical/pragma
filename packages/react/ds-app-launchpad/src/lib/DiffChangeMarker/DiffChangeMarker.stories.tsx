@@ -6,7 +6,6 @@ import Component from "./DiffChangeMarker.js";
 const meta = {
   title: "DiffChangeMarker",
   component: Component,
-  tags: ["autodocs"],
   argTypes: {
     markerStyle: {
       options: ["simple", "detailed"],

@@ -15,7 +15,7 @@ Forms are where users provide data — getting them right is critical for both u
   tier="global_form"
   framework="react"
   status="stable"
-  dependencies={["@canonical/react-ds-global", "@canonical/styles", "@canonical/utils", "downshift", "react-hook-form"]}
+  dependencies={["@canonical/ds-utils", "@canonical/react-ds-global", "@canonical/styles", "@canonical/utils", "downshift", "react-hook-form"]}
   links={{
     source: "https://github.com/canonical/pragma/tree/main/packages/react/ds-global-form",
     ontology: "https://github.com/canonical/design-system",
@@ -34,35 +34,6 @@ Form            react-hook-form provider + subgrid container
 ```
 
 `Form` wraps children in a `FormProvider` and renders as a CSS subgrid, inheriting columns from the parent `.grid` context. `Field` is a discriminated union — the `inputType` prop selects which input component renders, and TypeScript enforces the correct props for that type. `Wrapper` composes the field chrome (label, description, error message, ARIA attributes) and applies middleware. The input component handles the actual user interaction.
-
-## Input types
-
-<table>
-  <thead>
-    <tr>
-      <th>inputType</th>
-      <th>Purpose</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td><code>"text"</code></td><td>Single-line text — also handles email, password, number, url, tel</td></tr>
-    <tr><td><code>"textarea"</code></td><td>Multi-line text</td></tr>
-    <tr><td><code>"select"</code></td><td>Native dropdown</td></tr>
-    <tr><td><code>"checkbox"</code></td><td>Single boolean toggle</td></tr>
-    <tr><td><code>"simple-choices"</code></td><td>Radio buttons or checkbox groups</td></tr>
-    <tr><td><code>"choices"</code></td><td>Radio/checkbox groups with rich ReactNode labels</td></tr>
-    <tr><td><code>"combobox"</code></td><td>Searchable select, single or multiple</td></tr>
-    <tr><td><code>"range"</code></td><td>Numeric slider</td></tr>
-    <tr><td><code>"date"</code></td><td>Date picker</td></tr>
-    <tr><td><code>"time"</code></td><td>Time picker</td></tr>
-    <tr><td><code>"datetime"</code></td><td>Date and time picker</td></tr>
-    <tr><td><code>"file"</code></td><td>File upload with validation</td></tr>
-    <tr><td><code>"color"</code></td><td>Color picker with swatches</td></tr>
-    <tr><td><code>"phone"</code></td><td>International phone with country selector</td></tr>
-    <tr><td><code>"hidden"</code></td><td>Hidden form value</td></tr>
-    <tr><td><code>"custom"</code></td><td>Your component via CustomComponent prop</td></tr>
-  </tbody>
-</table>
 
 ## Quick example
 
@@ -94,9 +65,16 @@ import { Form, Field } from "@canonical/react-ds-global-form";
 
 Forms require a `.grid` parent — `Form` renders as a subgrid and inherits the column structure. See [Getting Started](?path=/docs/global-form-getting-started--docs) for the full walkthrough.
 
-## Validation
+## Built on react-hook-form
 
-Validation integrates with [react-hook-form](https://react-hook-form.com/) through the [`registerProps`](https://react-hook-form.com/docs/useform/register) prop. Error states apply a `.danger` CSS class that shifts the input border to the error colour. See [Getting Started](?path=/docs/global-form-getting-started--docs) for details.
+This package is a thin layer over [react-hook-form](https://react-hook-form.com/)
+(`^7.71`): `Form` provides the `FormProvider`, `Field` calls `register`, and
+everything beyond a single field — form state, validation, submission — is
+react-hook-form's API. Validation uses the [`registerProps`](https://react-hook-form.com/docs/useform/register)
+prop, and error states apply a `.danger` CSS class that shifts the input border to
+the error colour. The [Getting Started](?path=/docs/global-form-getting-started--docs)
+guide covers both `Form` modes (internal and external) and how to use the
+react-hook-form API for a full working form.
 
 ## Middleware
 
@@ -105,10 +83,21 @@ Middleware wraps input components to add cross-cutting behaviour — fetching op
 ## Installation
 
 ```bash
-bun add @canonical/react-ds-global-form
+bun add @canonical/react-ds-global-form @canonical/styles
 ```
 
-Requires `@canonical/react-ds-global` and `@canonical/styles` as peer dependencies.
+Then import **both** stylesheets in your application's root stylesheet — the
+global Pragma styles (which define the design tokens the form reads) and the form
+styles:
+
+```css
+@import url("@canonical/styles");
+@import url("@canonical/react-ds-global-form/dist/esm/index.css");
+```
+
+Without the global `@canonical/styles` import the form renders unstyled. The
+package also builds on `@canonical/react-ds-global`. See
+[Getting Started](?path=/docs/global-form-getting-started--docs) for the details.
 
 ## Documentation
 

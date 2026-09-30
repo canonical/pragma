@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { createRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { PhoneInput } from "./PhoneInput.js";
 
@@ -170,5 +171,85 @@ describe("PhoneInput (presentational)", () => {
       target: { value: "(555) 123-4567" },
     });
     expect(onChange).toHaveBeenLastCalledWith("+15551234567");
+  });
+
+  it("names the cause when given an empty country list", () => {
+    // Every lookup falls back to the first country, so an empty list has none to
+    // render. Failing here beats surfacing later as a missing dial code.
+    expect(() => render(<PhoneInput countries={[]} />)).toThrow(
+      /non-empty `countries` list/,
+    );
+  });
+
+  it("satisfies its own pattern for every separator the masks use", () => {
+    // New Caledonia's mask is "##.##.##" — the one shipped format using a dot.
+    // A pattern derived from the US mask alone would leave a correctly entered
+    // number permanently :invalid with no way for the user to satisfy it.
+    render(<PhoneInput defaultCountry="NC" mask value="+687123456" />);
+    const number = screen.getByLabelText("Phone number") as HTMLInputElement;
+    expect(number).toHaveValue("12.34.56");
+
+    // Compiled with the `v` flag, as the HTML parser does, so a pattern that
+    // only survives the `u` fallback fails here too.
+    const pattern = number.getAttribute("pattern") ?? "";
+    expect(new RegExp(`^(?:${pattern})$`, "v").test(number.value)).toBe(true);
+  });
+
+  it("forwards a ref to the number input", () => {
+    const ref = createRef<HTMLInputElement>();
+    render(<PhoneInput defaultCountry="US" ref={ref} />);
+    // The number entry is the field's focusable element, so this is the node
+    // react-hook-form needs for setFocus and focus-on-error.
+    expect(ref.current).toBe(screen.getByLabelText("Phone number"));
+  });
+
+  it("carries the native constraints that work without scripting", () => {
+    render(<PhoneInput defaultCountry="US" name="mobile" />);
+    const number = screen.getByLabelText("Phone number");
+    expect(number).toHaveAttribute("name", "mobile");
+    expect(number).toHaveAttribute("autocomplete", "tel-national");
+    expect(number).toHaveAttribute("inputmode", "tel");
+    // A pattern needs a title, or the browser's validation bubble is blank.
+    expect(number).toHaveAttribute("pattern");
+    expect(number).toHaveAttribute("title");
+    expect(screen.getByLabelText("Country code")).toHaveAttribute(
+      "autocomplete",
+      "tel-country-code",
+    );
+  });
+
+  it("keeps the caret in place when a masked number is edited in the middle", () => {
+    // Controlled by the parent, as PhoneField binds it — this is what makes the
+    // value round-trip through a reformat on every keystroke.
+    const onChange = vi.fn();
+    function Controlled() {
+      const [value, setValue] = useState<string>("+15551234567");
+      return (
+        <PhoneInput
+          defaultCountry="US"
+          mask
+          value={value}
+          onChange={(next) => {
+            onChange(next);
+            setValue(next as string);
+          }}
+        />
+      );
+    }
+    render(<Controlled />);
+    const number = screen.getByLabelText("Phone number") as HTMLInputElement;
+    number.focus();
+    expect(number).toHaveValue("(555) 123-4567");
+
+    // Type a 9 after "(555".
+    fireEvent.change(number, {
+      target: { value: "(5559) 123-4567", selectionStart: 5 },
+    });
+
+    expect(number).toHaveValue("(555) 912-34567");
+    expect(number.selectionStart).toBe(7);
+    // The assertion that belongs at this level: the separators the user sees
+    // never reach the value the form submits.
+    expect(onChange).toHaveBeenLastCalledWith("+155591234567");
   });
 });

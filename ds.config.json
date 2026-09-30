@@ -4,7 +4,7 @@
     "short": "ds",
     "namespace": "https://ds.canonical.com/"
   },
-  "repository": "https://github.com/canonical/pragma",
+  "repository": "https://github.com/canonical/pragma-web",
   "documentationBase": "https://pragma.canonical.com",
   "defaults": {
     "outputDir": "data",

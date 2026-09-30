@@ -16,7 +16,7 @@ These goals require certain infrastructure to be in place.
 - `CHROMATIC_TOKEN_DS_APP` - Project token for ds-app
 - `CHROMATIC_TOKEN_DS_APP_LAUNCHPAD` - Project token for ds-app-launchpad
 
-npm publishing requires **no token secret**. It uses [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers): the publish job has `id-token: write` permission and GitHub mints a short-lived npm token at publish time. Each package must have a trusted publisher configured once on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
+npm publishing requires **no token secret**. It uses [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers): the publish job has `id-token: write` permission and GitHub mints a short-lived npm token at publish time. Each package must have a trusted publisher configured once on npmjs.com (repo `canonical/pragma-web`, workflow `tag.yml`). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
 
 ### Repository Settings
 
@@ -56,6 +56,8 @@ The pipeline uses several tools, each chosen for specific reasons.
 
 **Node.js** runs Storybook and Lerna. The pipeline installs both Bun and Node, using Bun for package management and Node for tools that require fuller Node.js compatibility. The build matrix tests against Node 22 (LTS) and Node 24 (current) to catch compatibility issues.
 
+The supported range is `^22.13.0 || ^24.0.0 || ^26.0.0`, declared in the root `package.json` and set by Lerna, which supports no others. **The matrix tests two of the three majors in that range: Node 26 is supported but never exercised in CI.** That is a deliberate trade — a third matrix leg runs on every PR in the repository, including outside contributors', and the cost of one job is not one job. If a Node 26 regression is ever reported, this is the gap it came through.
+
 **Chromatic** provides visual regression testing. It captures screenshots of Storybook stories, stores baselines, and highlights visual differences between builds. Chromatic runs as a separate workflow with path filtering, so changes to `react-ds-global` only trigger visual tests for that package. This conserves snapshot credits while ensuring visual changes are reviewed. Chromatic workflows are focused solely on visual baselines — they do not run code quality checks or tests. Correctness is owned by `pr.yml` (on PRs) and `push.yml` (on main).
 
 ## Caching
@@ -79,9 +81,10 @@ The pull request workflow runs on every PR. It uses a build matrix to test again
 ```yaml
 strategy:
   matrix:
-    bun-version: ['1.3.6']
     node-version: ['22', '24']
 ```
+
+Bun is not a matrix axis. It is pinned once in `.bun-version` at the repository root, which every `setup-bun` step reads through `bun-version-file`, so a bump moves every job at once.
 
 Each matrix job performs three steps:
 
@@ -212,7 +215,7 @@ For partial publish failures, consider publishing the remaining packages manuall
 
 npm publishing uses OIDC trusted publishing, not a token. An `E404 Not found` or auth failure on `lerna publish` usually means the OIDC trust is not set up correctly:
 
-1. Confirm the package has a trusted publisher configured on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`, environment blank). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
+1. Confirm the package has a trusted publisher configured on npmjs.com (repo `canonical/pragma-web`, workflow `tag.yml`, environment blank). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
 2. Confirm the publish job in `tag.yml` has `permissions: id-token: write`.
 3. Confirm the runner's npm is `>= 11.5.1` (Node 24 ships a compatible npm).
 4. For a brand-new package never published before, OIDC cannot be pre-configured — do the first publish manually, then add the trusted publisher.

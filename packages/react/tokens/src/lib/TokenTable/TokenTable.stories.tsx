@@ -5,7 +5,6 @@ import { TokenTable as Component } from "./TokenTable.js";
 const meta: Meta<typeof Component> = {
   title: "Foundations/Tokens/Internal/TokenTable",
   component: Component,
-  tags: ["autodocs"],
 };
 
 export default meta;

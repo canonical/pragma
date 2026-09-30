@@ -18,19 +18,72 @@ runs:
     - name: Version packages & generate changelogs
       shell: bash
       id: lerna_version
-      run: ${{ github.action_path }}/version.sh ${{ inputs.release_type }}
+      run: ${{ github.action_path }}/version.sh ${{ inputs.release_type }} ${{ inputs.tag_prefix }}
+
+      # `lerna version` rewrites sibling ranges in dependencies, devDependencies
+      # and optionalDependencies — but NOT peerDependencies. For a 0.x line every
+      # bump is breaking under caret semantics, so a package that peer-depends on
+      # a sibling is left declaring a range its sibling has just outgrown, and
+      # `check:ranges` below stops the release. That is not hypothetical: it is
+      # how v0.35.0 shipped a broken main, and how v0.36.0 was blocked.
+      #
+      # This runs the SAME script as the verification step, in `--fix` mode, so
+      # the repair and the guard can never disagree about what a satisfiable
+      # range is. It runs BEFORE the lockfile update so `bun install` resolves
+      # against the corrected ranges. Anything it cannot repair — an unparseable
+      # range states an intent no rule can infer — survives to fail the guard.
+    - name: Repair sibling ranges lerna does not rewrite
+      shell: bash
+      run: bun run check:ranges --fix
 
       # `lerna version` updates package numbers, so we must update the root lockfile.
       # This can be removed once https://github.com/lerna/lerna/issues/4234 is closed.
+      #
+      # Twice, because one install does not settle bun.lock after a bump: when
+      # workspace versions and sibling ranges change in the same edit, Bun
+      # records the new versions on the first install and the new ranges only
+      # on the second. With one install, the publish job's `git diff
+      # --exit-code bun.lock` check rewrites the lockfile at the tag and fails.
+      # Still true of Bun 1.4.2; the upstream fix is proposed in
+      # https://github.com/oven-sh/bun/pull/41931. Drop the second install once
+      # the pinned Bun includes it.
     - name: Update lockfile
       shell: bash
-      run: bun install --ignore-scripts
+      run: |
+        bun install --ignore-scripts
+        bun install --ignore-scripts
 
       # Lerna may introduce slight formatting changes to the package.json files.
       # This can be removed once https://github.com/lerna/lerna/issues/4117 is closed.
     - name: Apply formatting fixes
       shell: bash
       run: bun run check:fix
+
+      # Regenerate the implementation graph data with the new version so the
+      # tagged commit carries ds:version / ds:versionedLink for this release.
+    - name: Regenerate implementation graph data
+      shell: bash
+      run: bun scripts/collect-implementations.ts --version ${{ steps.lerna_version.outputs.VERSION }}
+
+      # LAST GATE BEFORE THE BUMP BECOMES PERMANENT. Everything above has
+      # rewritten versions and ranges in the working tree; nothing has been
+      # committed, tagged, pushed or published yet. This is the only moment at
+      # which a bad bump can still be stopped for free.
+      #
+      # The v0.35.0 bump (5198c5399) moved every package to 0.35.0 and rewrote
+      # sibling ranges in `dependencies` and `devDependencies` but not in
+      # `peerDependencies`, leaving `^0.34.0` ranges that 0.35.0 cannot satisfy
+      # — for a 0.x version the caret pins the MINOR. Bun then stopped linking
+      # those workspace siblings and silently substituted published copies, and
+      # main was red from the moment the bump landed.
+      #
+      # The `check` and `test` jobs in tag.yml cannot catch this: they run
+      # BEFORE this action, on the pre-bump tree, where every range is still
+      # correct. Nor can pr.yml — this commit is pushed straight to main by
+      # git-commit.sh below and never sees a pull request.
+    - name: Verify the bump left every workspace sibling range satisfiable
+      shell: bash
+      run: bun run check:ranges
 
     - name: Setup Git CLI
       uses: ./.github/actions/setup-git

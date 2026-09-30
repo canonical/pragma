@@ -540,7 +540,8 @@ describe("useNavigationTree", () => {
         useNavigationTree({ root: testTree, focus: "roving" }),
       );
 
-      const firstChild = result.current.annotatedRoot.items![0];
+      const firstChild = result.current.annotatedRoot.items?.at(0);
+      if (!firstChild) throw new Error("expected a first child item");
       const props = result.current.getItemProps(firstChild);
       expect(props.tabIndex).toBe(0);
     });
@@ -550,7 +551,8 @@ describe("useNavigationTree", () => {
         useNavigationTree({ root: testTree, focus: "roving" }),
       );
 
-      const secondChild = result.current.annotatedRoot.items![1];
+      const secondChild = result.current.annotatedRoot.items?.at(1);
+      if (!secondChild) throw new Error("expected a second child item");
       const props = result.current.getItemProps(secondChild);
       expect(props.tabIndex).toBe(-1);
     });
@@ -560,7 +562,8 @@ describe("useNavigationTree", () => {
         useNavigationTree({ root: testTree, focus: "taborder" }),
       );
 
-      const firstChild = result.current.annotatedRoot.items![0];
+      const firstChild = result.current.annotatedRoot.items?.at(0);
+      if (!firstChild) throw new Error("expected a first child item");
       const props = result.current.getItemProps(firstChild);
       expect(props.tabIndex).toBeUndefined();
     });
@@ -1290,5 +1293,64 @@ describe("useNavigationTree", () => {
 
       expect(result.current.selectedItems.at(-1)?.url).toBe("/blog");
     });
+  });
+});
+
+describe("presentational nodes", () => {
+  // A separator leads the list. It is not disabled, so a check written as
+  // `!item.disabled` lets it through — which would make it the roving tab stop
+  // and let a click select it.
+  const withLeadingSeparator: Item = {
+    key: "root",
+    label: "Root",
+    items: [
+      { key: "sep", presentational: true },
+      { url: "/one", label: "One" },
+      { url: "/two", label: "Two" },
+    ],
+  };
+
+  it("does not make a presentational node the roving tab stop", () => {
+    const { result } = renderHook(() =>
+      useNavigationTree({ root: withLeadingSeparator, focus: "roving" }),
+    );
+    const separator = result.current.annotatedRoot.items?.at(0);
+    const firstReal = result.current.annotatedRoot.items?.at(1);
+    if (!separator || !firstReal) throw new Error("expected both nodes");
+
+    expect(result.current.getItemProps(separator).tabIndex).toBe(-1);
+    expect(result.current.getItemProps(firstReal).tabIndex).toBe(0);
+  });
+
+  it("ignores a click on a presentational node", () => {
+    const { result } = renderHook(() =>
+      useNavigationTree({ root: withLeadingSeparator }),
+    );
+    const separator = result.current.annotatedRoot.items?.at(0);
+    if (!separator) throw new Error("expected the separator");
+
+    act(() => {
+      result.current.getItemProps(separator).onClick?.({
+        stopPropagation: () => {},
+      } as React.SyntheticEvent);
+    });
+
+    expect(result.current.selectedItems.at(-1)?.key).toBe("root");
+  });
+
+  it("ignores a hover on a presentational node", () => {
+    const { result } = renderHook(() =>
+      useNavigationTree({ root: withLeadingSeparator }),
+    );
+    const separator = result.current.annotatedRoot.items?.at(0);
+    if (!separator) throw new Error("expected the separator");
+
+    act(() => {
+      result.current.getItemProps(separator).onMouseMove?.({
+        stopPropagation: () => {},
+      } as React.SyntheticEvent);
+    });
+
+    expect(result.current.highlightedItems).toHaveLength(0);
   });
 });

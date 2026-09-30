@@ -1,0 +1,8 @@
+@import url("@canonical/styles");
+
+:root {
+  /* For debug */
+  --baseline-grid-color: orange;
+  /* Temporary, waiting for a better understanding */
+  --baseline-shift: 1px;
+}

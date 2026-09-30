@@ -1,16 +1,16 @@
 .ds.tooltip {
-  --color-background-tooltip: var(--lp-color-background-alt-reversed);
-  --dimension-offset-tooltip-arrow: var(--lp-dimension-spacing-inline-m);
-  --dimension-height-tooltip-arrow: var(--lp-dimension-size-xxxs);
+  --color-background-tooltip: var(--ds-color-foreground-tooltip);
+  --dimension-offset-tooltip-arrow: var(--dimension-200);
+  --dimension-height-tooltip-arrow: var(--dimension-100);
   position: absolute;
   width: max-content;
   /* TODO(z-index-tokens): Should we tokenize z-indexes? What would they be used for except the tooltip? */
   z-index: 10;
   background-color: var(--color-background-tooltip);
-  font: var(--lp-typography-paragraph-s);
-  color: var(--lp-color-text-reversed);
-  padding-inline: var(--lp-dimension-spacing-inline-m);
-  padding-block: var(--lp-dimension-spacing-block-xs);
+  font: var(--ds-typography-text-secondary);
+  color: var(--color-text-onForegroundPrimary);
+  padding-inline: var(--dimension-200);
+  padding-block: var(--dimension-100);
 
   &::before {
     /* Filler to allow moving the hover from the trigger to the tooltip */

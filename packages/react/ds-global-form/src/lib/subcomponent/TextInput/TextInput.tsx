@@ -10,6 +10,10 @@ const componentCssClassName = "ds input text chrome";
  * Usable standalone (controlled via `value`/`onChange`, or uncontrolled) or via
  * the field tier, which spreads react-hook-form's `register()` result onto it.
  * @returns {ReactElement} - Rendered Text
+ *
+ * `import { TextInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.text_input
  */
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
   function TextInput(
@@ -31,7 +35,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
       >
         {prefix && <span className="prefix">{prefix}</span>}
-        <input className="p" type={inputType} ref={ref} {...nativeProps} />
+        <input type={inputType} ref={ref} {...nativeProps} />
         {suffix && <span className="suffix">{suffix}</span>}
       </div>
     );

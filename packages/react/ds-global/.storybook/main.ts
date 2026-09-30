@@ -9,7 +9,5 @@ export default {
   stories: [
     "../src/**/*.mdx",
     "../src/**/*.stories.@(js|jsx|mjs|ts|tsx|svelte)",
-    "!../src/lib/Tokens.stories.tsx",
-    "!../src/lib/Typography.stories.tsx",
   ],
 };

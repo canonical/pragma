@@ -1,0 +1,263 @@
+/* @canonical/styles-vanilla-adapter - Boundary and theme bridge
+ *
+ * This is the pragma entry's first import on a mixed page. It loads two of
+ * pragma's three entries, tokens.css and layout.css, then this package's
+ * confined copy of the third (elements.css), then adds the boundary and the
+ * bridge. The component stylesheets follow it in the same entry, the one that
+ * is never purged; the order inside that entry does not matter, because layer
+ * precedence comes from layers.css, not from source order. Never inside the
+ * `vanilla` layer, and never next to `@canonical/styles` itself, whose
+ * elements.css styles the whole page.
+ *
+ *   @import url("@canonical/styles-vanilla-adapter/adapter.css");
+ *
+ * Four imports, two boundaries, one bridge and three layers, with no tooling: what
+ * you read here is what the browser runs. The README explains why each piece is
+ * written the way it is.
+ */
+
+/* The order statement, first, before anything opens a layer.
+ *
+ * It is imported here as well as linked by the page, because the two ways this
+ * file is loaded need different things. A page that links layers.css itself, as
+ * the README's step 1 asks, reads a second identical statement here and nothing
+ * happens: a statement can add names, never reorder the ones already fixed. A
+ * page that imports only this file gets the statement from here, which is the
+ * whole point — without it the first `ds.*` name any sheet mentions places `ds`
+ * at the bottom of the order, below `boundary`, and the boundary's `all: revert`
+ * erases pragma instead of Vanilla. That failure is total and silent, so this
+ * import is not a convenience.
+ *
+ * It does not make the page safe on its own. If a component stylesheet, or one
+ * of pragma's own entries, reaches the browser before this file, `ds` is already
+ * placed and no later statement can move it. layers.css has to be the first CSS
+ * the browser sees. Installation step 3 in the README says so, and
+ * `boundary.test.ts` measures the collapse both ways. */
+@import url("./layers.css");
+
+/* Pragma's CSS for a mixed page. The imports have to come before any rule,
+ * which is why they sit above the layer blocks; the statement above has already
+ * fixed every layer they open, and each of pragma's entries repeats pragma's own
+ * statement, which adds nothing to it. */
+@import url("@canonical/styles/tokens.css");
+@import url("@canonical/styles/layout.css");
+@import url("./elements.css");
+
+/* ── The boundary ──────────────────────────────────────────────────────────
+ * Pragma territory is every element with the class `ds` and everything inside
+ * it. Vanilla must never style it, and a Vanilla rule leaks for every property a
+ * pragma component does not itself declare. So at the boundary every property is
+ * rolled back to the browser's own default with `revert`, in a layer that sits
+ * ABOVE `vanilla` and BELOW every pragma layer (layers.css):
+ *   - a property pragma declares wins, because pragma's layers are higher;
+ *   - a property only Vanilla declares is reverted to the browser default,
+ *     which is exactly what a pragma-only page has;
+ *   - custom properties are not part of `all`, so pragma's tokens and Vanilla's
+ *     theme toggles keep inheriting;
+ *   - inheritance is untouched, which is what the island root's baseline in
+ *     elements.css and the theme bridge below rely on.
+ *
+ * Pseudo-elements are separate boxes with their own cascade, and a pseudo-element
+ * cannot be named inside `:where()`, so each one Vanilla styles without a class
+ * gets its own selector: `::before` and `::after` (box-sizing), `::placeholder`
+ * (the muted placeholder colour on every text input), and the WebKit form parts
+ * (file upload button, search decorations, the datalist picker, number spinners,
+ * range track and thumb). The Gecko form parts sit in rules of their own, because
+ * a selector list that names a `-moz-` pseudo-element is dropped whole by other
+ * engines, whereas unknown `-webkit-` pseudo-elements are parsed as valid by all.
+ *
+ * SVG content is excluded, except an `<a>` inside it. `revert` also rolls back
+ * presentational attributes, and inline SVG draws with them (`fill`, `width`, `d`,
+ * `r`, `transform`). Vanilla's only class-free rules that reach SVG content are
+ * its universal box-sizing rule, which pragma sets to the same value, and its
+ * bare `a` rules, which would colour an SVG anchor; so anchors stay inside the
+ * boundary and their text inherits the reverted colour. The same rollback
+ * removes the sizing that `width` and `height` attributes give an `<img>`:
+ * pragma sizes replaced elements in CSS.
+ *
+ * `:where()` keeps the element selectors at zero specificity, so any rule an
+ * application places in the same layer beats them; the pseudo-element selectors
+ * carry a pseudo-element's own (0,0,1). Vanilla's `!important` declarations are
+ * not reverted here and cannot be: for important rules the layer order reverses,
+ * so a declaration in `vanilla` outranks one in every layer above it. Five of
+ * them reach inside an island, and the second boundary below handles those.
+ * Measured in Chromium 151, the rule adds nothing measurable to style
+ * recalculation, and a Vanilla theme toggle is 42 to 46 percent cheaper with it,
+ * because the territory no longer re-resolves Vanilla's variables.
+ *
+ * The block carries a scope limit, `to (:scope.ds-permeable > *)`, that only
+ * matches when the island root itself carries `ds-permeable`: a component that
+ * wants Vanilla kept out of itself but not swept out of what it contains, the
+ * way a layout component wrapping Vanilla content needs. The limit is a scope
+ * boundary (a "donut scope"): the root is still reverted, because a scope's
+ * upper bound is always inclusive, but nothing below a permeable element is,
+ * because the lower bound is exclusive and the limit here is every one of
+ * that element's own children. The limit carries two selectors rather than
+ * one, because neither alone covers both shapes `ds-permeable` needs to stop
+ * at. `:scope.ds-permeable > *` stops at the scope's own root when the root
+ * itself is permeable; on its own it would miss a permeable descendant nested
+ * inside an ordinary `.ds` ancestor, because that ancestor's own `:scope` is
+ * never permeable, so its limit would never fire. The bare `.ds-permeable > *`
+ * covers that descendant case, but on its own it fails the first case for the
+ * opposite reason: a limit selector never matches the scope root against
+ * itself, only elements strictly below it, so a permeable root cannot be its
+ * own limit's match, and `.ds-permeable`'s own children stay unexcluded.
+ * Together the two selectors cover both a permeable root and a permeable
+ * descendant. A pragma component nested inside a `ds-permeable` root matches
+ * `.ds` on its own account, which opens a fresh scope there, donut and all, so
+ * nesting ordinary pragma components inside one needs no changes to work.
+ * elements.css carries the same limit, for the same reason; DESIGN.md has the
+ * rest. */
+@layer boundary {
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
+    :where(:scope, :scope *):where(:not(svg, svg *), svg a),
+    :where(:scope, :scope *):where(:not(svg, svg *), svg a)::before,
+    :where(:scope, :scope *):where(:not(svg, svg *), svg a)::after,
+    :where(:scope, :scope *)::placeholder,
+    :where(:scope, :scope *)::-webkit-file-upload-button,
+    :where(:scope, :scope *)::-webkit-search-decoration,
+    :where(:scope, :scope *)::-webkit-search-results-decoration,
+    :where(:scope, :scope *)::-webkit-calendar-picker-indicator,
+    :where(:scope, :scope *)::-webkit-inner-spin-button,
+    :where(:scope, :scope *)::-webkit-outer-spin-button,
+    :where(:scope, :scope *)::-webkit-slider-runnable-track,
+    :where(:scope, :scope *)::-webkit-slider-thumb {
+      all: revert;
+    }
+
+    :where(:scope, :scope *)::-moz-range-track {
+      all: revert;
+    }
+
+    :where(:scope, :scope *)::-moz-range-progress {
+      all: revert;
+    }
+
+    :where(:scope, :scope *)::-moz-range-thumb {
+      all: revert;
+    }
+
+    :where(:scope, :scope *)::-moz-focus-inner {
+      all: revert;
+    }
+
+    :where(:scope, :scope *)::-moz-focus-outer {
+      all: revert;
+    }
+  }
+}
+
+/* ── The second boundary: Vanilla's important declarations ─────────────────
+ * `all: revert` above cannot touch an important declaration. For important
+ * rules the cascade reverses the layer order, so an important declaration in
+ * the FIRST layer wins and one in `boundary` loses to one in `vanilla`
+ * (measured in Chromium: a list under `.u-text-max-width` kept Vanilla's
+ * `max-width: 40em` with an important revert in `boundary`). The counter has to
+ * sit below Vanilla, and a sublayer of `vanilla` is where it belongs: a rule
+ * written directly into a layer lands in that layer's implicit final sublayer,
+ * which sorts after every named sublayer, so `vanilla.escapes` beats the
+ * consumer's `@layer vanilla { … }` block whichever order the two arrive in
+ * (measured both ways).
+ *
+ * Five Vanilla rules need it, answered by four counters because one covers both
+ * table-layout utilities. Enumerated from both compiled builds, where they are
+ * byte-identical: six rules carry an important declaration whose subject
+ * compound has no class, so an element inside an island matches without
+ * breaking rule 2 — the Vanilla class sits on an ancestor OUTSIDE the island,
+ * which is the arrangement rule 2 recommends. The sixth of those,
+ * `* { animation: none !important; transition: none !important }` under reduced
+ * motion, is left alone: pragma honours reduced motion itself by zeroing its
+ * duration tokens, and the two agree.
+ *
+ * Each selector mirrors Vanilla's own, `:first-child` included, and adds the
+ * island requirement, so the revert fires only where the leak is. The cost,
+ * stated in the README: inside one of these Vanilla patterns, an important
+ * revert also outranks
+ * pragma's own declaration of that one property. A pragma list inside
+ * `.u-text-max-width` gets the browser's `max-width` rather than pragma's.
+ * Outside them nothing changes. Narrowing further is not possible — excluding
+ * pragma's own elements hands them back to Vanilla, which is the worse half.
+ *
+ * The same `ds-permeable` limit as the first boundary applies here, and for the
+ * same reason: without it, a plain Vanilla list inside a `ds-permeable` grid
+ * would still match `.ds *` on the grid's account and lose the very
+ * `max-width: 40em` it was supposed to keep. */
+@layer vanilla.escapes {
+  @scope (.ds) to (:scope.ds-permeable > *, .ds-permeable > *) {
+    /* .u-text-max-width ul, .u-text-max-width ol { max-width: 40em !important } */
+    :where(.u-text-max-width) :where(:scope, :scope *):is(ul, ol) {
+      /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
+      max-width: revert !important;
+    }
+
+    /* .u-table-layout--fixed table { table-layout: fixed !important }
+
+       Only the fixed utility. Its sibling, `.u-table-layout--auto`, sets the
+       browser's own default, so reverting lands on the value Vanilla already
+       forced and a table that asked for `fixed` cannot get it back — measured,
+       `auto` with a counter and `auto` without one, against the `fixed` a page of
+       pragma's own computes. A counter that changes nothing is worse than none,
+       because it reads as cover. Named in the README instead. */
+    :where(.u-table-layout--fixed) :where(:scope, :scope *):is(table) {
+      /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
+      table-layout: revert !important;
+    }
+
+    /* .p-content-card__author-and-date > :first-child
+       { margin-bottom: 0 !important } — the island root can be that first child.
+
+       Two narrowings, both measured. `:first-child` is part of the mirror, not
+       decoration: without it a second `.ds` child of the same container, which
+       Vanilla never touches, loses its own margin to this revert. And the
+       elements pragma gives a bottom margin of its own are excluded, because for
+       them Vanilla's `margin-bottom: 0` already agrees with pragma and reverting
+       replaces that agreement with the user agent's `1em` — measured, a
+       `<p class="ds">` in this position took 14px against pragma's 0px, and an
+       `<h2 class="ds">` 19.92px. What is left is the case the counter is for:
+       a `<ul class="ds">` or `<ol class="ds">` root, which pragma leaves at the
+       browser's 16px and Vanilla forces to 0. */
+    :where(.p-content-card__author-and-date)
+      > :where(:scope:first-child):not(h1, h2, h3, h4, h5, h6, p, .p, .code) {
+      /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
+      margin-bottom: revert !important;
+    }
+
+    /* .u-vertically-center > img { align-self: center !important } */
+    :where(.u-vertically-center) > :where(:scope):is(img) {
+      /* biome-ignore lint/complexity/noImportantStyles: only an important declaration from a lower layer can answer one — see this block's comment. */
+      align-self: revert !important;
+    }
+  }
+}
+
+/* ── The theme bridge ──────────────────────────────────────────────────────
+ * Pragma keys every colour on `color-scheme` (light-dark() values, inherited).
+ * Vanilla keys theme on two inherited space-toggle properties set by .is-light
+ * and .is-paper (light on, dark off) and by .is-dark (the reverse), which its
+ * themed strips, tooltips and accent strip all go through. Reading Vanilla's
+ * toggles and writing pragma's scheme makes the nearest Vanilla theme ancestor
+ * decide, by inheritance, with no selector-order fragility:
+ *   under a light or paper ancestor -> `light`
+ *   under a dark ancestor            -> `dark`
+ *   with no Vanilla theme at all     -> `light dark`, pragma's own default
+ * Only the outermost island root is written (`.ds:not(.ds *)`), so nested pragma
+ * roots inherit from their pragma parent. The ancestors are the DOM's, so a
+ * surface portalled to <body> takes the body's theme, not the strip it was
+ * opened from. `:where()` keeps the rule at zero specificity, and the bridge
+ * sits in `ds.adapter`, a sublayer of `ds` between `ds.states` and
+ * `ds.components`: above `ds.modifiers`, so pragma's own theme classes on an
+ * island root are overruled while this file is loaded (the README's rule 7), and
+ * below the component tiers, so a component that sets its own scheme still
+ * wins. A sublayer on purpose: a top-level layer cannot sit between two
+ * sublayers of `ds`, because sublayers sort inside their parent and `ds` takes
+ * its place at its first mention, so a top-level `adapter` would sit above
+ * every `ds.*` sublayer and no component could beat the bridge. The third case
+ * never runs while Vanilla is loaded, because Vanilla's own `:root, .is-light`
+ * sets both toggles; it is what an island computes where this file is loaded
+ * without Vanilla, which is not an arrangement this package supports — it stays
+ * until Vanilla is gone and the two leave together (the README's Removal section). */
+@layer ds.adapter {
+  :where(.ds:not(.ds *)) {
+    color-scheme: var(--vf-theme-light, light) var(--vf-theme-dark, dark);
+  }
+}

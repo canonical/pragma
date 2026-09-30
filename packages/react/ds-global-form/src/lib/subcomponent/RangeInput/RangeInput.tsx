@@ -10,6 +10,10 @@ const componentCssClassName = "ds range";
  * injects it via `bindField(..., { injectValue: true })`. The `<input>` itself
  * stays uncontrolled (driven by register / the consumer).
  * @returns {ReactElement} - Rendered Range
+ *
+ * `import { RangeInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.range_input
  */
 export const RangeInput = forwardRef<HTMLInputElement, RangeInputProps>(
   function RangeInput(

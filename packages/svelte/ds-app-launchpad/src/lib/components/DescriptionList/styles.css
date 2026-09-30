@@ -4,8 +4,8 @@
 
 .ds.description-list {
   display: grid;
-  row-gap: var(--lp-dimension-spacing-block-xs);
-  column-gap: var(--lp-dimension-spacing-inline-xs);
+  row-gap: var(--dimension-100);
+  column-gap: var(--dimension-100);
   --min-width-description-list-item: 160px;
 
   &.grid {

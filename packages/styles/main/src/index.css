@@ -2,18 +2,93 @@
  *
  * Single import for consumers:
  *   @import url("@canonical/styles");
+ *
+ * Everything this package itself ships sits in a named cascade layer. Three of
+ * those layers select elements rather than declare custom properties —
+ * `normalize`, `ds.reset` and `ds.typography` — and they style the whole page,
+ * as a reset does. Nothing is confined and nothing has to be marked.
+ *
+ * A page that also runs another CSS framework, and so cannot let this stylesheet
+ * restyle the half it has not migrated, uses `@canonical/styles-vanilla-adapter`.
+ * That package ships a confined copy of those three element layers and a test
+ * that binds the copy to the files here, so the two cannot drift. Such a page
+ * imports `tokens.css` and `layout.css` from this package instead of this file,
+ * and takes its element rules from the adapter.
+ *
+ * This file is one of four entry points, and the one an ordinary page wants.
+ * `tokens.css` is every custom property and no rule that styles an element;
+ * `elements.css` is every rule that styles a plain element; `layout.css` is the
+ * grid presets. Each imports `layers.css` first, and none imports another — an `@layer` statement inside a layer block would declare sublayers
+ * rather than top-level layers. The README's "Entry points" section says more,
+ * and a test in this package holds both properties. The README's "Cascade
+ * layers" section is the reference for what is layered where and what is
+ * deliberately not; the reasoning behind the order — how a browser decides, why
+ * unlayered rules beat layered ones, and why a mixed page takes its element
+ * rules from the adapter — is in docs/explanations/STYLES_CASCADE.md.
+ *
+ * The order is declared in one place, `layers.css`, and this file imports it
+ * first. That import is what fixes the order for a page loading this entry,
+ * and it is the reason the order is written once rather than in each entry: a
+ * repeated list is a list that can drift. Measured in Chromium: a statement
+ * read through an `@import` orders the layers of the sheet that imported it,
+ * exactly as a statement written in place would.
+ *
+ * The import must stay first. An `@import` is only valid before other rules —
+ * a layer statement and `@charset` excepted — so "the order, then the rest" is
+ * the one legal shape. A consumer who must interleave their own layers
+ * prepends their own statement; a later statement can add names but never
+ * reorder the ones already fixed.
  */
 
-/* Layer ordering — deterministic cascade (spec §C.2) */
-@layer normalize, ds.reset, ds.modifiers, ds.components;
+/* Read from the bottom up, each position is an argument:
+ *   normalize      pragma's own reset
+ *   ds.tokens      primitive values, spacing, motion, overflow
+ *   ds.reset       the page's baseline: font, colour, box-sizing
+ *   ds.typography  the semantic mapper and the baseline engines
+ *   ds.modifiers   theme, the typographic scale, the channel families and
+ *                  their shims, the density and context classes
+ *   ds.surfaces    the surface families
+ *   ds.states      the derived hover / active / disabled channels
+ *   ds.components  the parent of the tier layers. Nothing is written directly
+ *                  into it, by rule: a declaration in a parent layer sits in
+ *                  that layer's implicit final sublayer, above every named
+ *                  sublayer, so it would outrank every tier
+ *   ds.components.global         the shared component packages, and this
+ *                  package's own layout presets
+ *   ds.components.sites          }  the four second-level tiers of the design
+ *   ds.components.documentation  }  system's tier tree. They never share a
+ *   ds.components.stores         }  page, so their order among themselves is
+ *   ds.components.apps           }  arbitrary — but it is fixed here so that
+ *                  it can never depend on which package a bundler emits first
+ *
+ * The component layers follow the tier tree of the design system: who owns a
+ * component decides which layer its rules go in, and a deeper tier wins.
+ *
+ * The second level is named here in full, and only the second level. A package
+ * below it — one application's own tier, say — declares its own layer as the
+ * first rule of its CSS entry, `@layer ds.components.apps-lxd;`, and wraps its
+ * sheets in it. Because this statement always comes first, that name is new
+ * when the browser meets it and is appended after the names above, inside
+ * `ds.components`, so it sorts above them. That is the tree's own rule — the
+ * more specific tier wins — and it means this stylesheet never has to know
+ * which applications exist.
+ *
+ * The names are tier ids from that tree, lowercased and hyphenated for a
+ * sub-tier (`apps-lxd`), not the context words a page puts on its root
+ * (`app`, `site`, `docs`). A tier says who owns a component; a context says
+ * what kind of page it is being shown on. */
+@import url("./layers.css");
 
-/* Reset */
-@import url("normalize.css");
+/* Reset: pragma's own */
+@import url("./normalize.css");
+@import url("./reset.css");
 
 /* Typography: interpreter engine + scale tokens */
 @import url("@canonical/styles-typography");
 
-/* Design tokens — colour, spacing, surfaces, states */
+/* Design tokens — colour, spacing, surfaces, states.
+ * Each generated file opens its own `@layer` block, so none of these imports
+ * carries a `layer()` keyword: that would nest the file's layer inside another. */
 @import url("@canonical/design-tokens/dist/sets.primitive.css");
 @import url("@canonical/design-tokens/dist/modifiers.theme.css");
 @import url("@canonical/design-tokens/dist/modifiers.surfaces.css");
@@ -21,6 +96,23 @@
 @import url("@canonical/design-tokens/dist/modifiers.criticality.css");
 @import url("@canonical/design-tokens/dist/modifiers.emphasis.css");
 @import url("@canonical/design-tokens/dist/modifiers.importance.css");
+/* TEMP shims (remove once generated upstream):
+   - states: writes the explicit per-state colour tokens into the modifier
+     channel (the generated modifiers only expose root), so hover/active/
+     disabled compose with anticipation. Imported after the anticipation/
+     emphasis modifiers so the anticipation-class overrides win.
+   - importance: maps the (currently empty) importance modifiers to channel
+     hints so importance-driven components can render their hierarchy.
+   - criticality: adds an icon channel (--modifier-icon) mapping each
+     criticality class to its glyph, so criticality components render the icon
+     from the modifier rather than hard-coding it.
+   - controls-hover: adds the missing selected-state (and switch unselected)
+     `--hover--color-foreground-*` shades so checkbox/radio/switch hover shifts
+     only the fill/track, not the masked glyph/knob. */
+@import url("./modifiers.states.shim.css");
+@import url("./modifiers.importance.shim.css");
+@import url("./modifiers.criticality.shim.css");
+@import url("./controls.hover.shim.css");
 @import url("@canonical/design-tokens/dist/states.css");
 
 /* Grid layout presets */
@@ -29,5 +121,12 @@
 /* Spacing architecture tokens */
 @import url("./spacing.css");
 
+/* Density modifier family (context × density → control height + baseline).
+ * After spacing.css, which supplies the --baseline-height these primitives use. */
+@import url("./modifiers.density.css");
+
 /* Scroll overflow affordance tokens */
 @import url("./overflow.css");
+
+/* Motion tokens (placeholder durations/easings) */
+@import url("./motion.css");

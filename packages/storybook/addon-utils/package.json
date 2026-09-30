@@ -1,10 +1,11 @@
 {
   "name": "@canonical/storybook-addon-utils",
-  "version": "0.29.0-experimental.0",
+  "version": "0.43.0",
   "type": "module",
   "files": [
     "dist"
   ],
+  "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "author": "Bartek Szopka <bartek.szopka@canonical.com>",
   "description": "Storybook addon: grid mode, color scheme, baseline grid, element outlines",
@@ -14,10 +15,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
   "license": "LGPL-3.0",
   "exports": {
@@ -47,50 +48,53 @@
     "build:all": "bun run build:package",
     "build:package": "bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
-    "storybook": "storybook dev -p 6007 --no-open --host 0.0.0.0",
-    "check": "bun run check:biome && bun run check:ts",
+    "storybook": "storybook dev -p 6005 --no-open --host 0.0.0.0",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
+    "check:webarchitect": "webarchitect library",
     "test": "bun run test:vitest",
     "test:vitest": "vitest run",
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/styles-debug": "^0.28.0",
+    "@canonical/styles-debug": "^0.43.0",
     "@storybook/icons": "^2.0.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
-    "@canonical/router-core": "^0.29.0-experimental.0",
-    "@canonical/router-react": "^0.29.0-experimental.0",
-    "@canonical/styles": "^0.28.0",
-    "@canonical/typescript-config-react": "^0.28.0",
-    "@storybook/addon-docs": "^10.3.1",
-    "@storybook/react-vite": "^10.3.1",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/router-core": "^0.43.0",
+    "@canonical/router-react": "^0.43.0",
+    "@canonical/storybook-addon-shell-theme": "^0.43.0",
+    "@canonical/styles": "^0.43.0",
+    "@canonical/typescript-config-react": "^0.43.0",
+    "@canonical/webarchitect": "0.43.0",
+    "@storybook/addon-docs": "^10.6.0",
+    "@storybook/react-vite": "^10.6.0",
+    "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
-    "@types/node": "^24.12.0",
+    "@types/node": "^26.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",
     "jsdom": "^28.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "storybook": "^10.3.1",
-    "typescript": "^5.9.3",
+    "storybook": "^10.6.0",
+    "typescript": "^7.0.2",
     "vite": "^8.0.1",
-    "vitest": "^4.0.18"
+    "vitest": "^5.0.0"
   },
   "peerDependencies": {
-    "@canonical/router-core": "^0.27.1-experimental.0",
-    "@canonical/router-react": "^0.27.1-experimental.0",
-    "@canonical/styles": "^0.27.1-experimental.0",
+    "@canonical/router-core": ">=0.34.0 <1.0.0",
+    "@canonical/router-react": ">=0.34.0 <1.0.0",
+    "@canonical/styles": ">=0.34.0 <1.0.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
-    "storybook": "^10.3.1"
+    "storybook": "^10.6.0"
   },
   "peerDependenciesMeta": {
     "@canonical/router-core": {

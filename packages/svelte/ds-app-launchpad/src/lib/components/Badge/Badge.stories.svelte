@@ -45,15 +45,15 @@
 </Story>
 
 <Story
-  name="Severities"
-  argTypes={{ severity: { table: { disable: true } } }}
+  name="Criticalities"
+  argTypes={{ criticality: { table: { disable: true } } }}
   args={{ value: 42 }}
 >
   {#snippet template(args)}
-    {#each MODIFIER_FAMILIES.severity as severity (severity)}
+    {#each [undefined, ...MODIFIER_FAMILIES.criticality] as criticality (criticality)}
       <div class="row">
-        <Badge {...args} {severity} />
-        {severity || "default"}
+        <Badge {...args} {criticality} />
+        {criticality ?? "default"}
       </div>
     {/each}
   {/snippet}

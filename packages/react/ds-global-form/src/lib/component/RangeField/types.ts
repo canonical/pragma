@@ -1,4 +1,4 @@
-import type { InputProps } from "#lib/common/types.js";
+import type { InputProps } from "../../common/types.js";
 import type { RangeControlProps } from "./common/index.js";
 
 /** Props for the react-hook-form-bound Range field (number + synced slider). */

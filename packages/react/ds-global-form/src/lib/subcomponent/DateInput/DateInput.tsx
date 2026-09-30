@@ -17,6 +17,10 @@ const componentCssClassName = "ds input date chrome";
  * The `value` is always locale-independent ISO `yyyy-mm-dd`. To control the
  * displayed format you would need a custom (non-native) date control.
  * @returns {ReactElement} - Rendered DateInput
+ *
+ * `import { DateInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.date_input
  */
 export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   function DateInput(

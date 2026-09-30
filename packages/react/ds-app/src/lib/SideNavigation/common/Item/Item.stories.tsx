@@ -3,19 +3,18 @@ import {
   HashLink,
   MockBadge,
   withSideNavShell,
-} from "#storybook/navigation/story-utils.js";
+} from "../../../../storybook/navigation/story-utils.js";
 import Item from "./Item.js";
 
 const meta: Meta<typeof Item> = {
   title: "Components/SideNavigation/Item",
   component: Item,
-  tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },
   // Item is presentational and renders inside a <ul>; withSideNavShell provides
-  // the .ds.side-navigation context (shared row grid + surface), and the inner
-  // <ul.list> gives valid list markup.
+  // the .ds.side-navigation context (shared row insets + surface), and the
+  // inner <ul.list> gives valid list markup.
   decorators: [
     withSideNavShell,
     (Story) => (
@@ -36,7 +35,7 @@ type Story = StoryObj<typeof Item>;
 export const Link: Story = {
   args: {
     url: "/machines",
-    label: "Machines",
+    children: "Machines",
   },
 };
 
@@ -44,7 +43,7 @@ export const Link: Story = {
 export const WithIcon: Story = {
   args: {
     url: "/machines",
-    label: "Machines",
+    children: "Machines",
     icon: "machines",
   },
 };
@@ -53,7 +52,7 @@ export const WithIcon: Story = {
 export const Active: Story = {
   args: {
     url: "/machines",
-    label: "Machines",
+    children: "Machines",
     active: true,
   },
 };
@@ -62,16 +61,15 @@ export const Active: Story = {
 export const Disabled: Story = {
   args: {
     url: "/networking",
-    label: "Networking",
+    children: "Networking",
     disabled: true,
   },
 };
 
-/** A grouping label (no url). */
-export const GroupLabel: Story = {
+/** A non-navigable item (no `url`) — a plain label, e.g. a display-only name. */
+export const NonNavigable: Story = {
   args: {
-    key: "hardware",
-    label: "Hardware",
+    children: "Ada Lovelace",
   },
 };
 
@@ -79,21 +77,21 @@ export const GroupLabel: Story = {
 export const WithSlot: Story = {
   args: {
     url: "/machines",
-    label: "Machines",
+    children: "Machines",
     icon: "machines",
     slot: <MockBadge>42</MockBadge>,
   },
 };
 
-// An item with subitems renders a disclosure caret. The expand/collapse
-// behaviour (and whether children open below vs. to the side) is deferred
-// pending design input, so this story is commented out for now.
-//
-// export const WithSubitems: Story = {
-//   args: {
-//     key: "hardware",
-//     label: "Hardware",
-//     icon: "machines",
-//     items: [{ url: "/machines", label: "Machines" }],
-//   },
-// };
+/** Composed (non-string) content — a consumer can pass anything, not only text. */
+export const ComposedContent: Story = {
+  args: {
+    url: "/machines",
+    icon: "machines",
+    children: (
+      <>
+        Machines <em>(42 online)</em>
+      </>
+    ),
+  },
+};

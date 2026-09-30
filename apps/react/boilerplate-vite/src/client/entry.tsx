@@ -1,14 +1,81 @@
-import { HeadProvider } from "@canonical/react-head";
-import { createBrowserRouter } from "@canonical/router-core";
-import { Outlet, RouterProvider } from "@canonical/router-react";
-import { hydrateRoot } from "react-dom/client";
-import { appRoutes, middleware, notFoundRoute } from "../routes.js";
+// The stylesheet comes first, before the routes and before every component
+// import below. CSS is emitted in the order the bundler evaluates the modules
+// that import it, so a component imported earlier would put its own rules —
+// and its own `@layer` blocks — ahead of the design system's layer statement,
+// and the layer order a browser applies is the one it reads first. Keeping
+// this line at the top is what makes the built stylesheet deterministic.
 import "#styles/index.css";
+import { isSupportedLocale, negotiateLocale } from "@canonical/i18n-core";
+import { I18nProvider } from "@canonical/i18n-react";
+import { HeadProvider } from "@canonical/react-head";
+import { createBrowserAdapter, createRouter } from "@canonical/router-core";
+import {
+  Outlet,
+  RouterProvider,
+  readDehydratedState,
+} from "@canonical/router-react";
+import { hydrateRoot } from "react-dom/client";
+import { RelayEnvironmentProvider } from "react-relay";
+import { catalogs, i18nConfig } from "#i18n/index.js";
+import { getBrowserEnvironment } from "#relay/environment.js";
+import formatDocumentTitle from "../formatDocumentTitle.js";
+import {
+  appRoutes,
+  middleware,
+  notFoundRoute,
+  resolveRelayPayloads,
+  type SerializedRelayPayload,
+} from "../routes.js";
 
-const router = createBrowserRouter(appRoutes, {
+// Seed the browser-session Relay environment FIRST — before the router exists
+// — from the server-captured payloads riding __INITIAL_DATA__ (SSR pages) so
+// the first `useLazyLoadQuery` reads the store instead of refetching. In the
+// SPA cells there is no payload and the environment starts empty. Order
+// matters: the first getBrowserEnvironment() caller wins, and router
+// construction below can fire warm hooks that reach for the environment.
+const embeddedRelayPayloads = (
+  window as {
+    __INITIAL_DATA__?: {
+      relayPayloads?: readonly SerializedRelayPayload[];
+    };
+  }
+).__INITIAL_DATA__?.relayPayloads;
+const relayEnvironment = getBrowserEnvironment({
+  payloads: resolveRelayPayloads(embeddedRelayPayloads),
+});
+
+// On SSR pages __INITIAL_DATA__ carries the flat dehydrated router state
+// (href/kind/routeId/status); hydrating from it resumes the server-rendered
+// match and skips the duplicate initial load. In the SPA cells there is no
+// payload (or no router fields) and readDehydratedState() returns null, so
+// the router performs a normal initial load.
+const router = createRouter(appRoutes, {
+  adapter: createBrowserAdapter(),
   middleware: [...middleware],
   notFound: notFoundRoute,
+  hydratedState: readDehydratedState() ?? undefined,
 });
+
+/**
+ * Resolve the locale for the first client render.
+ *
+ * When the page was server-rendered, `window.__INITIAL_DATA__.locale` carries
+ * the server's negotiated value — reusing it guarantees the first client
+ * render matches the server markup, so hydration stays mismatch-free. In the
+ * SPA cells (`dev` / `preview`, no SSR) there is no embedded data, so the
+ * same pure negotiation runs here: the cookie wins, then the browser's
+ * language list (the client-side stand-in for the Accept-Language header).
+ */
+function resolveInitialLocale(): string {
+  const embedded = (window as { __INITIAL_DATA__?: { locale?: string } })
+    .__INITIAL_DATA__?.locale;
+  if (isSupportedLocale(i18nConfig, embedded)) return embedded;
+
+  return negotiateLocale(i18nConfig, {
+    cookieHeader: document.cookie,
+    acceptLanguage: navigator.languages?.join(",") ?? navigator.language,
+  });
+}
 
 const root = document.getElementById("root");
 if (!root) {
@@ -17,9 +84,17 @@ if (!root) {
 
 hydrateRoot(
   root,
-  <HeadProvider>
-    <RouterProvider router={router}>
-      <Outlet fallback={<p>Loading…</p>} />
-    </RouterProvider>
-  </HeadProvider>,
+  <I18nProvider
+    config={i18nConfig}
+    catalogs={catalogs}
+    locale={resolveInitialLocale()}
+  >
+    <HeadProvider titleTemplate={formatDocumentTitle}>
+      <RelayEnvironmentProvider environment={relayEnvironment}>
+        <RouterProvider router={router}>
+          <Outlet fallback={<p>Loading…</p>} />
+        </RouterProvider>
+      </RelayEnvironmentProvider>
+    </HeadProvider>
+  </I18nProvider>,
 );

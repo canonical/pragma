@@ -6,9 +6,13 @@ import "./styles.css";
 const componentCssClassName = "ds content";
 
 /**
- * SideNavigation.Content — main navigation region. Renders the direct children
- * of its `root` Item via useNavigationTree (selection, active state, keyboard
- * traversal). Falls back to `children` when no `root` is given.
+ * SideNavigation.Content — the component's main `<nav>` landmark, and the
+ * only one: navigation rows are links and expandable items exclusively
+ * (actions are Footer's job). Data-only — rows render exclusively from the
+ * `root` tree (row components are private; there is no children escape
+ * hatch into the landmark). `aria-label` defaults to `"Main navigation"`
+ * and may be overridden by the consumer; with no `root`, the landmark
+ * renders empty (the landmark contract stays stable).
  *
  * @implements ds:apps.subcomponent.side-navigation-content
  */
@@ -17,11 +21,10 @@ const Content = ({
   root,
   LinkComponent = "a",
   currentUrl,
-  children,
   ...props
 }: ContentProps): React.ReactElement => {
   return (
-    <div
+    <nav
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
@@ -31,10 +34,8 @@ const Content = ({
           currentUrl={currentUrl}
           LinkComponent={LinkComponent}
         />
-      ) : (
-        children
-      )}
-    </div>
+      ) : null}
+    </nav>
   );
 };
 

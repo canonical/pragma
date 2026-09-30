@@ -30,7 +30,7 @@ jobs:
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 1
 
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 1
 
@@ -59,12 +59,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 1
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
+
+        # The full suite always includes the browser suites — no detection.
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install Playwright browsers
+        env:
+          INSTALL_PLAYWRIGHT: 'true'
+        run: bash .github/actions/setup-env/install-playwright.sh
 
       - name: Test
         run: bun run test
@@ -77,7 +89,7 @@ jobs:
       VERSION: ${{ steps.lerna_version.outputs.VERSION }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ssh-key: ${{ secrets.DEPLOY_KEY }}
           fetch-depth: 0
@@ -97,12 +109,13 @@ jobs:
     needs: version
     # OIDC trusted publishing: GitHub mints a short-lived npm token at publish
     # time instead of using a long-lived NPM_AUTH_TOKEN secret.
+    # contents:write lets the job create the GitHub Release for the tag.
     permissions:
       id-token: write
-      contents: read
+      contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: v${{ needs.version.outputs.VERSION }}
           fetch-depth: 0
@@ -111,10 +124,39 @@ jobs:
         uses: ./.github/actions/setup-env
 
       - name: Setup Node, authenticate with NPM registry
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
       - name: Publish packages
-        run: lerna publish --yes --no-private from-package
+        # `from-package` publishes exactly the public packages whose manifest
+        # version the registry does not have yet. So recovery from a partial
+        # publish is to re-run this job: it publishes only what is missing, and
+        # a re-run after a full publish is a no-op.
+        #
+        # Route pre-releases to a dist-tag named after their pre-release
+        # identifier (e.g. 0.30.0-experimental.1 -> "experimental") so they
+        # never take over npm's `latest`; stable releases go to `latest`.
+        env:
+          VERSION: ${{ needs.version.outputs.VERSION }}
+        run: |
+          if [[ -z "$VERSION" ]]; then
+            echo "Error: VERSION output from the version job is empty; refusing to publish."
+            exit 1
+          fi
+          if [[ "$VERSION" == *-* ]]; then
+            PRERELEASE="${VERSION#*-}"
+            DIST_TAG="${PRERELEASE%%.*}"
+          else
+            DIST_TAG="latest"
+          fi
+          echo "Publishing $VERSION to dist-tag '$DIST_TAG'"
+          lerna publish --yes --no-private --dist-tag "$DIST_TAG" from-package
+
+      - name: Create GitHub Release with artifacts
+        uses: ./.github/actions/github-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          version: ${{ needs.version.outputs.VERSION }}

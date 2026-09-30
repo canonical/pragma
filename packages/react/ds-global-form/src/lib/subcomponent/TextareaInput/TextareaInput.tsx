@@ -10,6 +10,10 @@ const componentCssClassName = "ds input textarea chrome";
  * Usable standalone (controlled via `value`/`onChange`, or uncontrolled) or via
  * the field tier, which spreads react-hook-form's `register()` result onto it.
  * @returns {ReactElement} - Rendered TextareaInput
+ *
+ * `import { TextareaInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.textarea_input
  */
 export const TextareaInput = forwardRef<
   HTMLTextAreaElement,
@@ -22,9 +26,7 @@ export const TextareaInput = forwardRef<
     <textarea
       id={id}
       style={style}
-      className={[componentCssClassName, "p", className]
-        .filter(Boolean)
-        .join(" ")}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
       ref={ref}
       {...nativeProps}
     />

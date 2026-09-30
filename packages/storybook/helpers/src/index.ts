@@ -5,6 +5,12 @@
  */
 
 export {
+  IconExplorer,
+  type IconExplorerMetadata,
+  type IconExplorerProps,
+} from "./IconExplorer/index.js";
+
+export {
   MODIFIER_AXES,
   type ModifierAxis,
   type ModifierAxisName,

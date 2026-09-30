@@ -12,7 +12,6 @@
   const tdText = "Cell 1";
   const sortButtonText = `Sort by ${thText}`;
 
-  // biome-ignore lint/style/useExportType: False positive, presumably due to "cross-language" export
   export {
     caption,
     children,

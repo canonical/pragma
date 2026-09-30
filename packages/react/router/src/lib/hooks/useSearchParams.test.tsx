@@ -1,3 +1,4 @@
+import type { AnyRoute, RouteMap, RouterStore } from "@canonical/router-core";
 import { createRouter, route } from "@canonical/router-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -17,7 +18,7 @@ function AllSearchParamsProbe({
   renderCount: { current: number };
 }) {
   renderCount.current += 1;
-  const searchParams = useSearchParams<typeof routes>();
+  const searchParams = useSearchParams();
 
   return <span>{searchParams.toString() || "none"}</span>;
 }
@@ -28,12 +29,17 @@ function SelectedSearchParamsProbe({
   renderCount: { current: number };
 }) {
   renderCount.current += 1;
-  const params = useSearchParams<typeof routes, undefined, ["page", "sort"]>([
-    "page",
-    "sort",
-  ] as const);
+  const params = useSearchParams(["page", "sort"] as const);
 
   return <span>{`${params.page ?? "none"}:${params.sort ?? "none"}`}</span>;
+}
+
+/**
+ * Reach the router's internal store — not part of the public Router
+ * contract, kept reachable on the concrete object for these tests.
+ */
+function getInternalStore(router: unknown): RouterStore<RouteMap, AnyRoute> {
+  return (router as { store: RouterStore<RouteMap, AnyRoute> }).store;
 }
 
 describe("useSearchParams", () => {
@@ -51,7 +57,7 @@ describe("useSearchParams", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      router.store.setLocation("/?page=2");
+      getInternalStore(router).setLocation("/?page=2");
     });
 
     expect(screen.getByText("page=2")).toBeTruthy();
@@ -72,20 +78,20 @@ describe("useSearchParams", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      router.store.setLocation("/?filter=active");
+      getInternalStore(router).setLocation("/?filter=active");
     });
 
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      router.store.setLocation("/?page=2&filter=active");
+      getInternalStore(router).setLocation("/?page=2&filter=active");
     });
 
     expect(screen.getByText("2:none")).toBeTruthy();
     expect(renderCount.current).toBe(2);
 
     act(() => {
-      router.store.setLocation("/?page=2&sort=asc&filter=active");
+      getInternalStore(router).setLocation("/?page=2&sort=asc&filter=active");
     });
 
     expect(screen.getByText("2:asc")).toBeTruthy();

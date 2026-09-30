@@ -5,7 +5,6 @@ import Component from "./Button.js";
 
 const meta = {
   title: "MarkdownEditor/Toolbar/Button",
-  tags: ["autodocs"],
   component: Component,
   decorators: [
     (Story, { args }) => (

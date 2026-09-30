@@ -29,4 +29,4 @@ export interface BaseProps {
 
 type Props = BaseProps & ButtonHTMLAttributes<HTMLButtonElement>;
 
-export default Props;
+export type { Props as default };

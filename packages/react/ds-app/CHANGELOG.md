@@ -3,6 +3,520 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.43.0](https://github.com/canonical/pragma-web/compare/v0.42.0...v0.43.0) (2026-09-30)
+
+* chore(monorepo)!: consume the core packages from npm (#1388) ([86e48a4](https://github.com/canonical/pragma-web/commit/86e48a4f166821f8a2d5352314ac65ba94ff2846)), closes [#1388](https://github.com/canonical/pragma-web/issues/1388)
+
+### Bug Fixes
+
+* **apps:** load the design system's CSS before the app ([#1393](https://github.com/canonical/pragma-web/issues/1393)) ([06a9c6f](https://github.com/canonical/pragma-web/commit/06a9c6f16891a0bb71584b52532e8b4d9cc58e4a))
+
+### Features
+
+* **ds-app:** add the SidePanel component ([#1312](https://github.com/canonical/pragma-web/issues/1312)) ([13e1840](https://github.com/canonical/pragma-web/commit/13e1840ec2f62d49ea308cc98fb5771cb7b19d4a))
+* **ds-app:** add withSidePanel consumption pattern ([#1314](https://github.com/canonical/pragma-web/issues/1314)) ([9e24b89](https://github.com/canonical/pragma-web/commit/9e24b8930a6303406094ba95ab3782bf58805ee7))
+
+### BREAKING CHANGES
+
+* the core packages are no longer workspace members;
+  local changes to them are made in canonical/pragma-core.
+
+  * ci: drop the embedded-pack refresh and the dead Chromatic path filters
+
+  The version action refreshed the pragma CLI's embedded pack, which no longer lives here; the step, its script, its token input and tag.yml's PACKS_READ_TOKEN go. The Chromatic workflows watched packages/utils and packages/tokens, neither of which exists in this repository any more.
+
+  * chore(monorepo): name canonical/pragma-web in the implementation graph
+
+  ds.config.json's repository is stamped into every source link the collector writes; data/ is regenerated with it.
+
+  * chore(monorepo): take the Renovate preset and the Biome config's owners from pragma-core
+
+  renovate.json extends the preset published from canonical/pragma-core. The /configs/biome/ ownership line moves with the folder.
+
+  * docs: point the toolchain references at canonical/pragma-core
+
+  README, AGENTS.md and docs/ describe this repository without the toolchain packages; links into the deleted folders point at canonical/pragma-core, CONSTITUTION.md becomes a link to its one copy there, the publishing guides name canonical/pragma-web as the trusted-publisher repository, and the CLI's perf-budget notes leave with the CLI.
+
+  * test(prism-pragma-provider): check the live emission against the contract
+
+  The compiler-goldens gate left with the compiler. The provider already boots the pinned @canonical/ke-graphql over its hermetic corpus, so it checks that emission against the contract; a compiler bump that breaks conformance is red on the bump. The contract README names this as the gate against a real emission.
+
+  * docs: correct the references the toolchain move left stale
+
+  The storybook hub's CLI page no longer claims a workspace pragma binary; AGENTS.md's scope examples and package count, the adding-a-package example pins and tool-package section, the constitution link and the provider READMEs' links to canonical/pragma-core.
+
+  * docs: tighten the conformance-gate notes and two stale examples
+
+  The provider README names its live contract check, the contract README says it runs over the test corpus and keeps its wrap, AGENTS.md drops the last CLI scope example, and the no-magic link carries its anchor.
+
+  * chore(deps): pin the core packages to their 0.43.0-experimental releases
+
+  Each core package takes its own experimental release from the registry: biome-config, typescript-config, webarchitect, ke and ke-graphql at 0.43.0-experimental.0; utils, design-tokens and design-system at 0.43.0-experimental.1.
+
+  * chore(monorepo): name canonical/pragma-web as the repository
+
+  npm refuses a trusted-publisher publish whose repository.url names a different repository, so every manifest's repository, bugs and homepage, and ds.config.json's repository (stamped into the implementation graph's source links, regenerated here), name canonical/pragma-web, as do the clone instructions and the trusted-publisher setup in the docs. tag.yml refuses to run from any other repository, so a release dispatched before the rename stops before anything is versioned or tagged.
+
+  * fix(styles-debug): accept any 0.x design-tokens as the optional peer
+
+  An exact peer makes npm refuse styles-debug next to any other design-tokens release; its stylesheet only reads token custom properties, which 0.10.0 and 0.43.0 ship identically. The range matches the repository's other peers.
+
+  * fix(svelte-ds-app-launchpad): depend on design-tokens at runtime
+
+  The published styles.css imports @canonical/design-tokens' stylesheets, so it is a dependency, not a devDependency.
+
+  * docs: say how to get the pragma CLI and where the core pins come from
+
+  The CLI is no longer a workspace member, so the README's prerequisites name @canonical/pragma-cli and how to install it, and the adding-a-package guide installs it before pragma create package and says to copy the core pins from a sibling manifest. The ranges test's historical comment says the package it describes has left.
+
+  * ci: drop the repository guard from the release workflow
+
+  * chore(deps): pin the core packages to 0.43.0
+
+  pragma-core's first stable release: biome-config, typescript-config, webarchitect, utils, ke, ke-graphql, design-tokens and design-system move from their 0.43.0-experimental builds to 0.43.0.
+
+
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+* chore(monorepo)!: move to TypeScript 7 (#1374) ([713d307](https://github.com/canonical/pragma/commit/713d3071d3980539a849ea95823736e8b343a1b1)), closes [#1374](https://github.com/canonical/pragma/issues/1374) [#lib](https://github.com/canonical/pragma/issues/lib) [#domains](https://github.com/canonical/pragma/issues/domains) [#i18n](https://github.com/canonical/pragma/issues/i18n) [#relay](https://github.com/canonical/pragma/issues/relay) [#styles](https://github.com/canonical/pragma/issues/styles)
+
+### BREAKING CHANGES
+
+* the shared TypeScript configs, storybook-config,
+  vitest-config-react and styles-typography no longer accept TypeScript 5 as
+  a peer, and the tsconfig presets no longer set or expect baseUrl.
+
+  * chore(configs): keep TypeScript 5.9 and 6 in the typescript peer ranges
+
+  The shared configs, the Storybook config, the Vitest React config and
+  @canonical/typography now accept TypeScript ^5.9.3 || ^6.0.0 || ^7.0.0,
+  so consumers still on 5.9 or 6 are not pushed off by this upgrade. The
+  Svelte config keeps ^5.9.3 || ^6.0.0, because its consumers compile
+  declarations with TypeScript 6.
+
+  * chore(boilerplate-vite,summon-application): drop the tsconfig paths for # imports
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Bug Fixes
+
+* **styles:** make the responsive grid 16 columns on desktop ([#1358](https://github.com/canonical/pragma/issues/1358)) ([4a58572](https://github.com/canonical/pragma/commit/4a58572a7a9bed8f1bb3c5f47ce1c4b269e8db63))
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+* refactor!: answer the SideNavigation stack's review threads (#1285) ([57096e6](https://github.com/canonical/pragma/commit/57096e694b18cbbacf74819a1465e0609f019e3d)), closes [#1285](https://github.com/canonical/pragma/issues/1285)
+
+### Bug Fixes
+
+* **ds-app:** harden the SideNavigation rail-collapse behaviour ([#1228](https://github.com/canonical/pragma/issues/1228)) ([f3d6279](https://github.com/canonical/pragma/commit/f3d6279676ad07ed230dff86f95a829a9f08beda)), closes [#1227](https://github.com/canonical/pragma/issues/1227) [#main-content](https://github.com/canonical/pragma/issues/main-content)
+* **ds-app:** render non-action footer rows as labels and stabilise element keys ([#1229](https://github.com/canonical/pragma/issues/1229)) ([0bebcd2](https://github.com/canonical/pragma/commit/0bebcd21042fd51ad84de92d494f16923aa0d3cb)), closes [canonical/pragma#1208](https://github.com/canonical/pragma/issues/1208) [#1208](https://github.com/canonical/pragma/issues/1208)
+
+### BREAKING CHANGES
+
+* pass the trigger content as ContextualMenu's children
+  (`<ContextualMenu items={…}>Actions</ContextualMenu>`) instead of the
+  `trigger` prop.
+
+  * refactor(ds-app): restructure ContextSwitcher around a real wrapper element
+
+  The component returned a Fragment pairing an optional GroupHeader with
+  the ContextualMenu — a root a consumer cannot address (no className, id,
+  or data attribute lands anywhere). The root is now the component's own
+  wrapper div carrying the DS class and the spread rest props; the
+  caption and the dropdown field are its children.
+
+  One renderer now serves both entry shapes (a context and the
+  create-context action), branching on renderLabel — the second
+  single-use content component folds away, and with it the
+  create-context row's layout moves onto a class only this component's
+  renderer emits (.create-context), replacing the surface-scoped selector
+  the surfaceClassName removal had orphaned.
+
+  The ContextualMenu passthrough props (open/onOpenChange/positioning)
+  are forwarded explicitly now that the rest spread lands on the wrapper,
+  and the dropdown's default max width stays the rail width minus its
+  row insets, overridable per instance.
+
+  * refactor(ds-app): let ItemExpandable's details element own its open state
+
+  The disclosure mirrored <details>'s native state into React and drove
+  the attribute back — a controlled circuit around an element that
+  already manages itself, with a toggle handler whose only job was to
+  keep the mirror in step. The element is now uncontrolled: the open
+  attribute is seeded from a mount-only snapshot of defaultExpanded
+  (SSR renders it, and a seed flipping back to false never force-closes
+  an open branch), and the two behaviours that genuinely need JS reach
+  the DOM through a ref instead of state — the one-way re-open when
+  navigation makes this branch the selected one, and the footer's
+  collapse-on-child-activation. Every existing behaviour test passes
+  unchanged.
+
+  * refactor(ds-app): move useCollapseShortcut into its domain and default-export it
+
+  The hook lived under common/hooks — a grab-bag nesting level below the
+  component it serves. It moves to SideNavigation/hooks/useCollapseShortcut,
+  the hooks folder of its domain, where the code standards place custom
+  hooks.
+
+  The module now has a single default export (the hook); COLLAPSE_SHORTCUT
+  was its only other consumer-facing name and is single-use, so it stays
+  as an unexported module constant. The boolean gate renames from
+  `enabled` to `condition` — the prop names the state it represents
+  (the keyboardShortcut prop SideNavigation feeds it), not a bare
+  on/off switch.
+
+  * chore(ds-app): trim the vitest setup's ResizeObserver comment
+
+  * chore(deps): regenerate the lockfile after the 0.39.0 bump
+
+  ---------
+* **ds-app:** SideNavigation's entire subcomponent surface changes —
+  there are no dot-static or named exports; the sidebar is consumed
+  data-only via root/footerRoot/contextSwitcher props, and the region and
+  row components render exclusively from that data.
+
+  - One navigation landmark: the root is a plain <div>; Content's <nav> is
+    the component's single navigation landmark (aria-label forwarded,
+    default "Main navigation") — branding, the context switcher and the
+    footer's actions sit outside it by design.
+  - A visually hidden "Skip to main content" link is the first focusable
+    element in the DOM order (target via skipTo, default #main-content).
+  - Four regions, all data-driven: Header (branding + collapse toggle), an
+    optional ContextSwitcher region (typed contextSwitcher props — a
+    role="menu" select-like widget is not navigation, so it renders in
+    its own plain-<div> region between Header and Content, outside the
+    landmark, and hides when the rail collapses), Content (the landmark;
+    links, plain labels and expandable disclosures only) and Footer
+    (free-form rows through footerRoot).
+  - Strict content vocabulary: interactive action rows belong to the
+    Footer, so the landmark's contents always read as destinations. There
+    is no JSX escape hatch — the API carries no children props.
+  - Footer vocabulary mirrors the content tree's type split: free-form
+    leaves (LeafFooterItem — label required, optional icon/url/control/
+    slot; action rows via control: "button" + onClick flow through data)
+    and depth-1 expandables (ExpandableFooterItem). Leaf rows render as
+    links (active when matching the current location, LinkComponent
+    integrated); action rows render as buttons.
+  - Rail state keys off data-expanded on the root — the single source of
+    truth. Collapsed: Content and the switcher region hide, the footer
+    degrades to icon-only, and any rendered ItemExpandable discloses its
+    sub-items into a floating popover on the inline-end with visible
+    labels. Where CSS anchor positioning is supported (Baseline 2026),
+    position-try-fallbacks flips the popover above its trigger on viewport
+    overflow — browser-measured, plus the mirrored 0.5rem gap; otherwise
+    it stays top-anchored. Native <details> throughout: no Esc-close or
+    outside-click dismissal by design, Tab navigation stays viable.
+  - A nested sub-item whose url becomes active re-opens its collapsed
+    parent (one-way: manual collapse is respected, never auto-closed) and
+    carries data-active + aria-current under the expanded parent.
+  - The rail-collapse shortcut is Ctrl+B, opt-in via keyboardShortcut and
+    off by default (pending approval).
+  - The sidenav architecture tokens are declared on the component's own
+    stylesheet (rail widths, logo sizing, the unified 0.5rem row inset,
+    the row-background channel), with motion-token durations.
+  - Storybook: data-driven MAAS/LXD stories; a practical
+    "with ContextSwitcher" story routes url'd contexts through the hash
+    router and shows both ItemExpandable flavours side by side; all root
+    fixtures live in storybook/navigation/fixtures.tsx.
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+* feat(ds-app)!: rebuild SideNavigation into a single data-driven region shell (#1227), closes [#1227](https://github.com/canonical/pragma/issues/1227) [#main-content](https://github.com/canonical/pragma/issues/main-content)
+
+### Features
+
+* **ds-app:** add SideNavigation's data-driven subcomponents ([#1234](https://github.com/canonical/pragma/issues/1234)) ([78c2314](https://github.com/canonical/pragma/commit/78c23146a723c5a2e39649988634885139264127))
+
+### BREAKING CHANGES
+
+* SideNavigation's entire subcomponent surface changes —
+  there are no dot-static or named exports; the sidebar is consumed
+  data-only via root/footerRoot/contextSwitcher props, and the region and
+  row components render exclusively from that data.
+
+  - One navigation landmark: the root is a plain <div>; Content's <nav> is
+    the component's single navigation landmark (aria-label forwarded,
+    default "Main navigation") — branding, the context switcher and the
+    footer's actions sit outside it by design.
+  - A visually hidden "Skip to main content" link is the first focusable
+    element in the DOM order (target via skipTo, default #main-content).
+  - Four regions, all data-driven: Header (branding + collapse toggle), an
+    optional ContextSwitcher region (typed contextSwitcher props — a
+    role="menu" select-like widget is not navigation, so it renders in
+    its own plain-<div> region between Header and Content, outside the
+    landmark, and hides when the rail collapses), Content (the landmark;
+    links, plain labels and expandable disclosures only) and Footer
+    (free-form rows through footerRoot).
+  - Strict content vocabulary: interactive action rows belong to the
+    Footer, so the landmark's contents always read as destinations. There
+    is no JSX escape hatch — the API carries no children props.
+  - Footer vocabulary mirrors the content tree's type split: free-form
+    leaves (LeafFooterItem — label required, optional icon/url/control/
+    slot; action rows via control: "button" + onClick flow through data)
+    and depth-1 expandables (ExpandableFooterItem). Leaf rows render as
+    links (active when matching the current location, LinkComponent
+    integrated); action rows render as buttons.
+  - Rail state keys off data-expanded on the root — the single source of
+    truth. Collapsed: Content and the switcher region hide, the footer
+    degrades to icon-only, and any rendered ItemExpandable discloses its
+    sub-items into a floating popover on the inline-end with visible
+    labels. Where CSS anchor positioning is supported (Baseline 2026),
+    position-try-fallbacks flips the popover above its trigger on viewport
+    overflow — browser-measured, plus the mirrored 0.5rem gap; otherwise
+    it stays top-anchored. Native <details> throughout: no Esc-close or
+    outside-click dismissal by design, Tab navigation stays viable.
+  - A nested sub-item whose url becomes active re-opens its collapsed
+    parent (one-way: manual collapse is respected, never auto-closed) and
+    carries data-active + aria-current under the expanded parent.
+  - The rail-collapse shortcut is Ctrl+B, opt-in via keyboardShortcut and
+    off by default (pending approval).
+  - The sidenav architecture tokens are declared on the component's own
+    stylesheet (rail widths, logo sizing, the unified 0.5rem row inset,
+    the row-background channel), with motion-token durations.
+  - Storybook: data-driven MAAS/LXD stories; a practical
+    "with ContextSwitcher" story routes url'd contexts through the hash
+    router and shows both ItemExpandable flavours side by side; all root
+    fixtures live in storybook/navigation/fixtures.tsx.
+
+
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* refactor(ds-app)!: wrap the application-tier stylesheets the first four forges missed (#1133) ([eaaa63d](https://github.com/canonical/pragma/commit/eaaa63d2cef38637dabecf17b92642a16223a01d)), closes [#1133](https://github.com/canonical/pragma/issues/1133) [canonical/pragma#1122](https://github.com/canonical/pragma/issues/1122) [#1123](https://github.com/canonical/pragma/issues/1123) [#1127](https://github.com/canonical/pragma/issues/1127) [#1122](https://github.com/canonical/pragma/issues/1122) [canonical/pragma#1122](https://github.com/canonical/pragma/issues/1122) [#1120](https://github.com/canonical/pragma/issues/1120)
+* refactor(utils)!: move navigation, debounce and throttle to @canonical/ds-utils (#1109), closes [#1109](https://github.com/canonical/pragma/issues/1109)
+* refactor(ds-types)!: require a key or url on the navigation item (#1142) ([cb7f3b4](https://github.com/canonical/pragma/commit/cb7f3b4c07d56eb543d34aaf53ce6f44f2821dd8)), closes [#1142](https://github.com/canonical/pragma/issues/1142)
+
+### Bug Fixes
+
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+
+### BREAKING CHANGES
+
+* @canonical/utils no longer exports debounce, throttle,
+  humanizeNumber, pluralize, the HumanizeNumberOptions, HumanizeResult and
+  PluralizeOptions types, the AllOrNone type, or any navigation export —
+  annotateTree, createNavigationReducer, findAncestorPath,
+  getFirstInteractiveChild, getItemId, getLastInteractiveChild, getParentItem,
+  isInteractive, prepareIndex, resolveOrientation, NavigationActionType, and the
+  NavigationAction, NavigationReducerOptions, NavigationState, NodeStatus,
+  Orientation and OrientationConfig types. They are now exported, unchanged, from
+  @canonical/ds-utils. Consumers change the import specifier and add
+  @canonical/ds-utils as a dependency; no call site changes.
+* `Item` requires a `key` or a `url`. Items with neither
+  no longer type-check — give a navigable item its `url` and a
+  non-navigable one a `key`. Types built on `Item` must use
+  `type X = Item & { … }` rather than `interface X extends Item`, and
+  `_DistributiveOmit<Item, K>` rather than `Omit<Item, K>`.
+  `MenuSeparator.key` is required: write `{ type: "separator", key: "…" }`.
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* An application's own unlayered CSS now beats every rule
+  @canonical/react-ds-app and @canonical/svelte-ds-app ship, whatever the
+  selectors on either side, because an unlayered author rule outranks every
+  layered one. Before, an application override competed with these stylesheets by
+  specificity and source order, so an override that used to lose now wins; one
+  that used to win still does. An application that does not want to win by
+  accident puts its CSS in a layer — `@layer app`, which is where the summon
+  application template now puts a generated application's own stylesheets.
+  Separately, an application tier's rule for a component now beats the matching
+  global package's by cascade layer instead of by load order. Neither of these two
+  packages collides with its global tier today, so no rule changes hands on this
+  release.
+* The cascade layer these two packages write into is renamed
+  from `ds.components.app` to `ds.components.apps`. An application that names
+  pragma's component layers in its own order statement, or that writes a rule
+  into `ds.components.app` to sit beside them, has to use the new name. The
+  layer's position is unchanged — above `ds.components.global`, below the
+  consumer's own `app` layer — so nothing computes differently.
+
+
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+### Bug Fixes
+
+* **storybook-addon-utils:** render the story inside the router provider, not into its children ([#1079](https://github.com/canonical/pragma/issues/1079)) ([6b1401c](https://github.com/canonical/pragma/commit/6b1401c96340e8a2afd9dccf6da63a46714bee9d)), closes [#996](https://github.com/canonical/pragma/issues/996) [#961](https://github.com/canonical/pragma/issues/961)
+
+
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+**Note:** Version bump only for package @canonical/react-ds-app
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+
+
+* feat(router)!: pre-1.0 API consolidation — one constructor, adapters as the axis, block(), warm() (re-land of #973) (#981) ([416d596](https://github.com/canonical/pragma/commit/416d59636f94cafae7a9fbb0b377edabed6438bf)), closes [#973](https://github.com/canonical/pragma/issues/973) [#981](https://github.com/canonical/pragma/issues/981) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973)
+
+
+### BREAKING CHANGES
+
+* navigate() and setSearchParams() throw on a router
+constructed without an adapter instead of doing nothing.
+
+* refactor(router)!: collapse router factories onto the adapter axis
+
+createRouter(routes, { adapter, ... }) is now the one constructor. The
+preset factories were one-line sugar over an adapter choice; under the
+minimal-API principle the adapter is the whole axis:
+
+- delete createBrowserRouter, createHashRouter, createMemoryRouter and
+  createStaticRouter from router-core (the browser adapter already
+  resolves Navigation API -> History API internally)
+- delete router-react's createHydratedRouter; its __INITIAL_DATA__
+  reading survives as readDehydratedState(), passed to createRouter as
+  hydratedState — which also removes the incoherence where the hydrated
+  path was history-only while createBrowserRouter preferred the
+  Navigation API
+- migrate every in-repo consumer (boilerplate entries, summon templates,
+  storybook harnesses, story-utils) to createRouter + adapters; the
+  static-router recipe (match + synchronous hydrate) is inlined at the
+  two SSR entry points that used it
+* createBrowserRouter, createHashRouter,
+createMemoryRouter, createStaticRouter and createHydratedRouter are
+removed. Use createRouter(routes, { adapter: createBrowserAdapter() |
+createHashAdapter() | createMemoryAdapter(url) | createServerAdapter(url),
+hydratedState: readDehydratedState() ?? undefined }).
+
+* refactor(router)!: reshape blockers to router.block() and fix useBlocker reactivity
+
+Five members (registerBlocker/unregisterBlocker/blockerState/
+proceedNavigation/cancelNavigation) collapse into one:
+router.block(isActive) returns a handle with { state, proceed, cancel,
+subscribe, dispose }, backed by a dedicated blocker-state subject.
+
+This also fixes a real bug: useBlocker subscribed to the store, but a
+blocked navigate() never touched the store, so the documented
+confirmation-dialog pattern never rendered — the old test had to poke
+the store manually to observe the blocked state. The hook now subscribes
+to the handle and re-renders on the block itself; the dialog pattern is
+asserted end-to-end.
+
+Disposing (or unmounting) while blocked discards the pending navigation
+— previously implicit, now documented handle behavior.
+* registerBlocker, unregisterBlocker, blockerState,
+proceedNavigation and cancelNavigation are removed from Router; use
+router.block(isActive). The RouterBlocker type is replaced by
+RouterBlockerHandle. useBlocker's public shape is unchanged.
+
+* refactor(router)!: shrink the public surface — internal store, one-arg StatusResponse
+
+- Remove store from the public Router interface. It was reachable on
+  every router yet documented nowhere, and no production code consumed
+  it; the package's own tests reach the concrete object's store through
+  an explicit internal accessor instead. createRouterStore and the
+  RouterStore type remain exported as standalone primitives.
+- StatusResponse's data argument is now optional — new StatusResponse(401)
+  works, as the READMEs already wrote.
+* Router no longer exposes store. Subscribe via
+subscribe/subscribeToNavigation/subscribeToSearchParam, read via
+getState/getTrackedLocation.
+
+* refactor(router)!: rename prefetch to warm
+
+'prefetch' imports the wrong mental model: in every other router a
+prefetch/loader hands data to the component, and readers kept filing the
+hook's fire-and-forget design as a bug. 'warm' says what the hook is
+for — warming a cache ahead of navigation — and cannot be confused with
+a data loader.
+
+Renamed atomically across router-core (route/wrapper hook, router.warm(),
+WarmFn, internals), router-react (Link's hover warm-up), the reference
+app and summon templates, and the router docs. TanStack's prefetchQuery
+in examples is unrelated third-party API and keeps its name.
+* the route/wrapper 'prefetch' hook is now 'warm';
+router.prefetch() is router.warm(); the PrefetchFn type is WarmFn.
+
+* fix(router-core): make StatusResponse's optional payload type-safe
+
+
+
+
+
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+**Note:** Version bump only for package @canonical/react-ds-app
+
+
+
+
+
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
+
+**Note:** Version bump only for package @canonical/react-ds-app
+
+
+
+
+
+# [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
+
+**Note:** Version bump only for package @canonical/react-ds-app
+
+
+
+
+
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+**Note:** Version bump only for package @canonical/react-ds-app
+
+
+
+
+
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **deps:** unify @canonical/design-tokens pin to 0.6.2-contrasted.0 ([#748](https://github.com/canonical/pragma/issues/748)) ([cf607d7](https://github.com/canonical/pragma/commit/cf607d7ae40f8044208e1e502c8d92178261e73c)), closes [#731](https://github.com/canonical/pragma/issues/731) [#89](https://github.com/canonical/pragma/issues/89)
+
+
+### Features
+
+* **ds-global:** add navigational Tabs + hoist shared LinkComponentProps ([#730](https://github.com/canonical/pragma/issues/730)) ([7f8937c](https://github.com/canonical/pragma/commit/7f8937cb242d47ba8fcc4aaa87c7d3d47a9e43df)), closes [#17](https://github.com/canonical/pragma/issues/17)
+
+
+
+
+
+## [0.29.1](https://github.com/canonical/pragma/compare/v0.29.0...v0.29.1) (2026-07-03)
+
+**Note:** Version bump only for package @canonical/react-ds-app
+
+
+
+
+
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+**Note:** Version bump only for package @canonical/react-ds-app
+
+
+
+
+
 # [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
 
 **Note:** Version bump only for package @canonical/react-ds-app

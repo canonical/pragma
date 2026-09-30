@@ -6,6 +6,10 @@ const componentCssClassName = "ds form-hidden";
 /**
  * Presentational hidden input — pure markup, no react-hook-form.
  * @returns {ReactElement} - Rendered Hidden input
+ *
+ * `import { HiddenInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.hidden_input
  */
 export const HiddenInput = forwardRef<HTMLInputElement, HiddenInputProps>(
   function HiddenInput(

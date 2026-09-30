@@ -51,21 +51,18 @@ describe("TextInput component", () => {
           .toHaveAttribute("type", "text");
       });
 
-      it.each([
-        "text",
-        "password",
-        "email",
-        "url",
-        "tel",
-      ] as const)("accepts %s", async (type) => {
-        const page = render(Component, {
-          ...baseProps,
-          type,
-        });
-        await expect
-          .element(componentLocator(page))
-          .toHaveAttribute("type", type);
-      });
+      it.each(["text", "password", "email", "url", "tel"] as const)(
+        "accepts %s",
+        async (type) => {
+          const page = render(Component, {
+            ...baseProps,
+            type,
+          });
+          await expect
+            .element(componentLocator(page))
+            .toHaveAttribute("type", type);
+        },
+      );
 
       it("accepts search", async () => {
         const page = render(Component, {

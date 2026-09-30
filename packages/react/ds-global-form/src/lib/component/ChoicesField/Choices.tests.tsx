@@ -32,6 +32,13 @@ describe("Choices (presentational)", () => {
     expect(screen.getByText("Green")).toBeInTheDocument();
   });
 
+  it("applies the layout class", () => {
+    const { container } = render(
+      <Choices name="color" options={options} layout="stacked" />,
+    );
+    expect(container.querySelector("fieldset")).toHaveClass("stacked");
+  });
+
   it("reflects the selected value (single)", () => {
     render(<Choices name="color" options={options} value="blue" />);
     const radios = screen.getAllByRole("radio");
@@ -104,6 +111,7 @@ describe("Choices (presentational)", () => {
       { label: "Disabled", value: "disabled", disabled: true },
     ];
     render(<Choices name="color" options={opts} />);
+    expect(screen.getAllByRole("radio")).toHaveLength(4);
     expect(screen.getAllByRole("radio")[3]).toBeDisabled();
   });
 });

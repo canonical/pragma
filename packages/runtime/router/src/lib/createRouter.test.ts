@@ -1,24 +1,50 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import createMemoryAdapter from "./createMemoryAdapter.js";
 import createRouter from "./createRouter.js";
+import createServerAdapter from "./createServerAdapter.js";
 import group from "./group.js";
 import redirect from "./redirect.js";
 import route from "./route.js";
 import StatusResponse from "./StatusResponse.js";
-import type { AnyRoute, RouteMiddleware } from "./types.js";
+import type {
+  AnyRoute,
+  RouteMap,
+  RouteMiddleware,
+  RouterStore,
+  StandardSchemaResult,
+  StandardSchemaV1,
+} from "./types.js";
 import wrapper from "./wrapper.js";
+
+/**
+ * Build a Standard Schema v1 test double. The default validator passes the
+ * raw value through as TOutput; pass validate to exercise coercion or
+ * failure paths. TInput defaults to TOutput so build-side (input) and
+ * match-side (output) types line up unless a test declares otherwise.
+ */
+function testSchema<TOutput, TInput = TOutput>(
+  validate: (value: unknown) => StandardSchemaResult<TOutput> = (value) => ({
+    value: value as TOutput,
+  }),
+): StandardSchemaV1<TInput, TOutput> {
+  return { "~standard": { version: 1, vendor: "router-test", validate } };
+}
+
+/**
+ * Reach the router's internal store — not part of the public Router
+ * contract, kept reachable on the concrete object for these tests.
+ */
+function getInternalStore(router: unknown): RouterStore<RouteMap, AnyRoute> {
+  return (router as { store: RouterStore<RouteMap, AnyRoute> }).store;
+}
 
 describe("createRouter", () => {
   it("builds hrefs and navigation intents from typed route names", () => {
-    const userSearchSchema = {
-      "~standard": {
-        output: {} as {
-          tab: string;
-          ignored?: string;
-          filters: Array<string | undefined>;
-        },
-      },
-    };
+    const userSearchSchema = testSchema<{
+      tab: string;
+      ignored?: string;
+      filters: Array<string | undefined>;
+    }>();
 
     const homeRoute = route({
       url: "/",
@@ -31,10 +57,13 @@ describe("createRouter", () => {
       content: ({ params }) => params.userId,
     });
 
-    const router = createRouter({
-      home: homeRoute,
-      user: userRoute,
-    });
+    const router = createRouter(
+      {
+        home: homeRoute,
+        user: userRoute,
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
 
     expect(router.getRoute("user")).toBe(userRoute);
     expect(router.buildPath("home")).toBe("/");
@@ -72,9 +101,10 @@ describe("createRouter", () => {
       content: () => "home",
     });
 
-    const router = createRouter({
-      home: homeRoute,
-    });
+    const router = createRouter(
+      { home: homeRoute },
+      { adapter: createMemoryAdapter("/") },
+    );
 
     expect(router.navigate("home")).toEqual({
       name: "home",
@@ -151,14 +181,10 @@ describe("createRouter", () => {
   });
 
   it("preserves typed params and search shapes", () => {
-    const searchSchema = {
-      "~standard": {
-        output: {} as {
-          q: string;
-          page: number;
-        },
-      },
-    };
+    const searchSchema = testSchema<{
+      q: string;
+      page: number;
+    }>();
 
     const homeRoute = route({
       url: "/",
@@ -176,11 +202,14 @@ describe("createRouter", () => {
       content: ({ search }) => `${search.q}:${search.page}`,
     });
 
-    const router = createRouter({
-      home: homeRoute,
-      user: userRoute,
-      search: searchRoute,
-    });
+    const router = createRouter(
+      {
+        home: homeRoute,
+        user: userRoute,
+        search: searchRoute,
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
 
     const navigationIntent = router.navigate("search", {
       search: {
@@ -213,19 +242,16 @@ describe("createRouter", () => {
   });
 
   it("matches routes by specificity and validates search params", () => {
-    const searchSchema = {
-      "~standard": {
-        output: {} as { page: number; tag: string },
-        validate(value: unknown) {
-          const raw = value as { page?: string; tag?: string };
+    const searchSchema = testSchema<{ page: number; tag: string }>((value) => {
+      const raw = value as { page?: string; tag?: string };
 
-          return {
-            page: Number(raw.page ?? "1"),
-            tag: raw.tag ?? "",
-          };
+      return {
+        value: {
+          page: Number(raw.page ?? "1"),
+          tag: raw.tag ?? "",
         },
-      },
-    };
+      };
+    });
 
     const searchRoute = route({
       url: "/users/:userId",
@@ -364,14 +390,10 @@ describe("createRouter", () => {
     const router = createRouter({
       query: route({
         url: "/query",
-        search: {
-          "~standard": {
-            output: {} as {
-              q?: string;
-              tag?: string;
-            },
-          },
-        },
+        search: testSchema<{
+          q?: string;
+          tag?: string;
+        }>(),
         content: () => "query",
       }),
     });
@@ -432,18 +454,15 @@ describe("createRouter", () => {
   });
 
   it("returns a 404 notFound match when no route matches", () => {
-    const notFoundSearchSchema = {
-      "~standard": {
-        output: {} as { from?: string },
-        validate(value: unknown) {
-          const raw = value as { from?: string | string[] };
+    const notFoundSearchSchema = testSchema<{ from?: string }>((value) => {
+      const raw = value as { from?: string | string[] };
 
-          return {
-            from: Array.isArray(raw.from) ? raw.from[0] : raw.from,
-          };
+      return {
+        value: {
+          from: Array.isArray(raw.from) ? raw.from[0] : raw.from,
         },
-      },
-    };
+      };
+    });
 
     const notFoundRoute = route({
       url: "/*",
@@ -566,7 +585,7 @@ describe("createRouter", () => {
     });
 
     expect(router.getState().location.href).toBe("/?page=2#details");
-    expect(router.store.getSnapshot()).toMatchObject({
+    expect(getInternalStore(router).getSnapshot()).toMatchObject({
       href: "/?page=2#details",
       navigationState: "idle",
       pathname: "/",
@@ -592,8 +611,8 @@ describe("createRouter", () => {
     router.subscribeToSearchParam("page", pageListener);
     router.subscribeToNavigation(navigationListener);
 
-    router.store.setLocation("/?page=1");
-    router.store.setNavigationState("loading");
+    getInternalStore(router).setLocation("/?page=1");
+    getInternalStore(router).setNavigationState("loading");
 
     expect(stateListener).toHaveBeenCalledTimes(2);
     expect(pageListener).toHaveBeenCalledWith("1", null);
@@ -787,8 +806,8 @@ describe("createRouter", () => {
     );
   });
 
-  it("prefetches lazy content without mutating router state", async () => {
-    const prefetchSpy = vi.fn(async () => {});
+  it("warms lazy content without mutating router state", async () => {
+    const warmSpy = vi.fn(async () => {});
     const preloadSpy = vi.fn(async () => ({ default: "SettingsPage" }));
     const content = Object.assign(() => "settings", {
       preload: preloadSpy,
@@ -800,13 +819,13 @@ describe("createRouter", () => {
       }),
       settings: route({
         url: "/settings",
-        prefetch: prefetchSpy,
+        warm: warmSpy,
         content,
       }),
     });
 
-    await router.prefetch("settings");
-    await router.prefetch("settings");
+    await router.warm("settings");
+    await router.warm("settings");
 
     expect(preloadSpy).toHaveBeenCalledTimes(1);
     expect(router.getState().location.href).toBe("/");
@@ -818,12 +837,12 @@ describe("createRouter", () => {
     expect(preloadSpy).toHaveBeenCalledTimes(1);
     expect(router.render(result)).toBe("settings");
 
-    await router.prefetch("settings");
+    await router.warm("settings");
 
     expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("reuses an in-flight prefetch when a matching load starts", async () => {
+  it("reuses an in-flight warm when a matching load starts", async () => {
     let resolvePreload: ((value: { default: string }) => void) | null = null;
     const preloadSpy = vi.fn(() => {
       return new Promise<{ default: string }>((resolve) => {
@@ -840,21 +859,21 @@ describe("createRouter", () => {
       }),
     });
 
-    const prefetchPromise = router.prefetch("docs");
+    const warmPromise = router.warm("docs");
     const loadPromise = router.load("/docs");
 
     (resolvePreload as unknown as (value: { default: string }) => void)({
       default: "DocsPage",
     });
 
-    await prefetchPromise;
+    await warmPromise;
     const result = await loadPromise;
 
     expect(preloadSpy).toHaveBeenCalledTimes(1);
     expect(router.render(result)).toBe("docs");
   });
 
-  it("deduplicates concurrent prefetch calls for the same href", async () => {
+  it("deduplicates concurrent warm calls for the same href", async () => {
     let resolvePreload: ((value: { default: string }) => void) | null = null;
     const preloadSpy = vi.fn(() => {
       return new Promise<{ default: string }>((resolve) => {
@@ -868,22 +887,22 @@ describe("createRouter", () => {
       }),
     });
 
-    const firstPrefetch = router.prefetch("docs");
-    const secondPrefetch = router.prefetch("docs");
+    const firstWarm = router.warm("docs");
+    const secondWarm = router.warm("docs");
 
     (resolvePreload as unknown as (value: { default: string }) => void)({
       default: "DocsPage",
     });
 
-    await Promise.all([firstPrefetch, secondPrefetch]);
+    await Promise.all([firstWarm, secondWarm]);
 
     expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("surfaces non-redirect prefetch failures and clears the pending entry", async () => {
+  it("surfaces non-redirect warm failures and clears the pending entry", async () => {
     const preloadSpy = vi
       .fn<() => Promise<{ default: string }>>()
-      .mockRejectedValueOnce(new Error("prefetch-failure"))
+      .mockRejectedValueOnce(new Error("warm-failure"))
       .mockResolvedValueOnce({ default: "RecoveredPage" });
     const router = createRouter({
       broken: route({
@@ -892,13 +911,13 @@ describe("createRouter", () => {
       }),
     });
 
-    await expect(router.prefetch("broken")).rejects.toThrow("prefetch-failure");
-    await expect(router.prefetch("broken")).resolves.toBeUndefined();
+    await expect(router.warm("broken")).rejects.toThrow("warm-failure");
+    await expect(router.warm("broken")).resolves.toBeUndefined();
 
     expect(preloadSpy).toHaveBeenCalledTimes(2);
   });
 
-  it("aborts a load that is waiting on an in-flight prefetch when a newer load starts", async () => {
+  it("aborts a load that is waiting on an in-flight warm when a newer load starts", async () => {
     let resolvePreload: ((value: { default: string }) => void) | null = null;
     const preloadSpy = vi.fn(() => {
       return new Promise<{ default: string }>((resolve) => {
@@ -916,7 +935,7 @@ describe("createRouter", () => {
       }),
     });
 
-    const prefetchPromise = router.prefetch("docs");
+    const warmPromise = router.warm("docs");
     const firstLoad = router.load("/docs");
     const secondLoad = router.load("/");
 
@@ -924,7 +943,7 @@ describe("createRouter", () => {
       default: "DocsPage",
     });
 
-    await prefetchPromise;
+    await warmPromise;
 
     await expect(firstLoad).rejects.toThrow("aborted");
     await expect(secondLoad).resolves.toMatchObject({
@@ -934,7 +953,7 @@ describe("createRouter", () => {
     expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("throws after an excessive redirect loop during prefetch", async () => {
+  it("throws after an excessive redirect loop during warm", async () => {
     const router = createRouter({
       loop: route({
         url: "/loop",
@@ -943,8 +962,8 @@ describe("createRouter", () => {
       }),
     });
 
-    await expect(router.prefetch("loop")).rejects.toThrow(
-      "Too many redirects during router.prefetch().",
+    await expect(router.warm("loop")).rejects.toThrow(
+      "Too many redirects during router.warm().",
     );
   });
 
@@ -978,11 +997,11 @@ describe("createRouter", () => {
         }),
       });
 
-      await router.prefetch("docs");
+      await router.warm("docs");
       await router.load("/docs");
 
       (cleanupCallback as unknown as (key: string) => void)("docs");
-      await router.prefetch("docs");
+      await router.warm("docs");
 
       expect(preloadSpy).toHaveBeenCalledTimes(2);
     } finally {
@@ -1019,7 +1038,7 @@ describe("createRouter", () => {
     expect(router.render()).toBe("not-found");
   });
 
-  it("follows static redirects during prefetch", async () => {
+  it("follows static redirects during warm", async () => {
     const modernPreload = vi.fn(async () => ({ default: "ModernPage" }));
     const router = createRouter({
       legacy: route({
@@ -1035,7 +1054,7 @@ describe("createRouter", () => {
       }),
     });
 
-    await router.prefetch("legacy");
+    await router.warm("legacy");
 
     expect(modernPreload).toHaveBeenCalledTimes(1);
 
@@ -1226,7 +1245,7 @@ describe("createRouter", () => {
     });
 
     // Resolve the slow preload after the fast load committed
-    resolvePreload?.();
+    (resolvePreload as (() => void) | null)?.();
 
     const firstResult = await firstLoad;
 
@@ -1363,7 +1382,7 @@ describe("createRouter", () => {
     router.dispose();
 
     // Resolve the preload so the promise settles
-    resolvePreload?.();
+    (resolvePreload as (() => void) | null)?.();
 
     // The load may resolve (router catches AbortError internally) or reject
     // depending on timing. Either way, the router was disposed.
@@ -1391,6 +1410,28 @@ describe("createRouter", () => {
     await vi.waitFor(() => {
       expect(router.getState().location.searchParams.get("sort")).toBe("name");
       expect(router.getState().location.searchParams.get("page")).toBe("2");
+    });
+  });
+
+  it("removes search params carrying explicit undefined update values", async () => {
+    const router = createRouter(
+      {
+        list: route({
+          url: "/list",
+          content: () => "list",
+        }),
+      },
+      { adapter: createMemoryAdapter("/list?sort=name&page=2") },
+    );
+
+    await router.load("/list?sort=name&page=2");
+    // A partial update object can carry explicit undefined values; they
+    // remove the param instead of serializing the string "undefined".
+    router.setSearchParams({ page: undefined });
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.searchParams.get("sort")).toBe("name");
+      expect(router.getState().location.searchParams.has("page")).toBe(false);
     });
   });
 
@@ -1425,19 +1466,25 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => true });
+    const blocker = router.block(() => true);
+    const transitions: Array<"idle" | "blocked"> = [];
+
+    blocker.subscribe((state) => {
+      transitions.push(state);
+    });
     router.navigate("about");
 
-    expect(router.blockerState).toBe("blocked");
+    expect(blocker.state).toBe("blocked");
     expect(router.getState().location.pathname).toBe("/");
 
-    router.proceedNavigation();
+    blocker.proceed();
 
     await vi.waitFor(() => {
       expect(router.getState().location.pathname).toBe("/about");
     });
 
-    expect(router.blockerState).toBe("idle");
+    expect(blocker.state).toBe("idle");
+    expect(transitions).toEqual(["blocked", "idle"]);
   });
 
   it("cancels blocked navigation and stays on the current page", async () => {
@@ -1451,13 +1498,19 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => true });
+    const blocker = router.block(() => true);
+    const transitions: Array<"idle" | "blocked"> = [];
+
+    blocker.subscribe((state) => {
+      transitions.push(state);
+    });
     router.navigate("about");
 
-    expect(router.blockerState).toBe("blocked");
-    router.cancelNavigation();
+    expect(blocker.state).toBe("blocked");
+    blocker.cancel();
 
-    expect(router.blockerState).toBe("idle");
+    expect(blocker.state).toBe("idle");
+    expect(transitions).toEqual(["blocked", "idle"]);
     expect(router.getState().location.pathname).toBe("/");
   });
 
@@ -1472,17 +1525,18 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => false });
+    const blocker = router.block(() => false);
+
     router.navigate("about");
 
-    expect(router.blockerState).toBe("idle");
+    expect(blocker.state).toBe("idle");
 
     await vi.waitFor(() => {
       expect(router.getState().location.pathname).toBe("/about");
     });
   });
 
-  it("removes blockers on unregister", async () => {
+  it("removes blockers on dispose", async () => {
     const router = createRouter(
       {
         home: route({ url: "/", content: () => "home" }),
@@ -1493,11 +1547,12 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => true });
-    router.unregisterBlocker("form");
+    const blocker = router.block(() => true);
+
+    blocker.dispose();
     router.navigate("about");
 
-    expect(router.blockerState).toBe("idle");
+    expect(blocker.state).toBe("idle");
 
     await vi.waitFor(() => {
       expect(router.getState().location.pathname).toBe("/about");
@@ -1526,13 +1581,13 @@ describe("createRouter", () => {
     });
   });
 
-  it("follows runtime redirects thrown from prefetch during load", async () => {
+  it("follows runtime redirects thrown from warm during load", async () => {
     const router = createRouter(
       {
         guarded: route({
           url: "/guarded",
           content: () => "guarded",
-          prefetch: () => {
+          warm: () => {
             redirect("/login");
           },
         }),
@@ -1547,7 +1602,7 @@ describe("createRouter", () => {
     expect(result.match).toMatchObject({ kind: "route", name: "login" });
   });
 
-  it("clears pending navigation when unregistering a blocker while blocked", async () => {
+  it("scopes blocker handles to the registration that intercepted", async () => {
     const router = createRouter(
       {
         home: route({ url: "/", content: () => "home" }),
@@ -1558,28 +1613,62 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => true });
+    const active = router.block(() => true);
+    const inactive = router.block(() => false);
+
     router.navigate("about");
 
-    expect(router.blockerState).toBe("blocked");
+    expect(active.state).toBe("blocked");
+    expect(inactive.state).toBe("idle");
 
-    // Unregistering while blocked should clear the pending navigation
-    router.unregisterBlocker("form");
+    // A handle whose blocker did not intercept cannot act on the navigation.
+    inactive.proceed();
+    inactive.cancel();
 
-    expect(router.blockerState).toBe("idle");
+    expect(active.state).toBe("blocked");
+    expect(router.getState().location.pathname).toBe("/");
+
+    // Disposing the non-intercepting blocker leaves the navigation pending.
+    inactive.dispose();
+
+    expect(active.state).toBe("blocked");
+
+    active.proceed();
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+  });
+
+  it("discards the pending navigation when disposing a blocker while blocked", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    const blocker = router.block(() => true);
+
+    router.navigate("about");
+
+    expect(blocker.state).toBe("blocked");
+
+    // Disposing while blocked discards the pending navigation
+    blocker.dispose();
+
+    expect(blocker.state).toBe("idle");
     // Navigation was cleared, not proceeded — should stay on "/"
     expect(router.getState().location.pathname).toBe("/");
   });
 
-  it("throws when search param validation returns issues", () => {
-    const failingSchema = {
-      "~standard": {
-        output: {} as { page: number },
-        validate() {
-          return { issues: [{ message: "page must be positive" }] };
-        },
-      },
-    };
+  it("throws a 400 StatusResponse when search param validation returns issues", () => {
+    const failingSchema = testSchema<{ page: number }>(() => ({
+      issues: [{ message: "page must be positive" }],
+    }));
 
     const router = createRouter({
       list: route({
@@ -1589,45 +1678,36 @@ describe("createRouter", () => {
       }),
     });
 
-    expect(() => router.match("/list?page=-1")).toThrow(
+    let thrownError: unknown = null;
+
+    try {
+      router.match("/list?page=-1");
+    } catch (caughtError) {
+      thrownError = caughtError;
+    }
+
+    expect(thrownError).toBeInstanceOf(StatusResponse);
+
+    const statusResponse = thrownError as StatusResponse<{
+      issues: ReadonlyArray<{ message: string }>;
+      message: string;
+    }>;
+
+    expect(statusResponse.status).toBe(400);
+    expect(statusResponse.data.message).toBe(
       "Search param validation failed: page must be positive",
     );
-  });
-
-  it("uses default message when validation issue has no message", () => {
-    const failingSchema = {
-      "~standard": {
-        output: {} as { page: number },
-        validate() {
-          return { issues: [{}] };
-        },
-      },
-    };
-
-    const router = createRouter({
-      list: route({
-        url: "/list",
-        search: failingSchema,
-        content: () => "list",
-      }),
-    });
-
-    expect(() => router.match("/list?page=-1")).toThrow(
-      "Search param validation failed: Validation error",
-    );
+    expect(statusResponse.data.issues).toEqual([
+      { message: "page must be positive" },
+    ]);
   });
 
   it("unwraps search validation result with value property", () => {
-    const wrappingSchema = {
-      "~standard": {
-        output: {} as { page: number },
-        validate(raw: unknown) {
-          const params = raw as { page?: string };
+    const wrappingSchema = testSchema<{ page: number }>((raw) => {
+      const params = raw as { page?: string };
 
-          return { value: { page: Number(params.page ?? "1") } };
-        },
-      },
-    };
+      return { value: { page: Number(params.page ?? "1") } };
+    });
 
     const router = createRouter({
       list: route({
@@ -1649,7 +1729,7 @@ describe("createRouter", () => {
         failing: route({
           url: "/failing",
           content: () => "fail",
-          prefetch: () => {
+          warm: () => {
             throw new Response("Forbidden", { status: 403 });
           },
         }),
@@ -1668,7 +1748,7 @@ describe("createRouter", () => {
         failing: route({
           url: "/failing",
           content: () => "fail",
-          prefetch: () => {
+          warm: () => {
             throw "string error";
           },
         }),
@@ -1681,13 +1761,13 @@ describe("createRouter", () => {
     expect(result.status).toBe(500);
   });
 
-  it("fires wrapper prefetch during load", async () => {
-    const wrapperPrefetch = vi.fn();
+  it("fires wrapper warm during load", async () => {
+    const wrapperWarm = vi.fn();
 
     const layout = wrapper({
       id: "layout",
       component: ({ children }) => children,
-      prefetch: wrapperPrefetch,
+      warm: wrapperWarm,
     });
 
     const [home] = group(layout, [
@@ -1702,17 +1782,17 @@ describe("createRouter", () => {
     await router.load("/");
 
     await vi.waitFor(() => {
-      expect(wrapperPrefetch).toHaveBeenCalled();
+      expect(wrapperWarm).toHaveBeenCalled();
     });
   });
 
-  it("follows runtime redirects during prefetch", async () => {
+  it("follows runtime redirects during warm", async () => {
     const router = createRouter(
       {
         guarded: route({
           url: "/guarded",
           content: () => "guarded",
-          prefetch: () => {
+          warm: () => {
             redirect("/login");
           },
         }),
@@ -1722,9 +1802,9 @@ describe("createRouter", () => {
     );
 
     await router.load("/");
-    await router.prefetch("guarded");
+    await router.warm("guarded");
 
-    // After prefetch follows the redirect, navigating should land on login
+    // After warm follows the redirect, navigating should land on login
     const result = await router.load("/guarded");
 
     expect(result.location.pathname).toBe("/login");
@@ -1776,26 +1856,16 @@ describe("createRouter", () => {
     );
 
     await router.load("/");
-    router.registerBlocker({ id: "form", isActive: () => true });
+    const blocker = router.block(() => true);
+
     router.navigate("about", { replace: true });
 
-    expect(router.blockerState).toBe("blocked");
-    router.proceedNavigation();
+    expect(blocker.state).toBe("blocked");
+    blocker.proceed();
 
     await vi.waitFor(() => {
       expect(router.getState().location.pathname).toBe("/about");
     });
-  });
-
-  it("no-ops setSearchParams when no adapter is present", () => {
-    const router = createRouter({
-      list: route({ url: "/list", content: () => "list" }),
-    });
-
-    // Should not throw — just does nothing
-    router.setSearchParams({ page: "2" });
-
-    expect(router.getState().location.pathname).toBe("/");
   });
 
   it("syncs adapter location after runtime redirect during navigate", async () => {
@@ -1806,7 +1876,7 @@ describe("createRouter", () => {
         guarded: route({
           url: "/guarded",
           content: () => "guarded",
-          prefetch: () => {
+          warm: () => {
             redirect("/login");
           },
         }),
@@ -1820,6 +1890,1015 @@ describe("createRouter", () => {
 
     await vi.waitFor(() => {
       expect(adapter.getLocation().pathname).toBe("/login");
+    });
+  });
+
+  describe("params schema validation", () => {
+    const numericIdSchema = testSchema<{ readonly id: number }>((value) => {
+      const raw = value as { id?: string };
+      const id = Number(raw.id);
+
+      return Number.isInteger(id) && id > 0
+        ? { value: { id } }
+        : { issues: [{ message: "id must be a positive integer" }] };
+    });
+
+    it("validates and coerces path params through a params schema", () => {
+      const router = createRouter({
+        user: route({
+          url: "/users/:id",
+          params: numericIdSchema,
+          content: ({ params }) => {
+            expectTypeOf(params).toEqualTypeOf<{ readonly id: number }>();
+
+            return String(params.id);
+          },
+        }),
+      });
+
+      expect(router.match("/users/42")).toMatchObject({
+        kind: "route",
+        name: "user",
+        status: 200,
+        params: { id: 42 },
+      });
+    });
+
+    it("treats a params schema rejection as a non-match and falls through", () => {
+      const router = createRouter(
+        {
+          user: route({
+            url: "/users/:id",
+            params: numericIdSchema,
+            content: ({ params }) => String(params.id),
+          }),
+          catchAll: route({
+            url: "/users/*",
+            content: () => "catch-all",
+          }),
+        },
+        {
+          notFound: route({ url: "/*", content: () => "not-found" }),
+        },
+      );
+
+      // Invalid id falls through to the wildcard sibling.
+      expect(router.match("/users/abc")).toMatchObject({
+        kind: "route",
+        name: "catchAll",
+      });
+    });
+
+    it("resolves to not-found (404) when no other route accepts rejected params", () => {
+      const notFoundRoute = route({ url: "/*", content: () => "not-found" });
+      const router = createRouter(
+        {
+          user: route({
+            url: "/users/:id",
+            params: numericIdSchema,
+            content: ({ params }) => String(params.id),
+          }),
+        },
+        { notFound: notFoundRoute },
+      );
+
+      expect(router.match("/users/abc")).toMatchObject({
+        kind: "not-found",
+        status: 404,
+      });
+    });
+
+    it("returns null for rejected params without a not-found route", () => {
+      const router = createRouter({
+        user: route({
+          url: "/users/:id",
+          params: numericIdSchema,
+          content: ({ params }) => String(params.id),
+        }),
+      });
+
+      expect(router.match("/users/abc")).toBeNull();
+    });
+
+    it("passes validated params to warm and builds paths from schema output", async () => {
+      const warmSpy = vi.fn();
+      const router = createRouter(
+        {
+          user: route({
+            url: "/users/:id",
+            params: numericIdSchema,
+            warm: (params, _search, _context) => {
+              expectTypeOf(params).toEqualTypeOf<{ readonly id: number }>();
+              warmSpy(params);
+            },
+            content: ({ params }) => String(params.id),
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      expect(router.buildPath("user", { params: { id: 42 } })).toBe(
+        "/users/42",
+      );
+
+      const intent = router.navigate("user", { params: { id: 42 } });
+
+      expectTypeOf(intent.params).toEqualTypeOf<{ readonly id: number }>();
+      expect(intent.href).toBe("/users/42");
+
+      await router.load("/users/42");
+
+      expect(warmSpy).toHaveBeenCalledWith({ id: 42 });
+    });
+
+    it("gates redirect routes on their params schema", () => {
+      const router = createRouter(
+        {
+          legacyUser: route({
+            url: "/old/:id",
+            redirect: "/users/:id",
+            status: 308,
+            params: numericIdSchema,
+          }),
+          user: route({
+            url: "/users/:id",
+            params: numericIdSchema,
+            content: ({ params }) => String(params.id),
+          }),
+        },
+        {
+          notFound: route({ url: "/*", content: () => "not-found" }),
+        },
+      );
+
+      expect(router.match("/old/7")).toMatchObject({
+        kind: "redirect",
+        redirectTo: "/users/7",
+        status: 308,
+      });
+      expect(router.match("/old/abc")).toMatchObject({
+        kind: "not-found",
+        status: 404,
+      });
+    });
+
+    it("passes raw string params to wrapper warm, validated params to route warm", async () => {
+      const wrapperSpy = vi.fn();
+      const routeSpy = vi.fn();
+
+      const shell = wrapper({
+        id: "raw-params-shell",
+        component: ({ children }) => children,
+        warm: (params) => {
+          wrapperSpy(params);
+        },
+      });
+
+      const [userRoute] = group(shell, [
+        route({
+          url: "/users/:id",
+          params: numericIdSchema,
+          warm: (params) => {
+            routeSpy(params);
+          },
+          content: ({ params }) => String(params.id),
+        }),
+      ] as const);
+
+      const router = createRouter({ user: userRoute });
+
+      await router.load("/users/42");
+
+      // Wrappers are shared across routes and typed as RouteParamValues:
+      // they get the raw URL strings, untouched by the route's params schema.
+      expect(wrapperSpy).toHaveBeenCalledWith({ id: "42" });
+      expect(routeSpy).toHaveBeenCalledWith({ id: 42 });
+    });
+
+    it("throws a helpful error when a params validator is async", () => {
+      const asyncSchema = {
+        "~standard": {
+          version: 1 as const,
+          vendor: "test",
+          validate: async () => ({ value: { id: 1 } }),
+        },
+      };
+
+      const router = createRouter({
+        user: route({
+          url: "/users/:id",
+          params: asyncSchema,
+          content: () => "user",
+        }),
+      });
+
+      expect(() => router.match("/users/42")).toThrow(
+        "async schema validation is not supported",
+      );
+    });
+  });
+
+  describe("Standard Schema v1 validators", () => {
+    it("infers types and validates through a v1 search schema", () => {
+      const pageSearchSchema: StandardSchemaV1<
+        { readonly page?: string },
+        { readonly page: number }
+      > = {
+        "~standard": {
+          version: 1,
+          vendor: "pragma-test",
+          validate(value) {
+            const raw = value as { page?: string };
+            const page = Number(raw.page ?? "1");
+
+            return Number.isNaN(page)
+              ? { issues: [{ message: "page must be a number" }] }
+              : { value: { page } };
+          },
+        },
+      };
+
+      const router = createRouter({
+        list: route({
+          url: "/list",
+          search: pageSearchSchema,
+          content: ({ search }) => {
+            expectTypeOf(search).toEqualTypeOf<{ readonly page: number }>();
+
+            return String(search.page);
+          },
+        }),
+      });
+
+      expect(router.match("/list?page=2")).toMatchObject({
+        kind: "route",
+        search: { page: 2 },
+      });
+      expect(() => router.match("/list?page=abc")).toThrow();
+    });
+
+    it("infers types and validates through a v1 params schema", () => {
+      const idParamsSchema: StandardSchemaV1<
+        { readonly id: string },
+        { readonly id: number }
+      > = {
+        "~standard": {
+          version: 1,
+          vendor: "pragma-test",
+          validate(value) {
+            const raw = value as { id?: string };
+            const id = Number(raw.id);
+
+            return Number.isInteger(id)
+              ? { value: { id } }
+              : { issues: [{ message: "id must be an integer" }] };
+          },
+        },
+      };
+
+      const router = createRouter({
+        user: route({
+          url: "/users/:id",
+          params: idParamsSchema,
+          content: ({ params }) => {
+            expectTypeOf(params).toEqualTypeOf<{ readonly id: number }>();
+
+            return String(params.id);
+          },
+        }),
+      });
+
+      expect(router.match("/users/42")).toMatchObject({
+        params: { id: 42 },
+      });
+      expect(router.match("/users/abc")).toBeNull();
+    });
+  });
+
+  describe("search validation failure handling in load()", () => {
+    it("commits a 400 error result instead of rejecting the load", async () => {
+      const failingSchema = testSchema<{ page: number }>(() => ({
+        issues: [{ message: "page must be positive" }],
+      }));
+
+      const router = createRouter({
+        home: route({ url: "/", content: () => "home" }),
+        list: route({
+          url: "/list",
+          search: failingSchema,
+          content: () => "list",
+        }),
+      });
+
+      const result = await router.load("/list?page=-1");
+
+      expect(result.status).toBe(400);
+      expect(result.match).toBeNull();
+      expect(result.error).toBeInstanceOf(StatusResponse);
+      expect((result.error as StatusResponse<unknown>).status).toBe(400);
+      expect(router.getState().location.status).toBe(400);
+    });
+  });
+
+  describe("async warm control flow", () => {
+    it("applies a redirect rejected from an async warm after the load commits", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter(
+        {
+          guarded: route({
+            url: "/guarded",
+            content: () => "guarded",
+            warm: async () => {
+              await gate;
+              redirect("/login");
+            },
+          }),
+          login: route({ url: "/login", content: () => "login" }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      // Fire-and-forget: the load commits before the rejection arrives.
+      const result = await router.load("/guarded");
+
+      expect(result.location.pathname).toBe("/guarded");
+
+      releaseWarm();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/login");
+      });
+    });
+
+    it("commits the status of a StatusResponse rejected from an async warm", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter(
+        {
+          failing: route({
+            url: "/failing",
+            content: () => "fail",
+            warm: async () => {
+              await gate;
+              throw new StatusResponse(403, "forbidden");
+            },
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      const result = await router.load("/failing");
+
+      expect(result.status).toBe(200);
+
+      releaseWarm();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.status).toBe(403);
+      });
+      expect(router.dehydrate()?.status).toBe(403);
+    });
+
+    it("drops late control flow when the user navigated elsewhere meanwhile", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter(
+        {
+          guarded: route({
+            url: "/guarded",
+            content: () => "guarded",
+            warm: async () => {
+              await gate;
+              redirect("/login");
+            },
+          }),
+          about: route({ url: "/about", content: () => "about" }),
+          login: route({ url: "/login", content: () => "login" }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/guarded");
+      await router.load("/about");
+
+      releaseWarm();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+
+    it("folds an async status rejection into a still-cached warm entry", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          failing: route({
+            url: "/failing",
+            content: () => "fail",
+            warm: async () => {
+              await gate;
+              throw new StatusResponse(410, "gone");
+            },
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      await router.warm("failing");
+
+      releaseWarm();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const result = await router.load("/failing");
+
+      expect(result.status).toBe(410);
+    });
+
+    it("applies a status live when its warm entry was already consumed", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          failing: route({
+            url: "/failing",
+            content: () => "fail",
+            warm: async () => {
+              await gate;
+              throw new StatusResponse(410, "gone");
+            },
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      await router.warm("failing");
+
+      // Consumes the cached entry; the warm hook does not re-run.
+      const result = await router.load("/failing");
+
+      expect(result.status).toBe(200);
+
+      releaseWarm();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.status).toBe(410);
+      });
+    });
+
+    it("redirects via a still-cached warm entry on the eventual navigation", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          guarded: route({
+            url: "/guarded",
+            content: () => "guarded",
+            warm: async () => {
+              await gate;
+              redirect("/login");
+            },
+          }),
+          login: route({ url: "/login", content: () => "login" }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      await router.warm("guarded");
+
+      releaseWarm();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // The redirect target is warmed in place of the guarded entry; the
+      // eventual navigation re-learns the redirect and applies it late —
+      // identical to navigating without a prior hover-warm.
+      const result = await router.load("/guarded");
+
+      expect(result.location.pathname).toBe("/guarded");
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/login");
+      });
+    });
+
+    it("tolerates async warm control flow on a server-adapter router", async () => {
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => {
+        unhandled.push(reason);
+      };
+      process.on("unhandledRejection", onUnhandled);
+
+      try {
+        const router = createRouter(
+          {
+            guarded: route({
+              url: "/guarded",
+              content: () => "guarded",
+              warm: async () => {
+                redirect("/login");
+              },
+            }),
+            login: route({ url: "/login", content: () => "login" }),
+          },
+          { adapter: createServerAdapter("/guarded") },
+        );
+
+        await router.load("/guarded");
+
+        await vi.waitFor(() => {
+          expect(router.getState().location.pathname).toBe("/login");
+        });
+        expect(unhandled).toEqual([]);
+      } finally {
+        process.off("unhandledRejection", onUnhandled);
+      }
+    });
+
+    it("keeps ignoring async rejections that carry no control flow", async () => {
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => {
+        unhandled.push(reason);
+      };
+      process.on("unhandledRejection", onUnhandled);
+
+      try {
+        const router = createRouter(
+          {
+            failing: route({
+              url: "/failing",
+              content: () => "fail",
+              warm: async () => {
+                throw new Error("cache warm failed");
+              },
+            }),
+          },
+          { adapter: createMemoryAdapter("/") },
+        );
+
+        const result = await router.load("/failing");
+
+        expect(result.status).toBe(200);
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(router.getState().location.status).toBe(200);
+        expect(unhandled).toEqual([]);
+      } finally {
+        process.off("unhandledRejection", onUnhandled);
+      }
+    });
+
+    it("stashes control flow arriving before the warm entry caches, then applies it", async () => {
+      let releasePreload!: () => void;
+      const preloadGate = new Promise<void>((resolve) => {
+        releasePreload = resolve;
+      });
+      const loginWarm = vi.fn();
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          guarded: route({
+            url: "/guarded",
+            content: Object.assign(() => "guarded", {
+              preload: async () => {
+                await preloadGate;
+
+                return { default: "GuardedPage" };
+              },
+            }),
+            warm: async () => {
+              redirect("/login");
+            },
+          }),
+          login: route({
+            url: "/login",
+            content: () => "login",
+            warm: loginWarm,
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+
+      const warming = router.warm("guarded");
+
+      // Let the warm rejection arrive while the preload still holds the
+      // entry out of the cache: it must be stashed, not dropped.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+      releasePreload();
+      await warming;
+
+      // The stashed redirect re-warmed the target once the entry was cached.
+      await vi.waitFor(() => {
+        expect(loginWarm).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("syncs the adapter when a late warm redirect lands after navigate()", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+      const adapter = createMemoryAdapter("/");
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          guarded: route({
+            url: "/guarded",
+            content: () => "guarded",
+            warm: async () => {
+              await gate;
+              redirect("/login");
+            },
+          }),
+          login: route({ url: "/login", content: () => "login" }),
+        },
+        { adapter },
+      );
+
+      await router.load("/");
+      router.navigate("guarded");
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/guarded");
+      });
+
+      releaseWarm();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/login");
+        expect(adapter.getLocation().pathname).toBe("/login");
+      });
+    });
+
+    it("applies a redirect live when its warm entry was already consumed", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+      const adapter = createMemoryAdapter("/");
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          guarded: route({
+            url: "/guarded",
+            content: () => "guarded",
+            warm: async () => {
+              await gate;
+              redirect("/login");
+            },
+          }),
+          login: route({ url: "/login", content: () => "login" }),
+        },
+        { adapter },
+      );
+
+      await router.load("/");
+      await router.warm("guarded");
+
+      // Consumes the cached entry; the warm hook does not re-run.
+      const result = await router.load("/guarded");
+
+      expect(result.location.pathname).toBe("/guarded");
+
+      releaseWarm();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/login");
+        expect(adapter.getLocation().pathname).toBe("/login");
+      });
+    });
+
+    it("applies a consumed-entry redirect live without an adapter", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter({
+        home: route({ url: "/", content: () => "home" }),
+        guarded: route({
+          url: "/guarded",
+          content: () => "guarded",
+          warm: async () => {
+            await gate;
+            redirect("/login");
+          },
+        }),
+        login: route({ url: "/login", content: () => "login" }),
+      });
+
+      await router.load("/");
+      await router.warm("guarded");
+      await router.load("/guarded");
+
+      releaseWarm();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/login");
+      });
+    });
+
+    it("drops a consumed-entry redirect when the user already left", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          about: route({ url: "/about", content: () => "about" }),
+          guarded: route({
+            url: "/guarded",
+            content: () => "guarded",
+            warm: async () => {
+              await gate;
+              redirect("/login");
+            },
+          }),
+          login: route({ url: "/login", content: () => "login" }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      await router.warm("guarded");
+      await router.load("/guarded");
+      await router.load("/about");
+
+      releaseWarm();
+      await new Promise((resolve) => {
+        setTimeout(resolve, 10);
+      });
+
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+
+    it("drops a late status when the user left after consuming the warm entry", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          about: route({ url: "/about", content: () => "about" }),
+          failing: route({
+            url: "/failing",
+            content: () => "fail",
+            warm: async () => {
+              await gate;
+              throw new StatusResponse(410, "gone");
+            },
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      await router.warm("failing");
+      await router.load("/failing");
+      await router.load("/about");
+
+      releaseWarm();
+      await new Promise((resolve) => {
+        setTimeout(resolve, 10);
+      });
+
+      expect(router.getState().location.pathname).toBe("/about");
+      expect(router.getState().location.status).toBe(200);
+    });
+
+    it("ignores a subscriber throwing while late warm control flow applies", async () => {
+      let releaseWarm!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseWarm = resolve;
+      });
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          failing: route({
+            url: "/failing",
+            content: () => "fail",
+            warm: async () => {
+              await gate;
+              throw new StatusResponse(410, "gone");
+            },
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      await router.warm("failing");
+      await router.load("/failing");
+
+      const unsubscribe = router.subscribe(() => {
+        throw new Error("listener boom");
+      });
+
+      releaseWarm();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.status).toBe(410);
+      });
+      unsubscribe();
+    });
+  });
+
+  describe("adapterless routers fail loudly", () => {
+    it("throws from navigate() when constructed without an adapter", () => {
+      const router = createRouter({
+        home: route({ url: "/", content: () => "home" }),
+      });
+
+      expect(() => {
+        router.navigate("home");
+      }).toThrow("router.navigate() requires a platform adapter.");
+    });
+
+    it("throws from setSearchParams() when constructed without an adapter", () => {
+      const router = createRouter({
+        home: route({ url: "/", content: () => "home" }),
+      });
+
+      expect(() => {
+        router.setSearchParams({ page: "2" });
+      }).toThrow("router.setSearchParams() requires a platform adapter.");
+    });
+
+    it("still matches and builds paths without an adapter", async () => {
+      const router = createRouter({
+        home: route({ url: "/", content: () => "home" }),
+      });
+
+      expect(router.buildPath("home")).toBe("/");
+      expect(router.match("/")).toMatchObject({ kind: "route", name: "home" });
+
+      const result = await router.load("/");
+
+      expect(result.status).toBe(200);
+    });
+  });
+
+  describe("adapter load tracking", () => {
+    it("hands a settle-only load promise to trackLoad for adapter-visible navigations", async () => {
+      let popCallback: ((location: string | URL) => void) | null = null;
+      const trackedLoads: Array<Promise<void>> = [];
+      const adapter = {
+        getLocation: () => "/",
+        navigate: vi.fn(),
+        subscribe(callback: (location: string | URL) => void) {
+          popCallback = callback;
+          return () => {
+            popCallback = null;
+          };
+        },
+        trackLoad(load: Promise<void>) {
+          trackedLoads.push(load);
+        },
+      };
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          about: route({ url: "/about", content: () => "about" }),
+        },
+        { adapter },
+      );
+
+      await router.load("/");
+
+      router.navigate("about");
+      expect(trackedLoads).toHaveLength(1);
+
+      router.setSearchParams({ page: "2" });
+      expect(trackedLoads).toHaveLength(2);
+
+      (popCallback as ((location: string | URL) => void) | null)?.("/");
+      expect(trackedLoads).toHaveLength(3);
+
+      // Every tracked promise settles by resolving — never rejecting.
+      await expect(Promise.all(trackedLoads)).resolves.toBeDefined();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/");
+      });
+    });
+
+    it("works unchanged with adapters that do not implement trackLoad", async () => {
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          about: route({ url: "/about", content: () => "about" }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      router.navigate("about");
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/about");
+      });
+    });
+
+    it("settles the tracked promise even when a disposed load rejects", async () => {
+      let rejectPreload!: (error: Error) => void;
+      const preloadPromise = new Promise<{ default: string }>((_, reject) => {
+        rejectPreload = reject;
+      });
+      const trackedLoads: Array<Promise<void>> = [];
+      const adapter = {
+        getLocation: () => "/",
+        navigate: vi.fn(),
+        subscribe: () => () => {},
+        trackLoad(load: Promise<void>) {
+          trackedLoads.push(load);
+        },
+      };
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          slow: route({
+            url: "/slow",
+            content: Object.assign(() => "slow", {
+              preload: () => preloadPromise,
+            }),
+          }),
+        },
+        { adapter },
+      );
+
+      await router.load("/");
+      router.navigate("slow");
+
+      expect(trackedLoads).toHaveLength(1);
+
+      // Disposing aborts the in-flight load; its rejection then propagates
+      // out of the scheduled load, and the tracked view must still resolve.
+      router.dispose();
+      rejectPreload(new Error("preload failed"));
+
+      await expect(Promise.all(trackedLoads)).resolves.toBeDefined();
+    });
+  });
+
+  describe("not-found wrapper warms", () => {
+    it("passes empty params when the not-found pattern cannot re-match the URL", async () => {
+      const notFoundWarm = vi.fn();
+      const notFoundWrapper = wrapper({
+        id: "nf:layout",
+        component: ({ children }) => children,
+        warm: notFoundWarm,
+      });
+      const [notFoundRoute] = group(notFoundWrapper, [
+        route({ url: "/not-found", content: () => "not-found" }),
+      ] as const);
+
+      const router = createRouter(
+        { home: route({ url: "/", content: () => "home" }) },
+        { adapter: createMemoryAdapter("/nowhere"), notFound: notFoundRoute },
+      );
+
+      const result = await router.load("/nowhere");
+
+      expect(result.status).toBe(404);
+      expect(notFoundWarm).toHaveBeenCalledWith({}, expect.anything());
     });
   });
 });

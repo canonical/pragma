@@ -3,7 +3,7 @@
  * ┌─────────────────────────────────────────────────────────────┐
  * │  Three grid modes                                           │
  * ├──────────────┬──────────────────────────────────────────────┤
- * │ .responsive  │ Breakpoint-driven: 4-col / 8-col / 12-col   │
+ * │ .responsive  │ Breakpoint-driven: 4-col / 8-col / 16-col    │
  * │ .intrinsic   │ Fluid auto-fill, groups of 4 columns         │
  * │ (bare)       │ No preset — bring your own columns            │
  * └──────────────┴──────────────────────────────────────────────┘
@@ -13,6 +13,7 @@
  *   .grid.responsive Breakpoint-driven column grid
  *   .grid.intrinsic  Fluid auto-fill grid
  *   .subgrid         CSS subgrid child — inherits parent columns
+ *   .content-flow    Container whose children carry their own bottom margin
  *
  * Customization:
  *   --grid-gap        Shorthand: sets both row-gap and column-gap (default: var(--grid-gutter))
@@ -24,7 +25,7 @@
  * Breakpoints (responsive mode):
  *   < 768px          4 columns  (mobile)
  *   768px – 1279px   8 columns  (tablet)
- *   ≥ 1280px         12 columns (desktop)
+ *   ≥ 1280px         16 columns (desktop)
  *
  * Relationship to spacing architecture:
  *   The grid provides horizontal structure. Vertical spacing between
@@ -35,9 +36,9 @@
  *
  * Usage examples:
  *
- *   <!-- Responsive 12-column layout -->
+ *   <!-- Responsive 16-column layout -->
  *   <div class="grid responsive">
- *     <main style="grid-column: span 8">Content</main>
+ *     <main style="grid-column: span 12">Content</main>
  *     <aside style="grid-column: span 4">Sidebar</aside>
  *   </div>
  *
@@ -50,7 +51,7 @@
  *   <!-- Subgrid for aligned form fields -->
  *   <div class="grid responsive">
  *     <form class="subgrid">
- *       <div class="subgrid" style="grid-column: span 6">
+ *       <div class="subgrid" style="grid-column: span 8">
  *         <label>Name</label>
  *         <input />
  *       </div>
@@ -62,9 +63,27 @@
  *
  *   <!-- Separate row/column gaps -->
  *   <div class="grid responsive" style="--grid-row-gap: 1.5rem; --grid-column-gap: 1rem">...</div>
+ *
+ * Layers:
+ *   `grid` and `subgrid` set real properties on any element that carries them;
+ *   `responsive` and `intrinsic` set only `--modifier-grid-template`, which
+ *   `grid` reads, and are the presets' other half. All four sit in
+ *   `ds.components.global`.
+ *
+ *   The tier, `ds.components.global`, is not decoration: a rule written
+ *   directly into `@layer ds.components` lands in that layer's implicit final
+ *   sublayer, which sits ABOVE every named sublayer — measured, such a rule beats
+ *   one in `ds.components.apps`. Writing the presets into the parent would put
+ *   them out of reach of every tier, so a tier's own sheet could not override a
+ *   preset by layer at all. Nothing pragma ships is written directly into
+ *   `ds.components`; everything in that layer sits in a tier, and the presets
+ *   are the shared tier's.
+ *
+ *   The `:root` defaults stay with the presets that read them, as component-
+ *   scoped tokens, rather than moving to `ds.tokens`.
  */
 
-@layer ds.components {
+@layer ds.components.global {
   :root {
     --grid-col-min: 100px;
 
@@ -93,7 +112,7 @@
     }
 
     @media (min-width: 1280px) {
-      --modifier-grid-template: repeat(12, 1fr);
+      --modifier-grid-template: repeat(16, 1fr);
     }
   }
 
@@ -105,5 +124,22 @@
     display: grid;
     grid-template-columns: subgrid;
     grid-column: var(--subgrid-span, 1 / -1);
+  }
+}
+
+/* Content-flow container: establishes element-owned spacing context. Children
+ * use their own margin-bottom; the last child is reset to 0 so the container
+ * does not gain a trailing gap.
+ *
+ * It lives here rather than with the spacing tokens it belongs to by subject,
+ * because it is a rule that styles an element and the tokens entry must carry
+ * none: a page that also runs another CSS framework takes the tokens and the
+ * layout presets and supplies its own element rules. This is a preset like the
+ * grid ones — it claims a class name and sets a real property — so it travels
+ * with them.
+ */
+@layer ds.components.global {
+  .content-flow > :last-child {
+    margin-bottom: 0;
   }
 }

@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import createHistoryAdapter from "./createHistoryAdapter.js";
 import createMemoryAdapter from "./createMemoryAdapter.js";
+import createNavigationAdapter from "./createNavigationAdapter.js";
 import createRouter from "./createRouter.js";
+import redirect from "./redirect.js";
 import route from "./route.js";
+import type {
+  PlatformAdapter,
+  RouterAccessibilityOptions,
+  StandardSchemaV1,
+} from "./types.js";
 
 async function flushEffects(): Promise<void> {
   await Promise.resolve();
@@ -547,5 +555,336 @@ describe("createRouter accessibility", () => {
     );
 
     expect(router.render()).toBe("users");
+  });
+});
+
+/**
+ * A browser's session history for the fake windows below: the entries the
+ * adapter wrote, which of them is current, and every write as
+ * `push:<path>` or `replace:<path>`.
+ */
+function createSessionHistory(initialPath: string) {
+  const entries = [new URL(initialPath, "https://example.com")];
+  const writes: string[] = [];
+  let index = 0;
+
+  return {
+    writes,
+    get href() {
+      return entries[index].href;
+    },
+    write(url: string | URL, replace: boolean) {
+      const nextUrl = new URL(String(url), entries[index]);
+
+      if (replace) {
+        entries[index] = nextUrl;
+      } else {
+        entries.splice(index + 1, entries.length - index - 1, nextUrl);
+        index = entries.length - 1;
+      }
+
+      writes.push(
+        `${replace ? "replace" : "push"}:${nextUrl.pathname}${nextUrl.search}`,
+      );
+    },
+    back() {
+      index -= 1;
+    },
+  };
+}
+
+interface AdapterHarness {
+  readonly adapter: PlatformAdapter;
+  /** Every history write the adapter made, as `push:<path>`/`replace:<path>`. */
+  readonly writes: readonly string[];
+  /** The reader pressing the browser's Back button. */
+  back(): void;
+}
+
+function createMemoryHarness(initialPath: string): AdapterHarness {
+  const memory = createMemoryAdapter(initialPath);
+  const writes: string[] = [];
+
+  return {
+    adapter: {
+      ...memory,
+      navigate(url, navigationOptions) {
+        const nextUrl = new URL(String(url), memory.getLocation());
+
+        writes.push(
+          `${navigationOptions?.replace ? "replace" : "push"}:${nextUrl.pathname}${nextUrl.search}`,
+        );
+        memory.navigate(url, navigationOptions);
+      },
+    },
+    writes,
+    back: () => memory.back(),
+  };
+}
+
+function createHistoryHarness(initialPath: string): AdapterHarness {
+  const session = createSessionHistory(initialPath);
+  let popstateListener: (() => void) | null = null;
+  const browserWindow = {
+    history: {
+      pushState(_state: unknown, _unused: string, url?: string | URL | null) {
+        session.write(url ?? session.href, false);
+      },
+      replaceState(
+        _state: unknown,
+        _unused: string,
+        url?: string | URL | null,
+      ) {
+        session.write(url ?? session.href, true);
+      },
+    },
+    location: {
+      get href() {
+        return session.href;
+      },
+    },
+    addEventListener(_type: "popstate", listener: () => void) {
+      popstateListener = listener;
+    },
+    removeEventListener() {
+      popstateListener = null;
+    },
+  };
+
+  return {
+    adapter: createHistoryAdapter(browserWindow),
+    writes: session.writes,
+    back() {
+      session.back();
+      popstateListener?.();
+    },
+  };
+}
+
+function createNavigationHarness(initialPath: string): AdapterHarness {
+  const session = createSessionHistory(initialPath);
+  type NavigateListener = (event: {
+    navigationType: string;
+    destination: { url: string };
+    canIntercept: boolean;
+    hashChange: boolean;
+    intercept(): void;
+  }) => void;
+  let navigateListener: NavigateListener | null = null;
+  const fire = (navigationType: string, url: string) => {
+    navigateListener?.({
+      navigationType,
+      destination: { url },
+      canIntercept: true,
+      hashChange: false,
+      intercept() {},
+    });
+  };
+  const navigationWindow = {
+    location: {
+      get href() {
+        return session.href;
+      },
+    },
+    navigation: {
+      currentEntry: null,
+      navigate(url: string, options?: { history?: "push" | "replace" }) {
+        fire(options?.history ?? "push", new URL(url, session.href).href);
+        session.write(url, options?.history === "replace");
+
+        return undefined;
+      },
+      addEventListener(_type: "navigate", listener: NavigateListener) {
+        navigateListener = listener;
+      },
+      removeEventListener() {
+        navigateListener = null;
+      },
+    },
+  };
+
+  return {
+    adapter: createNavigationAdapter(navigationWindow),
+    writes: session.writes,
+    back() {
+      session.back();
+      fire("traverse", session.href);
+    },
+  };
+}
+
+const listSearch: StandardSchemaV1<{ group?: string }> = {
+  "~standard": {
+    version: 1,
+    vendor: "router-test",
+    validate: (value) => ({ value: value as { group?: string } }),
+  },
+};
+
+/**
+ * A router over a page whose grouping is stated in its address, with every
+ * accessibility manager replaced by one that logs what the router asked of
+ * it.
+ */
+function createRestatingRouter(harness: AdapterHarness) {
+  const log: string[] = [];
+  let title = "";
+  const accessibility: RouterAccessibilityOptions = {
+    document: {
+      querySelector: () => null,
+      get title() {
+        return title;
+      },
+      set title(value: string) {
+        log.push(`title:${value}`);
+        title = value;
+      },
+    },
+    getTitle: ({ location }) =>
+      `${location.pathname} ${location.searchParams.get("group") ?? "all"}`,
+    focusManager: {
+      focus() {
+        log.push("focus");
+        return true;
+      },
+    },
+    routeAnnouncer: {
+      announce(message) {
+        log.push(`announce:${message}`);
+      },
+    },
+    scrollManager: {
+      restore(location, navigationType) {
+        log.push(`scroll:${navigationType}:${String(location)}`);
+      },
+      save(location) {
+        log.push(`save:${String(location)}`);
+      },
+    },
+    viewTransition: {
+      async run(update) {
+        log.push("transition");
+        await update();
+      },
+    },
+  };
+  const router = createRouter(
+    {
+      list: route({
+        url: "/list",
+        search: listSearch,
+        warm: (_params, search) => {
+          if (search.group === "retired") {
+            redirect("/other");
+          }
+        },
+        content: () => "list",
+      }),
+      other: route({ url: "/other", content: () => "other" }),
+    },
+    { accessibility, adapter: harness.adapter },
+  );
+
+  return { log, router };
+}
+
+describe.each([
+  ["memory", createMemoryHarness],
+  ["History API", createHistoryHarness],
+  ["Navigation API", createNavigationHarness],
+])("createRouter search updates over the %s adapter", (_name, harnessFor) => {
+  it("restates the page without a transition, scroll, focus or announcement", async () => {
+    const harness = harnessFor("/list?group=month");
+    const { log, router } = createRestatingRouter(harness);
+    const snapshots: string[] = [];
+
+    await flushEffects();
+    // The initial load runs no effects either.
+    expect(log).toEqual([]);
+
+    router.subscribe((snapshot) => {
+      snapshots.push(snapshot.href);
+    });
+
+    router.setSearchParams({ group: "day" }, { replace: true });
+    await flushEffects();
+
+    expect(router.getState().location.href).toBe("/list?group=day");
+    expect(snapshots.at(-1)).toBe("/list?group=day");
+    expect(harness.writes.at(-1)).toBe("replace:/list?group=day");
+    // Only the title follows the address; nothing is saved, because
+    // nothing is restored.
+    expect(log).toEqual(["title:/list day"]);
+
+    log.length = 0;
+    router.setSearchParams({ group: "week" });
+    await flushEffects();
+
+    expect(router.getState().location.href).toBe("/list?group=week");
+    expect(snapshots.at(-1)).toBe("/list?group=week");
+    expect(harness.writes.at(-1)).toBe("push:/list?group=week");
+    expect(log).toEqual(["title:/list week"]);
+  });
+
+  it("still runs every effect for navigate() to an address differing only in its search", async () => {
+    const harness = harnessFor("/list?group=month");
+    const { log, router } = createRestatingRouter(harness);
+
+    await flushEffects();
+    router.navigate("list");
+    await flushEffects();
+
+    expect(router.getState().location.href).toBe("/list");
+    expect(harness.writes.at(-1)).toBe("push:/list");
+    expect(log).toEqual([
+      "save:/list?group=month",
+      "transition",
+      "title:/list all",
+      "scroll:push:/list",
+      "focus",
+      "announce:/list all",
+    ]);
+  });
+
+  it("still runs every effect for Back to an address differing only in its search", async () => {
+    const harness = harnessFor("/list?group=month");
+    const { log, router } = createRestatingRouter(harness);
+
+    await flushEffects();
+    router.setSearchParams({ group: "day" });
+    await flushEffects();
+    log.length = 0;
+
+    harness.back();
+    await flushEffects();
+
+    expect(router.getState().location.href).toBe("/list?group=month");
+    expect(log).toEqual([
+      "save:/list?group=day",
+      "transition",
+      "title:/list month",
+      "scroll:pop:/list?group=month",
+      "focus",
+      "announce:/list month",
+    ]);
+  });
+
+  it("runs every effect for a redirect out of a search update", async () => {
+    const harness = harnessFor("/list?group=month");
+    const { log, router } = createRestatingRouter(harness);
+
+    await flushEffects();
+    router.setSearchParams({ group: "retired" }, { replace: true });
+    await flushEffects();
+
+    expect(router.getState().location.href).toBe("/other");
+    expect(harness.writes.at(-1)).toBe("replace:/other");
+    expect(log).toEqual([
+      "transition",
+      "title:/other all",
+      "scroll:push:/other",
+      "focus",
+      "announce:/other all",
+    ]);
   });
 });

@@ -18,7 +18,12 @@ export default defineConfig({
         entryFileNames: "[name].js",
         assetFileNames: "[name][extname]",
       },
-      external: ["storybook/manager-api", "storybook/internal/types"],
+      // `storybook` is a peer dependency, so every subpath resolves from the
+      // consumer. Matched by pattern rather than enumerated, so the next
+      // `storybook/*` import does not get silently bundled: leaving
+      // `storybook/theming` in was costing ~28KB of theming runtime in every
+      // consumer's preview bundle once `THEME` became importable.
+      external: [/^storybook(\/|$)/],
     },
   },
   test: {

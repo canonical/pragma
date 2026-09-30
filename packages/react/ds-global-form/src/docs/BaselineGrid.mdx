@@ -1,0 +1,291 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Examples from "./examples/DensityExamples.stories";
+
+<Meta title="Documentation/Guides/The Baseline Grid" />
+
+# The Baseline Grid
+
+Every piece of text in the form system seats itself on a shared 4px baseline
+grid. A control's label, an input's value, and a paragraph of running prose all
+land their baselines on the same set of horizontal lines, so a form reads as one
+continuous rhythm rather than a stack of independently-spaced boxes. This guide
+explains what the grid is, how text is placed on it, and why the placement holds
+at any font size without per-element tuning.
+
+For how to _apply_ densities and drive the form's spacing from them, see
+[Density & the Form Channel](?path=/docs/documentation-guides-density--docs).
+
+## The grid unit
+
+The grid is defined by a single custom property, `--baseline-height`, which the
+typography engine sets to **4px** (`0.25rem`). Everything vertical is expressed
+as a whole multiple of this unit — a control height, a gap between fields, the
+padding that seats a line of text. Because the unit is a variable, the whole
+system re-flows if it changes; nothing hard-codes `4px`.
+
+Throughout this documentation, spacing is quoted in **baseline units** (bU): 1 bU
+= `--baseline-height` = 4px. A 32px control is "8 bU"; a 24px gap is "6 bU".
+
+## How a line of text seats on the grid
+
+A font does not place its baseline at the top or bottom of its line box — it sits
+some fraction of the way down, determined by the font's metrics. To land that
+baseline on a grid line, the system adds a calculated top padding.
+
+The distance from the top of a `line-height: 1` box to the text baseline is
+approximated, font-relatively, as:
+
+```css
+--natural-baseline: calc((1em + 1cap) / 2);
+```
+
+`1cap` is the cap height of the current font, `1em` its size. The average of the
+two is a close, size-independent stand-in for where the alphabetic baseline sits
+— no magic pixel constant, and correct at any font size because both terms scale
+with the font. That size-independence is the entire reason for the cap-unit form:
+a naive implementation would hard-code a pixel offset per font size and break the
+moment the size changed; this expression tracks the font automatically.
+
+The text is then seated on a chosen grid line — the **target baseline** — by
+padding the top with the remaining distance:
+
+```css
+--space-before: max(0px, calc(target − --natural-baseline − border-top));
+padding-block-start: var(--space-before);
+```
+
+The result: the first baseline lands exactly on `target`, which is always a whole
+baseline multiple, so the text is on the grid.
+
+## A worked example
+
+Take **apps-comfortable**, the default cell. Its control height is a whole
+baseline multiple:
+
+```
+control-height = --baseline-height × 8 = 32px   (8 bU)
+```
+
+The density model seats a control's single baseline on its **target line**, which
+is two-thirds of the box height, rounded to the _nearest_ baseline:
+
+```
+target = round(nearest, control-height × 2/3, --baseline-height)
+       = round(nearest, 32 × 2/3, 4)
+       = round(nearest, 21.33px, 4)
+       = 20px                                    (5 bU)
+```
+
+Rounding to the nearest line (not up) is deliberate. Two-thirds of the height is
+the optical centre a control's text wants; snapping to the _nearest_ grid line
+stays as close to it as the grid allows. An earlier revision rounded _up_, which
+over-lifted the one cell where `height × 2/3` is fractional — apps-comfortable's
+21.33 was forced a whole step down the page to 24, a baseline too low (the
+design-review "move text one baseline up" finding). The exact-multiple cells are
+unaffected either way:
+
+```
+apps-comfortable   32 × 2/3 = 21.33  →  20   (the fix; was 24)
+apps-dense         24 × 2/3 = 16.00  →  16   (exact)
+sites-comfortable  36 × 2/3 = 24.00  →  24   (exact)
+sites-dense        28 × 2/3 = 18.67  →  20   (nearest = up here)
+```
+
+Now seat a 14px label into that box. With a cap height of roughly 10px for the
+body face:
+
+```
+natural-baseline = (1em + 1cap) / 2 = (14 + 10) / 2 = 12px
+space-before     = max(0px, 20 − 12 − border-top)
+```
+
+For a borderless label (`border-top = 0`) that is `20 − 12 = 8px` of top
+padding, and the baseline lands exactly on the 5th grid line. Change the font
+size and both terms move together, so the arithmetic still lands on `20px` — the
+target never has to be re-tuned per size.
+
+The stories below force the baseline overlay on, so this seating can be read
+directly: the label's baseline and the input's baseline both rest on the same
+pink band boundary.
+
+<Canvas of={Examples.ButtonAndInput} />
+
+## The whole-multiple invariant
+
+The single rule that keeps _multi-line_ content on the grid:
+
+> A line-height that must stay on the grid has to be a whole multiple of
+> `--baseline-height`.
+
+The first line seats on the grid via `--space-before` (above). Each subsequent
+line advances by exactly one `line-height`. So every wrapped line lands on a grid
+line **if and only if** the line-height is itself a whole baseline multiple. A
+single-line control can use any line-height (only its first baseline matters); a
+paragraph or a textarea cannot — its line-height must be snapped to the grid.
+
+The typography engine already guarantees this for prose: it computes each tier's
+line-height as `round(up, font-size × ratio, --baseline-height)`, a snapped
+value. A `1rem × 1.5` body line snaps to `24px` — exactly 6 bU — so running text
+stays on the grid line after line. This is also why the textarea, alone among the
+form controls, takes the density line-height (a whole multiple) rather than the
+`line-height: 1` crush: it has many rows, and every row must land on a grid line,
+not just the first.
+
+## Two ways text reaches the grid
+
+The system seats text through two distinct mechanisms, applied to two disjoint
+sets of elements. Knowing which owns a given element is the key to the whole
+model.
+
+- **Controls** — seated by the **density model** on the density _target_ line
+  (`round(nearest, height × 2/3, baseline)`, as worked above). This is what
+  makes a 32px button's label and a 32px input's value share one line. Boxed
+  controls (the button, the single-line input) use the **intrinsic seat**
+  described below — their text carries a real line box that _is_ the control
+  interior. The field label / description / error, which are bare text rather
+  than boxes, use the simpler `line-height: 1` crush + `--space-before` pad.
+
+- **Running prose** — bare `p`, `h1`–`h6`, and anything in an `.editorial`
+  context. These are seated by the **typography engine**: each keeps its tier's
+  snapped natural line-height and is nudged onto the _nearest_ grid line (via the
+  engine's `--start-nudge` / `--end-nudge`), so multi-line reading rhythm is
+  preserved and every wrapped line stays on-grid.
+
+The two never fight over the same element. Density seats controls; the engine
+seats prose. Because they write to **disjoint** element sets, there is no
+specificity war between them — a point returned to below. A paragraph placed next
+to a control will sit on _a_ grid line, but not necessarily the control's target
+line — controls and prose answer to different seating rules by design.
+
+## The intrinsic control seat
+
+A boxed control (the button, the single-line input chrome) does **not** set a
+height. Its height _emerges_: the text's own line box is the control interior,
+and border + padding + line-height add up to exactly the density cell.
+
+The shared styles layer (`@canonical/styles`, `modifiers.density.css`) exports
+two pieces:
+
+```css
+/* The control's interior line box: the cell minus one baseline of headroom
+   per side. 32px cell → 24px line; 24px cell → 16px line. */
+--control-seat-line: calc(
+  var(--density-line-height-effective) - 2 * var(--baseline-height)
+);
+/* The unclamped distance from just inside the box's top border down to the
+   target baseline, for a --control-seat-line line box. */
+--control-seat-basis: calc(
+  var(--density-target-baseline-px) - (var(--control-seat-line) + 1cap) / 2
+);
+```
+
+Each control folds its **own** border into that basis and closes the box with a
+complement pad — the fold must happen at the component, because a `var()` inside
+a custom property is substituted where the property is _declared_ (the density
+scope), so the shared layer can never read a component's border width:
+
+```css
+--seat-before: round(
+  nearest,
+  max(0px, calc(var(--control-seat-basis) - <border-width>)),
+  0.25px
+);
+--seat-after: max(0px, calc(
+  var(--density-line-height-effective) - var(--control-seat-line) -
+  var(--seat-before) - 2 * <border-width>
+));
+line-height: var(--control-seat-line);
+padding-block: var(--seat-before) var(--seat-after);
+```
+
+The invariant: `border + seat-before + line + seat-after + border = the cell`,
+with no `block-size` anywhere. Both outer edges land on grid lines, and the text
+baseline lands on the target — at any font size, because `1cap`/`1em` resolve at
+the element that applies the seat. (`--seat-before` is rounded to ¼px so the pad
+is exactly representable in the browser's 1/64px layout units; the fractional
+cap term otherwise leaves ~1/60px residues on the box height.)
+
+## The border is always present
+
+For the geometry above to be _one_ formula, the border must be a **constant** of
+the control, not a variant knob: every importance carries the same nominal
+border width, and a "borderless" variant paints it `transparent` rather than
+removing it. The button implements exactly this — its outline flag toggles the
+border's **colour**, never its width:
+
+```css
+border-width: var(--button-border-width);          /* constant, both importances */
+border-color: color-mix(in srgb,
+  var(--modifier-color-border) calc(var(--modifier-outline, 0) * 100%),
+  transparent);
+```
+
+A width-toggled border (an earlier revision multiplied the width by the flag)
+makes the borderless variant 2px shorter and seats its label a pixel high — the
+box geometry forks per importance, which is precisely what the constant border
+exists to prevent. A borderless primary and a bordered secondary are now
+byte-identical boxes; only the paint differs. The example below places the two
+side by side against the overlay.
+
+<Canvas of={Examples.BorderlessAndBordered} />
+
+## Why not just set `line-height: 1` everywhere?
+
+Crushing everything to `line-height: 1` seats the _first_ line of any element on
+the grid, which is why an earlier iteration did exactly that. But it breaks
+running prose two ways: it removes the leading that makes multi-line text
+readable, and — because a crushed line-height is not a whole baseline multiple —
+it lets every _wrapped_ line drift off the grid.
+
+The first fix (call it "Stage A") was to **partition** the two mechanisms:
+density seats controls only, and the typography engine owns prose. Because the
+two now write to disjoint element sets, `.editorial` composes with density
+without a specificity war, and — since the engine snaps prose line-height to a
+whole baseline multiple — wrapped-prose drift is gone as well.
+
+The second ("Stage B", the intrinsic seat above) retired the crush from the
+**boxed** controls too: the button and the single-line input now carry a real
+line box (`--control-seat-line`) instead of `line-height: 1` + a fixed box
+height. The crush survives only on the field label / description / error — bare
+single-line text where it is harmless — and even there it is an implementation
+detail of their seat, not a box model.
+
+## The "control text drift", solved
+
+Earlier revisions carried an empirical knob, `--control-text-drift-AVOID-USAGE`
+(~2px), to explain why a native `<input>` rendered its text lower than a
+`<span>` at byte-identical CSS. The intrinsic seat exposed the real mechanism —
+it was never a metrics quirk of editable controls:
+
+> **The user agent enforces a `line-height` floor of `normal` (≈1.2em) on a
+> single-line `<input>`.** A specified line-height below the floor is silently
+> clamped.
+
+Under the old `line-height: 1` crush, the input's 14px line was silently
+rendered as a 16.8px line — the extra 2.8px of half-leading pushed the glyphs
+down, and the "drift" knob was hand-calibrated to cancel a clamp nobody had
+identified. Give the input a **real** line box (the intrinsic seat's
+`--control-seat-line`, ≥ the floor in the comfortable cells) and it positions
+text exactly like a `<span>`: measured, the input's baseline lands on the
+label's to within 0.01px with **no** drift term.
+
+The floor still exists, so the input's seat computes with the line the UA will
+actually use:
+
+```css
+--seat-line-floored: max(var(--control-seat-line), 1.2em);
+```
+
+In dense cells (16px line < 16.8px floor) the clamped line is what enters both
+the seat and the closing pad, so the box still lands on the cell. The knob
+survives only on the textarea path, pending the same treatment — expect it to be
+the same artifact.
+
+## The debug overlay
+
+The Storybook baseline overlay (the stepped pink bands) is driven by the same
+`--baseline-height`, so it always draws the real grid. Turn it on to read any
+element against the grid: a correctly-seated baseline sits on a band boundary.
+The overlay is a measuring tool only — it is never part of a shipped component.
+The example stories above enable it automatically, which is why their controls
+appear striped.

@@ -10,10 +10,26 @@ The form system provides a `Form` wrapper and a `Field` router that handle form 
 ## Installation
 
 ```bash
-bun add @canonical/react-ds-global-form
+bun add @canonical/react-ds-global-form @canonical/styles
 ```
 
-The form package depends on `@canonical/react-ds-global` and `@canonical/styles`. No additional CSS imports are required beyond the global `@canonical/styles` import.
+### Import the styles
+
+Two stylesheets are required, imported in your application's root stylesheet:
+
+```css
+/* 1. The global Pragma styles — CSS reset, typography baseline, and the design
+      tokens (colour, spacing, surfaces, states) every component reads. */
+@import url("@canonical/styles");
+
+/* 2. The form styles — input chrome, field layout, and per-component styles. */
+@import url("@canonical/react-ds-global-form/dist/esm/index.css");
+```
+
+Both are needed: the form stylesheet styles the inputs and field layout, but it
+consumes the design tokens defined by the global `@canonical/styles` — without
+the global import the form renders unstyled (missing colours, spacing, and the
+grid). The form package also builds on `@canonical/react-ds-global`.
 
 ## Basic form
 
@@ -29,29 +45,164 @@ A form needs a grid parent, a `Form` wrapper, and one or more `Field` components
 
 `Form` wraps children in a react-hook-form [`FormProvider`](https://react-hook-form.com/docs/formprovider). It has two modes:
 
-**Internal mode** (simple) — `Form` creates its own `useForm` instance:
+**Internal mode** (simple) — `Form` creates its own `useForm` instance. Pass
+`onSubmit`, and optionally `defaultValues` and a validation `mode`. Use this for
+a self-contained form where you don't need direct access to the form state.
 
 ```tsx
-<Form onSubmit={handleSubmit} defaultValues={{ name: "" }} mode="onBlur">
-  {/* fields */}
+<Form
+  onSubmit={handleSubmit}
+  defaultValues={{ name: "Ada", email: "" }}
+  mode="onBlur"
+>
+  <Field name="name" inputType="text" label="Full name" />
+  <Field
+    name="email"
+    inputType="text"
+    label="Email address"
+    registerProps={{ required: "Email is required" }}
+  />
+  <Button type="submit">Send</Button>
 </Form>
 ```
 
-**External mode** (advanced) — you provide your own `useForm` methods for scenarios like shared state or multi-step forms:
+<Canvas of={Stories.InternalMode} />
+
+**External mode** (advanced) — you create the `useForm` instance and pass it as
+`methods`. Because you own it, you can read `formState` (e.g. `isSubmitting`) and
+call its methods (`reset`, `setValue`, `watch`, …). Reach for this when a submit
+is async, when the form state is shared across components, or for multi-step /
+wizard forms that keep one instance across steps.
 
 ```tsx
 import { useForm } from "react-hook-form";
 
-function MultiStepForm() {
-  const methods = useForm({ defaultValues: { step1: "", step2: "" } });
+function SignupForm() {
+  const methods = useForm({
+    mode: "onBlur",
+    defaultValues: { name: "", email: "" },
+  });
+  const {
+    reset,
+    formState: { isSubmitting },
+  } = methods;
+
+  const onSubmit = async (data) => {
+    await api.createUser(data); // your async call
+    reset(); // clear back to defaultValues after success
+  };
 
   return (
-    <Form onSubmit={handleSubmit} methods={methods}>
-      {/* fields */}
+    <Form methods={methods} onSubmit={onSubmit}>
+      <Field name="name" inputType="text" label="Full name" />
+      <Field
+        name="email"
+        inputType="text"
+        label="Email address"
+        registerProps={{ required: "Email is required" }}
+      />
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Saving…" : "Send"}
+      </Button>
     </Form>
   );
 }
 ```
+
+<Canvas of={Stories.ExternalMode} />
+
+When you pass `methods`, `Form`'s own `defaultValues` and `mode` props are
+ignored — configure those on your `useForm` call instead.
+
+## Understanding react-hook-form
+
+This library is a thin layer over [react-hook-form](https://react-hook-form.com/)
+(RHF, `^7.71`). `Form` provides the [`FormProvider`](https://react-hook-form.com/docs/formprovider)
+and `Field` calls [`register`](https://react-hook-form.com/docs/useform/register)
+for you — but **the form state, validation, submission, and everything beyond a
+single field is react-hook-form's API, not this library's.** To build a real
+form you should read the RHF docs; this section is a map of the surface you will
+use, with the pieces this library already wires up called out.
+
+> This library re-exports nothing from RHF. Import RHF hooks
+> (`useForm`, `useFormContext`, `useController`, `useFieldArray`) directly from
+> `"react-hook-form"`.
+
+### `useForm` — the form instance
+
+You only call `useForm` yourself in **external mode** (passing `methods` to
+`Form`); in internal mode `Form` calls it for you from its `defaultValues`/`mode`
+props. Its most-used options ([full reference](https://react-hook-form.com/docs/useform)):
+
+- `mode` — when validation first runs: `"onSubmit"` (default), `"onBlur"`,
+  `"onChange"`, `"onTouched"`, or `"all"`.
+- `defaultValues` — the initial values (an object, or an async function that
+  returns one). Also what `reset()` restores to.
+- `values` — externally-controlled values that re-sync the form when they change.
+- `resolver` — plug in schema validation (zod/yup/valibot…); see below.
+- `reValidateMode`, `criteriaMode`, `shouldUnregister`, `delayError` — finer control.
+
+`useForm` returns the **methods object** (also what `useFormContext()` returns
+inside a `Form`): `register`, `handleSubmit`, `watch`, `getValues`, `setValue`,
+`reset`, `resetField`, `setError`, `clearErrors`, `trigger`, `setFocus`,
+`unregister`, `getFieldState`, `control`, and `formState`.
+
+### `formState` — reacting to the form
+
+[`formState`](https://react-hook-form.com/docs/useform/formstate) is how you read
+what the form is doing. The fields you will reach for most:
+
+- `errors` — per-field validation errors (this library renders these for you).
+- `isSubmitting` — true while an async `onSubmit` runs (disable the submit button).
+- `isValid` / `isDirty` — whether the form passes validation / differs from defaults.
+- `isSubmitSuccessful`, `submitCount`, `touchedFields`, `dirtyFields`.
+
+### Validation rules (`registerProps`)
+
+A `Field`'s `registerProps` is RHF's
+[validation rules](https://react-hook-form.com/docs/useform/register) object,
+passed straight to `register`: `required`, `min`, `max`, `minLength`,
+`maxLength`, `pattern`, and `validate`, plus the value transforms `valueAsNumber`,
+`valueAsDate`, and `setValueAs`. See [Validation](#validation) below for a live
+example.
+
+### Schema validation (optional)
+
+For a single source of truth you can validate against a schema instead of
+per-field rules, via a `resolver`. This needs two extra packages —
+`@hookform/resolvers` and a schema library such as `zod` — which are **not**
+bundled with this library:
+
+```bash
+bun add @hookform/resolvers zod
+```
+
+```tsx
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Enter a valid email"),
+});
+
+const methods = useForm({
+  resolver: zodResolver(schema),
+  defaultValues: { name: "", email: "" },
+});
+// <Form methods={methods} …> — no per-field registerProps needed
+```
+
+### Beyond the basics
+
+For repeating groups of fields (e.g. a list of contacts) use RHF's
+[`useFieldArray`](https://react-hook-form.com/docs/usefieldarray); for
+custom/controlled inputs use [`useController`](https://react-hook-form.com/docs/usecontroller)
+(this library already uses it internally for controlled fields — see
+[Creating Custom Fields](?path=/docs/global-form-guides-creating-custom-fields--docs)).
+When in doubt, the [react-hook-form documentation](https://react-hook-form.com/docs)
+is the authoritative reference for everything the form can do.
 
 ## The Field component
 

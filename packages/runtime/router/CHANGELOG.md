@@ -3,6 +3,312 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.43.0](https://github.com/canonical/pragma-web/compare/v0.42.0...v0.43.0) (2026-09-30)
+
+* chore(monorepo)!: consume the core packages from npm (#1388) ([86e48a4](https://github.com/canonical/pragma-web/commit/86e48a4f166821f8a2d5352314ac65ba94ff2846)), closes [#1388](https://github.com/canonical/pragma-web/issues/1388)
+
+### BREAKING CHANGES
+
+* the core packages are no longer workspace members;
+  local changes to them are made in canonical/pragma-core.
+
+  * ci: drop the embedded-pack refresh and the dead Chromatic path filters
+
+  The version action refreshed the pragma CLI's embedded pack, which no longer lives here; the step, its script, its token input and tag.yml's PACKS_READ_TOKEN go. The Chromatic workflows watched packages/utils and packages/tokens, neither of which exists in this repository any more.
+
+  * chore(monorepo): name canonical/pragma-web in the implementation graph
+
+  ds.config.json's repository is stamped into every source link the collector writes; data/ is regenerated with it.
+
+  * chore(monorepo): take the Renovate preset and the Biome config's owners from pragma-core
+
+  renovate.json extends the preset published from canonical/pragma-core. The /configs/biome/ ownership line moves with the folder.
+
+  * docs: point the toolchain references at canonical/pragma-core
+
+  README, AGENTS.md and docs/ describe this repository without the toolchain packages; links into the deleted folders point at canonical/pragma-core, CONSTITUTION.md becomes a link to its one copy there, the publishing guides name canonical/pragma-web as the trusted-publisher repository, and the CLI's perf-budget notes leave with the CLI.
+
+  * test(prism-pragma-provider): check the live emission against the contract
+
+  The compiler-goldens gate left with the compiler. The provider already boots the pinned @canonical/ke-graphql over its hermetic corpus, so it checks that emission against the contract; a compiler bump that breaks conformance is red on the bump. The contract README names this as the gate against a real emission.
+
+  * docs: correct the references the toolchain move left stale
+
+  The storybook hub's CLI page no longer claims a workspace pragma binary; AGENTS.md's scope examples and package count, the adding-a-package example pins and tool-package section, the constitution link and the provider READMEs' links to canonical/pragma-core.
+
+  * docs: tighten the conformance-gate notes and two stale examples
+
+  The provider README names its live contract check, the contract README says it runs over the test corpus and keeps its wrap, AGENTS.md drops the last CLI scope example, and the no-magic link carries its anchor.
+
+  * chore(deps): pin the core packages to their 0.43.0-experimental releases
+
+  Each core package takes its own experimental release from the registry: biome-config, typescript-config, webarchitect, ke and ke-graphql at 0.43.0-experimental.0; utils, design-tokens and design-system at 0.43.0-experimental.1.
+
+  * chore(monorepo): name canonical/pragma-web as the repository
+
+  npm refuses a trusted-publisher publish whose repository.url names a different repository, so every manifest's repository, bugs and homepage, and ds.config.json's repository (stamped into the implementation graph's source links, regenerated here), name canonical/pragma-web, as do the clone instructions and the trusted-publisher setup in the docs. tag.yml refuses to run from any other repository, so a release dispatched before the rename stops before anything is versioned or tagged.
+
+  * fix(styles-debug): accept any 0.x design-tokens as the optional peer
+
+  An exact peer makes npm refuse styles-debug next to any other design-tokens release; its stylesheet only reads token custom properties, which 0.10.0 and 0.43.0 ship identically. The range matches the repository's other peers.
+
+  * fix(svelte-ds-app-launchpad): depend on design-tokens at runtime
+
+  The published styles.css imports @canonical/design-tokens' stylesheets, so it is a dependency, not a devDependency.
+
+  * docs: say how to get the pragma CLI and where the core pins come from
+
+  The CLI is no longer a workspace member, so the README's prerequisites name @canonical/pragma-cli and how to install it, and the adding-a-package guide installs it before pragma create package and says to copy the core pins from a sibling manifest. The ranges test's historical comment says the package it describes has left.
+
+  * ci: drop the repository guard from the release workflow
+
+  * chore(deps): pin the core packages to 0.43.0
+
+  pragma-core's first stable release: biome-config, typescript-config, webarchitect, utils, ke, ke-graphql, design-tokens and design-system move from their 0.43.0-experimental builds to 0.43.0.
+
+
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+* chore(monorepo)!: move to TypeScript 7 (#1374) ([713d307](https://github.com/canonical/pragma/commit/713d3071d3980539a849ea95823736e8b343a1b1)), closes [#1374](https://github.com/canonical/pragma/issues/1374) [#lib](https://github.com/canonical/pragma/issues/lib) [#domains](https://github.com/canonical/pragma/issues/domains) [#i18n](https://github.com/canonical/pragma/issues/i18n) [#relay](https://github.com/canonical/pragma/issues/relay) [#styles](https://github.com/canonical/pragma/issues/styles)
+
+### BREAKING CHANGES
+
+* the shared TypeScript configs, storybook-config,
+  vitest-config-react and styles-typography no longer accept TypeScript 5 as
+  a peer, and the tsconfig presets no longer set or expect baseUrl.
+
+  * chore(configs): keep TypeScript 5.9 and 6 in the typescript peer ranges
+
+  The shared configs, the Storybook config, the Vitest React config and
+  @canonical/typography now accept TypeScript ^5.9.3 || ^6.0.0 || ^7.0.0,
+  so consumers still on 5.9 or 6 are not pushed off by this upgrade. The
+  Svelte config keeps ^5.9.3 || ^6.0.0, because its consumers compile
+  declarations with TypeScript 6.
+
+  * chore(boilerplate-vite,summon-application): drop the tsconfig paths for # imports
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+**Note:** Version bump only for package @canonical/router-core
+
+
+
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+**Note:** Version bump only for package @canonical/router-core
+
+
+
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/router-core
+
+
+
+
+
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+### Bug Fixes
+
+* **router-core:** keep the reader in place when setSearchParams restates the page ([#1252](https://github.com/canonical/pragma/issues/1252)) ([c3a58d1](https://github.com/canonical/pragma/commit/c3a58d150e76e87526ed0f8bc962379b597bb5c8)), closes [#1250](https://github.com/canonical/pragma/issues/1250)
+
+
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+* feat(router)!: type-level truth — reject what the runtime cannot do (#1063) ([8d12c0f](https://github.com/canonical/pragma/commit/8d12c0f2bdd162d640bec393b69d4f4de6bb6da3)), closes [#1063](https://github.com/canonical/pragma/issues/1063)
+
+### BREAKING CHANGES
+
+* the legacy hand-rolled schema shape
+  `{ "~standard": { output, validate } }` is no longer accepted — use full
+  Standard Schema v1. A validator returning neither `{ value }` nor `{ issues }`
+  now throws instead of passing the value through, and
+  `StandardSchemaIssue.message` is required.
+
+  Removed public types: `SchemaLike`, `StandardSchemaLike`, `StripParamModifier`,
+  `UnionToIntersection`, `BuildPathFn`, `NavigateFn`, `WarmFn`, and
+  `LinkBuildOptions` (use `PathBuildOptions`).
+
+  Build-side `search` is now typed by the schema's *input* type rather than its
+  output, and both `search` and `params` build values are constrained to
+  serializable scalars. `NavigationIntent.search` matches.
+
+  `useRoute`, `useSearchParam` and `useSearchParams` no longer take type
+  parameters. `MemoryAdapter.getLocation()` returns `URL`, not `string | URL`.
+  `setSearchParams` with an explicit `undefined` now removes the param instead
+  of serializing the string "undefined".
+
+
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+**Note:** Version bump only for package @canonical/router-core
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+* **router:** runtime hardening — navigation adapter, async prefetch control flow, SSR status ([#965](https://github.com/canonical/pragma/issues/965)) ([bb27037](https://github.com/canonical/pragma/commit/bb27037ab4402edbc0b28b9c56a1372cb653e820))
+
+
+* feat(router)!: pre-1.0 API consolidation — one constructor, adapters as the axis, block(), warm() (re-land of #973) (#981) ([416d596](https://github.com/canonical/pragma/commit/416d59636f94cafae7a9fbb0b377edabed6438bf)), closes [#973](https://github.com/canonical/pragma/issues/973) [#981](https://github.com/canonical/pragma/issues/981) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973)
+
+
+### Features
+
+* **boilerplate-vite:** align the reference app and overhaul the router docs (re-land of [#979](https://github.com/canonical/pragma/issues/979)) ([#990](https://github.com/canonical/pragma/issues/990)) ([8fe2792](https://github.com/canonical/pragma/commit/8fe27927613e7b5b9ff6c4c6596d6d9228063c2b))
+* **router-core:** tie the Navigation API intercept handler to the router load ([#991](https://github.com/canonical/pragma/issues/991)) ([9d9fc06](https://github.com/canonical/pragma/commit/9d9fc06fe6352496ae8af2b1dd1c53f9bf707f49)), closes [#966](https://github.com/canonical/pragma/issues/966) [#966](https://github.com/canonical/pragma/issues/966)
+
+
+### BREAKING CHANGES
+
+* navigate() and setSearchParams() throw on a router
+constructed without an adapter instead of doing nothing.
+
+* refactor(router)!: collapse router factories onto the adapter axis
+
+createRouter(routes, { adapter, ... }) is now the one constructor. The
+preset factories were one-line sugar over an adapter choice; under the
+minimal-API principle the adapter is the whole axis:
+
+- delete createBrowserRouter, createHashRouter, createMemoryRouter and
+  createStaticRouter from router-core (the browser adapter already
+  resolves Navigation API -> History API internally)
+- delete router-react's createHydratedRouter; its __INITIAL_DATA__
+  reading survives as readDehydratedState(), passed to createRouter as
+  hydratedState — which also removes the incoherence where the hydrated
+  path was history-only while createBrowserRouter preferred the
+  Navigation API
+- migrate every in-repo consumer (boilerplate entries, summon templates,
+  storybook harnesses, story-utils) to createRouter + adapters; the
+  static-router recipe (match + synchronous hydrate) is inlined at the
+  two SSR entry points that used it
+* createBrowserRouter, createHashRouter,
+createMemoryRouter, createStaticRouter and createHydratedRouter are
+removed. Use createRouter(routes, { adapter: createBrowserAdapter() |
+createHashAdapter() | createMemoryAdapter(url) | createServerAdapter(url),
+hydratedState: readDehydratedState() ?? undefined }).
+
+* refactor(router)!: reshape blockers to router.block() and fix useBlocker reactivity
+
+Five members (registerBlocker/unregisterBlocker/blockerState/
+proceedNavigation/cancelNavigation) collapse into one:
+router.block(isActive) returns a handle with { state, proceed, cancel,
+subscribe, dispose }, backed by a dedicated blocker-state subject.
+
+This also fixes a real bug: useBlocker subscribed to the store, but a
+blocked navigate() never touched the store, so the documented
+confirmation-dialog pattern never rendered — the old test had to poke
+the store manually to observe the blocked state. The hook now subscribes
+to the handle and re-renders on the block itself; the dialog pattern is
+asserted end-to-end.
+
+Disposing (or unmounting) while blocked discards the pending navigation
+— previously implicit, now documented handle behavior.
+* registerBlocker, unregisterBlocker, blockerState,
+proceedNavigation and cancelNavigation are removed from Router; use
+router.block(isActive). The RouterBlocker type is replaced by
+RouterBlockerHandle. useBlocker's public shape is unchanged.
+
+* refactor(router)!: shrink the public surface — internal store, one-arg StatusResponse
+
+- Remove store from the public Router interface. It was reachable on
+  every router yet documented nowhere, and no production code consumed
+  it; the package's own tests reach the concrete object's store through
+  an explicit internal accessor instead. createRouterStore and the
+  RouterStore type remain exported as standalone primitives.
+- StatusResponse's data argument is now optional — new StatusResponse(401)
+  works, as the READMEs already wrote.
+* Router no longer exposes store. Subscribe via
+subscribe/subscribeToNavigation/subscribeToSearchParam, read via
+getState/getTrackedLocation.
+
+* refactor(router)!: rename prefetch to warm
+
+'prefetch' imports the wrong mental model: in every other router a
+prefetch/loader hands data to the component, and readers kept filing the
+hook's fire-and-forget design as a bug. 'warm' says what the hook is
+for — warming a cache ahead of navigation — and cannot be confused with
+a data loader.
+
+Renamed atomically across router-core (route/wrapper hook, router.warm(),
+WarmFn, internals), router-react (Link's hover warm-up), the reference
+app and summon templates, and the router docs. TanStack's prefetchQuery
+in examples is unrelated third-party API and keeps its name.
+* the route/wrapper 'prefetch' hook is now 'warm';
+router.prefetch() is router.warm(); the PrefetchFn type is WarmFn.
+
+* fix(router-core): make StatusResponse's optional payload type-safe
+
+
+
+
+
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+**Note:** Version bump only for package @canonical/router-core
+
+
+
+
+
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
+
+**Note:** Version bump only for package @canonical/router-core
+
+
+
+
+
+# [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
+
+
+### Features
+
+* **router-core:** history-delegate option for the memory adapter ([#862](https://github.com/canonical/pragma/issues/862)) ([d6d74b8](https://github.com/canonical/pragma/commit/d6d74b86e783b6a85549948f28960674f0650053))
+
+
+
+
+
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+**Note:** Version bump only for package @canonical/router-core
+
+
+
+
+
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Features
+
+* **router-core:** schema validation for URL params via Standard Schema v1 ([#760](https://github.com/canonical/pragma/issues/760)) ([eb6398f](https://github.com/canonical/pragma/commit/eb6398f16a91ae51f977c442a4baa50657bd2dd1))
+
+
+
+
+
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+**Note:** Version bump only for package @canonical/router-core
+
+
+
+
+
 # [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
 
 **Note:** Version bump only for package @canonical/router-core

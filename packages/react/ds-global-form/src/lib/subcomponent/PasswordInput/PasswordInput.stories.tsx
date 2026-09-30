@@ -6,7 +6,6 @@ import { PasswordInput } from "./PasswordInput.js";
 const meta: Meta<typeof PasswordInput> = {
   title: "subcomponents/PasswordInput",
   component: PasswordInput,
-  tags: ["autodocs"],
 };
 
 export default meta;

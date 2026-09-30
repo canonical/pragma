@@ -17,7 +17,7 @@ function createMockReqRes() {
 
 describe("serveStream", () => {
   it("calls the factory with req, awaits statusReady, pipes the stream", async () => {
-    const mockPipe = vi.fn((dest: any) => dest);
+    const mockPipe = vi.fn((destination: NodeJS.WritableStream) => destination);
     const mockRenderer = {
       statusCode: 200,
       statusReady: Promise.resolve(),
@@ -41,7 +41,7 @@ describe("serveStream", () => {
       statusCode: 500,
       statusReady: Promise.resolve(),
       renderToPipeableStream: () => ({
-        pipe: vi.fn((dest: any) => dest),
+        pipe: vi.fn((destination: NodeJS.WritableStream) => destination),
         abort: vi.fn(),
       }),
     };

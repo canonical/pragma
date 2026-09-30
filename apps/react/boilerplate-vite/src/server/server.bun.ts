@@ -29,6 +29,14 @@ import * as process from "node:process";
 import { viteFetchMiddleware } from "@canonical/react-ssr/server";
 import { createServer as createViteServer } from "vite";
 
+// Match Node's semantics for unhandled rejections: warn, don't die. Bun
+// kills the process by default, and a data-layer library's internal floating
+// promise (e.g. a failed GraphQL fetch teed inside its pipeline) must take
+// down a request, never the server.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection (server kept alive):", reason);
+});
+
 const PORT = Number(process.env.PORT) || 5174;
 
 const vite = await createViteServer({
@@ -65,17 +73,42 @@ Bun.serve({
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(requestUrl, template);
 
-      const { default: EntryServer } = await vite.ssrLoadModule(
-        "/src/server/entry.tsx",
-      );
+      const {
+        default: EntryServer,
+        prefetchRouteData,
+        resolveRouteDisposition,
+      } = await vite.ssrLoadModule("/src/server/entry.tsx");
+
+      const disposition = resolveRouteDisposition(requestUrl);
+
+      if (disposition.kind === "redirect") {
+        return new Response(null, {
+          status: disposition.status,
+          headers: { location: disposition.location },
+        });
+      }
+
+      // Fetch-then-render: run the matched route's declared server query so
+      // its captured responses ride the bootstrap script (fixed at stream
+      // start); absent or failed, the client fetches after hydration.
+      const relayPayloads = await prefetchRouteData(disposition);
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
       const { extractPreferences } = await vite.ssrLoadModule(
         "@canonical/react-hooks",
       );
+      const { negotiateLocale } = await vite.ssrLoadModule(
+        "@canonical/i18n-core",
+      );
+      const { i18nConfig } = await vite.ssrLoadModule("/src/i18n/config.ts");
 
-      const { theme } = extractPreferences(req.headers.get("cookie"));
+      const cookie = req.headers.get("cookie");
+      const { theme } = extractPreferences(cookie);
+      const locale = negotiateLocale(i18nConfig, {
+        cookieHeader: cookie,
+        acceptLanguage: req.headers.get("accept-language"),
+      });
       const renderer = new JSXRenderer(
         EntryServer,
         // The cookie is client-controlled, so only the known theme values reach
@@ -84,8 +117,15 @@ Bun.serve({
         {
           url: requestUrl,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
+          locale,
+          ...(relayPayloads ? { relayPayloads } : {}),
+          ...(disposition.dehydratedState ?? {}),
         },
-        { htmlString: html },
+        {
+          htmlString: html,
+          defaultLocale: locale,
+          statusCode: disposition.status,
+        },
       );
       const stream = await renderer.renderToReadableStream(req.signal);
 

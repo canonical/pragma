@@ -5,7 +5,7 @@ import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { http } from "msw";
 import * as decorators from "storybook/decorators.js";
 import * as fixtures from "storybook/fixtures.options.js";
-import { Field } from "#lib/pattern/Field/index.js";
+import { Field } from "../../pattern/Field/index.js";
 import * as middleware from "./index.js";
 
 const meta = {
@@ -116,7 +116,7 @@ export const RESTValidation: Story = {
 //   render: () => {
 //     const choicesField: FieldProps = {
 //       name: "choices",
-//       inputType: "simple-choices",
+//       inputType: "choices",
 //       label: "Select an option",
 //       middleware: [
 //         middleware.addRESTOptions("https://TODO", {

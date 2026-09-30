@@ -1,0 +1,367 @@
+/*
+ * HierarchyWell — the explorer's centre panel: the class graph sunk into
+ * the shell's underground well (`.underground` supplies the depression's
+ * surface; this file sizes the well, takes it FULL BLEED, raises the
+ * nodes, and hangs the canvas-local furniture). The panel's width comes
+ * from the explorer's grid template; the bespoke well renderer (AV-364)
+ * fills the well and positions everything ABSOLUTELY inside its camera —
+ * never `position: fixed`, which the canvas's containment would re-anchor
+ * (INTRINSIC-GRID.md entry 5).
+ *
+ * At-rules: one `prefers-reduced-motion` block at the foot. It is EXEMPT
+ * from the layout-capable census (frameStability.tests.tsx matches query
+ * TEXT and exempts motion/colour/contrast features, which cannot reflow
+ * layout), so the app's sanctioned layout-capable count stays at one.
+ */
+
+/* FULL BLEED, NO CARD. The shared `.underground` hook (Shell/styles.css)
+ * gives every well a rounded, bordered, shadowed card — right for a well
+ * sitting IN a padded page, wrong here, where the canvas IS the page and the
+ * graph is the background (owner ruling). Drop the card entirely — border,
+ * radius AND shadow — so the surface runs edge to edge with nothing framing
+ * it. Only the depression's background tint remains (the recess you look
+ * INTO, AX.3). The reset is scoped under `.ds.shell` so it OUT-SPECIFIES the
+ * `.ds.shell .underground` hook — without that ancestor the hook (specificity
+ * 0,0,3) beats a bare `.ds.hierarchy-well` (0,0,2) and the box reappears
+ * (which is exactly what the owner was still seeing). The hook itself is
+ * untouched — other tenants still get the card. This is an override at the
+ * tenant, not a change to the contract.
+ *
+ * `position: relative` makes this box the containing block for the
+ * floating furniture below. NEVER `position: fixed` inside here: the
+ * canvas is a `container-type: inline-size` query container, so fixed
+ * resolves against IT, not the viewport (INTRINSIC-GRID.md entry 5's
+ * containment law) — a fixed child would anchor to a box nobody expects. */
+.ds.shell .ds.hierarchy-well {
+  position: relative;
+  min-block-size: 0;
+  overflow: hidden;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The canvas fills the well and owns the camera: pan by dragging the
+ * floor, zoom by wheel. The well itself never scrolls; the camera div
+ * translates/scales in ONE transform, so the SVG edge layer and the HTML
+ * node layer can never drift apart. */
+.ds.hierarchy-well .hierarchy-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ds.hierarchy-well .hierarchy-canvas:active {
+  cursor: grabbing;
+}
+
+.ds.hierarchy-well .hierarchy-camera {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.ds.hierarchy-well .hierarchy-edges {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  display: block;
+  overflow: visible;
+}
+
+/* ---- the edge grammar (AV-364) ---- */
+
+.ds.hierarchy-well .hierarchy-edge path {
+  fill: none;
+}
+
+/* Structural: subclass -> superclass, the taxonomy's quiet skeleton. */
+.ds.hierarchy-well .hierarchy-edge-structural path {
+  stroke: var(--well-line, var(--color-border-muted, #c9c2c6));
+  stroke-width: 1.4;
+}
+
+.ds.hierarchy-well .hw-head-structural {
+  fill: var(--color-background, #fff);
+  stroke: var(--well-line, var(--color-border-muted, #c9c2c6));
+  stroke-width: 1.4;
+}
+
+/* Semantic: object properties. Ambient by default (thin, translucent);
+ * an arc INCIDENT to the ego centre rises and wears its predicate —
+ * responsive, not restless. */
+.ds.hierarchy-well .hierarchy-edge-semantic path {
+  stroke: var(--well-accent, var(--color-link, oklch(0.55 0.17 45)));
+  stroke-width: 1.4;
+  opacity: 0.35;
+}
+
+.ds.hierarchy-well .hierarchy-edge-semantic.is-incident path {
+  stroke-width: 1.8;
+  opacity: 1;
+}
+
+.ds.hierarchy-well .hw-head-semantic {
+  fill: var(--well-accent, var(--color-link, oklch(0.55 0.17 45)));
+}
+
+.ds.hierarchy-well .hierarchy-edge-semantic text {
+  font-family: var(--font-family-mono, "Ubuntu Mono", monospace);
+  font-size: 0.6875rem;
+  fill: var(--well-accent, var(--color-link, oklch(0.55 0.17 45)));
+  paint-order: stroke;
+  stroke: var(--color-background, #fff);
+  stroke-width: 3px;
+  text-anchor: middle;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ds.hierarchy-well .hierarchy-edge-semantic.is-incident text {
+  opacity: 1;
+}
+
+/* Each ontology cluster wears its prefix as a quiet watermark caption. */
+.ds.hierarchy-well .hierarchy-cluster-caption {
+  font-family: var(--font-family-mono, "Ubuntu Mono", monospace);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  fill: var(--color-text-muted, #77707b);
+  opacity: 0.55;
+}
+
+/* The node shell owns the estimated geometry buildClassGraph assigns
+ * (inline, from the settled layout); the link fills it and the abstract
+ * tag rides at its foot, outside the anchor (so the node's accessible
+ * name stays the term alone). */
+.ds.hierarchy-well .hierarchy-node-shell {
+  position: absolute;
+  transition: opacity 0.15s ease;
+}
+
+/* Nodes float as raised chips on the well floor (AX.3: content ON the
+ * floor renders raised again). The drop shadow is what makes them read as
+ * floating in the depression rather than printed on it — the well already
+ * has the recess, this gives the nodes their lift. Each node is one term
+ * link. */
+.ds.hierarchy-well .hierarchy-node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  block-size: 100%;
+  padding-inline: var(--space-100, 0.5rem);
+  background: var(--color-background, #fff);
+  border: 1px solid var(--color-border-muted, #ddd);
+  border-radius: 0.5rem;
+  color: var(--color-text, #000);
+  text-decoration: none;
+  font-size: 0.875rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.12));
+  transition:
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+/* Abstract classes: dashed border and italic label, plus the small
+ * ABSTRACT tag below. Real text, not colour — the distinction survives
+ * with styling ignored. */
+.ds.hierarchy-well .hierarchy-node-abstract {
+  border-style: dashed;
+  font-style: italic;
+}
+
+.ds.hierarchy-well .hierarchy-node-tag {
+  position: absolute;
+  inset-block-end: -0.9rem;
+  inset-inline: 0;
+  text-align: center;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #666);
+  pointer-events: none;
+}
+
+/* Selection is the address: the router stamps aria-current on the current
+ * term's node link. Thicker stroke AND a tinted fill, so the selected node
+ * is legible at a glance even inside a faded neighbourhood. */
+.ds.hierarchy-well .hierarchy-node[aria-current="page"] {
+  border-color: var(--color-text, #000);
+  border-width: 2px;
+  font-weight: 600;
+  background: color-mix(
+    in oklab,
+    var(--color-text, #000) 6%,
+    var(--color-background, #fff)
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* The ego-fade and the filter's hiding — the asymmetry's graph half */
+/* ---------------------------------------------------------------- */
+
+/* Non-neighbours recede but stay readable; edges fade HARDER than nodes,
+ * so what survives around the focus is its connective tissue rather than
+ * an even wash. The exhibit's own values (.16 nodes, .06 edges). */
+.ds.hierarchy-well .hierarchy-node-shell.is-faded {
+  opacity: 0.16;
+}
+
+.ds.hierarchy-well .hierarchy-edge.is-faded {
+  opacity: 0.06;
+}
+
+/* THE ASYMMETRY: the graph HIDES what the filter excludes (the rail only
+ * dims). Positions are untouched, so restoring a chip restores the exact
+ * picture — we never re-run a layout. */
+.ds.hierarchy-well .hierarchy-node-shell.is-hidden,
+.ds.hierarchy-well .hierarchy-edge.is-hidden {
+  display: none;
+}
+
+.ds.hierarchy-well .hierarchy-edge {
+  transition: opacity 0.15s ease;
+}
+
+/* ---------------------------------------------------------------- */
+/* Floating furniture — what actually creates the "laid over" feel   */
+/* ---------------------------------------------------------------- */
+
+/* The exhibit does NOT float its panels over a full-bleed canvas; its
+ * three tracks are adjacent and opaque. What hovers is small, canvas-LOCAL
+ * furniture: a hint at the top centre and a legend at the bottom left.
+ * That is what we reproduce — absolutely positioned against the well
+ * (which is `position: relative` above), never `position: fixed`, and
+ * raised to --z-plate, a token this file CONSUMES and never defines. */
+.ds.hierarchy-well .hierarchy-furniture {
+  position: absolute;
+  z-index: var(--z-plate);
+  pointer-events: none;
+}
+
+/* The hint: centred at the top, purely informational, never a click
+ * target — so it stays out of the way of the graph it describes. */
+.ds.hierarchy-well .hierarchy-hint {
+  inset-block-start: var(--space-150, 0.75rem);
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: fit-content;
+  max-inline-size: calc(100% - var(--space-300, 1.5rem));
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: color-mix(
+    in oklab,
+    var(--color-background, #fff) 85%,
+    transparent
+  );
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #666);
+}
+
+/* The legend: bottom left, the exhibit's placement. It explains the
+ * per-node encoding, so it has to sit where the nodes are. */
+.ds.hierarchy-well .hierarchy-legend {
+  inset-block-end: var(--space-150, 0.75rem);
+  inset-inline-start: var(--space-150, 0.75rem);
+  /* A small corner accessory, never a panel: capped at a fixed 15rem so it
+   * stays incidental over the now full-bleed, full-height well rather than
+   * scaling with the well's width (the old `calc(100% - …)` let it grow to
+   * most of a narrow well — the "legend takes 90%" the owner named). The
+   * min() keeps it from ever exceeding the well on a genuinely tiny canvas. */
+  max-inline-size: min(15rem, calc(100% - var(--space-300, 1.5rem)));
+  padding: var(--space-100, 0.5rem) var(--space-150, 0.75rem);
+  border: 1px solid var(--color-border-muted, #ddd);
+  border-radius: 0.5rem;
+  background: var(--color-background, #fff);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 6px 24px rgb(0 0 0 / 0.07);
+  font-size: 0.6875rem;
+  color: var(--color-text-muted, #666);
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.ds.hierarchy-well .hierarchy-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ds.hierarchy-well .hierarchy-legend dt,
+.ds.hierarchy-well .hierarchy-legend dd {
+  margin: 0;
+}
+
+/* The swatches restate the node encoding exactly — same border style, so
+ * the legend cannot drift from what the graph draws. */
+.ds.hierarchy-well .hierarchy-legend-swatch {
+  display: block;
+  inline-size: 1.5rem;
+  block-size: 0.75rem;
+  border-radius: 0.1875rem;
+  border: 1px solid var(--color-border-muted, #ddd);
+  background: var(--color-background, #fff);
+}
+
+.ds.hierarchy-well .hierarchy-legend-swatch-abstract {
+  border-style: dashed;
+}
+
+/* The subclass edge: a line with an arrowhead, drawn in CSS so the legend
+ * carries no image dependency. */
+.ds.hierarchy-well .hierarchy-legend-edge {
+  display: block;
+  inline-size: 1.5rem;
+  block-size: 0;
+  border-block-start: 1px solid var(--color-border-muted, #ddd);
+  position: relative;
+}
+
+.ds.hierarchy-well .hierarchy-legend-edge::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -1px;
+  inset-block-start: -3px;
+  border-block: 3px solid transparent;
+  border-inline-start: 5px solid var(--color-border-muted, #ddd);
+}
+
+/* Fade and lift are the well's only motion; drop them when asked. The
+ * at-rule is census-EXEMPT (frameStability.tests.tsx matches query TEXT
+ * and exempts prefers-reduced-motion, which cannot reflow layout), so the
+ * count of layout-capable conditionals stays at one. */
+@media (prefers-reduced-motion: reduce) {
+  .ds.hierarchy-well .hierarchy-node,
+  .ds.hierarchy-well .hierarchy-node-shell,
+  .ds.hierarchy-well .hierarchy-edge {
+    transition: none;
+  }
+}
+
+/* The relation swatch: the semantic arc's accent, same hue as the arcs. */
+.ds.hierarchy-well .hierarchy-legend-edge-relation {
+  border-block-start-color: var(
+    --well-accent,
+    var(--color-link, oklch(0.55 0.17 45))
+  );
+}
+
+.ds.hierarchy-well .hierarchy-legend-edge-relation::after {
+  border-inline-start-color: var(
+    --well-accent,
+    var(--color-link, oklch(0.55 0.17 45))
+  );
+}

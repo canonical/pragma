@@ -14,7 +14,7 @@ Before you can start contributing, you'll need to set up your local development 
 1. **Install Bun:** Install the [bun package manager](https://bun.sh/). This is our preferred package manager for this
    project.
    Make sure you install Bun version 1.2.0 or later, as earlier versions do not generate text-based lockfiles by default.
-2. **Install Node.js:** Ensure you have [Node.js](https://nodejs.org/en/download/package-manager) version 20 or later
+2. **Install Node.js:** Ensure you have [Node.js](https://nodejs.org/en/download/package-manager) version 22.13 or later (Node 22.13+, 24 or 26 — Lerna supports no others)
    installed. This may be used by some packages that are not fully using Bun.
 
 #### 1.2 Installation

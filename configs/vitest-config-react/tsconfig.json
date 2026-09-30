@@ -1,0 +1,9 @@
+{
+  "extends": "@canonical/typescript-config",
+  "compilerOptions": {
+    "moduleResolution": "NodeNext",
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"]
+}

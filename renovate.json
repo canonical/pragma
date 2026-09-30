@@ -1,4 +1,4 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["local>configs/renovate/default.json"]
+  "extends": ["github>canonical/pragma-core//configs/renovate/default.json"]
 }

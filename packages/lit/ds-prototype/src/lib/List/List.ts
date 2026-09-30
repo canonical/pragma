@@ -30,12 +30,12 @@ export default class List extends LitElement implements ListProps {
   render() {
     const sectionClasses = {
       [componentCssClassName]: true,
-      ["bulletless"]: this.listType === "bulletless",
-      ["bulleted"]: this.listType === "unordered",
-      ["numbered"]: this.listType === "ordered",
-      ["inline"]: this.listType === "inline",
-      ["inline-middot"]: this.listType === "inline-middot",
-      ["has-divider"]: this.divider,
+      bulletless: this.listType === "bulletless",
+      bulleted: this.listType === "unordered",
+      numbered: this.listType === "ordered",
+      inline: this.listType === "inline",
+      "inline-middot": this.listType === "inline-middot",
+      "has-divider": this.divider,
     };
     const listItems = html`
       ${map(this.items, (i) => html`<li class="item ${i.ticked ? "ticked" : i.ticked === false ? "crossed" : ""}">${i.text}</li>`)}

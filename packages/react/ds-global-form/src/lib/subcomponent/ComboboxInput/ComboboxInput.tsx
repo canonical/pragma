@@ -11,6 +11,10 @@ const componentCssClassName = "ds combobox";
  * Presentational combobox (controlled, no react-hook-form). Routes to the
  * single- or multiple-select implementation. The forwarded ref targets the
  * text input of the single-select variant.
+ *
+ * `import { ComboboxInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.combobox_input
  */
 export const ComboboxInput = forwardRef<HTMLInputElement, ComboboxInputProps>(
   function ComboboxInput(

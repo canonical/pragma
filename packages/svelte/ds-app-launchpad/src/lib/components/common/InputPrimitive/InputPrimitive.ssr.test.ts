@@ -54,17 +54,15 @@ describe("InputPrimitive SSR", () => {
         expect(componentLocator(page).type).toBe("text");
       });
 
-      it.each([
-        "text",
-        "email",
-        "url",
-        "tel",
-      ] as const)("accepts %s", (type) => {
-        const page = render(Component, {
-          props: { type, ...baseProps },
-        });
-        expect(componentLocator(page).type).toBe(type);
-      });
+      it.each(["text", "email", "url", "tel"] as const)(
+        "accepts %s",
+        (type) => {
+          const page = render(Component, {
+            props: { type, ...baseProps },
+          });
+          expect(componentLocator(page).type).toBe(type);
+        },
+      );
 
       it("accepts search", () => {
         const page = render(Component, {

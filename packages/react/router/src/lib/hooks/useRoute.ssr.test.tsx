@@ -32,7 +32,7 @@ async function readStream(stream: ReadableStream): Promise<string> {
 }
 
 function Probe() {
-  const location = useRoute<typeof routes>();
+  const location = useRoute();
 
   Reflect.get(location as object, Symbol.toStringTag);
 

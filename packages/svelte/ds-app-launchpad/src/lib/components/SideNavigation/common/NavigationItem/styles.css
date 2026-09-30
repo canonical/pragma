@@ -5,19 +5,15 @@
   border: none;
 
   --dimension-padding-inline-button: 0;
-  --dimension-padding-block-button: var(--lp-dimension-spacing-block-xxs);
-  --dimension-padding-inline-start-button-label: var(
-    --lp-dimension-spacing-inline-xs
-  );
+  --dimension-padding-block-button: var(--dimension-050);
+  --dimension-padding-inline-start-button-label: var(--dimension-100);
   --color-background-button-selected: var(
-    --tmp-color-background-neutral-active
+    --color-foreground-navigation-primary-active
   );
   --dimension-width-button-selected-indicator: var(
-    --lp-dimension-stroke-thickness-large
+    --dimension-stroke-thickness-large
   );
-  --color-background-button-selected-indicator: var(
-    --tmp-color-border-highlight
-  );
+  --color-background-button-selected-indicator: var(--color-border-highlighted);
 
   grid-template-columns: subgrid;
 

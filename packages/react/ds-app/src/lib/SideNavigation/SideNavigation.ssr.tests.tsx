@@ -1,10 +1,10 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import SideNavigation from "./SideNavigation.js";
-import type { NavItem } from "./types.js";
+import type { NavRoot } from "./types.js";
 
-// Level-1 group (unlabelled) holding a level-2 navigable link.
-const root: NavItem = {
+// An unlabelled group holding one navigable link.
+const root: NavRoot = {
   key: "root",
   items: [{ key: "main", items: [{ url: "/machines", label: "Machines" }] }],
 };

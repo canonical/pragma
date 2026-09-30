@@ -2,6 +2,18 @@ import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 import TextRenderer from "./TextRenderer.js";
 
+/**
+ * The protected surface of `TextRenderer` exercised directly by these unit
+ * tests. Casting through this type keeps `buildText`'s return type checked
+ * instead of erasing it with `any`.
+ */
+interface TextRendererInternals {
+  buildText(): Promise<string>;
+}
+
+const asInternals = (renderer: TextRenderer): TextRendererInternals =>
+  renderer as unknown as TextRendererInternals;
+
 describe("TextRenderer", () => {
   describe("statusCode and statusReady", () => {
     it("starts with statusCode 200", () => {
@@ -22,13 +34,13 @@ describe("TextRenderer", () => {
         async () => "second",
         async () => "third",
       ]);
-      const text = await (renderer as any).buildText();
+      const text = await asInternals(renderer).buildText();
       expect(text).toBe("firstsecondthird");
     });
 
     it("returns empty string for no getters", async () => {
       const renderer = new TextRenderer([]);
-      const text = await (renderer as any).buildText();
+      const text = await asInternals(renderer).buildText();
       expect(text).toBe("");
     });
 
@@ -37,7 +49,7 @@ describe("TextRenderer", () => {
         async () => "# Title\n\n",
         async () => "Body text.\n",
       ]);
-      const text = await (renderer as any).buildText();
+      const text = await asInternals(renderer).buildText();
       expect(text).toBe("# Title\n\nBody text.\n");
     });
 
@@ -53,7 +65,7 @@ describe("TextRenderer", () => {
           return "b";
         },
       ]);
-      await (renderer as any).buildText();
+      await asInternals(renderer).buildText();
       expect(order).toEqual([1, 2]);
     });
   });

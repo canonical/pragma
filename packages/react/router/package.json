@@ -1,7 +1,7 @@
 {
   "name": "@canonical/router-react",
   "description": "React bindings for @canonical/router-core",
-  "version": "0.29.0-experimental.0",
+  "version": "0.43.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -20,50 +20,52 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "bun run build",
-    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check": "bun run check:biome && bun run check:ts && bun run check:ts:registered && bun run check:webarchitect",
     "check:webarchitect": "webarchitect package-react",
-    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts && bun run check:ts:registered",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
+    "check:ts:registered": "tsc --noEmit -p tsconfig.types.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/react-ssr": "^0.29.0-experimental.0",
-    "@canonical/router-core": "^0.29.0-experimental.0",
+    "@canonical/react-ssr": "^0.43.0",
+    "@canonical/router-core": "^0.43.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
-    "@canonical/typescript-config-react": "^0.28.0",
-    "@canonical/webarchitect": "^0.29.0-experimental.0",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/typescript-config-react": "^0.43.0",
+    "@canonical/vitest-config-react": "^0.43.0",
+    "@canonical/webarchitect": "0.43.0",
+    "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
-    "@types/node": "^24.12.0",
+    "@types/node": "^26.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^5.0.0",
     "jsdom": "^28.1.0",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vite": "^8.0.1",
-    "vitest": "^4.0.18"
+    "vitest": "^5.0.0"
   }
 }

@@ -1,7 +1,6 @@
 {
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
-    "baseUrl": "src",
     "skipLibCheck": true,
     "types": [
       "bun-types",
@@ -11,12 +10,7 @@
       "vitest/globals",
       "@testing-library/jest-dom"
     ],
-    "noEmit": true,
-    "paths": {
-      "#lib/*": ["./lib/*"],
-      "#domains/*": ["./domains/*"],
-      "#styles/*": ["./styles/*"]
-    }
+    "noEmit": true
   },
   "include": [
     "src/**/*.ts",
@@ -24,6 +18,7 @@
     ".storybook/*.ts",
     ".storybook/*.tsx",
     "vite.config.ts",
+    "vite-plugin-ds-icons.ts",
     "vitest.setup.ts",
     "vitest.config.ts",
     "vitest.e2e.config.ts",

@@ -1,0 +1,47 @@
+/*
+ * ComponentEntityPage — the entity view's two-tenant row: reading column
+ * west, quick-facts aside east. Under the strict intrinsic-grid model
+ * (owner ruling) this rides the same column chain as every other lens: the
+ * page is a SUBGRID pass-through and the body a SUBGRID whose article and
+ * aside claim column SPANS. The old flex-wrap collapse (INTRINSIC-GRID
+ * entry 6) is superseded — the aside is a fixed span of the intrinsic
+ * columns now, aligned to the frame's ruler rather than wrapping on a
+ * content basis. Entry 6's narrow-canvas wrap is a debt to revisit if a
+ * real narrow-canvas need appears (a span can't wrap); at desktop widths
+ * the fixed span is the cleaner, frame-aligned answer.
+ */
+
+.ds.component-entity {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-content: start;
+}
+
+.ds.component-entity .component-entity-body {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: start;
+}
+
+.ds.component-entity .component-entity-article {
+  grid-column: 1 / -4;
+  min-inline-size: 0;
+}
+
+.ds.component-entity .component-entity-aside {
+  grid-column: -4 / -1;
+  min-inline-size: 0;
+}
+
+/* The closing neighbourhood well sits UNDER the two-tenant body, spanning
+ * the frame's full row (a direct child of the page's subgrid, so it must
+ * claim its columns): the page ends by looking down into the graph it was
+ * projected from (AX.3, AV-364). Its canvas scrolls internally, so the
+ * span never forces the page wider than the ruler. */
+.ds.component-entity .ds.neighbourhood-well {
+  grid-column: 1 / -1;
+  margin-block-start: var(--space-400, 2rem);
+  min-inline-size: 0;
+}

@@ -5,7 +5,6 @@ import Component from "./EditableBlock.js";
 const meta = {
   title: "EditableBlock",
   component: Component,
-  tags: ["autodocs"],
   argTypes: {
     tag: {
       control: "text",

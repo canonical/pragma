@@ -1,20 +1,20 @@
 {
   "name": "@canonical/storybook-addon-shell-theme",
   "description": "Storybook addon that applies Canonical shell theme with light and dark modes.",
-  "version": "0.29.0-experimental.0",
+  "version": "0.43.0",
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma/tree/main/packages/storybook/addon-canonical-shell-theme#readme",
+  "homepage": "https://github.com/canonical/pragma-web/tree/main/packages/storybook/addon-canonical-shell-theme#readme",
   "keywords": [
     "storybook-addon",
     "storybook-theme",
@@ -27,9 +27,18 @@
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "exports": {
-    ".": "./dist/esm/index.js",
-    "./preview": "./dist/esm/preview.js",
-    "./manager": "./dist/esm/manager.js",
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./preview": {
+      "types": "./dist/types/preview.d.ts",
+      "default": "./dist/esm/preview.js"
+    },
+    "./manager": {
+      "types": "./dist/types/manager.d.ts",
+      "default": "./dist/esm/manager.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -50,18 +59,19 @@
     "check:webarchitect": "webarchitect library"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
-    "@canonical/typescript-config": "^0.28.0",
-    "@canonical/webarchitect": "^0.29.0-experimental.0",
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/design-tokens": "0.43.0",
+    "@canonical/typescript-config": "0.43.0",
+    "@canonical/webarchitect": "0.43.0",
     "copyfiles": "^2.4.1",
-    "storybook": "^10.3.1",
-    "typescript": "^5.9.3",
+    "storybook": "^10.6.0",
+    "typescript": "^7.0.2",
     "vite": "^8.0.1",
-    "vitest": "^4.0.18"
+    "vitest": "^5.0.0"
   },
   "peerDependencies": {
-    "storybook": "^10.3.1"
+    "storybook": "^10.6.0"
   },
   "storybook": {
     "displayName": "DS Theme",

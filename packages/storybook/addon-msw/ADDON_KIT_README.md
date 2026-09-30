@@ -42,7 +42,7 @@ Addons can interact with a Storybook project in multiple ways. It is recommended
 - Preview entries are used to add UI or behavior to the preview iframe where stories are rendered.
 - Presets are used to modify the Storybook configuration, similar to how [users can configure their `main.ts` configurations](https://storybook.js.org/docs/react/api/main-config).
 
-Since each of these places represents a different environment with different features and modules, it is also recommended to split and build your modules accordingly. This addon-kit comes with a preconfigured [bundling configuration](./tsup.config.ts) that supports this split, and you are free to modify and extend it as needed.
+Since each of these places represents a different environment with different features and modules, it is also recommended to split and build your modules accordingly. This addon-kit comes with a preconfigured bundling configuration that supports this split, and you are free to modify and extend it as needed.
 
 You can define which modules match which environments in the [`package.json#bundler`](./package.json) property:
 

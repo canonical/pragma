@@ -1,9 +1,6 @@
 name: Setup environment
 description: Installs build tools, restores caches, starts Nx cache server, and installs dependencies
 inputs:
-  bun-version:
-    default: '1.3.9'
-    description: Version of Bun to use
   node-version:
     # Node is required for Storybook and Lerna (Bun is used as package manager only)
     # Storybook 10 supports Node 20.16+, 22.19+, or 24+
@@ -15,29 +12,35 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v6
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
       with:
         node-version: ${{ inputs.node-version }}
 
     - name: Setup Bun
-      uses: oven-sh/setup-bun@v2
+      uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
       with:
-        bun-version: ${{ inputs.bun-version }}
+        # The repo pins Bun once, in .bun-version at the root. Renovate reads that
+        # file natively, so a bump moves every job together instead of the subset
+        # a `bun-version:` literal happens to be visible in.
+        bun-version-file: .bun-version
 
     - name: Cache node_modules
-      uses: actions/cache@v5
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: node_modules
-        key: node-modules-${{ runner.os }}-${{ inputs.node-version }}-${{ hashFiles('bun.lock') }}
+        # .bun-version is in the key deliberately: the lockfile does not change
+        # when Bun does, so hashing it alone would restore the previous Bun's
+        # node_modules and the new version would never install anything.
+        key: node-modules-${{ runner.os }}-${{ inputs.node-version }}-${{ hashFiles('bun.lock', '.bun-version') }}
 
     - name: Cache Bun global cache
-      uses: actions/cache@v5
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: ~/.bun/install/cache
-        key: bun-cache-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+        key: bun-cache-${{ runner.os }}-${{ hashFiles('bun.lock', '.bun-version') }}
 
     - name: Cache Nx remote cache
-      uses: actions/cache@v5
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: /tmp/nx-remote-cache
         key: nx-remote-cache-${{ runner.os }}-${{ inputs.node-version }}-${{ github.sha }}
@@ -61,6 +64,15 @@ runs:
       shell: bash
       run: bun install --ignore-scripts
 
+      # Playwright browsers are NOT installed here. This composite is the
+      # FIRST nx-adjacent thing a job runs, and the old in-composite gate's
+      # cold-graph nx query silently resolved an empty project set here while
+      # the test step's own affected calculation, minutes later, still ran
+      # the browser suites (#901 — three days of red with empty logs).
+      # Browser install now lives in the workflows, AFTER this composite:
+      # pr.yml detects need on the warmed graph; push.yml/tag.yml install
+      # unconditionally (the full suite always includes the browser suites).
+      # Both invoke install-playwright.sh, which lives beside this file.
     - name: Start Nx cache server
       shell: bash
       run: |

@@ -52,7 +52,7 @@ summon component react --component-path src/lib/MyComponent --yes
 
 The generator creates the component file, types, styles, stories, unit tests, and SSR tests. The generated code follows all conventions described in this document, so you can start implementing immediately rather than setting up boilerplate.
 
-See the [summon-component README](../../packages/summon/component/README.md) for all available options.
+See the [summon-component README](https://github.com/canonical/pragma-core/blob/main/packages/summon/component/README.md) for all available options.
 
 ## Why This Structure
 
@@ -78,8 +78,30 @@ const Button = ({
   children,
   style,
   appearance,
+  icon,
+  loading = false,
   ...props
 }: Props): React.ReactElement => {
+  // Booleans and nullish children render nothing; everything else (including
+  // the number 0) produces visible text that names the button.
+  const hasVisibleChildren =
+    children != null && typeof children !== "boolean" && children !== "";
+
+  // Icon-only states (an icon, or a loading spinner in its place) render no
+  // visible text, so the accessible name must be supplied explicitly.
+  if (
+    typeof process !== "undefined" &&
+    process.env.NODE_ENV !== "production" &&
+    (icon || loading) &&
+    !hasVisibleChildren &&
+    !props["aria-label"] &&
+    !props["aria-labelledby"]
+  ) {
+    console.warn(
+      "Button: icon-only buttons need an explicit `aria-label` or `aria-labelledby` to be accessible.",
+    );
+  }
+
   return (
     <button
       id={id}
@@ -87,9 +109,9 @@ const Button = ({
         .filter(Boolean)
         .join(" ")}
       style={style}
-      aria-label={props["aria-label"] || children?.toString()}
       {...props}
     >
+      {icon && <span className="icon">{icon}</span>}
       {children}
     </button>
   );
@@ -99,6 +121,8 @@ export default Button;
 ```
 
 Several patterns appear consistently across all components. The type import uses `.js` extension because TypeScript compilation produces JavaScript files with those extensions. The CSS import has no specifier because it triggers a side effect (loading styles) rather than providing a value. The component uses default export because the barrel file will re-export it with a named export.
+
+The component never fabricates an accessible name from its children. Stringifying an arbitrary React node produces garbage like `[object Object]`, and visible text is already read by screen readers, so a synthesized `aria-label` would at best be redundant and at worst wrong. Instead, the component guards accessibility with a development-only warning scoped to icon-only states: when the button has an `icon` (or is `loading`, which puts a spinner in the icon's place), renders no visible text children, and the consumer supplied neither `aria-label` nor `aria-labelledby`, it warns so the missing name is caught during development rather than shipped.
 
 The className construction follows a standard pattern. The array `["ds", "button", appearance, className]` contains the namespace (`ds`), the component class (`button`), any modifier props (`appearance`), and any consumer-provided classes (`className`). The `filter(Boolean)` removes falsy values like `undefined` when no appearance is specified. The `join(" ")` produces the final class string.
 
@@ -117,6 +141,8 @@ export interface BaseProps {
   className?: string;
   children: ReactNode;
   appearance?: ModifierFamily<"severity"> | "base" | "link";
+  icon?: ReactNode;
+  loading?: boolean;
 }
 
 type Props = BaseProps & ButtonHTMLAttributes<HTMLButtonElement>;
@@ -177,15 +203,14 @@ The index file explicitly lists every public export. This makes the component's 
 
 ```typescript
 export { default as Button } from "./Button.js";
-export type {
-  BaseProps as ButtonBaseProps,
-  default as ButtonProps,
-} from "./types.js";
+export type { default as ButtonProps } from "./types.js";
 ```
 
 Several patterns appear here. The default export from `Button.tsx` becomes a named export `Button`. This allows consumers to use destructuring imports: `import { Button } from "@canonical/react-ds-global"`.
 
-Type exports use the `export type` syntax to ensure they are erased during compilation. The types are renamed during export (`BaseProps as ButtonBaseProps`) to include the component name, preventing naming conflicts when multiple components define similar base props.
+Type exports use the `export type` syntax to ensure they are erased during compilation. The type is renamed during export (`default as ButtonProps`) to include the component name, preventing naming conflicts when multiple components export a props type.
+
+Only the finished props type is exported. The DS-owned half of the props (the `OwnProps` object a component intersects with its root element's `ComponentProps`) stays private to `types.ts`: it is an implementation detail of how the public type is assembled, and exporting it would freeze that assembly into the published surface.
 
 The `.js` extension appears in import paths because the compiled JavaScript files will have that extension. TypeScript understands that `.js` refers to the corresponding `.ts` file during development.
 
@@ -202,7 +227,6 @@ import Component from "./Button.js";
 const meta = {
   title: "Button",
   component: Component,
-  tags: ["autodocs"],
   args: { onClick: fn() },
 } satisfies Meta<typeof Component>;
 
@@ -223,7 +247,7 @@ export const Positive: Story = {
 };
 ```
 
-The `tags: ["autodocs"]` directive tells Storybook to generate documentation from the component's JSDoc comments and TypeScript types. This provides API reference documentation without maintaining separate docs.
+Storybook generates an API reference page for every component (autodocs) from its JSDoc comments and TypeScript types. This is enabled project-wide by the `tags: ["autodocs"]` default in each package's `.storybook/preview.ts` (the shared configuration from `@canonical/storybook-config`), so individual story files do not declare the tag themselves. A story file can opt out with `tags: ["!autodocs"]`.
 
 Each exported story represents a distinct state or variant of the component. Story names become visible in Storybook's sidebar and in Chromatic's visual comparison interface. Descriptive names like `Positive` and `Negative` help reviewers understand what each screenshot should show.
 

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useId, useSyncExternalStore } from "react";
+import type { RouterBlockerHandle } from "@canonical/router-core";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import useRouter from "./useRouter.js";
 
 export interface BlockerState {
@@ -14,6 +21,9 @@ export interface BlockerState {
  * continues the blocked navigation, and `cancel()` stays on the page.
  * The consumer controls the confirmation UI.
  *
+ * Unmounting while blocked disposes the blocker and discards the pending
+ * navigation (it is not resumed).
+ *
  * ```tsx
  * const blocker = useBlocker(isDirty);
  *
@@ -27,32 +37,38 @@ export interface BlockerState {
  */
 export default function useBlocker(isActive: boolean): BlockerState {
   const router = useRouter();
-  const id = useId();
+  const isActiveRef = useRef(isActive);
+  const [handle, setHandle] = useState<RouterBlockerHandle | null>(null);
+
+  isActiveRef.current = isActive;
 
   useEffect(() => {
-    router.registerBlocker({ id, isActive: () => isActive });
+    const nextHandle = router.block(() => isActiveRef.current);
+
+    setHandle(nextHandle);
 
     return () => {
-      router.unregisterBlocker(id);
+      nextHandle.dispose();
     };
-  }, [router, id, isActive]);
+  }, [router]);
 
   const subscribe = useCallback(
-    (onStoreChange: () => void) => router.subscribe(onStoreChange),
-    [router],
+    (onStoreChange: () => void) =>
+      handle ? handle.subscribe(onStoreChange) : () => {},
+    [handle],
   );
 
-  const getSnapshot = useCallback(() => router.blockerState, [router]);
+  const getSnapshot = useCallback(() => handle?.state ?? "idle", [handle]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   return {
     state,
     proceed() {
-      router.proceedNavigation();
+      handle?.proceed();
     },
     cancel() {
-      router.cancelNavigation();
+      handle?.cancel();
     },
   };
 }

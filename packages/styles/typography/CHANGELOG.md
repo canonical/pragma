@@ -3,6 +3,324 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.43.0](https://github.com/canonical/pragma-web/compare/v0.42.0...v0.43.0) (2026-09-30)
+
+* chore(monorepo)!: consume the core packages from npm (#1388) ([86e48a4](https://github.com/canonical/pragma-web/commit/86e48a4f166821f8a2d5352314ac65ba94ff2846)), closes [#1388](https://github.com/canonical/pragma-web/issues/1388)
+
+### Bug Fixes
+
+* **styles-typography:** drop the unused typescript peer dependency ([#1394](https://github.com/canonical/pragma-web/issues/1394)) ([79a0813](https://github.com/canonical/pragma-web/commit/79a0813538b28b970475c7858959fc47ad41eb67))
+
+### BREAKING CHANGES
+
+* the core packages are no longer workspace members;
+  local changes to them are made in canonical/pragma-core.
+
+  * ci: drop the embedded-pack refresh and the dead Chromatic path filters
+
+  The version action refreshed the pragma CLI's embedded pack, which no longer lives here; the step, its script, its token input and tag.yml's PACKS_READ_TOKEN go. The Chromatic workflows watched packages/utils and packages/tokens, neither of which exists in this repository any more.
+
+  * chore(monorepo): name canonical/pragma-web in the implementation graph
+
+  ds.config.json's repository is stamped into every source link the collector writes; data/ is regenerated with it.
+
+  * chore(monorepo): take the Renovate preset and the Biome config's owners from pragma-core
+
+  renovate.json extends the preset published from canonical/pragma-core. The /configs/biome/ ownership line moves with the folder.
+
+  * docs: point the toolchain references at canonical/pragma-core
+
+  README, AGENTS.md and docs/ describe this repository without the toolchain packages; links into the deleted folders point at canonical/pragma-core, CONSTITUTION.md becomes a link to its one copy there, the publishing guides name canonical/pragma-web as the trusted-publisher repository, and the CLI's perf-budget notes leave with the CLI.
+
+  * test(prism-pragma-provider): check the live emission against the contract
+
+  The compiler-goldens gate left with the compiler. The provider already boots the pinned @canonical/ke-graphql over its hermetic corpus, so it checks that emission against the contract; a compiler bump that breaks conformance is red on the bump. The contract README names this as the gate against a real emission.
+
+  * docs: correct the references the toolchain move left stale
+
+  The storybook hub's CLI page no longer claims a workspace pragma binary; AGENTS.md's scope examples and package count, the adding-a-package example pins and tool-package section, the constitution link and the provider READMEs' links to canonical/pragma-core.
+
+  * docs: tighten the conformance-gate notes and two stale examples
+
+  The provider README names its live contract check, the contract README says it runs over the test corpus and keeps its wrap, AGENTS.md drops the last CLI scope example, and the no-magic link carries its anchor.
+
+  * chore(deps): pin the core packages to their 0.43.0-experimental releases
+
+  Each core package takes its own experimental release from the registry: biome-config, typescript-config, webarchitect, ke and ke-graphql at 0.43.0-experimental.0; utils, design-tokens and design-system at 0.43.0-experimental.1.
+
+  * chore(monorepo): name canonical/pragma-web as the repository
+
+  npm refuses a trusted-publisher publish whose repository.url names a different repository, so every manifest's repository, bugs and homepage, and ds.config.json's repository (stamped into the implementation graph's source links, regenerated here), name canonical/pragma-web, as do the clone instructions and the trusted-publisher setup in the docs. tag.yml refuses to run from any other repository, so a release dispatched before the rename stops before anything is versioned or tagged.
+
+  * fix(styles-debug): accept any 0.x design-tokens as the optional peer
+
+  An exact peer makes npm refuse styles-debug next to any other design-tokens release; its stylesheet only reads token custom properties, which 0.10.0 and 0.43.0 ship identically. The range matches the repository's other peers.
+
+  * fix(svelte-ds-app-launchpad): depend on design-tokens at runtime
+
+  The published styles.css imports @canonical/design-tokens' stylesheets, so it is a dependency, not a devDependency.
+
+  * docs: say how to get the pragma CLI and where the core pins come from
+
+  The CLI is no longer a workspace member, so the README's prerequisites name @canonical/pragma-cli and how to install it, and the adding-a-package guide installs it before pragma create package and says to copy the core pins from a sibling manifest. The ranges test's historical comment says the package it describes has left.
+
+  * ci: drop the repository guard from the release workflow
+
+  * chore(deps): pin the core packages to 0.43.0
+
+  pragma-core's first stable release: biome-config, typescript-config, webarchitect, utils, ke, ke-graphql, design-tokens and design-system move from their 0.43.0-experimental builds to 0.43.0.
+
+
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+* chore(monorepo)!: move to TypeScript 7 (#1374) ([713d307](https://github.com/canonical/pragma/commit/713d3071d3980539a849ea95823736e8b343a1b1)), closes [#1374](https://github.com/canonical/pragma/issues/1374) [#lib](https://github.com/canonical/pragma/issues/lib) [#domains](https://github.com/canonical/pragma/issues/domains) [#i18n](https://github.com/canonical/pragma/issues/i18n) [#relay](https://github.com/canonical/pragma/issues/relay) [#styles](https://github.com/canonical/pragma/issues/styles)
+
+### BREAKING CHANGES
+
+* the shared TypeScript configs, storybook-config,
+  vitest-config-react and styles-typography no longer accept TypeScript 5 as
+  a peer, and the tsconfig presets no longer set or expect baseUrl.
+
+  * chore(configs): keep TypeScript 5.9 and 6 in the typescript peer ranges
+
+  The shared configs, the Storybook config, the Vitest React config and
+  @canonical/typography now accept TypeScript ^5.9.3 || ^6.0.0 || ^7.0.0,
+  so consumers still on 5.9 or 6 are not pushed off by this upgrade. The
+  Svelte config keeps ^5.9.3 || ^6.0.0, because its consumers compile
+  declarations with TypeScript 6.
+
+  * chore(boilerplate-vite,summon-application): drop the tsconfig paths for # imports
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+**Note:** Version bump only for package @canonical/styles-typography
+
+
+
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+**Note:** Version bump only for package @canonical/styles-typography
+
+
+
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/styles-typography
+
+
+
+
+
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* feat(styles)!: tokens, elements and layout entries (#1146) ([3c5bd8c](https://github.com/canonical/pragma/commit/3c5bd8c2cbe7d530d4bc3d2718a92ea1ba510c9e)), closes [#1146](https://github.com/canonical/pragma/issues/1146)
+* refactor(styles-typography)!: tokens and elements as separate files (#1145) ([8c37c0b](https://github.com/canonical/pragma/commit/8c37c0b69dfd69e7c3f6735d93634a3e33e17690)), closes [#1145](https://github.com/canonical/pragma/issues/1145) [high-density](https://github.com/hi/issues/density)
+* feat(styles-typography)!: the mapper and the engines in ds.typography (#1143) ([c3ac09b](https://github.com/canonical/pragma/commit/c3ac09b93e6d343943692b3271664af4fcd4c77f)), closes [#1143](https://github.com/canonical/pragma/issues/1143)
+
+### Bug Fixes
+
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+* **styles-typography:** the baseline unit works undeclared, in rem or px ([#1144](https://github.com/canonical/pragma/issues/1144)) ([92720ee](https://github.com/canonical/pragma/commit/92720ee8a7ff4e1546bbdf1f81ceee89cdcc6ac0)), closes [high-density](https://github.com/hi/issues/density)
+
+### Documentation
+
+* **styles:** the cascade contract ([#1132](https://github.com/canonical/pragma/issues/1132)) ([9e65162](https://github.com/canonical/pragma/commit/9e6516276a1c23d49a359aa8788d59a7f04c18c3)), closes [high-density](https://github.com/hi/issues/density)
+
+### Features
+
+* **styles:** prefer exact typography line heights ([#1106](https://github.com/canonical/pragma/issues/1106)) ([964f6f1](https://github.com/canonical/pragma/commit/964f6f12916c8977dfce5fc87afc77f5043f2ef1))
+
+### BREAKING CHANGES
+
+* **styles:** `ds.components.app` is retired. A package that wrapped its
+  stylesheets in it moves to the tier it belongs to — `ds.components.apps` for the
+  shared applications package, and its own `ds.components.apps-<name>`, declared
+  by the package itself, for one application's tier. An application that copied
+  the order statement to put its own CSS above the design system's replaces the
+  two component names with the five.
+* **styles:** `ds.components.app` is retired. A package that wrapped its
+  stylesheets in it moves to the tier it belongs to — `ds.components.apps` for the
+  shared applications package, and its own `ds.components.apps-<name>`, declared
+  by the package itself, for one application's tier. An application that copied
+  the order statement to put its own CSS above the design system's replaces the
+  two component names with the five.
+* **styles:** An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+* **styles:** Everything this package ships is now in a named cascade layer,
+  so an application's own unlayered CSS beats every rule here, where before it
+  competed with unlayered rules by source order and specificity. An override that
+  used to lose now wins, and one that used to win still does. To keep the layer
+  order in force for your own CSS, put it in a layer above `ds.components.app` —
+  the README's "Migrating to the layered release" section has the statement to
+  copy. There is nothing to add to your markup. `normalize.css` is also no longer
+  a transitive dependency: an application relying on the parts of it this package
+  does not use must depend on it directly.
+* **styles:** mapper.css no longer exists. An application importing
+  @canonical/styles-typography, or one of the three engines, is unaffected — the
+  composed entry delivers exactly what it did. An application that imported
+  mapper.css by path takes tokens.css and elements.css instead, in that order, or
+  the composed entry if it wants the engine too. An application that imported an
+  engine by path and relied on it dragging in the mapper now imports tokens.css and
+  elements.css alongside it.
+* mapper.css no longer exists. An application importing
+  @canonical/styles-typography, or one of the three engines, is unaffected — the
+  composed entry delivers exactly what it did. An application that imported
+  mapper.css by path takes tokens.css and elements.css instead, in that order, or
+  the composed entry if it wants the engine too. An application that imported an
+  engine by path and relied on it dragging in the mapper now imports tokens.css and
+  elements.css alongside it.
+* **styles:** The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* **styles:** The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* The package now declares an `exports` map entry for
+  ./package.json and three new entries, and `main` is joined by `type: module`.
+  Nothing that imported @canonical/styles or one of its existing subpaths changes.
+* **styles:** The typographic engine now applies only inside an element
+  carrying the class `ds`, and nowhere else. An application that is the design
+  system's throughout adds the class to its document element, beside the context
+  and density classes it already carries: `<html class="ds app comfortable">`.
+  Without it, headings and paragraphs fall back to the browser's own defaults and
+  no baseline alignment happens. An application that is only partly the design
+  system's marks the regions it has migrated, and the rest of its page keeps its
+  own typography — which is the point: this package no longer restyles bare
+  elements it does not own. A heading, paragraph or code element that is itself
+  the marked element is styled only where a `:scope` twin exists (`.p`, `.code`,
+  `.editorial`); put the mark on the region rather than on a single heading.
+  Below the `@scope` floor (Chrome 118, Safari 17.4, Firefox 146) the whole block
+  is dropped and none of this package applies.
+* **styles:** These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To
+  keep the design system's order in force for your own CSS, put that CSS in a
+  layer above ds.components.app. What each element computes is unchanged.
+* **styles:** These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To keep
+  the design system's order in force for your own CSS, put that CSS in a layer
+  above ds.components.app. What each element computes is unchanged.
+* These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To keep
+  the design system's order in force for your own CSS, put that CSS in a layer
+  above ds.components.app. What each element computes is unchanged.
+* **styles-typography:** These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To keep
+  the design system's order in force for your own CSS, put that CSS in a layer
+  above ds.components.app. What each element computes is unchanged.
+* These rules are now in cascade layers, so an application's own
+  unlayered CSS beats them where before the two competed by source order. An
+  override that used to win still wins; one that used to lose now wins too. To keep
+  the design system's order in force for your own CSS, put that CSS in a layer
+  above ds.components.app. What each element computes is unchanged.
+
+
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+**Note:** Version bump only for package @canonical/styles-typography
+
+
+
+
+
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+**Note:** Version bump only for package @canonical/styles-typography
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+
+
+
+
+
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+**Note:** Version bump only for package @canonical/styles-typography
+
+
+
+
+
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
+
+**Note:** Version bump only for package @canonical/styles-typography
+
+
+
+
+
+# [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
+
+
+### Bug Fixes
+
+* **components:** design-review batch — h5 small-caps, SwitchField, Tabs, ContextualMenu, Field.Description, density retune ([#871](https://github.com/canonical/pragma/issues/871)) ([d9a568e](https://github.com/canonical/pragma/commit/d9a568ecd8ec0b2a5481c8f6827aece698eec751))
+
+
+
+
+
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Features
+
+* **styles:** 4px baseline shim + typography example upgrade ([#790](https://github.com/canonical/pragma/issues/790)) ([1b11a25](https://github.com/canonical/pragma/commit/1b11a25f5c361186db8c7613fdf66f8cbf14c0c9))
+
+
+
+
+
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **deps:** unify @canonical/design-tokens pin to 0.6.2-contrasted.0 ([#748](https://github.com/canonical/pragma/issues/748)) ([cf607d7](https://github.com/canonical/pragma/commit/cf607d7ae40f8044208e1e502c8d92178261e73c)), closes [#731](https://github.com/canonical/pragma/issues/731) [#89](https://github.com/canonical/pragma/issues/89)
+
+
+
+
+
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+
+### Features
+
+* **ds-global:** InlineCode, .code baseline utility, KeyboardKey(s) tier + token rewire ([#717](https://github.com/canonical/pragma/issues/717)) ([9911f68](https://github.com/canonical/pragma/commit/9911f689c4193bee3fdbebea8f475c2dcd80d2d1))
+
+
+
+
+
 # [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
 
 **Note:** Version bump only for package @canonical/styles-typography

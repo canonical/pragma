@@ -1,21 +1,9 @@
-export * from "./Accordion/index.js";
-export * from "./Announcement/index.js";
-export * from "./Badge/index.js";
-export * from "./Breadcrumbs/index.js";
-export * from "./Button/index.js";
-export * from "./Card/index.js";
-export * from "./Chip/index.js";
-export * from "./grid/index.js";
-export * from "./Icon/index.js";
-export * from "./KeyboardKey/index.js";
-export * from "./KeyboardKeys/index.js";
-export * from "./Label/index.js";
-export * from "./Link/index.js";
-export * from "./patterns/index.js";
-export * from "./Rule/index.js";
-export * from "./Section/index.js";
-export * from "./SkipLink/index.js";
-export * from "./Tile/index.js";
-export * from "./Timeline/index.js";
-export * from "./Tooltip/index.js";
+// Public package surface, composed from the per-tier barrels rather than
+// reaching into individual component folders. Each tier's members are
+// enumerated in its own `index.ts`.
+export * from "./_work_in_progress/index.js";
+export * from "./component/index.js";
+export * from "./group/index.js";
+export * from "./pattern/index.js";
+export * from "./subcomponent/index.js";
 export type * from "./types/index.js";

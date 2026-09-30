@@ -5,7 +5,6 @@ import { TimeInput } from "./TimeInput.js";
 const meta = {
   title: "subcomponents/TimeInput",
   component: TimeInput,
-  tags: ["autodocs"],
 } satisfies Meta<typeof TimeInput>;
 
 export default meta;

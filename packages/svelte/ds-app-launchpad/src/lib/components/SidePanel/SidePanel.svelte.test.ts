@@ -202,8 +202,8 @@ describe("SidePanel component", () => {
       await expect.poll(() => props.open).toBe(false);
     });
 
-    it("is closed by clicking outside the side panel when `closeOnOutsideClick` is true", async () => {
-      const props = withOpen({ closeOnOutsideClick: true });
+    it("is closed by clicking outside the side panel when `closedby` is any", async () => {
+      const props = withOpen({ closedby: "any" });
       const page = render(Component, props);
       await showSidePanel(page);
       await expect.poll(() => props.open).toBe(true);
@@ -216,17 +216,20 @@ describe("SidePanel component", () => {
       await expect.poll(() => props.open).toBe(false);
     });
 
-    it("is not closed by clicking outside the side panel when `closeOnOutsideClick` is false", async () => {
-      const props = withOpen({ closeOnOutsideClick: false });
-      const page = render(Component, props);
-      await showSidePanel(page);
-      await expect.poll(() => props.open).toBe(true);
+    it.each(["closerequest", "none"] as const)(
+      "is not closed by clicking outside the side panel when `closedby` is %s",
+      async (closedby) => {
+        const props = withOpen({ closedby });
+        const page = render(Component, props);
+        await showSidePanel(page);
+        await expect.poll(() => props.open).toBe(true);
 
-      await componentLocator(page).click({ position: { x: -10, y: 10 } });
-      await expect.element(componentLocator(page)).toBeVisible();
-      await expect.element(componentLocator(page)).toHaveAttribute("open");
-      await expect.poll(() => props.open).toBe(true);
-    });
+        await componentLocator(page).click({ position: { x: -10, y: 10 } });
+        await expect.element(componentLocator(page)).toBeVisible();
+        await expect.element(componentLocator(page)).toHaveAttribute("open");
+        await expect.poll(() => props.open).toBe(true);
+      },
+    );
 
     it("is closed by pressing Escape", async () => {
       const props = withOpen();

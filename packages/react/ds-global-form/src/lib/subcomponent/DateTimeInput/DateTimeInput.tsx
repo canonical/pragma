@@ -17,6 +17,10 @@ const componentCssClassName = "ds input datetime chrome";
  * ISO `yyyy-mm-ddTHH:mm`. Controlling the display would require a custom
  * (non-native) control.
  * @returns {ReactElement} - Rendered DateTimeInput
+ *
+ * `import { DateTimeInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.date_time_input
  */
 export const DateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
   function DateTimeInput(

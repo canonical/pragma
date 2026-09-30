@@ -1,0 +1,32 @@
+# Configuration for the lychee link checker (https://lychee.cli.rs/),
+# shared by both jobs in .github/workflows/links.yml:
+#   - the PR job runs with `--offline` (internal/relative links and anchors only)
+#   - the weekly job runs a full check that also includes external URLs
+
+# Fragment (anchor) checking is enabled via the --include-fragments CLI flag in
+# the workflow, so it applies uniformly to both jobs.
+
+# Archived pre-monorepo code; its docs are intentionally frozen.
+# Values are regular expressions matched against file paths.
+exclude_path = ["(^|/)old/"]
+
+# Applies to the weekly external check only (remote URLs are skipped in offline mode).
+max_retries = 3
+timeout = 30
+
+# Treat rate-limiting (429) as alive rather than broken.
+accept = ["200..=204", "429"]
+
+exclude = [
+    # Local development servers referenced in setup instructions.
+    "^https?://localhost",
+    "^https?://127\\.0\\.0\\.1",
+    # Documentation placeholders.
+    "^https?://(www\\.)?example\\.(com|org)",
+    "^https?://router\\.local",
+    # Auth-walled workspace; always fails for anonymous CI.
+    "^https://coda\\.io",
+    # npm registry pages aggressively rate-limit and bot-block CI requests.
+    "^https?://(www\\.)?npmjs\\.(com|org)",
+    "^https://docs\\.npmjs\\.com",
+]

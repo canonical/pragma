@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-ssr",
   "description": "TBD",
-  "version": "0.29.0-experimental.0",
+  "version": "0.43.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -18,25 +18,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
-  "imports": {
-    "#adapter": "./src/lib/adapter/index.ts",
-    "#renderer": "./src/lib/renderer/index.ts",
-    "#server": "./src/lib/server/index.ts"
-  },
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:webarchitect",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
@@ -69,20 +64,21 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
-    "@canonical/typescript-config-react": "^0.28.0",
-    "@canonical/webarchitect": "^0.29.0-experimental.0",
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/typescript-config-react": "^0.43.0",
+    "@canonical/vitest-config-react": "^0.43.0",
+    "@canonical/webarchitect": "0.43.0",
     "@types/express": "^5.0.6",
-    "@types/node": "^24.12.0",
+    "@types/node": "^26.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitest/coverage-v8": "^4.0.18",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "@vitest/coverage-v8": "^5.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
   },
   "dependencies": {
-    "@canonical/utils": "^0.29.0-experimental.0",
+    "@canonical/utils": "0.43.0",
     "htmlparser2": "^10.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

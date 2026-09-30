@@ -1,7 +1,7 @@
 {
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
-    "baseUrl": "src",
+    "paths": { "*": ["./src/*"] },
     "skipLibCheck": true,
     "types": [
       "node",
@@ -17,7 +17,6 @@
     ".storybook/*.ts",
     ".storybook/*.tsx",
     "vite.config.ts",
-    "vitest.setup.ts",
-    "vitest.config.ts"
+    "vitest.setup.ts"
   ]
 }

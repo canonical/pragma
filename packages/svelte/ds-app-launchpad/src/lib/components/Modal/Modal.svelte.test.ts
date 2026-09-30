@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.10.0-experimental.5 */
 
 import { type ComponentProps, flushSync } from "svelte";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Locator } from "vitest/browser";
 import { userEvent } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
@@ -169,6 +169,22 @@ describe("Modal component", () => {
       flushSync();
       expect(componentLocator(page).element().matches(":modal")).toBe(true);
     });
+
+    it("does not call onclose during upgrade to modal, but still calls on later real close", async () => {
+      const onclose = vi.fn();
+      const props = withOpen({ open: true, onclose });
+      const page = render(Component, props);
+
+      await expect.element(componentLocator(page)).toBeVisible();
+      flushSync();
+      expect(componentLocator(page).element().matches(":modal")).toBe(true);
+      expect(onclose).not.toHaveBeenCalled();
+
+      (componentLocator(page).element() as HTMLDialogElement).close();
+      await expect.element(componentLocator(page, true)).not.toBeVisible();
+      await expect.poll(() => props.open).toBe(false);
+      expect(onclose).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("Closing the Modal", () => {
@@ -200,8 +216,8 @@ describe("Modal component", () => {
       await expect.poll(() => props.open).toBe(false);
     });
 
-    it("is closed by clicking outside the modal when `closeOnOutsideClick` is true", async () => {
-      const props = withOpen({ closeOnOutsideClick: true });
+    it("is closed by clicking outside the modal when `closedby` is any", async () => {
+      const props = withOpen({ closedby: "any" });
       const page = render(Component, props);
       await showModal(page);
       await expect.poll(() => props.open).toBe(true);
@@ -214,30 +230,120 @@ describe("Modal component", () => {
       await expect.poll(() => props.open).toBe(false);
     });
 
-    it("is not closed by clicking outside the modal when `closeOnOutsideClick` is false", async () => {
-      const props = withOpen({ closeOnOutsideClick: false });
+    it.each(["closerequest", "none"] as const)(
+      "is not closed by clicking outside the modal when `closedby` is %s",
+      async (closedby) => {
+        const props = withOpen({ closedby });
+        const page = render(Component, props);
+        await showModal(page);
+        await expect.poll(() => props.open).toBe(true);
+
+        await componentLocator(page).click({ position: { x: 0, y: -10 } });
+        await expect.element(componentLocator(page)).toBeVisible();
+        await expect.element(componentLocator(page)).toHaveAttribute("open");
+        await expect.poll(() => props.open).toBe(true);
+      },
+    );
+
+    it("honours `closedby` changed after mount", async () => {
+      let closedby = $state<"any" | "closerequest">("closerequest");
+      const props = Object.defineProperty(withOpen(), "closedby", {
+        get: () => closedby,
+        enumerable: true,
+      });
       const page = render(Component, props);
       await showModal(page);
+
+      closedby = "any";
+      flushSync();
+      await componentLocator(page).click({ position: { x: 0, y: -10 } });
+      await expect.poll(() => props.open).toBe(false);
+    });
+
+    it("is not closed by clicking the modal's own padding", async () => {
+      const props = withOpen({ closedby: "any" });
+      const page = render(Component, props);
+      await showModal(page);
+
+      await componentLocator(page).click({ position: { x: 2, y: 2 } });
+      await expect.element(componentLocator(page)).toBeVisible();
       await expect.poll(() => props.open).toBe(true);
+    });
+
+    it("is not closed when a press starts inside and ends outside the modal", async () => {
+      const props = withOpen({ closedby: "any" });
+      const page = render(Component, props);
+      await showModal(page);
+
+      const dialogEl = componentLocator(page).element() as HTMLDialogElement;
+      const rect = dialogEl.getBoundingClientRect();
+      page
+        .getByText(contentText)
+        .element()
+        .dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      dialogEl.dispatchEvent(
+        new PointerEvent("pointerup", {
+          bubbles: true,
+          clientX: rect.left,
+          clientY: rect.top - 10,
+        }),
+      );
+      await expect.element(componentLocator(page)).toBeVisible();
+      await expect.poll(() => props.open).toBe(true);
+    });
+
+    it("fires cancel before closing on outside click", async () => {
+      const oncancel = vi.fn();
+      const props = withOpen({ closedby: "any", oncancel });
+      const page = render(Component, props);
+      await showModal(page);
+
+      await componentLocator(page).click({ position: { x: 0, y: -10 } });
+      await expect.poll(() => props.open).toBe(false);
+      expect(oncancel).toHaveBeenCalledTimes(1);
+    });
+
+    it("is not closed by outside click when cancel is prevented", async () => {
+      const props = withOpen({
+        closedby: "any",
+        oncancel: (e) => e.preventDefault(),
+      });
+      const page = render(Component, props);
+      await showModal(page);
 
       await componentLocator(page).click({ position: { x: 0, y: -10 } });
       await expect.element(componentLocator(page)).toBeVisible();
-      await expect.element(componentLocator(page)).toHaveAttribute("open");
       await expect.poll(() => props.open).toBe(true);
     });
 
-    it("is closed by pressing Escape", async () => {
-      const props = withOpen();
+    it.each(["any", "closerequest"] as const)(
+      "is closed by pressing Escape when `closedby` is %s",
+      async (closedby) => {
+        const props = withOpen({ closedby });
+        const page = render(Component, props);
+        await showModal(page);
+        await expect.poll(() => props.open).toBe(true);
+
+        await userEvent.keyboard("{Escape}");
+        await expect.element(componentLocator(page, true)).not.toBeVisible();
+        await expect
+          .element(componentLocator(page, true))
+          .not.toHaveAttribute("open");
+        await expect.poll(() => props.open).toBe(false);
+      },
+    );
+
+    it("is not closed by pressing Escape when `closedby` is none", async () => {
+      const oncancel = vi.fn();
+      const props = withOpen({ closedby: "none", oncancel });
       const page = render(Component, props);
       await showModal(page);
-      await expect.poll(() => props.open).toBe(true);
 
       await userEvent.keyboard("{Escape}");
-      await expect.element(componentLocator(page, true)).not.toBeVisible();
-      await expect
-        .element(componentLocator(page, true))
-        .not.toHaveAttribute("open");
-      await expect.poll(() => props.open).toBe(false);
+      await userEvent.keyboard("{Escape}");
+      await expect.element(componentLocator(page)).toBeVisible();
+      await expect.poll(() => props.open).toBe(true);
+      expect(oncancel).not.toHaveBeenCalled();
     });
 
     it("is closed by setting open to false", async () => {

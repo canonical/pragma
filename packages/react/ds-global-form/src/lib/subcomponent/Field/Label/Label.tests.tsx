@@ -22,7 +22,7 @@ describe("Label component", () => {
   it("marks required fields (default mode) via data-required, not label text", () => {
     render(<Component name="Email">Email</Component>);
     const label = screen.getByText("Email");
-    // The "*" is a CSS ::before, so the accessible/queryable text is unchanged.
+    // The "*" is a CSS ::after, so the accessible/queryable text is unchanged.
     expect(label).toHaveAttribute("data-required");
     expect(label).toHaveTextContent("Email");
   });

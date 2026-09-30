@@ -7,7 +7,6 @@ import { GitDiffViewer } from "../../index.js";
 
 const meta = {
   title: "GitDiffViewer/FileHeader",
-  tags: ["autodocs"],
   component: GitDiffViewer.FileHeader,
   decorators: [
     (Story) => {

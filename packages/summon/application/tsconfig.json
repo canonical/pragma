@@ -1,9 +1,0 @@
-{
-  "extends": "../../../configs/typescript/tsconfig.json",
-  "compilerOptions": {
-    "baseUrl": "src",
-    "types": ["node"]
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/application/react/templates/**"]
-}

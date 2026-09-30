@@ -26,7 +26,7 @@ export default config;
 
 | Control | Shortcut | Values | Description |
 |---|---|---|---|
-| Grid mode | `G` | none → intrinsic → responsive | Wraps story in a `.grid` container |
+| Grid mode | `G` | none → intrinsic → responsive → showcase | Wraps story in a `.grid` container (`showcase` = one clamped, centred column in a tall canvas) |
 | Color scheme | `S` | none (system) → light → dark | Toggles `.light`/`.dark` class on body |
 | Baseline grid | `B` | on/off | Shows baseline grid overlay |
 | Outlines | `O` | on/off | Shows element outline overlay |
@@ -38,7 +38,7 @@ Stories and metas can set default values via `parameters`. Toolbar overrides alw
 ```tsx
 const meta = {
   parameters: {
-    grid: "intrinsic",        // "none" | "intrinsic" | "responsive"
+    grid: "intrinsic",        // "none" | "intrinsic" | "responsive" | "showcase"
     scheme: "none",           // "none" | "light" | "dark"
     debug: {
       baseline: true,         // boolean

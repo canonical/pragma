@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="resize-off">
+    <path d="M16.0303 1.53027L13.9355 3.625H15V5.375H13.5V4.06055L9.31055 8.25L13.5 12.4395V10.25H15V15H10.25V13.5H12.4395L8.25 9.31055L4.06055 13.5H5.375V15H3.625V13.9355L2.03027 15.5303L0.969727 14.4697L14.9697 0.469727L16.0303 1.53027Z" fill="currentColor"/>
+    <path d="M8.875 15H7.125V13.5H8.875V15Z" fill="currentColor"/>
+    <path d="M2.5 10.9395L1.06445 12.375H1V10.625H2.5V10.9395Z" fill="currentColor"/>
+    <path d="M2.5 8.875H1V7.125H2.5V8.875Z" fill="currentColor"/>
+    <path d="M15 8.875H13.5V7.125H15V8.875Z" fill="currentColor"/>
+    <path d="M5.75 2.5H3.56055L7.25 6.18945L6.18945 7.25L2.5 3.56055V5.75H1V1H5.75V2.5Z" fill="currentColor"/>
+    <path d="M8.875 2.5H7.125V1H8.875V2.5Z" fill="currentColor"/>
+    <path d="M12.375 1.06445L10.9395 2.5H10.625V1H12.375V1.06445Z" fill="currentColor"/>
+  </g>
+</svg>

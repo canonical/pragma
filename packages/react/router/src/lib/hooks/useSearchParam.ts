@@ -1,6 +1,6 @@
-import type { AnyRoute, RouteMap } from "@canonical/router-core";
+import type { SearchParamKey } from "@canonical/router-core";
 import { useCallback, useSyncExternalStore } from "react";
-import type { RegisteredNotFound, RegisteredRouteMap } from "../register.js";
+import type { RegisteredRouteMap } from "../register.js";
 import useRouter from "./useRouter.js";
 
 /**
@@ -10,13 +10,15 @@ import useRouter from "./useRouter.js";
  * parameter is absent. Only updates for that specific key trigger rerenders,
  * which makes it cheaper than subscribing to the full location object.
  *
+ * `key` is narrowed to the search-param keys declared by the registered route
+ * map. Apps with no `RouterRegister` declaration fall back to any `string`.
+ *
  * @param key - The query-string parameter name to observe.
  */
-export default function useSearchParam<
-  TRoutes extends RouteMap = RegisteredRouteMap,
-  TNotFound extends AnyRoute | undefined = RegisteredNotFound,
->(key: string): string | null {
-  const router = useRouter<TRoutes, TNotFound>();
+export default function useSearchParam(
+  key: SearchParamKey<RegisteredRouteMap>,
+): string | null {
+  const router = useRouter();
 
   const getSnapshot = useCallback(
     () => router.getState().location.searchParams.get(key),

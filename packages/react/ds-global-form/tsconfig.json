@@ -1,12 +1,8 @@
 {
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
-    "baseUrl": "src",
+    "paths": { "*": ["./src/*"] },
     "skipLibCheck": true,
-    // Resolve the `#lib/*` self-imports against `src` during type-checking
-    // (matches the package `imports` `development` condition). At runtime the
-    // published package resolves `#lib/*` via `default` -> `./dist/esm/lib/*`.
-    "customConditions": ["development"],
     "types": [
       "node",
       "react",
@@ -21,7 +17,6 @@
     ".storybook/*.ts",
     ".storybook/*.tsx",
     "vite.config.ts",
-    "vitest.setup.ts",
-    "vitest.config.ts"
+    "vitest.setup.ts"
   ]
 }

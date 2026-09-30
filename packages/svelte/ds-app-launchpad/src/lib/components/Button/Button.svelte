@@ -10,7 +10,9 @@
   let {
     class: className,
     ref = $bindable(),
-    severity,
+    importance = "secondary",
+    anticipation,
+    emphasis,
     density,
     children,
     iconLeft,
@@ -28,7 +30,9 @@
   class={[
     componentCssClassName,
     className,
-    severity,
+    importance,
+    anticipation,
+    emphasis,
     density,
     { loading, "explicit-disabled": disabled },
   ]}
@@ -50,7 +54,7 @@
 
 ## Example Usage
 ```svelte
-<Button density="dense" severity="brand">
+<Button density="dense" importance="primary" emphasis="branded">
   {#snippet iconLeft()}
     <Check />
   {/snippet}

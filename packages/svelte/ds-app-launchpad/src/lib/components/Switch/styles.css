@@ -4,10 +4,10 @@
   cursor: pointer;
   outline-offset: 0;
 
-  width: var(--lp-dimension-size-l);
-  height: var(--lp-dimension-size-xs);
-  background-color: var(--lp-color-border-high-contrast);
-  border-radius: var(--lp-dimension-radius-full);
+  width: var(--dimension-400);
+  height: var(--dimension-200);
+  background-color: var(--color-foreground-switch-unselected);
+  border-radius: var(--dimension-radius-full);
 
   &::after {
     content: "";
@@ -15,27 +15,40 @@
     top: 50%;
     left: 0;
     transform: translateY(-50%);
-    width: var(--lp-dimension-size-xs);
-    height: var(--lp-dimension-size-xs);
-    background-color: var(--lp-color-background-default);
-    border-radius: var(--lp-dimension-radius-full);
-    border: var(--lp-dimension-stroke-thickness-default) solid
-      var(--lp-color-border-high-contrast);
-    transition: transform var(--lp-transition-duration-slow)
-      var(--lp-transition-timing-ease-out);
+    width: var(--dimension-200);
+    height: var(--dimension-200);
+    background-color: var(--color-foreground-switch-knob);
+    border-radius: var(--dimension-radius-full);
+    border: var(--dimension-stroke-thickness-medium) solid
+      var(--color-foreground-switch-unselected);
+    transition: transform var(--ds-transition-duration-slow)
+      var(--ds-transition-timing-ease-out);
   }
 
   &:checked {
-    background-color: var(--lp-color-text-link-default);
+    background-color: var(--color-foreground-switch-selected);
 
     &::after {
-      border-color: var(--lp-color-text-link-default);
-      transform: translate(calc(var(--lp-dimension-size-l) / 2), -50%);
+      border-color: var(--color-foreground-switch-selected);
+      transform: translate(calc(var(--dimension-400) / 2), -50%);
     }
   }
 
   &:disabled {
-    opacity: var(--lp-opacity-muted);
     cursor: not-allowed;
+    background-color: var(--color-foreground-switch-unselected-disabled);
+
+    &::after {
+      background-color: var(--color-foreground-switch-knob-disabled);
+      border-color: var(--color-foreground-switch-unselected-disabled);
+    }
+
+    &:checked {
+      background-color: var(--color-foreground-switch-selected-disabled);
+
+      &::after {
+        border-color: var(--color-foreground-switch-selected-disabled);
+      }
+    }
   }
 }

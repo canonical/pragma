@@ -3,6 +3,401 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.43.0](https://github.com/canonical/pragma-web/compare/v0.42.0...v0.43.0) (2026-09-30)
+
+* chore(monorepo)!: consume the core packages from npm (#1388) ([86e48a4](https://github.com/canonical/pragma-web/commit/86e48a4f166821f8a2d5352314ac65ba94ff2846)), closes [#1388](https://github.com/canonical/pragma-web/issues/1388)
+
+### BREAKING CHANGES
+
+* the core packages are no longer workspace members;
+  local changes to them are made in canonical/pragma-core.
+
+  * ci: drop the embedded-pack refresh and the dead Chromatic path filters
+
+  The version action refreshed the pragma CLI's embedded pack, which no longer lives here; the step, its script, its token input and tag.yml's PACKS_READ_TOKEN go. The Chromatic workflows watched packages/utils and packages/tokens, neither of which exists in this repository any more.
+
+  * chore(monorepo): name canonical/pragma-web in the implementation graph
+
+  ds.config.json's repository is stamped into every source link the collector writes; data/ is regenerated with it.
+
+  * chore(monorepo): take the Renovate preset and the Biome config's owners from pragma-core
+
+  renovate.json extends the preset published from canonical/pragma-core. The /configs/biome/ ownership line moves with the folder.
+
+  * docs: point the toolchain references at canonical/pragma-core
+
+  README, AGENTS.md and docs/ describe this repository without the toolchain packages; links into the deleted folders point at canonical/pragma-core, CONSTITUTION.md becomes a link to its one copy there, the publishing guides name canonical/pragma-web as the trusted-publisher repository, and the CLI's perf-budget notes leave with the CLI.
+
+  * test(prism-pragma-provider): check the live emission against the contract
+
+  The compiler-goldens gate left with the compiler. The provider already boots the pinned @canonical/ke-graphql over its hermetic corpus, so it checks that emission against the contract; a compiler bump that breaks conformance is red on the bump. The contract README names this as the gate against a real emission.
+
+  * docs: correct the references the toolchain move left stale
+
+  The storybook hub's CLI page no longer claims a workspace pragma binary; AGENTS.md's scope examples and package count, the adding-a-package example pins and tool-package section, the constitution link and the provider READMEs' links to canonical/pragma-core.
+
+  * docs: tighten the conformance-gate notes and two stale examples
+
+  The provider README names its live contract check, the contract README says it runs over the test corpus and keeps its wrap, AGENTS.md drops the last CLI scope example, and the no-magic link carries its anchor.
+
+  * chore(deps): pin the core packages to their 0.43.0-experimental releases
+
+  Each core package takes its own experimental release from the registry: biome-config, typescript-config, webarchitect, ke and ke-graphql at 0.43.0-experimental.0; utils, design-tokens and design-system at 0.43.0-experimental.1.
+
+  * chore(monorepo): name canonical/pragma-web as the repository
+
+  npm refuses a trusted-publisher publish whose repository.url names a different repository, so every manifest's repository, bugs and homepage, and ds.config.json's repository (stamped into the implementation graph's source links, regenerated here), name canonical/pragma-web, as do the clone instructions and the trusted-publisher setup in the docs. tag.yml refuses to run from any other repository, so a release dispatched before the rename stops before anything is versioned or tagged.
+
+  * fix(styles-debug): accept any 0.x design-tokens as the optional peer
+
+  An exact peer makes npm refuse styles-debug next to any other design-tokens release; its stylesheet only reads token custom properties, which 0.10.0 and 0.43.0 ship identically. The range matches the repository's other peers.
+
+  * fix(svelte-ds-app-launchpad): depend on design-tokens at runtime
+
+  The published styles.css imports @canonical/design-tokens' stylesheets, so it is a dependency, not a devDependency.
+
+  * docs: say how to get the pragma CLI and where the core pins come from
+
+  The CLI is no longer a workspace member, so the README's prerequisites name @canonical/pragma-cli and how to install it, and the adding-a-package guide installs it before pragma create package and says to copy the core pins from a sibling manifest. The ranges test's historical comment says the package it describes has left.
+
+  * ci: drop the repository guard from the release workflow
+
+  * chore(deps): pin the core packages to 0.43.0
+
+  pragma-core's first stable release: biome-config, typescript-config, webarchitect, utils, ke, ke-graphql, design-tokens and design-system move from their 0.43.0-experimental builds to 0.43.0.
+
+
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+* chore(monorepo)!: move to TypeScript 7 (#1374) ([713d307](https://github.com/canonical/pragma/commit/713d3071d3980539a849ea95823736e8b343a1b1)), closes [#1374](https://github.com/canonical/pragma/issues/1374) [#lib](https://github.com/canonical/pragma/issues/lib) [#domains](https://github.com/canonical/pragma/issues/domains) [#i18n](https://github.com/canonical/pragma/issues/i18n) [#relay](https://github.com/canonical/pragma/issues/relay) [#styles](https://github.com/canonical/pragma/issues/styles)
+* feat(summon-application,pragma-cli)!: replace the route generator with a page generator (#1373) ([02ee6cd](https://github.com/canonical/pragma/commit/02ee6cd62835aa8b036e749b2dfcf71f07782b60)), closes [#1373](https://github.com/canonical/pragma/issues/1373)
+
+### BREAKING CHANGES
+
+* the `route` generator is removed. Use
+  `summon page <domain>/<name>` and add the printed import and route entry
+  to the domain's routes.ts by hand.
+
+  * docs(summon-application): document the page generator in place of the route generator
+
+  The package README documents `summon page`, including the routing
+  examples it prints. The conventions, the scaffolded app's README, the
+  repository README and the router middleware cookbook name the page
+  generator where they named the route generator.
+
+  * fix(summon-application): make the page path a required answer
+
+  The page generator's names come only from its argument. A default
+  "example/page" would let a run with --yes, or a tool call with no
+  arguments, pick a domain and page name nobody gave, so the prompt has no
+  default and a missing path is refused.
+
+  * fix(summon-application): refuse a page path with a leading slash
+
+  "/invoices/detail" reads as a url or an absolute path, and the page path
+  is neither: it is two name segments. Refusing it, instead of silently
+  stripping the slash, also keeps the page path prompt in line with the
+  other positional path prompts, which reject absolute paths.
+
+  * fix(summon-core): let a generator guard on a file that must already exist
+
+  Before running a generator, execute builds it once without touching the
+  disk to list its effects for the outcome summary. That walk cannot see
+  the host, so every existence check in it answers "absent", and a
+  generator that adds to existing code (one that refuses unless the folder
+  it adds to is there) failed in that walk however the host looked: it could
+  never run from either CLI.
+
+  When the plain walk fails, the summary walk is now repeated letting each
+  existence check take the other answer where the first led to a failure,
+  which is the plan of the run in which the guards pass. The real run that
+  follows still enforces every guard against the host, with the guard's own
+  message.
+
+  * fix(summon-application): report a missing domain or a taken page name as an invalid answer
+
+  The page generator's refusals are the answer's fault: the domain it names
+  does not exist, or the page name is already taken. They now carry summon's
+  invalid-answer code, so a host reports them as a usage error rather than
+  as an internal error to file a bug about.
+
+  * fix(summon-application): name no command in the missing-domain refusal
+
+  The page generator runs under more than one CLI, so its refusal and its
+  help text no longer tell the user to run a command the invoking CLI may
+  not have; they say the domain must be created first.
+
+  * feat(pragma-cli): add create page
+
+  `pragma create page <domain>/<name>` (MCP tool `create_page`) runs the
+  application generator package's page generator, like the other create
+* the shared TypeScript configs, storybook-config,
+  vitest-config-react and styles-typography no longer accept TypeScript 5 as
+  a peer, and the tsconfig presets no longer set or expect baseUrl.
+
+  * chore(configs): keep TypeScript 5.9 and 6 in the typescript peer ranges
+
+  The shared configs, the Storybook config, the Vitest React config and
+  @canonical/typography now accept TypeScript ^5.9.3 || ^6.0.0 || ^7.0.0,
+  so consumers still on 5.9 or 6 are not pushed off by this upgrade. The
+  Svelte config keeps ^5.9.3 || ^6.0.0, because its consumers compile
+  declarations with TypeScript 6.
+
+  * chore(boilerplate-vite,summon-application): drop the tsconfig paths for # imports
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+* feat(react-head)!: render head tags so server rendering emits them (#1192) ([76ac99d](https://github.com/canonical/pragma/commit/76ac99dde1d80790d8ac518c485548831a69c26a)), closes [#1192](https://github.com/canonical/pragma/issues/1192)
+* feat(templates)!: the root contract and the imports (#1122) ([e7cb864](https://github.com/canonical/pragma/commit/e7cb8643f6d2b12373a218194d45a3177d6105ab)), closes [#1122](https://github.com/canonical/pragma/issues/1122) [#552](https://github.com/canonical/pragma/issues/552)
+
+### Bug Fixes
+
+* **summon:** serve the design system's icons in scaffolded React apps ([f4987a8](https://github.com/canonical/pragma/commit/f4987a8057846c04ad67914b633a5832dcb9ceca))
+
+### BREAKING CHANGES
+
+* `@canonical/react-ds-global` now declares an `exports` map, so
+  the package answers only to the paths it lists: the package name, `./index.css`,
+  `./package.json` and any published file under `./dist/` named exactly. Two forms
+  that used to resolve no longer do. A folder in place of a file —
+  `@canonical/react-ds-global/dist/esm`, or
+  `@canonical/react-ds-global/dist/esm/lib/component/Button` — no longer finds the
+  `index.js` inside it; name the file. Anything outside `dist` —
+  `@canonical/react-ds-global/README.md`, or a `src/…` path that happened to
+  resolve in a workspace checkout — now fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`;
+  those files were never published. Importing the package by name, or the
+  stylesheet by its subpath, is unaffected.
+* `useHead`, `createHeadCollector`, `HeadTags` and
+  `HeadCollector` are gone, and `HeadProvider` no longer takes a `collector`.
+  `HeadMeta` and `HeadLink` survive as the elements own props rather than
+  hand-written attribute lists, so a page can declare the preload, icon and
+  hreflang links the old shapes rejected.
+  Replace a `useHead({ title, meta, link })` call with a `<Head title meta link />`
+  element rendered by the page, and move any per-page title suffix into the root
+  `<HeadProvider titleTemplate={…}>`. A `deps` array has no successor and needs
+* An application must add `ds` to its root, beside the context
+  and density classes it already carries — `<html class="ds app comfortable">`.
+  Without it the reset applies nowhere, because it is now confined to the marked
+  subtree, and the page's text falls back to the browser's defaults. Components
+  are unaffected: each carries `ds` on its own root. Two further consequences: an
+  application's unlayered CSS now beats every rule this package ships, where
+  before it competed with unlayered rules by source order, so an override that
+  used to lose now wins and one that used to win still does; and `normalize.css`
+  is no longer a transitive dependency, so an application that was relying on the
+  parts of it this package does not use must depend on it directly. To keep the
+  layer order in force for your own CSS, put it in a layer of your own above
+  ds.components.app — the README's "Migrating to the layered release" section has the
+  statement to copy.
+
+
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Bug Fixes
+
+* **boilerplate,summon-application:** declare the root surface classes ([#1001](https://github.com/canonical/pragma/issues/1001)) ([73ba2f1](https://github.com/canonical/pragma/commit/73ba2f136862e0b4609df5f4346fd55233dabee9))
+* **deps:** batch package dependency updates ([#963](https://github.com/canonical/pragma/issues/963)) ([923f482](https://github.com/canonical/pragma/commit/923f4825325ecd1afc93ec9bbeca7437a4a4569f)), closes [#958](https://github.com/canonical/pragma/issues/958) [#935](https://github.com/canonical/pragma/issues/935) [#919](https://github.com/canonical/pragma/issues/919) [#918](https://github.com/canonical/pragma/issues/918) [#894](https://github.com/canonical/pragma/issues/894)
+
+
+* feat(router)!: pre-1.0 API consolidation — one constructor, adapters as the axis, block(), warm() (re-land of #973) (#981) ([416d596](https://github.com/canonical/pragma/commit/416d59636f94cafae7a9fbb0b377edabed6438bf)), closes [#973](https://github.com/canonical/pragma/issues/973) [#981](https://github.com/canonical/pragma/issues/981) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973) [#973](https://github.com/canonical/pragma/issues/973)
+
+
+### Features
+
+* **boilerplate-vite:** align the reference app and overhaul the router docs (re-land of [#979](https://github.com/canonical/pragma/issues/979)) ([#990](https://github.com/canonical/pragma/issues/990)) ([8fe2792](https://github.com/canonical/pragma/commit/8fe27927613e7b5b9ff6c4c6596d6d9228063c2b))
+* **boilerplate-vite:** serialize Relay data across the SSR boundary ([#993](https://github.com/canonical/pragma/issues/993)) ([d4ad306](https://github.com/canonical/pragma/commit/d4ad3063de8560a6f700aa760e345f8bcb311398)), closes [#968](https://github.com/canonical/pragma/issues/968)
+* **summon-application:** port the i18n feature to the templates behind an --intl flag ([#992](https://github.com/canonical/pragma/issues/992)) ([d0117b9](https://github.com/canonical/pragma/commit/d0117b9bc671f1d8ec7d080c0d5cf137a8d451f9))
+
+
+### BREAKING CHANGES
+
+* navigate() and setSearchParams() throw on a router
+constructed without an adapter instead of doing nothing.
+
+* refactor(router)!: collapse router factories onto the adapter axis
+
+createRouter(routes, { adapter, ... }) is now the one constructor. The
+preset factories were one-line sugar over an adapter choice; under the
+minimal-API principle the adapter is the whole axis:
+
+- delete createBrowserRouter, createHashRouter, createMemoryRouter and
+  createStaticRouter from router-core (the browser adapter already
+  resolves Navigation API -> History API internally)
+- delete router-react's createHydratedRouter; its __INITIAL_DATA__
+  reading survives as readDehydratedState(), passed to createRouter as
+  hydratedState — which also removes the incoherence where the hydrated
+  path was history-only while createBrowserRouter preferred the
+  Navigation API
+- migrate every in-repo consumer (boilerplate entries, summon templates,
+  storybook harnesses, story-utils) to createRouter + adapters; the
+  static-router recipe (match + synchronous hydrate) is inlined at the
+  two SSR entry points that used it
+* createBrowserRouter, createHashRouter,
+createMemoryRouter, createStaticRouter and createHydratedRouter are
+removed. Use createRouter(routes, { adapter: createBrowserAdapter() |
+createHashAdapter() | createMemoryAdapter(url) | createServerAdapter(url),
+hydratedState: readDehydratedState() ?? undefined }).
+
+* refactor(router)!: reshape blockers to router.block() and fix useBlocker reactivity
+
+Five members (registerBlocker/unregisterBlocker/blockerState/
+proceedNavigation/cancelNavigation) collapse into one:
+router.block(isActive) returns a handle with { state, proceed, cancel,
+subscribe, dispose }, backed by a dedicated blocker-state subject.
+
+This also fixes a real bug: useBlocker subscribed to the store, but a
+blocked navigate() never touched the store, so the documented
+confirmation-dialog pattern never rendered — the old test had to poke
+the store manually to observe the blocked state. The hook now subscribes
+to the handle and re-renders on the block itself; the dialog pattern is
+asserted end-to-end.
+
+Disposing (or unmounting) while blocked discards the pending navigation
+— previously implicit, now documented handle behavior.
+* registerBlocker, unregisterBlocker, blockerState,
+proceedNavigation and cancelNavigation are removed from Router; use
+router.block(isActive). The RouterBlocker type is replaced by
+RouterBlockerHandle. useBlocker's public shape is unchanged.
+
+* refactor(router)!: shrink the public surface — internal store, one-arg StatusResponse
+
+- Remove store from the public Router interface. It was reachable on
+  every router yet documented nowhere, and no production code consumed
+  it; the package's own tests reach the concrete object's store through
+  an explicit internal accessor instead. createRouterStore and the
+  RouterStore type remain exported as standalone primitives.
+- StatusResponse's data argument is now optional — new StatusResponse(401)
+  works, as the READMEs already wrote.
+* Router no longer exposes store. Subscribe via
+subscribe/subscribeToNavigation/subscribeToSearchParam, read via
+getState/getTrackedLocation.
+
+* refactor(router)!: rename prefetch to warm
+
+'prefetch' imports the wrong mental model: in every other router a
+prefetch/loader hands data to the component, and readers kept filing the
+hook's fire-and-forget design as a bug. 'warm' says what the hook is
+for — warming a cache ahead of navigation — and cannot be confused with
+a data loader.
+
+Renamed atomically across router-core (route/wrapper hook, router.warm(),
+WarmFn, internals), router-react (Link's hover warm-up), the reference
+app and summon templates, and the router docs. TanStack's prefetchQuery
+in examples is unrelated third-party API and keeps its name.
+* the route/wrapper 'prefetch' hook is now 'warm';
+router.prefetch() is router.warm(); the PrefetchFn type is WarmFn.
+
+* fix(router-core): make StatusResponse's optional payload type-safe
+
+
+
+
+
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Features
+
+* **boilerplate:** app-level CSS compilation via Lightning CSS + declared browser floor ([#769](https://github.com/canonical/pragma/issues/769)) ([98281ba](https://github.com/canonical/pragma/commit/98281bace083fd841af0d52c0baf37bc2dd77fd1))
+* **ds-global:** overlay components — Tooltip, Popover, ContextualMenu (+ submenus, logical placement, RTL) ([#731](https://github.com/canonical/pragma/issues/731)) ([4012a46](https://github.com/canonical/pragma/commit/4012a4630e18c02759a154232baec33850902916)), closes [#89](https://github.com/canonical/pragma/issues/89) [post-#745](https://github.com/post-/issues/745) [#745](https://github.com/canonical/pragma/issues/745)
+* **i18n-core:** native-Intl framework-agnostic i18n core ([#684](https://github.com/canonical/pragma/issues/684)) ([62f3f36](https://github.com/canonical/pragma/commit/62f3f36fed5f689ae72ff66a600a5ca5daecdf8c))
+* **react-boilerplate-vite:** Relay data layer (CSR) with local mock schema and storybook mocking ([#751](https://github.com/canonical/pragma/issues/751)) ([15c918c](https://github.com/canonical/pragma/commit/15c918c2939447b675ce6854ec3f6e2a5c02cd03))
+* **react-boilerplate-vite:** working multi-language messages via @canonical/i18n-react ([#752](https://github.com/canonical/pragma/issues/752)) ([b16e17f](https://github.com/canonical/pragma/commit/b16e17f82d67bc55887142f6b675d820a94978c8))
+* **router-core:** schema validation for URL params via Standard Schema v1 ([#760](https://github.com/canonical/pragma/issues/760)) ([eb6398f](https://github.com/canonical/pragma/commit/eb6398f16a91ae51f977c442a4baa50657bd2dd1))
+
+
+
+
+
+## [0.29.1](https://github.com/canonical/pragma/compare/v0.29.0...v0.29.1) (2026-07-03)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+**Note:** Version bump only for package @canonical/react-boilerplate-vite
+
+
+
+
+
 # [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
 
 **Note:** Version bump only for package @canonical/react-boilerplate-vite

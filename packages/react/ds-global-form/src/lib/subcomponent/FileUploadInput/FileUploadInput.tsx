@@ -10,6 +10,10 @@ const componentCssClassName = "ds input file-upload";
  * image preview. Controlled via `value`/`onChange` (no react-hook-form). The
  * field tier supplies the binding.
  * @returns {React.ReactElement} - Rendered FileUploadInput
+ *
+ * `import { FileUploadInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.file_upload_input
  */
 export const FileUploadInput = ({
   id,
@@ -18,6 +22,9 @@ export const FileUploadInput = ({
   value,
   onChange,
   accept,
+  // Destructured out of `otherProps` so they are NOT spread onto the drop-zone
+  // <button> as invalid DOM attributes. The FIELD reads them (as RHF validation
+  // rules); the presentational input does not enforce them.
   maxSize,
   maxFiles,
   multiple = false,
@@ -29,41 +36,18 @@ export const FileUploadInput = ({
 
   const files: File[] = Array.isArray(value) ? value : [];
 
-  const validateFile = useCallback(
-    (file: File): string | null => {
-      if (maxSize && file.size > maxSize) {
-        return `${file.name} exceeds ${formatFileSize(maxSize)}`;
-      }
-      return null;
-    },
-    [maxSize],
-  );
-
+  /* Presentational only: report the chosen files up via `onChange`. Constraint
+   * validation (maxFiles/maxSize) lives on the FIELD as a react-hook-form
+   * `validate` rule so violations surface through the standard FieldError,
+   * rather than being enforced (and silently dropped) here. `maxFiles`/`maxSize`
+   * are still accepted for the field to read and for the native `accept` hint. */
   const addFiles = useCallback(
     (incoming: FileList | File[]) => {
       const newFiles = Array.from(incoming);
-      const errors: string[] = [];
-
-      for (const file of newFiles) {
-        const error = validateFile(file);
-        if (error) {
-          errors.push(error);
-        }
-      }
-
-      if (errors.length > 0) {
-        return;
-      }
-
       const merged = multiple ? [...files, ...newFiles] : newFiles.slice(0, 1);
-
-      if (maxFiles && merged.length > maxFiles) {
-        return;
-      }
-
       onChange?.(merged);
     },
-    [files, multiple, maxFiles, onChange, validateFile],
+    [files, multiple, onChange],
   );
 
   const removeFile = useCallback(

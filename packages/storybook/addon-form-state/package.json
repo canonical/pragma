@@ -1,10 +1,11 @@
 {
   "name": "@canonical/storybook-addon-form-state",
-  "version": "0.28.0",
+  "version": "0.43.0",
   "type": "module",
   "files": [
     "dist"
   ],
+  "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "description": "Storybook panel displaying live react-hook-form state",
   "keywords": [
@@ -12,10 +13,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
   "license": "LGPL-3.0",
   "exports": {
@@ -41,30 +42,33 @@
     "build:all": "bun run build:package",
     "build:package": "bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:ts",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
-    "check:ts": "tsc --noEmit"
+    "check:ts": "tsc --noEmit",
+    "check:webarchitect": "webarchitect library",
+    "test": "echo 'No unit tests yet'"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
-    "@canonical/typescript-config-react": "^0.28.0",
-    "@storybook/react-vite": "^10.3.1",
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/typescript-config-react": "^0.43.0",
+    "@canonical/webarchitect": "0.43.0",
+    "@storybook/react-vite": "^10.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.2",
-    "storybook": "^10.3.1",
-    "typescript": "^5.9.3"
+    "storybook": "^10.6.0",
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "react-hook-form": "^7.0.0",
-    "storybook": "^10.3.1"
+    "storybook": "^10.6.0"
   },
   "storybook": {
     "displayName": "Form State",

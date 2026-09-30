@@ -1,3 +1,4 @@
+import type { AnyRoute, RouteMap, RouterStore } from "@canonical/router-core";
 import { createRouter, route } from "@canonical/router-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -6,7 +7,7 @@ import useRoute from "./useRoute.js";
 
 function PathnameProbe({ renderCount }: { renderCount: { current: number } }) {
   renderCount.current += 1;
-  const location = useRoute<typeof routes>();
+  const location = useRoute();
 
   return <span>{location.pathname}</span>;
 }
@@ -24,7 +25,7 @@ const routes = {
 
 function QueryProbe({ renderCount }: { renderCount: { current: number } }) {
   renderCount.current += 1;
-  const location = useRoute<typeof routes>();
+  const location = useRoute();
 
   Reflect.get(location as object, Symbol.toStringTag);
 
@@ -37,9 +38,17 @@ function QueryProbe({ renderCount }: { renderCount: { current: number } }) {
 
 function SearchProbe({ renderCount }: { renderCount: { current: number } }) {
   renderCount.current += 1;
-  const location = useRoute<typeof routes>();
+  const location = useRoute();
 
   return <span>{location.searchParams.get("tab") ?? "none"}</span>;
+}
+
+/**
+ * Reach the router's internal store — not part of the public Router
+ * contract, kept reachable on the concrete object for these tests.
+ */
+function getInternalStore(router: unknown): RouterStore<RouteMap, AnyRoute> {
+  return (router as { store: RouterStore<RouteMap, AnyRoute> }).store;
 }
 
 describe("useRoute", () => {
@@ -57,13 +66,13 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      router.store.setLocation("/#details");
+      getInternalStore(router).setLocation("/#details");
     });
 
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      router.store.setLocation("/users");
+      getInternalStore(router).setLocation("/users");
     });
 
     expect(screen.getByText("/users")).toBeTruthy();
@@ -84,7 +93,7 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      router.store.setLocation("/?tab=details");
+      getInternalStore(router).setLocation("/?tab=details");
     });
 
     expect(
@@ -93,7 +102,7 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(2);
 
     act(() => {
-      router.store.setLocation("/?tab=details#hash");
+      getInternalStore(router).setLocation("/?tab=details#hash");
     });
 
     expect(
@@ -108,7 +117,7 @@ describe("useRoute", () => {
 
     function ProbeWithoutReads() {
       renderCount.current += 1;
-      useRoute<typeof routes>();
+      useRoute();
 
       return <span>idle</span>;
     }
@@ -122,7 +131,7 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      router.store.setLocation("/users");
+      getInternalStore(router).setLocation("/users");
     });
 
     expect(renderCount.current).toBe(2);
@@ -142,7 +151,7 @@ describe("useRoute", () => {
     expect(renderCount.current).toBe(1);
 
     act(() => {
-      router.store.setLocation("/?tab=activity");
+      getInternalStore(router).setLocation("/?tab=activity");
     });
 
     expect(screen.getByText("activity")).toBeTruthy();

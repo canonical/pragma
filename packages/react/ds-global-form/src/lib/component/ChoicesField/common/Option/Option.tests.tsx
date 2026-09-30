@@ -54,7 +54,7 @@ describe("Choices Option", () => {
     expect(onChange).toHaveBeenCalledOnce();
   });
 
-  it("disables the input and marks the wrapper when disabled", () => {
+  it("disables the input when disabled", () => {
     render(
       <Option
         name="group"

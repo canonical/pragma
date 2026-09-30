@@ -1,7 +1,7 @@
 {
   "extends": "@canonical/typescript-config-lit",
   "compilerOptions": {
-    "baseUrl": "src",
+    "paths": { "*": ["./src/*"] },
     "skipLibCheck": true,
     "types": ["node"],
     "noEmit": true

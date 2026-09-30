@@ -158,7 +158,7 @@
           <Button {...triggerProps}>Toggle</Button>
         {/snippet}
         <p
-          style="width: min(500px, 100vh); border: 1px solid var(--lp-color-border-default);"
+          style="width: min(500px, 100vh); border: 1px solid var(--color-border);"
         >
           This is a wide popover content that could overflow the viewport on the
           inline-end side. The popover will attempt to flip the content to the

@@ -4,9 +4,10 @@ This guide explains how to add a new package to the pragma monorepo. It covers w
 
 ## Quick path: `pragma create package`
 
-The fastest way to add a package is through the generator. It produces all required files---`package.json`, `tsconfig.json`, `tsconfig.build.json`, `biome.json`, `vitest.config.ts`, barrel export, and README---configured for the monorepo with correct dependencies, scripts, and webarchitect ruleset.
+The fastest way to add a package is through the generator. It produces all required files---`package.json`, `tsconfig.json`, `tsconfig.build.json`, `biome.json`, `vitest.config.ts`, barrel export, and README---configured for the monorepo with correct dependencies, scripts, and webarchitect ruleset. It needs the `pragma` CLI installed (see the [README's prerequisites](../../README.md#prerequisites)):
 
 ```bash
+npm install -g @canonical/pragma-cli
 pragma create package
 ```
 
@@ -30,13 +31,15 @@ The generated package is ordinary code with no special relationship to the gener
 
 Not every piece of functionality deserves its own package. The overhead of separate configuration, versioning, and maintenance means that new packages should earn their existence. Consider creating a new package when the functionality has consumers beyond a single application, when it represents a coherent unit that could be versioned independently, or when it belongs to a different architectural layer than existing packages.
 
-Extend an existing package instead when the functionality is specific to one consumer, when it depends heavily on the internals of an existing package, or when splitting it would create circular dependencies. The `@canonical/utils` package, for example, grows when new utilities prove useful across multiple packages. Adding a function to utils is simpler than creating a new package for that function alone.
+Extend an existing package instead when the functionality is specific to one consumer, when it depends heavily on the internals of an existing package, or when splitting it would create circular dependencies. The `@canonical/ds-utils` package, for example, grows when new helpers prove useful across multiple packages. Adding a function to ds-utils is simpler than creating a new package for that function alone.
 
 ## Package locations
 
 Packages live in subdirectories of `packages/` based on their category. The location determines how consumers import the package and influences CI path filtering.
 
-The top level `packages/` directory contains core infrastructure packages like `ds-types`, `ds-assets`, `utils`, and `webarchitect`. These packages have few dependencies and serve as foundations for other packages.
+The top level `packages/` directory contains core infrastructure packages like `ds-types` and `ds-assets`. These packages have few dependencies and serve as foundations for other packages.
+
+Framework-agnostic runtime packages live in `packages/runtime/`. These are the engines the framework bindings are built on — `i18n-core`, `router-core` and `ds-utils` are shared by the React, Svelte and Lit implementations. If a library holds logic rather than markup, and more than one framework package needs it, it belongs here rather than at the top level.
 
 React component packages live in `packages/react/`. The subdirectory structure mirrors the component tier hierarchy: `ds-global` for universal components, `ds-app` for application components, and specialized packages like `ds-app-launchpad` for domain-specific components.
 
@@ -44,7 +47,46 @@ Style packages live in `packages/styles/`. The structure reflects the CSS layeri
 
 Storybook addons live in `packages/storybook/`. These packages extend Storybook with project-specific functionality like the baseline grid overlay and MSW integration.
 
-Developer tools live directly in `packages/`. The `webarchitect` package is an example. If you are adding a new CLI tool or development utility, it belongs at this level.
+Developer tools — the command-line tools, the generators, the linters and the base Biome and TypeScript configurations — live in [canonical/pragma-core](https://github.com/canonical/pragma-core). If you are adding a new CLI tool or development utility, it belongs there.
+
+### A new category directory needs a new workspace glob
+
+The root `package.json` `workspaces` array lists each category explicitly, and every entry matches exactly **one** level:
+
+```json
+{
+  "workspaces": [
+    "configs/*",
+    "packages/*",
+    "packages/prism/*",
+    "packages/react/*",
+    "packages/runtime/*",
+    "packages/storybook/*",
+    "packages/styles/*",
+    "packages/svelte/*",
+    "packages/lit/*",
+    "packages/semantics/*",
+    "apps/*",
+    "apps/react/*",
+    "apps/lit/*"
+  ]
+}
+```
+
+A package added to an **existing** category — `packages/react/my-thing` — is matched by `packages/react/*` and needs nothing further. A package added under a **new** category — `packages/my-category/my-thing` — is matched by nothing, because `packages/*` stops one level short. **Add `"packages/my-category/*"` to the array in the same commit that creates the directory.**
+
+This is the step that is easiest to miss and hardest to diagnose, because nothing in the repository points at it:
+
+- `bun install` does not warn. A directory outside every glob is not a workspace member, so Bun treats `@canonical/my-thing` as an ordinary registry dependency and fetches it from npm. For a package that is private or not yet published, install fails with a **404 on a package that is sitting in the working tree** — an error that describes the symptom and not the cause.
+- `scripts/check-workspace-ranges.ts` cannot catch it. The guard enumerates packages *from* the root globs, which is what makes it maintenance-free — but it also means a package no glob matches is invisible to the guard. Its count simply does not rise, and a count that does not rise looks exactly like a count that is correct.
+- `nx` **will** see the package, because it discovers projects from the filesystem. A disagreement between `nx show projects` and the workspace guard is the clearest signal that a glob is missing.
+
+Verify with the two commands together — they must agree:
+
+```bash
+bunx nx show projects | wc -l          # discovered from the filesystem
+bun run check:ranges                   # enumerated from the root globs
+```
 
 ## Webarchitect rulesets
 
@@ -94,17 +136,17 @@ The package.json file defines the package identity, exports, scripts, and depend
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:webarchitect",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
@@ -116,15 +158,17 @@ The package.json file defines the package identity, exports, scripts, and depend
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
-    "@canonical/biome-config": "^0.11.0",
-    "@canonical/typescript-config": "^0.11.0",
-    "@canonical/webarchitect": "^0.11.0",
+    "@canonical/biome-config": "0.42.0",
+    "@canonical/typescript-config": "0.42.0",
+    "@canonical/webarchitect": "0.42.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.17"
   }
 }
 ```
+
+The `@canonical/biome-config`, `typescript-config` and `webarchitect` versions above are illustrative: copy the exact pins from any sibling manifest, because the whole tree pins one release of each pragma-core package and a re-pin rewrites every manifest at once.
 
 The `exports` field defines the public API. The structure shown here exposes a single entry point at the package root. Packages with multiple entry points add additional keys like `"./utils"` or `"./types"`.
 
@@ -145,10 +189,14 @@ Create `tsconfig.json`:
     "baseUrl": "src",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts"]
 }
 ```
+
+Note there is deliberately no `exclude` here. The base config is what `check:ts`
+(`tsc --noEmit`) reads, and test files must stay in its program — Vitest
+transpiles with esbuild, which strips types without checking them, so a test file
+excluded here is type-checked by nothing at all.
 
 Create `tsconfig.build.json`:
 
@@ -165,11 +213,16 @@ Create `tsconfig.build.json`:
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.tests.ts", "vite.config.ts", "vitest.config.ts"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.tests.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
 }
 ```
 
-The base config extends the shared `@canonical/typescript-config` package, which defines strict type checking rules and module resolution settings. The build config adds output paths and excludes test files from compilation.
+The base config extends the shared `@canonical/typescript-config` package, which defines strict type checking rules and module resolution settings. The build config adds output paths and is the **only** place test files are excluded — they are excluded from *compilation*, so they never reach `dist/`, while remaining type-checked by `check:ts`. Keep both the singular and plural test patterns: the repo uses both namings.
 
 For React packages, extend `@canonical/typescript-config-react` instead of `@canonical/typescript-config`. The React config includes JSX settings and React-specific type definitions.
 
@@ -239,6 +292,8 @@ Create a types file and an implementation file to complete the initial structure
 
 ### Step 7: Install Dependencies
 
+**First confirm a root workspace glob matches the new directory.** If the package sits under a category that is not already in the root `package.json` `workspaces` array, add it now — see [A new category directory needs a new workspace glob](#a-new-category-directory-needs-a-new-workspace-glob). Everything below assumes membership; without it `bun install` reaches for the registry instead of the working tree.
+
 Run `bun install` from the monorepo root to link the new package into the workspace:
 
 ```bash
@@ -247,6 +302,14 @@ bun install
 ```
 
 Bun resolves workspace dependencies and creates symlinks for local packages. After installation, other packages can depend on the new package using its scoped name.
+
+Confirm the link is real rather than a registry copy — this is the check that distinguishes a workspace member from a package Bun downloaded:
+
+```bash
+readlink node_modules/@canonical/my-utils     # → ../../packages/my-utils
+```
+
+A symlink into the working tree means the package is a workspace member. A real directory means it was resolved from npm, which for a package you have not published yet means the build is using someone else's code — or, more often, that install failed with a 404.
 
 ### Step 8: Validate Configuration
 
@@ -260,6 +323,8 @@ bun run check:webarchitect
 Webarchitect validates the package.json structure, license declaration, export configuration, and required scripts. Fix any validation errors before committing.
 
 ## Creating a tool package
+
+The command-line tools and development utilities are created in [canonical/pragma-core](https://github.com/canonical/pragma-core); this section describes their shape, for reference.
 
 Tool packages differ from libraries in three ways: they use GPL-3.0 licensing, they may not need a build step if they run directly with Bun, and they typically provide a CLI entry point.
 
@@ -288,6 +353,15 @@ For a TypeScript-only tool that runs with Bun (the `tool-ts` ruleset), the packa
 ```
 
 The key differences: `module` and `types` point to TypeScript source files, `files` includes `src` instead of `dist`, and `check:webarchitect` uses the `tool-ts` ruleset. The build script does nothing because Bun executes TypeScript directly.
+
+> **Ship-raw-TS only works when the consumer runs Bun.** This pattern is fine for packages
+> consumed inside the monorepo or bundled into a compiled binary. A package that publishes a
+> **node-runnable `bin`** (or is `await import()`-ed at runtime by one) must instead compile to
+> `dist/esm` with `tsc -p tsconfig.build.json`, point `main`/`module`/`exports`/`bin` at the
+> built JS, set `files: ["dist"]`, and use `#!/usr/bin/env node`. Node cannot execute `.ts`,
+> and `__dirname`/`import pkg from "./package.json"` behave differently under Node ESM. See the
+> `@canonical/summon` / `@canonical/summon-application` packages in [canonical/pragma-core](https://github.com/canonical/pragma-core) for a worked example, including
+> copying non-`.ts` template assets into `dist` (they are not compiled by `tsc`).
 
 The `bin` field declares the CLI entry point. After installation, users can run the tool by name.
 
@@ -333,7 +407,7 @@ The tag workflow publishes all public packages to npm. Packages with `"private":
 
 If your PR introduces a brand-new npm package, the first publish must be done manually before regular release automation can pick it up. **This is a manual human step — it requires interactive npm authentication (2FA) and access to npmjs.com, so it cannot be automated or performed by an AI agent.** From inside the package directory, run `npm publish --access public` when the package is ready. After publishing, run `bun run publish:status` from the repository root to confirm the package appears in the registry.
 
-The automated release workflow publishes via [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers), so after the first manual publish you must configure a trusted publisher for the new package on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`) and set its publishing access to disallow tokens. Until the trusted publisher is configured, the tag workflow cannot publish new versions of the package. See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing) for the full procedure.
+The automated release workflow publishes via [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers), so after the first manual publish you must configure a trusted publisher for the new package on npmjs.com (repo `canonical/pragma-web`, workflow `tag.yml`) and set its publishing access to disallow tokens. The order matters: the package must already be published, because the trusted-publisher settings live on the package's npm page, which does not exist until the first publish — you cannot configure OIDC in advance. Until the trusted publisher is configured, the tag workflow cannot publish new versions of the package. You can confirm which packages are publishing with provenance by running `bun run publish:status` from the repository root and reading the Provenance column. See [How to publish a package](./PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing) for the full procedure and [Verifying provenance](./PUBLISH_A_PACKAGE.md#verifying-provenance) for how to interpret the status output.
 
 Chromatic workflows require explicit configuration because they run per-package with path filtering. If your package has a Storybook, create a workflow file that triggers on changes to the package and its dependencies. The workflow template at `.github/workflows/chromatic._template.yml` provides the common structure.
 
@@ -350,6 +424,9 @@ Configuration completeness:
 - src/index.ts exports the public API
 
 Validation:
+- The root `package.json` `workspaces` array matches the package's directory (only needed for a package in a **new** category directory, and easy to forget precisely because most packages do not need it)
+- `bunx nx show projects` and `bun run check:ranges` report the same package count — a disagreement means a glob is missing
+- `readlink node_modules/@canonical/<name>` resolves into the working tree, not to a downloaded copy
 - `bun install` succeeds from the monorepo root
 - `bun run build` succeeds in the package directory
 - `bun run check` passes (includes webarchitect validation)
@@ -364,4 +441,4 @@ Integration:
 - License matches ruleset requirements (LGPL-3.0 for library, GPL-3.0 for tool)
 - check:webarchitect script uses the correct ruleset
 - First-time publish for new packages completed manually by running `npm publish --access public` from inside the package directory, then verified with `bun run publish:status`
-- Trusted publisher configured on npmjs.com for the new package (repo `canonical/pragma`, workflow `tag.yml`) and publishing access set to disallow tokens, so the automated workflow can publish future versions
+- Trusted publisher configured on npmjs.com for the new package (repo `canonical/pragma-web`, workflow `tag.yml`) and publishing access set to disallow tokens, so the automated workflow can publish future versions

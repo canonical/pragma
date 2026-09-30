@@ -10,13 +10,7 @@ The CLI is designed with two audiences in mind: developers exploring the system 
 
 ## Installation
 
-`pragma` ships as `@canonical/pragma-cli`. In the monorepo, it is available via the workspace:
-
-```bash
-bunx pragma --help
-```
-
-For standalone projects, install globally or as a dev dependency:
+`pragma` ships as `@canonical/pragma-cli`. Install it globally or as a dev dependency:
 
 ```bash
 bun add -d @canonical/pragma-cli
@@ -48,11 +42,8 @@ pragma doctor
 Blocks are the components, patterns, and primitives registered in the design system ontology.
 
 ```bash
-# List all blocks in the current tier
+# List every block in the store
 pragma block list
-
-# List across all tiers
-pragma block list --all-tiers
 
 # Look up a specific block
 pragma block lookup Button
@@ -108,7 +99,7 @@ pragma token lookup color-text
 # Show current configuration
 pragma config show
 
-# Set the active tier (determines which blocks and components are visible)
+# Set the active tier (recorded and reported; it no longer scopes reads)
 pragma config tier global
 
 # Set the release channel
@@ -155,7 +146,8 @@ Runs checks on: Node version, pragma version, config file, knowledge store, shel
 
 ## Output modes
 
-Every command supports three output formats:
+Every command renders through one of three output formats, selected with a single
+`--format {plain|llm|json}` flag:
 
 <table>
   <thead>
@@ -166,11 +158,20 @@ Every command supports three output formats:
     </tr>
   </thead>
   <tbody>
-    <tr><td>(default)</td><td>Plain terminal</td><td>Human reading in a terminal</td></tr>
-    <tr><td><code>--llm</code></td><td>Condensed Markdown</td><td>Token-efficient output for AI assistants</td></tr>
-    <tr><td><code>--format json</code></td><td>Structured JSON</td><td>Programmatic consumption, piping</td></tr>
+    <tr><td><code>--format plain</code></td><td>Plain terminal</td><td>Human reading in a terminal</td></tr>
+    <tr><td><code>--format llm</code></td><td>Condensed Markdown</td><td>Token-efficient output for AI assistants</td></tr>
+    <tr><td><code>--format json</code></td><td>Structured JSON</td><td>Programmatic consumption</td></tr>
   </tbody>
 </table>
+
+When `--format` is omitted the format is **auto-detected** from stdout: an
+interactive terminal gets `plain`, while a non-interactive stdout — a pipe, a
+redirect, or an MCP/agent capture — auto-selects `llm`, so downstream tools get
+token-efficient Markdown with no flag. Pass `--format plain` to force
+human-readable output down a pipe, or `--format json` for structured data.
+
+> The standalone `--llm` flag has been removed; use `--format llm` (or rely on
+> the auto-detection above).
 
 ## MCP server
 

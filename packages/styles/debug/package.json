@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles-debug",
   "description": "Canonical's debugging styles. These are not included with the rest of the styles, but can be used for debugging purposes.",
-  "version": "0.28.0",
+  "version": "0.43.0",
   "main": "src/index.css",
   "files": [
     "src"
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "exports": {
     ".": {
@@ -27,20 +27,21 @@
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "check": "bun run check:biome",
+    "check": "bun run check:biome && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix",
     "check:biome": "biome check",
-    "check:biome:fix": "biome check --write"
+    "check:biome:fix": "biome check --write",
+    "check:webarchitect": "webarchitect assets"
   },
   "peerDependencies": {
-    "@canonical/design-tokens": ">=0.4.0"
+    "@canonical/design-tokens": ">=0.10.0 <1.0.0"
   },
   "peerDependenciesMeta": {
     "@canonical/design-tokens": {
@@ -48,7 +49,8 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0"
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/webarchitect": "0.43.0"
   }
 }

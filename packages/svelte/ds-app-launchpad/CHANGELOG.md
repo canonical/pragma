@@ -3,6 +3,247 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.43.0](https://github.com/canonical/pragma-web/compare/v0.42.0...v0.43.0) (2026-09-30)
+
+* chore(monorepo)!: consume the core packages from npm (#1388) ([86e48a4](https://github.com/canonical/pragma-web/commit/86e48a4f166821f8a2d5352314ac65ba94ff2846)), closes [#1388](https://github.com/canonical/pragma-web/issues/1388)
+* feat(svelte)!: migrate Select component to design tokens (#1351) ([ba52c31](https://github.com/canonical/pragma-web/commit/ba52c3125dee8566d64e7a7b7089092492c7473d)), closes [#1351](https://github.com/canonical/pragma-web/issues/1351)
+
+### BREAKING CHANGES
+
+* Replace the `severity` prop with `criticality`.
+* the core packages are no longer workspace members;
+  local changes to them are made in canonical/pragma-core.
+
+  * ci: drop the embedded-pack refresh and the dead Chromatic path filters
+
+  The version action refreshed the pragma CLI's embedded pack, which no longer lives here; the step, its script, its token input and tag.yml's PACKS_READ_TOKEN go. The Chromatic workflows watched packages/utils and packages/tokens, neither of which exists in this repository any more.
+
+  * chore(monorepo): name canonical/pragma-web in the implementation graph
+
+  ds.config.json's repository is stamped into every source link the collector writes; data/ is regenerated with it.
+
+  * chore(monorepo): take the Renovate preset and the Biome config's owners from pragma-core
+
+  renovate.json extends the preset published from canonical/pragma-core. The /configs/biome/ ownership line moves with the folder.
+
+  * docs: point the toolchain references at canonical/pragma-core
+
+  README, AGENTS.md and docs/ describe this repository without the toolchain packages; links into the deleted folders point at canonical/pragma-core, CONSTITUTION.md becomes a link to its one copy there, the publishing guides name canonical/pragma-web as the trusted-publisher repository, and the CLI's perf-budget notes leave with the CLI.
+
+  * test(prism-pragma-provider): check the live emission against the contract
+
+  The compiler-goldens gate left with the compiler. The provider already boots the pinned @canonical/ke-graphql over its hermetic corpus, so it checks that emission against the contract; a compiler bump that breaks conformance is red on the bump. The contract README names this as the gate against a real emission.
+
+  * docs: correct the references the toolchain move left stale
+
+  The storybook hub's CLI page no longer claims a workspace pragma binary; AGENTS.md's scope examples and package count, the adding-a-package example pins and tool-package section, the constitution link and the provider READMEs' links to canonical/pragma-core.
+
+  * docs: tighten the conformance-gate notes and two stale examples
+
+  The provider README names its live contract check, the contract README says it runs over the test corpus and keeps its wrap, AGENTS.md drops the last CLI scope example, and the no-magic link carries its anchor.
+
+  * chore(deps): pin the core packages to their 0.43.0-experimental releases
+
+  Each core package takes its own experimental release from the registry: biome-config, typescript-config, webarchitect, ke and ke-graphql at 0.43.0-experimental.0; utils, design-tokens and design-system at 0.43.0-experimental.1.
+
+  * chore(monorepo): name canonical/pragma-web as the repository
+
+  npm refuses a trusted-publisher publish whose repository.url names a different repository, so every manifest's repository, bugs and homepage, and ds.config.json's repository (stamped into the implementation graph's source links, regenerated here), name canonical/pragma-web, as do the clone instructions and the trusted-publisher setup in the docs. tag.yml refuses to run from any other repository, so a release dispatched before the rename stops before anything is versioned or tagged.
+
+  * fix(styles-debug): accept any 0.x design-tokens as the optional peer
+
+  An exact peer makes npm refuse styles-debug next to any other design-tokens release; its stylesheet only reads token custom properties, which 0.10.0 and 0.43.0 ship identically. The range matches the repository's other peers.
+
+  * fix(svelte-ds-app-launchpad): depend on design-tokens at runtime
+
+  The published styles.css imports @canonical/design-tokens' stylesheets, so it is a dependency, not a devDependency.
+
+  * docs: say how to get the pragma CLI and where the core pins come from
+
+  The CLI is no longer a workspace member, so the README's prerequisites name @canonical/pragma-cli and how to install it, and the adding-a-package guide installs it before pragma create package and says to copy the core pins from a sibling manifest. The ranges test's historical comment says the package it describes has left.
+
+  * ci: drop the repository guard from the release workflow
+
+  * chore(deps): pin the core packages to 0.43.0
+
+  pragma-core's first stable release: biome-config, typescript-config, webarchitect, utils, ke, ke-graphql, design-tokens and design-system move from their 0.43.0-experimental builds to 0.43.0.
+
+
+# [0.42.0](https://github.com/canonical/pragma/compare/v0.41.0...v0.42.0) (2026-09-28)
+
+* chore(monorepo)!: move to TypeScript 7 (#1374) ([713d307](https://github.com/canonical/pragma/commit/713d3071d3980539a849ea95823736e8b343a1b1)), closes [#1374](https://github.com/canonical/pragma/issues/1374) [#lib](https://github.com/canonical/pragma/issues/lib) [#domains](https://github.com/canonical/pragma/issues/domains) [#i18n](https://github.com/canonical/pragma/issues/i18n) [#relay](https://github.com/canonical/pragma/issues/relay) [#styles](https://github.com/canonical/pragma/issues/styles)
+
+### BREAKING CHANGES
+
+* the shared TypeScript configs, storybook-config,
+  vitest-config-react and styles-typography no longer accept TypeScript 5 as
+  a peer, and the tsconfig presets no longer set or expect baseUrl.
+
+  * chore(configs): keep TypeScript 5.9 and 6 in the typescript peer ranges
+
+  The shared configs, the Storybook config, the Vitest React config and
+  @canonical/typography now accept TypeScript ^5.9.3 || ^6.0.0 || ^7.0.0,
+  so consumers still on 5.9 or 6 are not pushed off by this upgrade. The
+  Svelte config keeps ^5.9.3 || ^6.0.0, because its consumers compile
+  declarations with TypeScript 6.
+
+  * chore(boilerplate-vite,summon-application): drop the tsconfig paths for # imports
+
+
+# [0.41.0](https://github.com/canonical/pragma/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+### Features
+
+* **NumberInput:** migrate to design tokens ([#1320](https://github.com/canonical/pragma/issues/1320)) ([1530f31](https://github.com/canonical/pragma/commit/1530f31566fe3c4d2fc538f42e99c6909e88faaa))
+* **svelte:** migrate to design tokens ([#1311](https://github.com/canonical/pragma/issues/1311)) ([050550f](https://github.com/canonical/pragma/commit/050550fb345b09feef6ed7ba1aec9f26b21f8408))
+* **TextInput:** migrate to design tokens ([#1318](https://github.com/canonical/pragma/issues/1318)) ([8100cd2](https://github.com/canonical/pragma/commit/8100cd22cdc3554fb6989fbfa21b64f7204e3452))
+
+
+# [0.40.0](https://github.com/canonical/pragma/compare/v0.39.0...v0.40.0) (2026-09-20)
+
+**Note:** Version bump only for package @canonical/svelte-ds-app-launchpad
+
+
+
+
+
+# [0.39.0](https://github.com/canonical/pragma/compare/v0.38.0...v0.39.0) (2026-09-18)
+
+### Bug Fixes
+
+* **ButtonPrimitive:** Don't set border-color when disabled ([#1336](https://github.com/canonical/pragma/issues/1336)) ([04b67e4](https://github.com/canonical/pragma/commit/04b67e4d1823303e6d12eff6f3c940ac5e85cd25))
+
+### Features
+
+* **ds-app:** export transitions ([#1337](https://github.com/canonical/pragma/issues/1337)) ([f68039d](https://github.com/canonical/pragma/commit/f68039d422f778881048926a914b8e16271681cd))
+
+
+# [0.38.0](https://github.com/canonical/pragma/compare/v0.37.0...v0.38.0) (2026-09-16)
+
+### Bug Fixes
+
+* **deps:** update canonical to v0.10.0 ([#894](https://github.com/canonical/pragma/issues/894)) ([34a1bb9](https://github.com/canonical/pragma/commit/34a1bb987de4677a83c6f6da3a1521f8d26d18ad))
+
+### Features
+
+* **Breadcrumbs:** migrate to design tokens ([#943](https://github.com/canonical/pragma/issues/943)) ([9d4d533](https://github.com/canonical/pragma/commit/9d4d5331530d234d3aef91e7d3c7b19ef46e39b2))
+* **ButtonPrimitive:** migrate to design tokens ([#950](https://github.com/canonical/pragma/issues/950)) ([e5f9de6](https://github.com/canonical/pragma/commit/e5f9de6afb1949d55ac0f00525d186b2207d9e7a))
+* **Checkbox:** migrate to design tokens ([#946](https://github.com/canonical/pragma/issues/946)) ([b135f61](https://github.com/canonical/pragma/commit/b135f611fd69fb35a76ca4afe199eac8ca1790a9))
+* **Radio:** migrate to design tokens ([#947](https://github.com/canonical/pragma/issues/947)) ([3a88504](https://github.com/canonical/pragma/commit/3a88504a2217792ebafa5c461296d89123f65753))
+
+
+# [0.37.0](https://github.com/canonical/pragma/compare/v0.36.0...v0.37.0) (2026-09-02)
+
+**Note:** Version bump only for package @canonical/svelte-ds-app-launchpad
+
+
+
+
+
+# [0.36.0](https://github.com/canonical/pragma/compare/v0.35.0...v0.36.0) (2026-08-29)
+
+
+### Features
+
+* **Log:** migrate to design tokens ([#942](https://github.com/canonical/pragma/issues/942)) ([64baf67](https://github.com/canonical/pragma/commit/64baf67c08ee141967340945cbf748444387923c))
+* **Spinner:** migrate to design tokens ([#940](https://github.com/canonical/pragma/issues/940)) ([0d76ed8](https://github.com/canonical/pragma/commit/0d76ed87b80a09fc2f0714f8296cf4beb0b4b68b))
+* **Switch:** migrate to design tokens ([#948](https://github.com/canonical/pragma/issues/948)) ([672e348](https://github.com/canonical/pragma/commit/672e348370009c9dc8f7c4413ba37af04ad18c91))
+
+
+
+
+
+# [0.35.0](https://github.com/canonical/pragma/compare/v0.34.0...v0.35.0) (2026-08-28)
+
+
+### Features
+
+* **SideNavigation:** migrate to design tokens ([#949](https://github.com/canonical/pragma/issues/949)) ([b29eda9](https://github.com/canonical/pragma/commit/b29eda90af9c58c70bf87d9e934fe26bd2e946b8))
+
+
+
+
+
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+
+### Features
+
+* **DialogContent:** migrate to design tokens ([#920](https://github.com/canonical/pragma/issues/920)) ([73c610a](https://github.com/canonical/pragma/commit/73c610a7f77cb3e97b327150b8d5697cc271f568))
+* **Modal:** migrate to design tokens ([#929](https://github.com/canonical/pragma/issues/929)) ([e77556d](https://github.com/canonical/pragma/commit/e77556d6cf18adee74b39658b7fffd027cf39044))
+* **Timeline:** migrate to design tokens ([#922](https://github.com/canonical/pragma/issues/922)) ([e3cc213](https://github.com/canonical/pragma/commit/e3cc21396adfd705a4610368b75412ddab78971e))
+* **Tooltip:** migrate to design tokens ([#925](https://github.com/canonical/pragma/issues/925)) ([14cc02f](https://github.com/canonical/pragma/commit/14cc02fa6aa18ac4df50f49f68832bfda106c2a3))
+
+
+
+
+
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** suppress "upgrade to modal" close event ([#887](https://github.com/canonical/pragma/issues/887)) ([92df40e](https://github.com/canonical/pragma/commit/92df40e5aa8ecdb52576c9df7da637669a05d5c4))
+
+
+### Features
+
+* **DescriptionList:** migrate to design tokens ([#888](https://github.com/canonical/pragma/issues/888)) ([24fe66c](https://github.com/canonical/pragma/commit/24fe66cb0b4b72fb2b34d048b7434d3fdc7803b2))
+* **UserAvatar:** migrate to design tokens ([#892](https://github.com/canonical/pragma/issues/892)) ([446fc46](https://github.com/canonical/pragma/commit/446fc466a05eaa4ca257e842fc145d8a69817b6a))
+
+
+
+
+
+# [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
+
+**Note:** Version bump only for package @canonical/svelte-ds-app-launchpad
+
+
+
+
+
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Features
+
+* **ds-app-launchpad:** start migration to pragma design tokens ([#808](https://github.com/canonical/pragma/issues/808)) ([87a2b13](https://github.com/canonical/pragma/commit/87a2b13d14046b47344e1161a1d7285572d01267))
+
+
+
+
+
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **deps:** unify @canonical/design-tokens pin to 0.6.2-contrasted.0 ([#748](https://github.com/canonical/pragma/issues/748)) ([cf607d7](https://github.com/canonical/pragma/commit/cf607d7ae40f8044208e1e502c8d92178261e73c)), closes [#731](https://github.com/canonical/pragma/issues/731) [#89](https://github.com/canonical/pragma/issues/89)
+
+
+
+
+
+## [0.29.1](https://github.com/canonical/pragma/compare/v0.29.0...v0.29.1) (2026-07-03)
+
+**Note:** Version bump only for package @canonical/svelte-ds-app-launchpad
+
+
+
+
+
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+
+### Features
+
+* **svelte-ds-app-launchpad:** allow SSR-opened dialogs ([#695](https://github.com/canonical/pragma/issues/695)) ([2af3abe](https://github.com/canonical/pragma/commit/2af3abe90fcae84bf30d6f782dd48f5a6706948e))
+
+
+
+
+
 # [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
 
 **Note:** Version bump only for package @canonical/svelte-ds-app-launchpad

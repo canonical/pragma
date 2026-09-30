@@ -8,6 +8,8 @@ export interface ExtractedPreferences {
   contrast: string | null;
   /** Motion cookie value, or null if not set */
   motion: string | null;
+  /** Single-key shortcut cookie value, or null if not set */
+  shortcuts: string | null;
 }
 
 /**
@@ -17,7 +19,7 @@ export interface ExtractedPreferences {
  * the incoming request and pass them as initialData to the renderer.
  *
  * @param cookieHeader - The raw Cookie header value, e.g. "theme=dark; contrast=more"
- * @returns Object with theme, contrast, and motion cookie values (null if absent)
+ * @returns Object with theme, contrast, motion, and shortcuts cookie values (null if absent)
  */
 export default function extractPreferences(
   cookieHeader: string | null,
@@ -26,5 +28,6 @@ export default function extractPreferences(
     theme: readPreferenceCookieFromHeader(cookieHeader, "theme"),
     contrast: readPreferenceCookieFromHeader(cookieHeader, "contrast"),
     motion: readPreferenceCookieFromHeader(cookieHeader, "motion"),
+    shortcuts: readPreferenceCookieFromHeader(cookieHeader, "shortcuts"),
   };
 }

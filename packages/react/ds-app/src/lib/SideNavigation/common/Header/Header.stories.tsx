@@ -1,20 +1,21 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { Brand, withSideNavShell } from "#storybook/navigation/story-utils.js";
+import { CanonicalLogo } from "../../../../storybook/navigation/CanonicalLogo/index.js";
+import { withSideNavShell } from "../../../../storybook/navigation/story-utils.js";
 import Header from "./Header.js";
 
 const meta: Meta<typeof Header> = {
   title: "Components/SideNavigation/Header",
   component: Header,
-  tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },
   // withSideNavShell provides the .ds.side-navigation context so the shared
-  // row-grid var resolves (logo aligns with item icons) + surface tokens.
+  // row-inset vars resolve (logo aligns with item icons) + surface tokens.
   decorators: [withSideNavShell],
   args: {
-    brand: <Brand />,
+    applicationName: "Canonical",
+    brand: <CanonicalLogo />,
     onToggle: fn(),
   },
 };
@@ -39,6 +40,7 @@ export const Collapsed: Story = {
 /** Without a toggle handler the collapse toggle is omitted. */
 export const BrandOnly: Story = {
   args: {
+    expanded: true,
     onToggle: undefined,
   },
 };

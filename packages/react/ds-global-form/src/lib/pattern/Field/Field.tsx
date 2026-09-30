@@ -1,27 +1,31 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
-import { CheckboxField } from "#lib/component/CheckboxField/index.js";
-import { ChoicesField } from "#lib/component/ChoicesField/index.js";
-import { ColorField } from "#lib/component/ColorField/index.js";
-import { ComboboxField } from "#lib/component/ComboboxField/index.js";
-import { DateField } from "#lib/component/DateField/index.js";
-import { DateTimeField } from "#lib/component/DateTimeField/index.js";
-import { FileUploadField } from "#lib/component/FileUploadField/index.js";
-import { HiddenField } from "#lib/component/HiddenField/index.js";
-import { NumberField } from "#lib/component/NumberField/index.js";
-import { PasswordField } from "#lib/component/PasswordField/index.js";
-import { PhoneField } from "#lib/component/PhoneField/index.js";
-import { RangeField } from "#lib/component/RangeField/index.js";
-import { SelectField } from "#lib/component/SelectField/index.js";
-import { SimpleChoicesField } from "#lib/component/SimpleChoicesField/index.js";
-import { TextareaField } from "#lib/component/TextareaField/index.js";
-import { TextField } from "#lib/component/TextField/index.js";
-import { TimeField } from "#lib/component/TimeField/index.js";
+import { CheckboxField } from "../../component/CheckboxField/index.js";
+import { ChoicesField } from "../../component/ChoicesField/index.js";
+import { ColorField } from "../../component/ColorField/index.js";
+import { ComboboxField } from "../../component/ComboboxField/index.js";
+import { DateField } from "../../component/DateField/index.js";
+import { DateTimeField } from "../../component/DateTimeField/index.js";
+import { FileUploadField } from "../../component/FileUploadField/index.js";
+import { HiddenField } from "../../component/HiddenField/index.js";
+import { NumberField } from "../../component/NumberField/index.js";
+import { PasswordField } from "../../component/PasswordField/index.js";
+import { PhoneField } from "../../component/PhoneField/index.js";
+import { RangeField } from "../../component/RangeField/index.js";
+import { RatingField } from "../../component/RatingField/index.js";
+import { RichChoicesField } from "../../component/RichChoicesField/index.js";
+import { SelectField } from "../../component/SelectField/index.js";
+import { SwitchField } from "../../component/SwitchField/index.js";
+import { TextareaField } from "../../component/TextareaField/index.js";
+import { TextField } from "../../component/TextField/index.js";
+import { TimeField } from "../../component/TimeField/index.js";
 import type { FieldProps } from "./types.js";
 
 /**
  * description of the Field component
  * @returns {React.ReactElement} - Rendered Field
+ *
+ * `import { Field } from "@canonical/react-ds-global-form";`
  */
 const Field = ({
   inputType,
@@ -33,12 +37,16 @@ const Field = ({
       return <TextareaField {...props} />;
     case "checkbox":
       return <CheckboxField {...props} />;
+    case "switch":
+      return <SwitchField {...props} />;
+    case "rating":
+      return <RatingField {...props} />;
     case "range":
       return <RangeField {...props} />;
     case "select":
       return <SelectField {...props} />;
-    case "simple-choices":
-      return <SimpleChoicesField {...props} />;
+    case "choices":
+      return <ChoicesField {...props} />;
     case "combobox":
       return <ComboboxField {...props} />;
     case "hidden":
@@ -59,8 +67,8 @@ const Field = ({
       return <PasswordField {...props} />;
     case "number":
       return <NumberField {...props} />;
-    case "choices":
-      return <ChoicesField {...props} />;
+    case "rich-choices":
+      return <RichChoicesField {...props} />;
     case "custom":
       if (!CustomComponent) {
         throw new Error(
@@ -73,4 +81,7 @@ const Field = ({
   }
 };
 
+/**
+ * @implements ds:global.pattern.field
+ */
 export default Field;

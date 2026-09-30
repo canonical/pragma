@@ -16,6 +16,10 @@ const componentCssClassName = "ds input time chrome";
  * there is no `hour12`/format lever for a native picker. The `value` is always
  * 24-hour ISO `HH:mm`. Forcing 12/24h would require a custom (non-native) control.
  * @returns {ReactElement} - Rendered TimeInput
+ *
+ * `import { TimeInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.time_input
  */
 export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(
   function TimeInput(

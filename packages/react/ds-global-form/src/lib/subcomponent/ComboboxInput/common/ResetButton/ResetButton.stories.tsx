@@ -9,9 +9,8 @@ import Component from "./ResetButton.js";
 // import type { StoryFn } from '@storybook/react-vite'
 
 const meta = {
-  title: "subcomponents/ComboboxInput/ResetButton",
+  title: "_work_in_progress/subcomponent/ComboboxInput/ResetButton",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

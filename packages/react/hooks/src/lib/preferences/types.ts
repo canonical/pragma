@@ -7,6 +7,9 @@ export type Contrast = "no-preference" | "more" | "less";
 /** Motion preference: system default or reduced animations */
 export type Motion = "no-preference" | "reduce";
 
+/** Single-key keyboard shortcut preference: shortcuts active or switched off */
+export type Shortcuts = "on" | "off";
+
 /** How the current preference value was determined */
 export type PreferenceSource = "stored" | "system";
 
@@ -78,3 +81,14 @@ export interface UsePreferredMotionProps {
 
 /** Result of usePreferredMotion */
 export type UsePreferredMotionResult = UseMediaPreferenceResult<Motion>;
+
+/** Props for usePreferredShortcuts */
+export interface UsePreferredShortcutsProps {
+  /** Server-provided initial shortcuts for SSR hydration */
+  initialValue?: Shortcuts;
+  /** Cookie name override. Defaults to "shortcuts". */
+  cookieName?: string;
+}
+
+/** Result of usePreferredShortcuts */
+export type UsePreferredShortcutsResult = UseMediaPreferenceResult<Shortcuts>;

@@ -11,15 +11,14 @@
   z-index: 10;
   width: min(100vw, var(--dimension-width-modal));
 
-  border: var(--lp-dimension-stroke-thickness-default) solid
-    var(--lp-color-border-high-contrast);
+  border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
 
   &,
   &::backdrop {
     opacity: 0;
     transition-behavior: allow-discrete;
     transition-property: display, opacity, overlay;
-    transition-duration: var(--lp-transition-duration-fast);
+    transition-duration: var(--ds-transition-duration-fast);
   }
 
   &.no-transition {
@@ -30,10 +29,7 @@
   }
 
   &::backdrop {
-    background-color: var(
-      --modal-backdrop-color,
-      var(--lp-color-background-overlay)
-    );
+    background-color: var(--modal-backdrop-color, var(--color-backdrop));
   }
 
   /*
@@ -62,10 +58,7 @@
 .ds.modal-non-modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: var(
-    --modal-backdrop-color,
-    var(--lp-color-background-overlay)
-  );
+  background-color: var(--modal-backdrop-color, var(--color-backdrop));
   display: none;
   /* TODO: Add z-index tokens */
   z-index: 10;

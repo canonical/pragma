@@ -7,5 +7,8 @@ h4,
 h5,
 h6,
 p {
-  background: #fededebb;
+  /* Box highlight so the text box is visible against the baseline bands. Alpha
+     sits between the original opaque ~0.73 and a too-faint 0.25 — visible but
+     the grid still reads through. */
+  background: rgba(254, 222, 222, 0.5);
 }

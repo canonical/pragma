@@ -1,7 +1,6 @@
 {
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
-    "baseUrl": "src",
     "skipLibCheck": true,
     "types": [
       "node",
@@ -15,7 +14,6 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "vite.config.ts",
-    "vitest.setup.ts",
-    "vitest.config.ts"
+    "vitest.setup.ts"
   ]
 }

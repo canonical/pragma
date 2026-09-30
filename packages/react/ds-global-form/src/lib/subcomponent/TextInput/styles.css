@@ -1,30 +1,34 @@
-.ds.input.text {
-  direction: inherit;
-  display: flex;
-  align-items: stretch;
-  position: relative;
-  padding: 0;
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
 
-  & > input {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font-family: inherit;
-    outline: none;
-    /* Baseline engine provides font-size, line-height, padding-top,
-       padding-bottom via the .p class */
-    padding-inline: var(--form-input-padding-inline);
-  }
-
-  & > .prefix,
-  & > .suffix {
+@layer ds.components.global {
+  .ds.input.text {
+    direction: inherit;
     display: flex;
-    align-items: center;
-    padding-inline: var(--form-field-inline-gap);
-    color: var(--color-text-muted);
-    white-space: nowrap;
-    user-select: none;
+    align-items: stretch;
+    position: relative;
+    padding: 0;
+
+    & > input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
+      outline: none;
+      /* Baseline engine provides font-size, line-height, padding-top,
+         padding-bottom via the .p class */
+      padding-inline: var(--form-input-padding-inline);
+    }
+
+    & > .prefix,
+    & > .suffix {
+      display: flex;
+      align-items: center;
+      padding-inline: var(--form-field-inline-gap);
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      user-select: none;
+    }
   }
 }

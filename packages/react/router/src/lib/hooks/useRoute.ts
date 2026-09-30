@@ -1,12 +1,9 @@
 import type {
-  AnyRoute,
-  RouteMap,
   RouterLocationKey,
   RouterLocationState,
   TrackedLocation,
 } from "@canonical/router-core";
 import { useCallback, useRef, useSyncExternalStore } from "react";
-import type { RegisteredNotFound, RegisteredRouteMap } from "../register.js";
 import useRouter from "./useRouter.js";
 
 function hasChanged(
@@ -36,11 +33,8 @@ function hasChanged(
  * when one of the accessed keys changes, while preserving a single stable proxy
  * instance across renders.
  */
-export default function useRoute<
-  TRoutes extends RouteMap = RegisteredRouteMap,
-  TNotFound extends AnyRoute | undefined = RegisteredNotFound,
->(): TrackedLocation<RouterLocationState> {
-  const router = useRouter<TRoutes, TNotFound>();
+export default function useRoute(): TrackedLocation<RouterLocationState> {
+  const router = useRouter();
   const trackedKeysRef = useRef<Set<RouterLocationKey>>(new Set());
   const previousLocationRef = useRef(router.getState().location);
   const versionRef = useRef(0);

@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 import type { DtcgTokenType } from "./dtcg.js";
 
 export type TokenType = DtcgTokenType;
@@ -58,7 +58,7 @@ export type TokenGroupBy =
   | "derivation"
   | "prefix";
 
-export interface TokenTableProps extends HTMLAttributes<HTMLDivElement> {
+type TokenTableOwnProps = {
   tokens: TokenEntry[];
   title?: string;
   caption?: string;
@@ -69,7 +69,10 @@ export interface TokenTableProps extends HTMLAttributes<HTMLDivElement> {
   groupBy?: TokenGroupBy;
   searchPlaceholder?: string;
   emptyMessage?: string;
-}
+};
+
+export type TokenTableProps = TokenTableOwnProps &
+  Omit<ComponentProps<"div">, keyof TokenTableOwnProps>;
 
 export interface TokenTabsProps {
   tabs: {

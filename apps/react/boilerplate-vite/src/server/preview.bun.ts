@@ -39,6 +39,14 @@ import createSitemapRenderer from "../../dist/server/sitemap.js";
 type CreateAppRenderer = typeof import("./renderer.js").default;
 type CreateSitemapRenderer = typeof import("../sitemap/renderer.js").default;
 
+// Match Node's semantics for unhandled rejections: warn, don't die. Bun
+// kills the process by default, and a data-layer library's internal floating
+// promise (e.g. a failed GraphQL fetch teed inside its pipeline) must take
+// down a request, never the server.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection (server kept alive):", reason);
+});
+
 const PORT = Number(process.env.PORT) || 5174;
 const staticMount = parseStaticPair(":dist/client");
 
@@ -63,15 +71,30 @@ Bun.serve({
       }
     }
 
-    const renderer =
-      url.pathname === "/sitemap.xml"
-        ? (createSitemapRenderer as CreateSitemapRenderer)()
-        : (createAppRenderer as CreateAppRenderer)(req);
-    const stream = await renderer.renderToReadableStream(req.signal);
+    if (url.pathname === "/sitemap.xml") {
+      const renderer = (createSitemapRenderer as CreateSitemapRenderer)();
+      const stream = await renderer.renderToReadableStream(req.signal);
+
+      return new Response(stream, {
+        status: renderer.statusCode,
+        headers: { "Content-Type": renderer.contentType },
+      });
+    }
+
+    const appResult = await (createAppRenderer as CreateAppRenderer)(req);
+
+    if (appResult.kind === "redirect") {
+      return new Response(null, {
+        status: appResult.status,
+        headers: { location: appResult.location },
+      });
+    }
+
+    const stream = await appResult.renderer.renderToReadableStream(req.signal);
 
     return new Response(stream, {
-      status: renderer.statusCode,
-      headers: { "Content-Type": renderer.contentType },
+      status: appResult.renderer.statusCode,
+      headers: { "Content-Type": appResult.renderer.contentType },
     });
   },
 });

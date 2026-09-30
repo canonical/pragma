@@ -1,11 +1,21 @@
 {
   "name": "@canonical/styles",
-  "description": "Canonical Design System global stylesheet. Aggregates normalize, typography, and design tokens.",
-  "version": "0.28.0",
-  "main": "src/index.css",
+  "description": "Canonical Design System global stylesheet. The reset, typography, and design tokens, in named cascade layers.",
+  "version": "0.43.0",
+  "type": "module",
   "exports": {
     ".": "./src/index.css",
-    "./fonts": "./src/fonts.css"
+    "./layers.css": "./src/layers.css",
+    "./tokens.css": "./src/tokens.css",
+    "./elements.css": "./src/elements.css",
+    "./layout.css": "./src/layout.css",
+    "./fonts": "./src/fonts.css",
+    "./modifiers.states.shim.css": "./src/modifiers.states.shim.css",
+    "./modifiers.importance.shim.css": "./src/modifiers.importance.shim.css",
+    "./modifiers.criticality.shim.css": "./src/modifiers.criticality.shim.css",
+    "./modifiers.density.css": "./src/modifiers.density.css",
+    "./spacing.css": "./src/spacing.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "src"
@@ -16,26 +26,27 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "check": "bun run check:biome",
+    "check": "bun run check:biome && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix",
     "check:biome": "biome check",
-    "check:biome:fix": "biome check --write"
+    "check:biome:fix": "biome check --write",
+    "check:webarchitect": "webarchitect assets"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0"
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/webarchitect": "0.43.0"
   },
   "dependencies": {
-    "@canonical/design-tokens": "^0.6.0",
-    "@canonical/styles-typography": "^0.28.0",
-    "normalize.css": "^8.0.1"
+    "@canonical/design-tokens": "0.43.0",
+    "@canonical/styles-typography": "^0.43.0"
   },
   "peerDependencies": {
     "@canonical/ds-assets": ">=0.18.0"

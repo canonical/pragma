@@ -1,0 +1,14 @@
+# The first root's ontology. `ds:Entity` roots the class tree — which is what
+# makes `shim-concept.ttl`'s `rdfs:domain ds:Entity` a smear rather than a
+# single field, and therefore what makes EXCLUDED_SOURCES worth having.
+
+@prefix ds: <https://design.example.org/ontology#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ds:Entity a owl:Class .
+ds:Component a owl:Class ; rdfs:subClassOf ds:Entity ;
+    rdfs:comment "A design-system entity consumers instantiate." .
+
+ds:tier a owl:DatatypeProperty ; rdfs:domain ds:Component ; rdfs:range xsd:string .

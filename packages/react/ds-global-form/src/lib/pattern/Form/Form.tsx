@@ -60,6 +60,8 @@ function InternalForm({
 /**
  * Public Form component that routes to the appropriate implementation
  * depending on whether external `methods` are provided.
+ *
+ * `import { Form } from "@canonical/react-ds-global-form";`
  */
 const Form = ({
   methods,
@@ -73,4 +75,7 @@ const Form = ({
   return <InternalForm {...rest} defaultValues={defaultValues} mode={mode} />;
 };
 
+/**
+ * @implements ds:global.pattern.form
+ */
 export default Form;

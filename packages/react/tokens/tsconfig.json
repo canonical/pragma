@@ -1,7 +1,6 @@
 {
   "extends": "../../../configs/typescript-react/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "src",
     "jsx": "react-jsx",
     "skipLibCheck": true,
     "types": [

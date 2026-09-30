@@ -1,0 +1,313 @@
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
+import { useEffect, useState } from "react";
+import Component from "./ContextualMenu.js";
+import type { MenuEntry } from "./types.js";
+
+/**
+ * The menu is `position: fixed`, so it does not contribute to the story's flow
+ * height. Reserve a tall, centred stage — matching the Tooltip stories — so the
+ * open menu has room and the docs canvas is not cramped. The `.surface` class
+ * defines the `--surface-color-*` channels and the div paints itself with them
+ * (surfaces consume themselves), framing the menu on a real surface.
+ */
+const stage: Decorator = (Story) => (
+  <div
+    className="surface"
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      inlineSize: "100%",
+      blockSize: "100%",
+      minInlineSize: "min(88vw, 480px)",
+      minBlockSize: "440px",
+      background: "var(--surface-color-background)",
+      color: "var(--surface-color-text)",
+    }}
+  >
+    <Story />
+  </div>
+);
+
+/**
+ * Every story renders its menu open — a story is first a picture of the
+ * pattern, and a preview has nothing else to click. The open is deferred one
+ * effect after mount rather than `useState(true)`: it must land like a click,
+ * once the trigger and the portalled menu both exist — opened on the very
+ * first render, the fitment positioning runs before either ref is attached
+ * and the menu lands unpositioned. Real state rather than a static
+ * `open: true` keeps the story interactive: Escape, an outside click, or
+ * choosing an item closes the menu, and the trigger reopens it. Open
+ * previews stack safely because each docs preview is its own iframe.
+ */
+const openByDefault: Decorator = (Story, context) => {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(true);
+  }, []);
+  // Args passed here REPLACE the story's args, so the story's own args must be
+  // spread back in — without them the trigger and the items vanish.
+  return <Story args={{ ...context.args, open, onOpenChange: setOpen }} />;
+};
+
+const meta = {
+  title: "components/ContextualMenu",
+  component: Component,
+  decorators: [stage, openByDefault],
+  parameters: {
+    // Centre the trigger in the story canvas so the (portalled) menu is framed.
+    layout: "centered",
+    // Docs previews render in an iframe: the open menu is portalled and
+    // `position: fixed`, so it escapes every container — inside an iframe the
+    // preview window is its own viewport and the menu stays contained in its
+    // story.
+    docs: {
+      story: {
+        inline: false,
+        iframeHeight: "480px",
+      },
+    },
+  },
+  argTypes: {
+    // The `openByDefault` decorator drives the open state, so panel controls
+    // for it would only ever be overridden by it.
+    open: { control: false },
+    onOpenChange: { control: false },
+  },
+} satisfies Meta<typeof Component>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+/**
+ * A row-actions menu — the kind attached to an entry in a Landscape instances
+ * table or a MAAS machine list. Separators partition the sections, with a
+ * destructive action set apart.
+ */
+const rowActions: MenuEntry[] = [
+  { key: "view", label: "View details", url: "#view" },
+  { key: "edit", label: "Edit configuration", url: "#edit" },
+  { key: "tags", label: "Edit tags", url: "#tags" },
+  { type: "separator", key: "before-power" },
+  { key: "restart", label: "Restart", url: "#restart" },
+  { key: "shutdown", label: "Shut down", url: "#shutdown" },
+  { type: "separator", key: "before-delete" },
+  { key: "delete", label: "Delete", url: "#delete" },
+];
+
+/**
+ * A menu with more items than fit the viewport scrolls inside itself rather than
+ * overflowing off-screen. Open it and arrow down past the fold: the highlighted
+ * item stays focused and is scrolled into view, so no item ever "disappears".
+ */
+const longList: MenuEntry[] = Array.from({ length: 40 }, (_, i) => ({
+  key: `tz-${i}`,
+  label: `UTC${i - 12 >= 0 ? "+" : ""}${i - 12}:00`,
+  url: `#tz-${i}`,
+}));
+
+export const LongScrollable: Story = {
+  args: {
+    children: "Timezone",
+    label: "Select a timezone",
+    items: longList,
+  },
+};
+
+/**
+ * A trigger opens the menu on click — though in the stories the menu is open
+ * from the start (the `openByDefault` decorator): a story is first a picture
+ * of the pattern.
+ */
+export const Default: Story = {
+  args: {
+    children: "Actions",
+    label: "Instance actions",
+    items: rowActions,
+  },
+};
+
+/**
+ * An account menu, as you might find in the top navigation of a Canonical site
+ * or the Ubuntu Pro dashboard. The current, unavailable option is disabled.
+ */
+export const AccountMenu: Story = {
+  args: {
+    children: "abisola@canonical.com",
+    label: "Account",
+    items: [
+      { key: "profile", label: "Your profile", url: "#profile" },
+      { key: "subs", label: "Subscriptions", url: "#subscriptions" },
+      { key: "billing", label: "Billing", url: "#billing", disabled: true },
+      { type: "separator", key: "before-signout" },
+      { key: "signout", label: "Sign out", url: "#signout" },
+    ],
+  },
+};
+
+/**
+ * NOT PART OF THE CORE API.
+ *
+ * The right-hand `slot` (a badge or keyboard shortcut) is an extension of the
+ * menu item, not part of the Figma core component. Here it shows editor
+ * shortcuts, as an app such as a Juju dashboard might.
+ */
+export const WithShortcuts_NotCoreApi: Story = {
+  args: {
+    children: "Edit",
+    label: "Edit",
+    items: [
+      { key: "undo", label: "Undo", url: "#undo", slot: "⌘Z" },
+      { key: "redo", label: "Redo", url: "#redo", slot: "⇧⌘Z" },
+      { type: "separator", key: "before-clipboard" },
+      { key: "cut", label: "Cut", url: "#cut", slot: "⌘X" },
+      { key: "copy", label: "Copy", url: "#copy", slot: "⌘C" },
+      { key: "paste", label: "Paste", url: "#paste", slot: "⌘V" },
+    ],
+  },
+};
+
+/**
+ * NOT PART OF THE CORE API.
+ *
+ * A custom item renderer (`displayItemsType: "custom"` + `Component`) is an
+ * escape hatch, not part of the Figma core component — here a richer account
+ * switcher row with a secondary line.
+ */
+export const CustomItems_NotCoreApi: Story = {
+  args: {
+    children: "Switch organisation",
+    label: "Organisations",
+    items: [
+      {
+        key: "canonical",
+        label: "Canonical",
+        displayItemsType: "custom",
+        Component: ({ item }) => (
+          <span style={{ display: "flex", flexDirection: "column" }}>
+            <strong>{item.label}</strong>
+            <small>Owner · 42 members</small>
+          </span>
+        ),
+      },
+      {
+        key: "community",
+        label: "Ubuntu Community",
+        displayItemsType: "custom",
+        Component: ({ item }) => (
+          <span style={{ display: "flex", flexDirection: "column" }}>
+            <strong>{item.label}</strong>
+            <small>Member · 1,208 members</small>
+          </span>
+        ),
+      },
+    ],
+  },
+};
+
+/**
+ * Nested submenus. A menu item that has its own `items` becomes a submenu
+ * trigger (shown with a trailing caret); hovering it or pressing ArrowRight
+ * opens the submenu to the leading edge, top-aligned to the parent. ArrowLeft
+ * closes the submenu and returns to the parent. Submenus can nest arbitrarily.
+ */
+const nestedActions: MenuEntry[] = [
+  { key: "open", label: "Open", url: "#open" },
+  {
+    key: "share",
+    label: "Share",
+    // A submenu parent — its items open in a nested menu. Separators work
+    // inside submenus too.
+    items: [
+      { key: "share-link", label: "Copy link", url: "#link" },
+      { key: "share-email", label: "Email", url: "#email" },
+      { type: "separator", key: "share-before-teams" },
+      {
+        key: "share-teams",
+        label: "Send to team",
+        // A deeper submenu, to show arbitrary nesting.
+        items: [
+          { key: "team-eng", label: "Engineering", url: "#eng" },
+          { key: "team-design", label: "Design", url: "#design" },
+          { key: "team-ops", label: "Operations", url: "#ops" },
+        ],
+      },
+    ],
+  },
+  {
+    key: "export",
+    label: "Export as",
+    items: [
+      { key: "export-pdf", label: "PDF", url: "#pdf" },
+      { key: "export-csv", label: "CSV", url: "#csv" },
+      { key: "export-json", label: "JSON", url: "#json" },
+    ],
+  },
+  { type: "separator", key: "before-delete" },
+  { key: "delete", label: "Delete", url: "#delete" },
+];
+
+export const NestedSubmenus: Story = {
+  args: {
+    children: "Actions",
+    label: "Item actions",
+    items: nestedActions,
+  },
+};
+
+/**
+ * Right-to-left. Direction is the document's single source of truth (`<html
+ * dir>`) — the same signal the portalled menu and the caret CSS (`:root[dir=
+ * "rtl"]`) read — so this sets `<html dir="rtl">`, but ONLY in the isolated story
+ * view (never the autodocs page, where it would flip every sibling story), and
+ * restores it on unmount.
+ */
+const rtl: Decorator = (Story, context) => {
+  useEffect(() => {
+    if (context.viewMode === "docs") return;
+    const el = document.documentElement;
+    const previous = el.dir;
+    el.dir = "rtl";
+    return () => {
+      el.dir = previous;
+    };
+  }, [context.viewMode]);
+  return <Story />;
+};
+
+/**
+ * The contextual menu in a right-to-left language (Arabic). Everything mirrors:
+ * the menu opens to the left of the trigger, submenus cascade leftward, and the
+ * submenu caret points `‹`.
+ */
+const rtlActions: MenuEntry[] = [
+  { key: "open", label: "فتح", url: "#open" },
+  {
+    key: "share",
+    label: "مشاركة",
+    items: [
+      { key: "share-link", label: "نسخ الرابط", url: "#link" },
+      { key: "share-email", label: "بريد إلكتروني", url: "#email" },
+      {
+        key: "share-team",
+        label: "إرسال إلى الفريق",
+        items: [
+          { key: "team-eng", label: "الهندسة", url: "#eng" },
+          { key: "team-design", label: "التصميم", url: "#design" },
+        ],
+      },
+    ],
+  },
+  { key: "rename", label: "إعادة تسمية", url: "#rename" },
+  { type: "separator", key: "before-delete" },
+  { key: "delete", label: "حذف", url: "#delete" },
+];
+
+export const RightToLeft: Story = {
+  decorators: [rtl],
+  args: {
+    children: "الإجراءات",
+    label: "إجراءات العنصر",
+    items: rtlActions,
+  },
+};

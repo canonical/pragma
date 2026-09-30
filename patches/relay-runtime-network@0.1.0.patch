@@ -1,0 +1,46 @@
+diff --git a/package.json b/package.json
+index e07d3e3d0a22b44df7eb9e0234b3d4e834ed02f2..361aaa655faf54fa13252696ffb248cc4f2694f7 100644
+--- a/package.json
++++ b/package.json
+@@ -24,13 +24,34 @@
+     "test:watch": "vitest"
+   },
+   "imports": {
+-    "#auth/*": "./src/lib/auth/*",
+-    "#errors/*": "./src/lib/errors/*",
+-    "#executors/*": "./src/lib/executors/*",
+-    "#middlewares/*": "./src/lib/middlewares/*",
+-    "#ssr/*": "./src/lib/ssr/*",
+-    "#testing/*": "./src/lib/testing/*",
+-    "#types/*": "./src/lib/types/*"
++    "#auth/*": {
++      "types": "./dist/types/lib/auth/*",
++      "default": "./dist/esm/lib/auth/*"
++    },
++    "#errors/*": {
++      "types": "./dist/types/lib/errors/*",
++      "default": "./dist/esm/lib/errors/*"
++    },
++    "#executors/*": {
++      "types": "./dist/types/lib/executors/*",
++      "default": "./dist/esm/lib/executors/*"
++    },
++    "#middlewares/*": {
++      "types": "./dist/types/lib/middlewares/*",
++      "default": "./dist/esm/lib/middlewares/*"
++    },
++    "#ssr/*": {
++      "types": "./dist/types/lib/ssr/*",
++      "default": "./dist/esm/lib/ssr/*"
++    },
++    "#testing/*": {
++      "types": "./dist/types/lib/testing/*",
++      "default": "./dist/esm/lib/testing/*"
++    },
++    "#types/*": {
++      "types": "./dist/types/lib/types/*",
++      "default": "./dist/esm/lib/types/*"
++    }
+   },
+   "peerDependencies": {
+     "relay-runtime": ">=16.0.0"

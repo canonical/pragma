@@ -1,0 +1,67 @@
+/* @canonical/styles — the layout presets
+ *
+ * The layout presets, and nothing else: `grid`, `subgrid`, `responsive`,
+ * `intrinsic` and `content-flow`. They set real properties on any element
+ * carrying one of those class names, so they are the design system claiming five
+ * names in a page's class namespace — which is why they are separable from the
+ * values and from the element rules, and why a page that already means something
+ * else by `grid` can leave this file out.
+ *
+ * One of four entry points. `index.css` is the whole stylesheet and is what an
+ * ordinary page imports; `tokens.css`, `elements.css` and `layout.css` are it
+ * in three parts, for a page that wants some of it and supplies the rest.
+ *
+ * Every entry imports `layers.css` first, and none of them imports another
+ * entry. Both of those matter. The order has to reach the browser before any
+ * rule of the page it orders, and it is declared in exactly one file so that
+ * two entries can never disagree — if they did, the same rules would arbitrate
+ * differently depending on which entry a consumer picked. Measured in Chromium:
+ * a statement read through an `@import` orders the importing sheet exactly as
+ * one written in place would. Entries stay independent of each other because an
+ * `@layer` statement inside a layer block would declare sublayers rather than
+ * top-level layers, so an entry composing another would nest the order instead
+ * of sharing it; independent, a page may load one, two or all three, in any
+ * order, and get the same result.
+ */
+
+/* Read from the bottom up, each position is an argument:
+ *   normalize      pragma's own reset
+ *   ds.tokens      primitive values, spacing, motion, overflow
+ *   ds.reset       the page's baseline: font, colour, box-sizing
+ *   ds.typography  the semantic mapper and the baseline engines
+ *   ds.modifiers   theme, the typographic scale, the channel families and
+ *                  their shims, the density and context classes
+ *   ds.surfaces    the surface families
+ *   ds.states      the derived hover / active / disabled channels
+ *   ds.components  the parent of the tier layers. Nothing is written directly
+ *                  into it, by rule: a declaration in a parent layer sits in
+ *                  that layer's implicit final sublayer, above every named
+ *                  sublayer, so it would outrank every tier
+ *   ds.components.global         the shared component packages, and this
+ *                  package's own layout presets
+ *   ds.components.sites          }  the four second-level tiers of the design
+ *   ds.components.documentation  }  system's tier tree. They never share a
+ *   ds.components.stores         }  page, so their order among themselves is
+ *   ds.components.apps           }  arbitrary — but it is fixed here so that
+ *                  it can never depend on which package a bundler emits first
+ *
+ * The component layers follow the tier tree of the design system: who owns a
+ * component decides which layer its rules go in, and a deeper tier wins.
+ *
+ * The second level is named here in full, and only the second level. A package
+ * below it — one application's own tier, say — declares its own layer as the
+ * first rule of its CSS entry, `@layer ds.components.apps-lxd;`, and wraps its
+ * sheets in it. Because this statement always comes first, that name is new
+ * when the browser meets it and is appended after the names above, inside
+ * `ds.components`, so it sorts above them. That is the tree's own rule — the
+ * more specific tier wins — and it means this stylesheet never has to know
+ * which applications exist.
+ *
+ * The names are tier ids from that tree, lowercased and hyphenated for a
+ * sub-tier (`apps-lxd`), not the context words a page puts on its root
+ * (`app`, `site`, `docs`). A tier says who owns a component; a context says
+ * what kind of page it is being shown on. */
+@import url("./layers.css");
+
+/* Grid layout presets */
+@import url("./grid.css");

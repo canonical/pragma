@@ -42,7 +42,7 @@ const componentCssClassName = "ds token-table";
  * Supports search, grouping by multiple lenses (tier, type, prefix,
  * derivation, CSS output file), and column configuration.
  *
- * @implements dso:global.component.token-table
+ * @implements ds:global.component.token-table
  */
 export const TokenTable = ({
   tokens,

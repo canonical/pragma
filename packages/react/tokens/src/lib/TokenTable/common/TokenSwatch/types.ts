@@ -1,7 +1,10 @@
-import type { HTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 import type { TokenEntry } from "../../types.js";
 
-export interface TokenSwatchProps extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
   token: TokenEntry;
   contextClass?: string;
-}
+};
+
+export type TokenSwatchProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

@@ -59,14 +59,14 @@ describe("Table component", () => {
   });
 
   describe("sort direction", () => {
-    it.each([
-      "ascending",
-      "descending",
-    ] as const)("shows sort button when sort direction is %s", async (direction) => {
-      setSortDirection(direction);
-      const page = render(Component, { ...baseProps });
-      await expect.element(sortButtonLocator(page)).toBeVisible();
-    });
+    it.each(["ascending", "descending"] as const)(
+      "shows sort button when sort direction is %s",
+      async (direction) => {
+        setSortDirection(direction);
+        const page = render(Component, { ...baseProps });
+        await expect.element(sortButtonLocator(page)).toBeVisible();
+      },
+    );
 
     it("sort button shown when header cell is hovered", async () => {
       const page = render(Component, { ...baseProps });

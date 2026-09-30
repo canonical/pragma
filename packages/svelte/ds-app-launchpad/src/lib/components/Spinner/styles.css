@@ -1,6 +1,6 @@
 .ds.spinner {
   transform-origin: center center;
-  animation: loading-spinner var(--lp-transition-duration-sleepy) infinite
+  animation: loading-spinner var(--ds-transition-duration-sleepy) infinite
     linear;
 }
 

@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import applyMiddleware from "./applyMiddleware.js";
 import route from "./route.js";
-import type { RouteMiddleware } from "./types.js";
+import type {
+  RouteContentProps,
+  RouteMiddleware,
+  StandardSchemaV1,
+} from "./types.js";
+
+type DemoContentProps = RouteContentProps<
+  Record<string, never>,
+  Record<string, never>
+>;
 
 describe("applyMiddleware", () => {
   it("composes middleware from outermost to innermost based on array order", () => {
@@ -13,14 +22,16 @@ describe("applyMiddleware", () => {
     const middlewareA = ((currentRoute: typeof baseRoute) => {
       return {
         ...currentRoute,
-        content: (props) => `A(${currentRoute.content(props)})`,
+        content: (props: DemoContentProps) =>
+          `A(${currentRoute.content(props)})`,
       };
     }) as RouteMiddleware;
 
     const middlewareB = ((currentRoute: typeof baseRoute) => {
       return {
         ...currentRoute,
-        content: (props) => `B(${currentRoute.content(props)})`,
+        content: (props: DemoContentProps) =>
+          `B(${currentRoute.content(props)})`,
       };
     }) as RouteMiddleware;
 
@@ -96,5 +107,42 @@ describe("applyMiddleware", () => {
     const [unchangedRoute] = applyMiddleware([baseRoute] as const, []);
 
     expect(unchangedRoute).toBe(baseRoute);
+  });
+
+  it("preserves params schema validation in rebuilt codecs", () => {
+    const numericIdSchema: StandardSchemaV1<unknown, { readonly id: number }> =
+      {
+        "~standard": {
+          version: 1,
+          vendor: "router-test",
+          validate(value) {
+            const raw = value as { id?: string };
+            const id = Number(raw.id);
+
+            return Number.isInteger(id)
+              ? { value: { id } }
+              : { issues: [{ message: "id must be an integer" }] };
+          },
+        },
+      };
+
+    const baseRoute = route({
+      url: "/users/:id",
+      params: numericIdSchema,
+      content: ({ params }) => String(params.id),
+    });
+
+    const prefixer = ((currentRoute: typeof baseRoute) => {
+      return {
+        ...currentRoute,
+        url: `/api${currentRoute.url}`,
+      };
+    }) as RouteMiddleware;
+
+    const [enhanced] = applyMiddleware([baseRoute] as const, [prefixer]);
+
+    expect(enhanced.parse("/api/users/42")).toEqual({ id: 42 });
+    expect(enhanced.parse("/api/users/abc")).toBeNull();
+    expect(enhanced.render({ id: 42 })).toBe("/api/users/42");
   });
 });

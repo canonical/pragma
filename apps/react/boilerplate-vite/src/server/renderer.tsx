@@ -17,10 +17,17 @@
 import fs from "node:fs";
 import type { IncomingMessage } from "node:http";
 import path from "node:path";
+import { negotiateLocale } from "@canonical/i18n-core";
 import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
-import EntryServer, { type InitialData } from "./entry.js";
+import { i18nConfig } from "#i18n/config.js";
+import EntryServer, {
+  type InitialData,
+  prefetchRouteData,
+  type RouteDisposition,
+  resolveRouteDisposition,
+} from "./entry.js";
 
 const htmlString = fs.readFileSync(
   path.join(process.cwd(), "dist", "client", "index.html"),
@@ -34,17 +41,71 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
     : ((request as IncomingMessage).headers?.cookie ?? null);
 }
 
+/** Read the `Accept-Language` header from a Web `Request` or a Node request. */
+function acceptLanguageHeader(
+  request: Request | IncomingMessage,
+): string | null {
+  if (typeof (request as Request).headers?.get === "function") {
+    return (request as Request).headers.get("accept-language");
+  }
+  const header = (request as IncomingMessage).headers?.["accept-language"];
+  // Node joins repeated header lines for most headers but can surface arrays;
+  // negotiation expects the single comma-separated wire format.
+  return Array.isArray(header) ? header.join(",") : (header ?? null);
+}
+
 /**
  * Per-request factory for the JSX app renderer. Accepts either a Web `Request`
  * (`serve-bun`) or a Node `IncomingMessage` (`serve-express`); it derives the
  * URL for routing and the cookie-backed theme so the first paint matches the
  * user's preference, passing both as the renderer's initial data.
  */
-export default function createAppRenderer(request: Request | IncomingMessage) {
-  const { theme } = extractPreferences(cookieHeader(request));
+/** The app renderer's answer: a stream renderer, or an HTTP redirect. */
+export type AppRendererResult =
+  | {
+      readonly kind: "render";
+      readonly renderer: JSXRenderer<typeof EntryServer, InitialData>;
+    }
+  | Extract<RouteDisposition, { kind: "redirect" }>;
+
+export default async function createAppRenderer(
+  request: Request | IncomingMessage,
+): Promise<AppRendererResult> {
+  const cookie = cookieHeader(request);
+  const { theme } = extractPreferences(cookie);
+  const locale = negotiateLocale(i18nConfig, {
+    cookieHeader: cookie,
+    acceptLanguage: acceptLanguageHeader(request),
+  });
+  const url = getRequestUrl(request);
+  const disposition = resolveRouteDisposition(url ?? "/");
+
+  if (disposition.kind === "redirect") {
+    return disposition;
+  }
+
+  // Fetch-then-render: the matched route's declared server query runs now so
+  // its captured responses can ride the bootstrap script (which is fixed at
+  // stream start). Absent or failed, the page renders and the client fetches.
+  const relayPayloads = await prefetchRouteData(disposition);
+
   const initialData: InitialData = {
-    url: getRequestUrl(request),
+    url,
     theme: theme === "light" || theme === "dark" ? theme : undefined,
+    locale,
+    ...(relayPayloads ? { relayPayloads } : {}),
   };
-  return new JSXRenderer(EntryServer, initialData, { htmlString });
+
+  // Flat-spread the dehydrated router state into the page payload; the client
+  // reads it back with readDehydratedState() and resumes the server match.
+  Object.assign(initialData, disposition.dehydratedState ?? {});
+
+  return {
+    kind: "render",
+    renderer: new JSXRenderer(EntryServer, initialData, {
+      htmlString,
+      defaultLocale: locale,
+      statusCode: disposition.status,
+    }),
+  };
 }

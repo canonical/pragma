@@ -1,9 +1,8 @@
 <!-- @canonical/generator-ds 0.10.0-experimental.2 -->
 
 <script lang="ts">
-  import { useIsMounted } from "../../useFunctions/index.js";
-  import { isEventTargetInElement } from "../../utils/index.js";
   import type { ModalProps } from "./types.js";
+  import { closedByFallbackAttachment } from "./utils/index.js";
   import "./styles.css";
 
   const componentCssClassNameBase = "modal";
@@ -15,8 +14,7 @@
     class: className,
     trigger,
     children,
-    closeOnOutsideClick = true,
-    onclick,
+    closedby = "any",
     ontoggle: ontoggleProp,
     open = $bindable(),
     ...rest
@@ -24,27 +22,6 @@
 
   const fallbackId = $props.id();
   const id = $derived(idProp || fallbackId);
-
-  const isMounted = useIsMounted();
-
-  // Webkit doesn't support `closedby` attribute on dialog elements (https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement/closedBy).
-  // TODO(closedby): Remove this fallback when Webkit supports it.
-  let contentWrapperRef = $state<HTMLElement>();
-
-  const isClosedByFallbackNeeded = $derived(
-    isMounted.value && !("closedBy" in HTMLDialogElement.prototype),
-  );
-
-  const fallbackOnclick: typeof onclick = (e) => {
-    onclick?.(e);
-    if (
-      closeOnOutsideClick &&
-      contentWrapperRef &&
-      !isEventTargetInElement(e.target, contentWrapperRef)
-    ) {
-      open = false;
-    }
-  };
 
   /** Capture the initial value of `open` for SSR paint. After hydration, the dialog's open attribute should never be set manually. */
   const initialOpen = open;
@@ -63,17 +40,17 @@
   "aria-haspopup": "dialog",
 })}
 
-<!-- A non-modal dialog has no real `::backdrop` so we need to fake one. Can't be a pseudo-element, because a pseudo lives inside the dialog so `closeOnOutsideClick` wouldn't work. -->
+<!-- A non-modal dialog has no real `::backdrop` so we need to fake one. Can't be a pseudo-element, because a pseudo lives inside the dialog so `closedby="any"` wouldn't work. -->
 {#if initialOpen}
   <div class={componentCssClassNameNonModalBackdrop}></div>
 {/if}
 <dialog
   {id}
   class={[componentCssClassName, className]}
-  closedby={closeOnOutsideClick ? "any" : "closerequest"}
-  onclick={isClosedByFallbackNeeded ? fallbackOnclick : onclick}
+  {closedby}
   {ontoggle}
   open={initialOpen}
+  {@attach closedByFallbackAttachment(closedby)}
   {@attach (dialogEl) => {
     // Suppress the transition on mount so that when we upgrade to modal the open fade doesn't play.
     dialogEl.classList.add("no-transition");
@@ -83,7 +60,15 @@
       if (open) {
         if (dialogEl.open && !dialogEl.matches(":modal")) {
           // `open === true` during SSR case
-          // `showModal` throws when called on open non-modal dialog so we need to close it first.
+          // `showModal` throws when called on open non-modal dialog so we need to close it first
+          dialogEl.addEventListener(
+            "close",
+            (e) => {
+              // Suppress the "upgrade" close event.
+              e.stopImmediatePropagation();
+            },
+            { once: true, capture: true },
+          );
           dialogEl.close();
         }
         dialogEl.showModal();
@@ -97,9 +82,7 @@
   }}
   {...rest}
 >
-  <div style="display: contents;" bind:this={contentWrapperRef}>
-    {@render children?.(id, () => (open = false))}
-  </div>
+  {@render children?.(id, () => (open = false))}
 </dialog>
 
 <!-- @component

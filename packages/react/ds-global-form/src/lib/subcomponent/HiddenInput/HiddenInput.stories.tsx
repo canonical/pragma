@@ -4,7 +4,6 @@ import { HiddenInput } from "./HiddenInput.js";
 const meta = {
   title: "subcomponents/HiddenInput",
   component: HiddenInput,
-  tags: ["autodocs"],
   parameters: { chromatic: { disableSnapshot: true } },
 } satisfies Meta<typeof HiddenInput>;
 

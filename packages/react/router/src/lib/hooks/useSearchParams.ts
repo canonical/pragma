@@ -1,8 +1,11 @@
-import type { AnyRoute, RouteMap } from "@canonical/router-core";
+import type { SearchParamKey } from "@canonical/router-core";
 import { useRef, useSyncExternalStore } from "react";
-import type { RegisteredNotFound, RegisteredRouteMap } from "../register.js";
+import type { RegisteredRouteMap } from "../register.js";
 import type { SearchParamValues } from "./types.js";
 import useRouter from "./useRouter.js";
+
+/** The search-param keys the registered route map declares. */
+type RegisteredSearchParamKey = SearchParamKey<RegisteredRouteMap>;
 
 type SearchParamSelectionState<TKeys extends readonly string[]> = {
   readonly keys: string;
@@ -39,22 +42,21 @@ function createSelectedValues<TKeys extends readonly string[]>(
  * changes and returns the current `URLSearchParams` object. When passed a key
  * list, it returns an object of key-to-value pairs and rerenders only when one
  * of the selected keys changes.
+ *
+ * The key list is narrowed to the search-param keys declared by the registered
+ * route map. Apps with no `RouterRegister` declaration fall back to any
+ * `string`.
  */
+export default function useSearchParams(): URLSearchParams;
 export default function useSearchParams<
-  _TRoutes extends RouteMap = RegisteredRouteMap,
-  _TNotFound extends AnyRoute | undefined = RegisteredNotFound,
->(): URLSearchParams;
-export default function useSearchParams<
-  _TRoutes extends RouteMap = RegisteredRouteMap,
-  _TNotFound extends AnyRoute | undefined = RegisteredNotFound,
-  const TKeys extends readonly string[] = readonly string[],
+  const TKeys extends
+    readonly RegisteredSearchParamKey[] = readonly RegisteredSearchParamKey[],
 >(keys: TKeys): SearchParamValues<TKeys>;
 export default function useSearchParams<
-  TRoutes extends RouteMap = RegisteredRouteMap,
-  TNotFound extends AnyRoute | undefined = RegisteredNotFound,
-  const TKeys extends readonly string[] = readonly string[],
+  const TKeys extends
+    readonly RegisteredSearchParamKey[] = readonly RegisteredSearchParamKey[],
 >(keys?: TKeys): URLSearchParams | SearchParamValues<TKeys> {
-  const router = useRouter<TRoutes, TNotFound>();
+  const router = useRouter();
   const fullSearchRef = useRef({
     search: router.getState().location.url.search,
     value: router.getState().location.searchParams,

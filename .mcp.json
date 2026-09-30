@@ -20,14 +20,9 @@
     "pragma": {
       "command": "pragma",
       "args": [
-        "mcp"
+        "mcp",
+        "serve"
       ]
-    },
-    "sem": {
-      "args": [
-        "mcp"
-      ],
-      "command": "sem"
     }
   }
 }

@@ -12,7 +12,6 @@ const derivedToken = mockTokens.find(
 const meta: Meta<typeof Component> = {
   title: "Foundations/Tokens/Internal/TokenSwatch",
   component: Component,
-  tags: ["autodocs"],
 };
 
 export default meta;

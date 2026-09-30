@@ -6,10 +6,9 @@ import Option from "./Option.js";
 const meta: Meta<typeof Option> = {
   title: "components/ChoicesField/Option",
   component: Option,
-  tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <fieldset className="ds form-choices" style={{ border: "none" }}>
+      <fieldset className="ds form-choices inline" style={{ border: "none" }}>
         <Story />
       </fieldset>
     ),

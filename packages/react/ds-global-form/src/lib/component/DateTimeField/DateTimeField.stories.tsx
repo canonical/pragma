@@ -7,7 +7,6 @@ import { DateTimeField } from "./index.js";
 const meta = {
   title: "components/DateTimeField",
   component: DateTimeField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof DateTimeField>;
 

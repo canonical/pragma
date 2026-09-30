@@ -10,6 +10,8 @@ import { useFieldWrapper } from "./hooks/index.js";
  *
  * @param {WrapperProps<ComponentProps>} props - Component props including the Component to wrap and form-related props.
  * @returns {React.ReactElement} - Rendered wrapped component.
+ *
+ * `import { InvisibleWrapper } from "@canonical/react-ds-global-form";`
  */
 const InvisibleWrapper = <ComponentProps extends BaseInputProps>({
   name,

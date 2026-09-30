@@ -101,17 +101,15 @@ describe("Breadcrumbs SSR", () => {
   });
 
   describe("collapse prop", () => {
-    it.each([
-      "all",
-      0,
-      1,
-      2,
-    ] as const)("renders with minNumExpanded='%s'", (minNumExpanded) => {
-      const page = render(Component, {
-        props: { ...baseProps, minNumExpanded },
-      });
-      expect(page.getAllByRole("listitem").length).toBe(3);
-    });
+    it.each(["all", 0, 1, 2] as const)(
+      "renders with minNumExpanded='%s'",
+      (minNumExpanded) => {
+        const page = render(Component, {
+          props: { ...baseProps, minNumExpanded },
+        });
+        expect(page.getAllByRole("listitem").length).toBe(3);
+      },
+    );
   });
 });
 

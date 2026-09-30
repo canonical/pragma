@@ -60,17 +60,42 @@ async function start() {
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(url, template);
 
-      const { default: EntryServer } = await vite.ssrLoadModule(
-        "/src/server/entry.tsx",
-      );
+      const {
+        default: EntryServer,
+        prefetchRouteData,
+        resolveRouteDisposition,
+      } = await vite.ssrLoadModule("/src/server/entry.tsx");
+
+      const disposition = resolveRouteDisposition(url);
+
+      if (disposition.kind === "redirect") {
+        res.redirect(disposition.status, disposition.location);
+        return;
+      }
+
+      // Fetch-then-render: run the matched route's declared server query so
+      // its captured responses ride the bootstrap script (fixed at stream
+      // start); absent or failed, the client fetches after hydration.
+      const relayPayloads = await prefetchRouteData(disposition);
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
       const { extractPreferences } = await vite.ssrLoadModule(
         "@canonical/react-hooks",
       );
+      const { negotiateLocale } = await vite.ssrLoadModule(
+        "@canonical/i18n-core",
+      );
+      const { i18nConfig } = await vite.ssrLoadModule("/src/i18n/config.ts");
 
-      const { theme } = extractPreferences(req.headers.cookie ?? null);
+      const cookie = req.headers.cookie ?? null;
+      const { theme } = extractPreferences(cookie);
+      const locale = negotiateLocale(i18nConfig, {
+        cookieHeader: cookie,
+        acceptLanguage: Array.isArray(req.headers["accept-language"])
+          ? req.headers["accept-language"].join(",")
+          : (req.headers["accept-language"] ?? null),
+      });
       const renderer = new JSXRenderer(
         EntryServer,
         // The cookie is client-controlled, so only the known theme values reach
@@ -79,8 +104,15 @@ async function start() {
         {
           url,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
+          locale,
+          ...(relayPayloads ? { relayPayloads } : {}),
+          ...(disposition.dehydratedState ?? {}),
         },
-        { htmlString: html },
+        {
+          htmlString: html,
+          defaultLocale: locale,
+          statusCode: disposition.status,
+        },
       );
       const result = renderer.renderToPipeableStream();
 

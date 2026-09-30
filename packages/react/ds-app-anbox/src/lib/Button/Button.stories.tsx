@@ -7,7 +7,6 @@ import Button from "./Button.js";
 const meta = {
   title: "Button",
   component: Component,
-  tags: ["autodocs"],
   // if using enum for appearance, you can use the following to generate controls
   // argTypes: {
   //   appearance: {
@@ -76,7 +75,7 @@ export const Custom: Story = {
  */
 export const IntentsInheritance: Story = {
   decorators: [
-    (Story) => (
+    (_Story) => (
       <div
         className="positive"
         style={{

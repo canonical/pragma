@@ -14,7 +14,7 @@
 </script>
 
 {#snippet dummyChild()}
-  <div style="width: var(--lp-dimension-size-l)"></div>
+  <div style="width: var(--dimension-400)"></div>
 {/snippet}
 
 <Story name="Default">

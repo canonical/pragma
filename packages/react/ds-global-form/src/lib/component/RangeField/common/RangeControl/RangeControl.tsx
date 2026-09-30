@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { NumberInput } from "#lib/subcomponent/NumberInput/index.js";
+import { NumberInput } from "../../../../subcomponent/NumberInput/index.js";
 import type { RangeControlProps } from "./types.js";
 import "./styles.css";
 
@@ -52,6 +52,8 @@ function clampToSlider(raw: string, min: number, max: number): string {
  *    change. The number input typing back-fills the slider via local state.
  *
  * See pragma-adrs N.04 / spec DE080. @returns {ReactElement}
+ *
+ * `import { RangeControl } from "@canonical/react-ds-global-form";`
  */
 export const RangeControl = forwardRef<HTMLInputElement, RangeControlProps>(
   function RangeControl(

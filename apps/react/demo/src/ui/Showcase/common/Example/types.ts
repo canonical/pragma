@@ -1,8 +1,14 @@
 import type { FieldProps } from "@canonical/react-ds-global-form";
-import { ORIGINAL_VAR_NAME_KEY } from "data/index.js";
-import type { FormValues } from "hooks/index.js";
 import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";
 import type { ControlsProps, RendererProps } from "./common/index.js";
+
+/**
+ * The react-hook-form state for the showcase. It is nested by example name and
+ * then keyed by field name, mirroring exactly how RHF stores the values:
+ * `{ [exampleName]: { [fieldName]: value } }`.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Form values could have any shape
+export type FormValues = Record<string, any>;
 
 export type ExampleSettingValue = number | string;
 export type ExampleOutputFormat = "css";
@@ -45,11 +51,7 @@ export interface ProviderProps {
 
 export interface FormSection {
   title: string;
-  /**
-   * Array defining the controls and their initial/default configuration for this example.
-   * The `value` property within these initial configs is often ignored, as the
-   * state initialization will typically set `value` based on `default`.
-   */
+  /** The controls rendered for this section, in display order. */
   fields: ExampleControlField[];
 }
 
@@ -80,6 +82,10 @@ export type TransformerFns = {
 };
 
 export interface ExampleControlField extends FieldProps, TransformerFns {
+  /**
+   * The field's name. Used directly as the key within the active example's
+   * react-hook-form state, and (for CSS output) as the emitted variable name.
+   */
   name: string;
   /** Formats for which output is disabled */
   disabledOutputFormats?: {
@@ -90,8 +96,6 @@ export interface ExampleControlField extends FieldProps, TransformerFns {
    * This is not directly consumed by the field, but it is used to set the initial value in the form state.
    */
   defaultValue?: ExampleSettingValue;
-
-  [ORIGINAL_VAR_NAME_KEY]?: string;
 }
 
 /** The actual component that is rendered for an example. */

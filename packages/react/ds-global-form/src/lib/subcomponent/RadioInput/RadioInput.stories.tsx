@@ -6,7 +6,6 @@ import { RadioInput } from "./RadioInput.js";
 const meta: Meta<typeof RadioInput> = {
   title: "subcomponents/RadioInput",
   component: RadioInput,
-  tags: ["autodocs"],
 };
 
 export default meta;

@@ -22,7 +22,9 @@
     </Modal.Content.Body>
     <Modal.Content.Footer>
       <Button>Keep review</Button>
-      <Button severity="negative">Discard review</Button>
+      <Button importance="primary" anticipation="destructive">
+        Discard review
+      </Button>
     </Modal.Content.Footer>
   </Modal.Content>
 </Story>

@@ -5,7 +5,6 @@
   const contentText = "This is the modal content.";
   const closeButtonText = "Close";
 
-  // biome-ignore lint/style/useExportType: False positive, presumably due to "cross-language" export
   export { children, closeButtonText, contentText, trigger, triggerText };
 </script>
 

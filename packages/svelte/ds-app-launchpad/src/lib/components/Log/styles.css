@@ -3,11 +3,11 @@
   contain: inline-size layout paint;
   overflow: auto;
 
-  --log-padding-inline: var(--lp-dimension-spacing-inline-m);
+  --log-padding-inline: var(--dimension-200);
 
-  background-color: var(--lp-color-background-alt);
+  background-color: var(--color-foreground-input);
   padding-inline-end: var(--log-padding-inline);
-  padding-block-end: var(--lp-dimension-spacing-block-xxxl);
+  padding-block-end: var(--dimension-400);
 
   tbody {
     display: grid;

@@ -60,7 +60,8 @@
                 // doSomething();
                 close();
               }}
-              severity="negative"
+              importance="primary"
+              anticipation="destructive"
             >
               Discard review
             </Button>
@@ -73,7 +74,7 @@
 
 <Story
   name="Controlled via bindable open prop"
-  args={{ closeOnOutsideClick: false }}
+  args={{ closedby: "closerequest" }}
   argTypes={{ open: { control: false } }}
 >
   {#snippet template({ children: _, trigger: __, open: ___, ...args })}

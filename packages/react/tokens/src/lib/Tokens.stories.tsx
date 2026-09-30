@@ -173,7 +173,6 @@ const lensCards = [
 
 const meta = {
   title: "Foundation/Design Tokens",
-  tags: ["autodocs"],
   parameters: {
     layout: "padded",
     docs: {

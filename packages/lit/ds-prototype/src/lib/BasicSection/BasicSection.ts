@@ -76,7 +76,7 @@ export default class BasicSection
     const sectionClasses = {
       [componentCssClassName]: true,
       [`is-${this.padding}`]: this.padding !== "default",
-      ["is-split-on-medium"]: this.isSplitOnMedium,
+      "is-split-on-medium": this.isSplitOnMedium,
     };
 
     return html`

@@ -7,7 +7,6 @@ import { NumberField } from "./index.js";
 const meta = {
   title: "components/NumberField",
   component: NumberField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof NumberField>;
 

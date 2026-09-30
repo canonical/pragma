@@ -1,0 +1,94 @@
+/* Layer: ds.components.apps (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.apps {
+  .ds.side-panel-header {
+    /*
+      Title type — heading-2 for now. The tier is provisional: to change it,
+      swap the tier in these five lines and nothing else.
+
+      Declared here, not on :root: a var() inside a custom property resolves
+      where it is declared, and the typography tokens are redefined per
+      context (.app, .site, .docs). On :root these would capture the
+      page-level tier; here they resolve inside the panel's own context.
+    */
+    --side-panel-title-font-family: var(--typography-heading-2-font-family);
+    --side-panel-title-font-size: var(--typography-heading-2-font-size);
+    --side-panel-title-font-weight: var(--typography-heading-2-font-weight);
+    --side-panel-title-letter-spacing: var(
+      --typography-heading-2-letter-spacing
+    );
+    --side-panel-title-line-height: var(
+      --typography-heading-2-line-height-dimension
+    );
+
+    /*
+      Never shrinks. It stays visible because only the content pane scrolls —
+      the header sits beside it in the panel's flex column, not over it.
+    */
+    flex: none;
+
+    display: flex;
+    /*
+      Baseline-aligned: the close button sits on the title's baseline. The
+      browser lines the two baselines up itself, so nothing here needs to know
+      where the typography engine puts the title's baseline or where Button's
+      density seat puts its own.
+    */
+    align-items: baseline;
+    gap: var(--side-panel-header-gap);
+
+    padding-block: var(--side-panel-header-padding-block);
+    /*
+      Inline padding, not margin: nothing here needs the header's box itself
+      inset, and padding keeps it full panel width. The footer is the
+      exception — its border spans the padding box, so it insets with margin
+      (see Footer/styles.css).
+    */
+    padding-inline: var(--side-panel-padding-inline);
+
+    /*
+      The title is heading text beside a control, not a control: its line box
+      is taller than the density seat line, so the typography engine seats it
+      rather than the density seat. It carries `.p`, the engine's class hook
+      for an element that is not `p` or `h1`–`h6`; this rule feeds the engine
+      the title's type in place of the paragraph values `.p` brings.
+    */
+    > .title {
+      flex: 1 1 auto;
+      --font-size: var(--side-panel-title-font-size);
+      --font-weight: var(--side-panel-title-font-weight);
+      --line-height: var(--side-panel-title-line-height);
+      /* No element-owned space below, even inside an `.editorial` ancestor. */
+      --space-after: 0;
+      font-family: var(--side-panel-title-font-family);
+      letter-spacing: var(--side-panel-title-letter-spacing);
+    }
+
+    > .close {
+      flex: 0 0 auto;
+      /*
+        Button tightens padding-inline-start when it has an icon, which suits an
+        icon+label button but leaves an icon-only one lopsided (8px vs 16px).
+        Equalise both sides through Button's own custom-property API, as
+        Modal's header does.
+      */
+      --button-padding-inline-start: var(--dimension-100);
+      --button-padding-inline-end: var(--dimension-100);
+
+      /*
+        An icon-only button has no text, so it has no baseline of its own and
+        the browser would make one up from the icon's box. A zero-width
+        character gives it a line of text in its seat line, so its baseline
+        lands where a label's would. The pseudo-element is a flex item like the
+        icon, so the gap is cancelled to keep the button's size.
+
+        Temporary: remove once icon-only buttons carry a seated baseline of
+        their own.
+      */
+      &::before {
+        content: "\200b";
+        margin-inline-end: calc(-1 * var(--button-gap));
+      }
+    }
+  }
+}

@@ -1,0 +1,120 @@
+/*
+ * DefinitionsExplorer — the triptych: rail | well | inspector on the
+ * frame's own tokens. The west column takes the frame's --subnav-w as its
+ * minimum (16rem preferred), the east --aside-w (24rem preferred) — both
+ * CONSUMED, never re-defined (frameStability.tests.tsx counts
+ * definitions); the centre releases its min-content claim so the graph
+ * can never prop the frame open (INTRINSIC-GRID.md entry 1, one level
+ * down). Panels own their scroll (min-block-size: 0 down the chain — the
+ * release chain is logged in INTRINSIC-GRID.md); the census bans a
+ * mode-level collapse at-rule, so on a too-narrow canvas the triptych
+ * overflows into the canvas region's own scroll instead of stacking —
+ * recorded honestly in INTRINSIC-GRID.md. Zero conditional at-rules.
+ */
+
+/* The explorer is a SUBGRID that finally SPENDS the shell's columns: it
+ * inherits the intrinsic column lines (grid-template-columns: subgrid) that
+ * flowed all the way down the chain, and its three children each claim a
+ * span of them (rail / well / inspector, set on the children below). So the
+ * triptych's dividers land on intrinsic column lines the rest of the app
+ * shares — the rail's inner edge is the same line as the primary rail's, a
+ * lens switch never shifts a single track. It spans the page's full width
+ * (grid-column: 1 / -1) and releases its block claim so the panels scroll. */
+.ds.definitions-explorer {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  /* ZERO gap — the full-bleed move. The three tenants stay ADJACENT (the
+   * layout.explorer contract declares exactly three adjacent regions), but
+   * with no gutter the canvas meets the rail and the inspector edge to edge,
+   * so it reads as one continuous surface. The separating hairlines live on
+   * the rail and inspector below. */
+  gap: 0;
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+/* THE COLUMN SPENDS. The explorer inherits the canvas's intrinsic columns;
+ * its three tenants divide them by SPAN — rail | well | inspector. The
+ * spans sum to the whole inherited set, and every division lands on an
+ * intrinsic line, so the triptych is ruled by the same grid as the frame.
+ * The well takes the middle by starting after the rail and ending before
+ * the inspector (grid-column: 3 / -4), which is robust to the live column
+ * count: however many columns the canvas has, the well is everything
+ * between a 2-column rail and a 3-column inspector. */
+.ds.definitions-explorer > .definitions-explorer-rail {
+  grid-column: span 2;
+}
+.ds.definitions-explorer > .hierarchy-well {
+  grid-column: 3 / -4;
+}
+.ds.definitions-explorer > .term-inspector {
+  grid-column: -4 / -1;
+}
+
+/* The hairlines that the gap used to imply, now drawn by the flanking
+ * panels — the canvas itself gets no border, which is what lets it read as
+ * continuous with the frame. */
+.ds.definitions-explorer > .definitions-explorer-rail {
+  border-inline-end: 1px solid var(--color-border-muted, #ddd);
+  padding-inline-end: var(--space-200, 1rem);
+}
+
+.ds.definitions-explorer > .term-inspector {
+  border-inline-start: 1px solid var(--color-border-muted, #ddd);
+  padding-inline-start: var(--space-200, 1rem);
+}
+
+/* The west column: the search box is stationary and the term list scrolls
+ * under it, so the control that drives the filter never scrolls away from
+ * the list it is filtering. */
+.ds.definitions-explorer > .definitions-explorer-rail {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-block-size: 0;
+}
+
+.ds.definitions-explorer .definitions-explorer-search {
+  margin-block: 0 var(--space-200, 1rem);
+}
+
+.ds.definitions-explorer .definitions-explorer-search label {
+  display: grid;
+  gap: var(--space-050, 0.25rem);
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #666);
+}
+
+.ds.definitions-explorer .definitions-explorer-search input {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+/* Rail and inspector own their scroll; the well pans instead (React Flow
+ * owns the centre's navigation) and must never scroll as a box. */
+.ds.definitions-explorer .term-rail,
+.ds.definitions-explorer > .term-inspector {
+  overflow: auto;
+  min-block-size: 0;
+}
+
+/* THE HEIGHT CHAIN, resolved. The well is a grid child of an explorer that
+ * is itself `block-size: 100%` inside the canvas region's `minmax(0, 1fr)`
+ * row (which the shell derives from 100dvh) — so the chain to a DEFINITE
+ * height already exists above. What was missing is the well passing that
+ * height ON: React Flow's `.react-flow` is `height: 100%` with absolutely
+ * positioned internals (it contributes ZERO intrinsic height), so it paints
+ * nothing unless its parent resolves to a real height. `block-size: 100%`
+ * makes the well take the full grid-row height and gives React Flow a
+ * definite `100%` to resolve against; `min-block-size: 0` lets it shrink
+ * with the canvas instead of propping a floor. The old `24rem` floor is
+ * gone — it was the only thing giving the well any height before, and it
+ * capped the well at a short box the canvas scrolled around (the "too small"
+ * and "care about the height" the owner named). A small last-resort floor
+ * (`min-block-size: 12rem`) guards only against total collapse on a
+ * pathologically short viewport; it never competes with the fill because
+ * 100% of the canvas row is always well above it. */
+.ds.definitions-explorer > .hierarchy-well {
+  block-size: 100%;
+  min-block-size: 12rem;
+}

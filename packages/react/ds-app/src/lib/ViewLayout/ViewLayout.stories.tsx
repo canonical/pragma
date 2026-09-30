@@ -4,13 +4,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   LayoutSlot,
   layoutDecorators,
-} from "#storybook/layouts/story-utils.js";
+} from "../../storybook/layouts/story-utils.js";
 import ViewLayout from "./ViewLayout.js";
 
 const meta: Meta<typeof ViewLayout> = {
   title: "Layouts/ViewLayout",
   component: ViewLayout,
-  tags: ["autodocs"],
   parameters: { layout: "fullscreen" },
   decorators: layoutDecorators,
 };

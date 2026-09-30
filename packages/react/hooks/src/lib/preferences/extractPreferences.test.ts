@@ -7,6 +7,7 @@ describe("extractPreferences", () => {
       theme: null,
       contrast: null,
       motion: null,
+      shortcuts: null,
     });
   });
 
@@ -15,6 +16,7 @@ describe("extractPreferences", () => {
       theme: null,
       contrast: null,
       motion: null,
+      shortcuts: null,
     });
   });
 
@@ -23,16 +25,29 @@ describe("extractPreferences", () => {
       theme: "dark",
       contrast: null,
       motion: null,
+      shortcuts: null,
     });
   });
 
-  it("extracts all three preferences", () => {
+  it("extracts shortcuts only", () => {
+    expect(extractPreferences("shortcuts=off")).toEqual({
+      theme: null,
+      contrast: null,
+      motion: null,
+      shortcuts: "off",
+    });
+  });
+
+  it("extracts every preference at once", () => {
     expect(
-      extractPreferences("theme=light; contrast=more; motion=reduce"),
+      extractPreferences(
+        "theme=light; contrast=more; motion=reduce; shortcuts=off",
+      ),
     ).toEqual({
       theme: "light",
       contrast: "more",
       motion: "reduce",
+      shortcuts: "off",
     });
   });
 
@@ -41,6 +56,7 @@ describe("extractPreferences", () => {
       theme: "dark",
       contrast: null,
       motion: null,
+      shortcuts: null,
     });
   });
 });

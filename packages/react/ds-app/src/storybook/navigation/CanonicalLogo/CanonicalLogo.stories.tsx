@@ -1,21 +1,21 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { withSideNavShell } from "#storybook/navigation/story-utils.js";
+import { withSideNavShell } from "../story-utils.js";
 import CanonicalLogo from "./CanonicalLogo.js";
 
 const meta: Meta<typeof CanonicalLogo> = {
   title: "Components/SideNavigation/CanonicalLogo",
   component: CanonicalLogo,
-  tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },
-  // withSideNavShell provides the .ds.side-navigation context so --sidenav-start
-  // and the brand-background token resolve. The fixed-height frame mimics the
-  // header so the rectangle's full-height (top→bottom) behaviour is visible.
+  // withSideNavShell provides the .ds.side-navigation context so the sidenav
+  // geometry tokens and the brand-background token resolve. The fixed-height
+  // frame mimics the header so the rectangle's full-height (top→bottom)
+  // behaviour is visible.
   decorators: [
     withSideNavShell,
     (Story) => (
-      <div style={{ blockSize: "calc(var(--space-baseline) * 5)" }}>
+      <div>
         <Story />
       </div>
     ),

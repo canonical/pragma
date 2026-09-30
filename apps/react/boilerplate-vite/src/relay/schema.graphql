@@ -1,0 +1,111 @@
+# Mock GraphQL schema for the Relay data-layer example.
+#
+# A compact catalog domain, shaped the Relay way: an object identification
+# `Node` interface with globally unique IDs, a `viewer` root field as the
+# entry point, and one paginated connection (`Viewer.products`) following the
+# Relay Cursor Connections specification. `relay-compiler` validates queries
+# against this file (see relay.config.json); `schema.ts` makes it executable
+# against an in-memory dataset so the app runs without a GraphQL backend.
+
+"""
+An object with a globally unique ID, per the Relay object identification spec.
+"""
+interface Node {
+  """
+  The globally unique ID of the object.
+  """
+  id: ID!
+}
+
+"""
+The authenticated entry point into the graph.
+"""
+type Viewer {
+  """
+  Display name of the current user.
+  """
+  name: String!
+
+  """
+  Products in the catalog, paginated forwards through a connection.
+  """
+  products(first: Int, after: String): ProductConnection!
+}
+
+"""
+A product in the catalog.
+"""
+type Product implements Node {
+  id: ID!
+
+  """
+  Human-readable product name.
+  """
+  name: String!
+
+  """
+  One-line marketing description.
+  """
+  tagline: String!
+
+  """
+  Price in the minor unit of `currency` (e.g. cents).
+  """
+  priceCents: Int!
+
+  """
+  ISO 4217 currency code for `priceCents`.
+  """
+  currency: String!
+
+  """
+  Average review rating, from 0.0 to 5.0.
+  """
+  rating: Float!
+
+  """
+  Whether the product can currently be ordered.
+  """
+  inStock: Boolean!
+}
+
+"""
+A page of products and the cursors to continue paginating.
+"""
+type ProductConnection {
+  edges: [ProductEdge!]!
+  pageInfo: PageInfo!
+
+  """
+  Total number of products in the catalog, across all pages.
+  """
+  totalCount: Int!
+}
+
+"""
+A product plus the opaque cursor identifying its position.
+"""
+type ProductEdge {
+  cursor: String!
+  node: Product!
+}
+
+"""
+Forward-pagination info per the Relay connection specification.
+"""
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+}
+
+type Query {
+  """
+  Fetches an object by its globally unique ID.
+  """
+  node(id: ID!): Node
+
+  """
+  The entry point for the current user's view of the graph.
+  """
+  viewer: Viewer!
+}

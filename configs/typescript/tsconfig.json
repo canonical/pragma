@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "lib": ["ES2023"],
-    "module": "NodeNext",
-    "target": "ES2023",
-    "strict": true
-  }
-}

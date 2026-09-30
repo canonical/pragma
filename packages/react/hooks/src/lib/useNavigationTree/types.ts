@@ -4,7 +4,7 @@ import type {
   NavigationState,
   NodeStatus,
   OrientationConfig,
-} from "@canonical/utils";
+} from "@canonical/ds-utils";
 
 // Re-export framework-agnostic types for convenience
 export type {
@@ -13,8 +13,8 @@ export type {
   NodeStatus,
   Orientation,
   OrientationConfig,
-} from "@canonical/utils";
-export { NavigationActionType } from "@canonical/utils";
+} from "@canonical/ds-utils";
+export { NavigationActionType } from "@canonical/ds-utils";
 
 /** Focus management strategy for the navigation widget */
 export type FocusStrategy = "roving" | "taborder";

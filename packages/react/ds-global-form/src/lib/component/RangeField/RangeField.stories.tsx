@@ -5,7 +5,6 @@ import { RangeField } from "./index.js";
 const meta = {
   title: "components/RangeField",
   component: RangeField,
-  tags: ["autodocs"],
   decorators: [decorators.form({ defaultValues: { volume: 50 } })],
 } satisfies Meta<typeof RangeField>;
 

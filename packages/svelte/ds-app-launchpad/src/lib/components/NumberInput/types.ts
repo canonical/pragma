@@ -6,6 +6,6 @@ import type { NumberInputPrimitiveProps } from "../common/index.js";
 
 export interface NumberInputProps
   extends Omit<NumberInputPrimitiveProps, "type">,
-    ModifierFamily<"severity"> {
-  density?: Extract<ModifierFamilyValues["density"], "dense" | "medium">;
+    ModifierFamily<"criticality"> {
+  density?: Extract<ModifierFamilyValues["density"], "comfortable" | "dense">;
 }

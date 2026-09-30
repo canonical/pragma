@@ -9,7 +9,6 @@ import type { CodeDiffViewerProps } from "./types.js";
 
 const meta: Meta = {
   title: "GitDiffViewer/CodeDiffViewer",
-  tags: ["autodocs"],
   component: GitDiffViewer.CodeDiffViewer,
   argTypes: {
     diff: { table: { disable: true } },

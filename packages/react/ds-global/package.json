@@ -1,10 +1,20 @@
 {
   "name": "@canonical/react-ds-global",
-  "version": "0.29.0-experimental.0",
+  "version": "0.43.0",
   "type": "module",
   "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "style": "dist/esm/lib/index.css",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./index.css": "./dist/esm/lib/index.css",
+    "./package.json": "./package.json",
+    "./dist/*": "./dist/*"
+  },
   "files": [
     "dist"
   ],
@@ -14,13 +24,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/pragma-web"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/pragma-web/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma-web#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -43,36 +53,41 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/ds-assets": "^0.29.0-experimental.0",
-    "@canonical/storybook-config": "^0.29.0-experimental.0",
-    "@canonical/styles": "^0.28.0",
-    "@canonical/utils": "^0.29.0-experimental.0",
+    "@canonical/design-tokens": "0.43.0",
+    "@canonical/ds-assets": "^0.43.0",
+    "@canonical/ds-utils": "^0.43.0",
+    "@canonical/react-hooks": "^0.43.0",
+    "@canonical/storybook-config": "^0.43.0",
+    "@canonical/styles": "^0.43.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
-    "@canonical/design-tokens": "^0.6.0",
-    "@canonical/ds-types": "^0.29.0-experimental.0",
-    "@canonical/storybook-helpers": "^0.29.0-experimental.0",
-    "@canonical/typescript-config-react": "^0.28.0",
-    "@canonical/webarchitect": "^0.29.0-experimental.0",
+    "@biomejs/biome": "2.5.14",
+    "@canonical/biome-config": "0.43.0",
+    "@canonical/ds-types": "^0.43.0",
+    "@canonical/router-core": "^0.43.0",
+    "@canonical/router-react": "^0.43.0",
+    "@canonical/storybook-addon-utils": "^0.43.0",
+    "@canonical/storybook-helpers": "^0.43.0",
+    "@canonical/typescript-config-react": "^0.43.0",
+    "@canonical/vitest-config-react": "^0.43.0",
+    "@canonical/webarchitect": "0.43.0",
     "@chromatic-com/storybook": "^5.0.1",
-    "@storybook/addon-docs": "^10.3.1",
-    "@storybook/react-vite": "^10.3.1",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@storybook/addon-docs": "^10.6.0",
+    "@storybook/react-vite": "^10.6.0",
+    "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
-    "@types/node": "^24.12.0",
+    "@types/node": "^26.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",
     "copyfiles": "^2.4.1",
     "globals": "^17.4.0",
     "jsdom": "^28.1.0",
-    "storybook": "^10.3.1",
-    "typescript": "^5.9.3",
+    "storybook": "^10.6.0",
+    "typescript": "^7.0.2",
     "vite": "^8.0.1",
-    "vitest": "^4.0.18"
+    "vitest": "^5.0.0"
   }
 }

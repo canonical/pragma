@@ -8,6 +8,8 @@ const componentCssClassName = "ds field-description";
 /**
  * description of the Description component
  * @returns {React.ReactElement} - Rendered Description
+ *
+ * `import { Description } from "@canonical/react-ds-global-form";`
  */
 const Description = ({
   id,
@@ -28,4 +30,7 @@ const Description = ({
   );
 };
 
+/**
+ * @implements ds:global.subcomponent.field-description
+ */
 export default Description;
