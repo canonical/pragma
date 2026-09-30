@@ -271,7 +271,7 @@ export const combinationItems: TimelineItem[] = [
     actorName: "Jane Doe",
     eventType: "comment",
     description: "opened the discussion",
-    marker: { initials: "NA", size: "large" },
+    marker: { initials: "NA" },
   },
   {
     id: "combo-2",
@@ -280,7 +280,6 @@ export const combinationItems: TimelineItem[] = [
     actorName: "Jane Doe",
     eventType: "comment",
     description: "replied to a comment",
-    marker: { size: "small" },
   },
   {
     id: "combo-3",
@@ -289,7 +288,6 @@ export const combinationItems: TimelineItem[] = [
     actorName: "Jane Doe",
     eventType: "approval",
     description: "approved the change",
-    marker: { size: "medium" },
   },
   {
     id: "combo-4",
@@ -298,7 +296,6 @@ export const combinationItems: TimelineItem[] = [
     actorName: "Jane Doe",
     eventType: "approval",
     description: "linked a related proposal",
-    marker: { size: "small" },
   },
   {
     id: "combo-5",
@@ -307,7 +304,7 @@ export const combinationItems: TimelineItem[] = [
     actorName: "John Doe",
     eventType: "deploy",
     description: "deployed to production",
-    marker: { initials: "JD", size: "large" },
+    marker: { initials: "JD" },
   },
   {
     id: "combo-6",
@@ -316,7 +313,6 @@ export const combinationItems: TimelineItem[] = [
     actorName: "John Doe",
     eventType: "deploy",
     description: "rolled back the deployment",
-    marker: { size: "medium" },
   },
 ];
 
