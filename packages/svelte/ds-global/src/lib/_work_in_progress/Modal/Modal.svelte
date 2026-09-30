@@ -12,6 +12,7 @@
   let {
     id: idProp,
     class: className,
+    trigger,
     children,
     closedby = "closerequest",
     ontoggle: ontoggleProp,
@@ -42,6 +43,12 @@
     if (newOpen !== open) open = newOpen;
   };
 </script>
+
+{@render trigger?.({
+  commandfor: id,
+  command: "show-modal",
+  "aria-haspopup": "dialog",
+})}
 
 <!-- A non-modal dialog has no real `::backdrop` so we need to fake one. Can't be a pseudo-element, because a pseudo lives inside the dialog so `closedby="any"` wouldn't work. -->
 {#if initialOpen}
@@ -100,7 +107,7 @@ A modal is a focused container that sits on top of the main view, requiring user
 
 It renders a native `<dialog>` opened as a modal, so the backdrop, focus trap, page inertness and Escape handling come from the platform.
 
-Modal is declaratively controlled by default through the [Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API): point a button's `commandfor` at the modal's `id` and set `command` to `"show-modal"` or `"close"`. Buttons inside the modal can spread the `closeProps` passed to the `children` snippet instead. See [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog) for more information.
+Modal is declaratively controlled by default through the [Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API). The `trigger` snippet receives `triggerProps` to spread on the button that opens the modal, and buttons inside the modal can spread the `closeProps` passed to the `children` snippet. Any other button can do the same by pointing its `commandfor` at the modal's `id` and setting `command` to `"show-modal"` or `"close"`. See [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog) for more information.
 
 For cases where opening or closing must be orchestrated in code, Modal can be controlled through the bindable `open` prop. With `bind:open` it stays in sync with the modal in both directions: setting it opens or closes the modal, and it updates to reflect changes made by invoker commands, `Escape`, or an outside click. Setting `open` during SSR renders the dialog open on page load without client-side JS, and it is upgraded to a true modal once hydrated.
 
@@ -110,10 +117,10 @@ The sections are composed by the consumer: render `Modal.Header`, `Modal.Content
 
 ## Example Usage
 ```svelte
-<button commandfor="discard-review" command="show-modal" aria-haspopup="dialog">
-  Discard review
-</button>
-<Modal id="discard-review">
+<Modal>
+  {#snippet trigger(triggerProps)}
+    <button {...triggerProps}>Discard review</button>
+  {/snippet}
   {#snippet children(closeProps, close)}
     <Modal.Header>Discard pending review?</Modal.Header>
     <Modal.Content>

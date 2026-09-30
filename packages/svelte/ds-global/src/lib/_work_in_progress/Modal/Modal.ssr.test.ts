@@ -9,6 +9,8 @@ import {
   contentText,
   dismissButtonText,
   titleText,
+  trigger,
+  triggerText,
 } from "./test.fixtures.svelte";
 
 describe("Modal SSR", () => {
@@ -124,6 +126,16 @@ describe("Modal SSR", () => {
   });
 
   describe("Declarative controls", () => {
+    it("properly links the trigger with modal", () => {
+      const page = render(Component, { props: { ...baseProps, trigger } });
+      const modalId = componentLocator(page).getAttribute("id");
+      assert(modalId !== null);
+      const button = page.getByRole("button", { name: triggerText });
+      expect(button.getAttribute("commandfor")).toBe(modalId);
+      expect(button.getAttribute("command")).toBe("show-modal");
+      expect(button.getAttribute("aria-haspopup")).toBe("dialog");
+    });
+
     it.each([
       ["children controls", commandCloseButtonText],
       ["the header's close button", dismissButtonText],

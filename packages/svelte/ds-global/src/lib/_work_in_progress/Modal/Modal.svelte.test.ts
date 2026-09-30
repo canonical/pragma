@@ -12,6 +12,8 @@ import {
   contentText,
   dismissButtonText,
   titleText,
+  trigger,
+  triggerText,
 } from "./test.fixtures.svelte";
 
 describe("Modal component", () => {
@@ -155,6 +157,16 @@ describe("Modal component", () => {
       await page.getByRole("button", { name: "Open Modal" }).click();
       await expect.element(componentLocator(page)).toBeVisible();
       await expect.element(componentLocator(page)).toHaveAttribute("open");
+      await expect.poll(() => props.open).toBe(true);
+    });
+
+    it("is opened by the trigger", async () => {
+      const props = withOpen({ trigger });
+      const page = await render(Component, props);
+      await expect.element(componentLocator(page, true)).not.toBeVisible();
+
+      await page.getByRole("button", { name: triggerText }).click();
+      await expect.element(componentLocator(page)).toBeVisible();
       await expect.poll(() => props.open).toBe(true);
     });
 
@@ -352,6 +364,18 @@ describe("Modal component", () => {
   });
 
   describe("Declarative control attributes", () => {
+    it("passes trigger props to the trigger", async () => {
+      const page = await render(Component, { ...baseProps, trigger });
+      const modalId = (
+        componentLocator(page, true).element() as HTMLDialogElement
+      ).id;
+      const button = page.getByRole("button", { name: triggerText });
+
+      await expect.element(button).toHaveAttribute("commandfor", modalId);
+      await expect.element(button).toHaveAttribute("command", "show-modal");
+      await expect.element(button).toHaveAttribute("aria-haspopup", "dialog");
+    });
+
     it.each([
       ["children", commandCloseButtonText],
       ["the header's close button", dismissButtonText],

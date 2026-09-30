@@ -3,6 +3,13 @@ import type { HTMLDialogAttributes } from "svelte/elements";
 
 type BaseProps = Omit<HTMLDialogAttributes, "children">;
 
+/** Invoker command attributes that open the modal, to spread on a button. */
+export type ModalTriggerProps = {
+  commandfor: string;
+  command: "show-modal";
+  "aria-haspopup": "dialog";
+};
+
 /** Invoker command attributes that close the modal, to spread on a button. */
 export type ModalCloseProps = {
   commandfor: string;
@@ -15,6 +22,13 @@ export type ModalCloseProps = {
  * @implements ds:global.pattern.modal
  */
 export interface ModalProps extends BaseProps {
+  /**
+   * The button that opens the modal, rendered before it.
+   *
+   * Snippet arguments:
+   * - `triggerProps`: `{ commandfor, command: "show-modal", "aria-haspopup": "dialog" }` to spread on the button.
+   */
+  trigger?: Snippet<[triggerProps: ModalTriggerProps]>;
   /**
    * Which user actions close the modal. See [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#closedby).
    * - `"any"`: outside click, close requests (e.g. Escape) and programmatic close.
