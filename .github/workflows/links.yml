@@ -26,7 +26,7 @@ jobs:
         # lycheeverse/lychee-action v2.9.0
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8
         with:
-          args: --config ./lychee.toml --offline --include-fragments --no-progress './**/*.md'
+          args: --config ./lychee.toml --offline --include-fragments --no-progress './**/*.md' './.kb/**/*.md'
           fail: true
 
   external-links:
@@ -40,5 +40,5 @@ jobs:
         # lycheeverse/lychee-action v2.9.0
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8
         with:
-          args: --config ./lychee.toml --include-fragments --no-progress './**/*.md'
+          args: --config ./lychee.toml --include-fragments --no-progress './**/*.md' './.kb/**/*.md'
           fail: true
