@@ -3,7 +3,7 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 @prefix ds: <https://ds.canonical.com/>.
 
-ds:implementation.library.svelte-ds-global ds:hasImplementation ds:implementation.svelte-ds-global.global.component.announcement, ds:implementation.svelte-ds-global.global.component.breadcrumbs, ds:implementation.svelte-ds-global.global.pattern.skip_link, ds:implementation.svelte-ds-global.global.subcomponent.breadcrumbs-item.
+ds:implementation.library.svelte-ds-global ds:hasImplementation ds:implementation.svelte-ds-global.global.component.announcement, ds:implementation.svelte-ds-global.global.component.breadcrumbs, ds:implementation.svelte-ds-global.global.component.button, ds:implementation.svelte-ds-global.global.pattern.skip_link, ds:implementation.svelte-ds-global.global.subcomponent.breadcrumbs-item, ds:implementation.svelte-ds-global.global.subcomponent.spinner.
 ds:implementation.svelte-ds-global.global.component.announcement a ds:ImplementationObject;
     ds:implementsBlock ds:global.component.announcement;
     ds:headLink "https://github.com/canonical/pragma-web/blob/main/packages/svelte/ds-global/src/lib/_work_in_progress/Announcement/Announcement.svelte";
@@ -14,6 +14,11 @@ ds:implementation.svelte-ds-global.global.component.breadcrumbs a ds:Implementat
     ds:headLink "https://github.com/canonical/pragma-web/blob/main/packages/svelte/ds-global/src/lib/component/Breadcrumbs/Breadcrumbs.svelte";
     ds:importStatement "import { Breadcrumbs } from \"@canonical/svelte-ds-global\";";
     ds:versionedLink "https://github.com/canonical/pragma-web/blob/v0.43.0/packages/svelte/ds-global/src/lib/component/Breadcrumbs/Breadcrumbs.svelte".
+ds:implementation.svelte-ds-global.global.component.button a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.button;
+    ds:headLink "https://github.com/canonical/pragma-web/blob/main/packages/svelte/ds-global/src/lib/component/Button/Button.svelte";
+    ds:importStatement "import { Button } from \"@canonical/svelte-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma-web/blob/v0.43.0/packages/svelte/ds-global/src/lib/component/Button/Button.svelte".
 ds:implementation.svelte-ds-global.global.pattern.skip_link a ds:ImplementationObject;
     ds:implementsBlock ds:global.pattern.skip_link;
     ds:headLink "https://github.com/canonical/pragma-web/blob/main/packages/svelte/ds-global/src/lib/_work_in_progress/SkipLink/SkipLink.svelte";
@@ -23,3 +28,8 @@ ds:implementation.svelte-ds-global.global.subcomponent.breadcrumbs-item a ds:Imp
     ds:implementsBlock ds:global.subcomponent.breadcrumbs-item;
     ds:headLink "https://github.com/canonical/pragma-web/blob/main/packages/svelte/ds-global/src/lib/component/Breadcrumbs/common/Item/Item.svelte";
     ds:versionedLink "https://github.com/canonical/pragma-web/blob/v0.43.0/packages/svelte/ds-global/src/lib/component/Breadcrumbs/common/Item/Item.svelte".
+ds:implementation.svelte-ds-global.global.subcomponent.spinner a ds:ImplementationObject;
+    ds:implementsBlock ds:global.subcomponent.spinner;
+    ds:headLink "https://github.com/canonical/pragma-web/blob/main/packages/svelte/ds-global/src/lib/subcomponent/Spinner/Spinner.svelte";
+    ds:importStatement "import { Spinner } from \"@canonical/svelte-ds-global\";";
+    ds:versionedLink "https://github.com/canonical/pragma-web/blob/v0.43.0/packages/svelte/ds-global/src/lib/subcomponent/Spinner/Spinner.svelte".
