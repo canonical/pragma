@@ -61,6 +61,15 @@ describe("Button SSR", () => {
     expect(componentLocator(page).classList).toContain("destructive");
   });
 
+  it("applies the branded emphasis class", () => {
+    const page = render(Component, {
+      props: { ...baseProps, emphasis: "branded" } satisfies ComponentProps<
+        typeof Component
+      >,
+    });
+    expect(componentLocator(page).classList).toContain("branded");
+  });
+
   it("applies the link variant class", () => {
     const page = render(Component, {
       props: { ...baseProps, variant: "link" } satisfies ComponentProps<

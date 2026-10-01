@@ -112,6 +112,27 @@ describe("Button component", () => {
     });
   });
 
+  describe("emphasis modifier", () => {
+    it("applies no emphasis class by default", async () => {
+      const page = await render(Component, { ...baseProps });
+      await expect.element(componentLocator(page)).not.toHaveClass("branded");
+    });
+
+    it.each(["primary", "secondary", "tertiary"] as const)(
+      "applies the branded class with %s importance",
+      async (importance) => {
+        const page = await render(Component, {
+          ...baseProps,
+          importance,
+          emphasis: "branded",
+        });
+        await expect
+          .element(componentLocator(page))
+          .toHaveClass(importance, "branded");
+      },
+    );
+  });
+
   describe("orthogonal modifiers", () => {
     it("applies both importance and anticipation classes", async () => {
       const page = await render(Component, {

@@ -20,6 +20,10 @@
         control: "select",
         options: [undefined, ...MODIFIER_FAMILIES.anticipation],
       },
+      emphasis: {
+        control: "select",
+        options: [undefined, "branded"],
+      },
       variant: {
         control: "select",
         options: [undefined, "link"],
@@ -114,6 +118,38 @@
           {#each MODIFIER_FAMILIES.anticipation as anticipation (anticipation)}
             <Button {...args} {importance} {anticipation} disabled>Button</Button>
           {/each}
+        {/each}
+      </div>
+    </div>
+  {/snippet}
+</Story>
+
+<Story
+  name="Branded"
+  parameters={{
+    docs: {
+      description: {
+        story:
+          "Every importance level has a brand version, for actions and calls to action in an editorial setting such as the sites or documentation tiers. Each row shows one importance, enabled and disabled.",
+      },
+    },
+  }}
+>
+  {#snippet template(args)}
+    <div
+      class="surface"
+      style="background: var(--surface-color-background); color: var(--surface-color-text); padding: var(--dimension-300, 24px);"
+    >
+      <div
+        style="display: grid; grid-template-columns: auto auto auto; gap: 0.75rem 1rem; align-items: center; justify-items: start;"
+      >
+        <span></span>
+        <span style="font-size: 0.75rem; opacity: 0.6;">enabled</span>
+        <span style="font-size: 0.75rem; opacity: 0.6;">disabled</span>
+        {#each MODIFIER_FAMILIES.importance as importance (importance)}
+          <span style="font-size: 0.75rem; opacity: 0.6;">{importance}</span>
+          <Button {...args} {importance} emphasis="branded">Get started</Button>
+          <Button {...args} {importance} emphasis="branded" disabled>Get started</Button>
         {/each}
       </div>
     </div>

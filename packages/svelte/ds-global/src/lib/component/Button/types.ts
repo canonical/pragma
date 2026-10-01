@@ -27,6 +27,13 @@ export interface ButtonProps extends BaseProps {
    */
   anticipation?: ModifierFamily<"anticipation">;
   /**
+   * Brand emphasis. Every importance level has a brand version; use it for
+   * actions and calls to action in an editorial setting, such as the sites
+   * or documentation tiers.
+   * - `branded`: Takes the brand colours
+   */
+  emphasis?: "branded";
+  /**
    * Button variant.
    * - `"link"`: Styled as a text link
    */
