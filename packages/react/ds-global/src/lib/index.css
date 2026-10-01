@@ -58,6 +58,7 @@
 @import url("./component/ContextualMenu/common/Item/styles.css");
 @import url("./component/ContextualMenu/styles.css");
 @import url("./component/Icon/styles.css");
+@import url("./component/IconButton/styles.css");
 @import url("./component/InlineCode/styles.css");
 @import url("./component/KeyboardKey/styles.css");
 @import url("./component/Popover/styles.css");

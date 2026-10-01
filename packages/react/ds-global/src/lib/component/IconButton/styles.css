@@ -1,0 +1,100 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /* ==========================================================================
+     IconButton — a square Button with a seated baseline
+     ==========================================================================
+
+     The component renders `.ds.button.icon-button`, so everything but the box
+     comes from Button's sheet: colours, importance and anticipation, states,
+     loading, and the density seat (border + seat-before + line + seat-after +
+     border = the density cell, with the label's baseline on the density
+     target). This sheet changes three things, and nothing Button's seat owns.
+
+     1. A seated baseline, from a generated line of text.
+        An icon has no text, so a flex row aligned on `baseline` would
+        synthesise the button's baseline from the icon box — neither the density
+        target nor a grid line. The `::before` below generates ONE line of text,
+        a zero-width space, as the button's only in-flow item. It inherits the
+        button's font and the seat's line-height (`--control-seat-line`), so it
+        is laid out exactly as a labelled Button's `.label` is: the seat puts
+        its baseline where it puts the label's, on the density target. The
+        button's own baseline is that line's (a flex container's first
+        baseline is its first item's), so in a row with text,
+        `align-items: baseline` puts the icon button on the same baseline as a
+        labelled Button and the text beside it. The alt text after the `/` is
+        empty, so the generated character never reaches the accessibility
+        tree; the name comes from the required `aria-label` /
+        `aria-labelledby`.
+
+     2. A square box, by making the line as wide as it is tall.
+        The line is `1lh` wide — its own line-height — and the inline padding
+        mirrors the block padding, so inline and block add up to the same sum:
+
+          block  = 2·border + seat-before + 1lh + seat-after
+          inline = 2·border + 2·pad       + 1lh
+
+          pad    = (seat-before + seat-after) / 2
+                 = (cell − line) / 2 − border
+
+        with cell = --density-line-height-effective and line =
+        --control-seat-line (= cell − 2 baselines), the same inputs Button's
+        seat reads. Both edges are the density cell in every context × density
+        (32, 24, 36, 28px): cell − line is always two baselines, so pad is one
+        baseline less the border.
+
+     3. A centred icon, taken out of flow.
+        The seat pads are not equal (seat-before places the baseline, and
+        seat-after closes the box), so an in-flow icon centred in the content box
+        would sit a fraction of a pixel off the box's centre. The icon is
+        positioned against the padding box instead (Button's root is
+        `position: relative`); the borders are equal, so that is the box centre.
+        Button's loading overlay is placed the same way, and still hides the icon.
+
+     Outside a density scope there is no seat and no cell, so Button's height
+     is intrinsic: border + the browser's own button padding + one line. That
+     padding differs between browsers and cannot be read back, so there the
+     block padding is set to 0 and the inline padding follows it: the box is
+     2·border + 1lh both ways — square by the same intrinsic sum.
+
+     Specificity and order: every rule here is (0,2,0), like Button's. The
+     padding-inline rule beats `.ds.button { padding-inline }` on source order,
+     which holds because this sheet is imported by a module that imports Button
+     first. Nothing here redeclares a property of Button's density seat on a
+     scoped button: the block-padding rule applies only outside a scope. */
+
+  :root {
+    /* Outside a density scope: no block padding, so no inline padding. */
+    --icon-button-padding-inline: 0px;
+  }
+
+  :where(.comfortable, .dense, .app, .site, .docs) .ds.icon-button {
+    --icon-button-padding-inline: calc(
+      (var(--density-line-height-effective) - var(--control-seat-line)) /
+      2 -
+      var(--button-border-width, 0px)
+    );
+  }
+
+  .ds.icon-button {
+    padding-inline: var(--icon-button-padding-inline);
+
+    /* The baseline carrier: one line of text (a zero-width space), 1lh wide. */
+    &::before {
+      content: "\200b" / "";
+      inline-size: 1lh;
+    }
+
+    & > .icon {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+    }
+  }
+
+  /* No density scope above: pin the block padding so the inline padding can
+     mirror it (see the header). `:not(:where(…) *)` adds no specificity. */
+  .ds.icon-button:not(:where(.comfortable, .dense, .app, .site, .docs) *) {
+    padding-block: 0;
+  }
+}
