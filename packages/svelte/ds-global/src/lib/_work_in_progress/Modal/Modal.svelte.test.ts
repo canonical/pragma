@@ -37,7 +37,7 @@ describe("Modal component", () => {
   }
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page, true)).toBeInTheDocument();
   });
 
@@ -46,14 +46,20 @@ describe("Modal component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page, true))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect
         .element(componentLocator(page, true))
         .toHaveClass("test-class");
@@ -62,7 +68,7 @@ describe("Modal component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -74,7 +80,7 @@ describe("Modal component", () => {
 
   describe("basics", () => {
     it("renders children", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
       });
       await expect
@@ -88,7 +94,7 @@ describe("Modal component", () => {
     });
 
     it("is hidden by default", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(componentLocator(page, true)).not.toBeVisible();
 
       await expect
@@ -99,14 +105,14 @@ describe("Modal component", () => {
 
   describe("Accessibility", () => {
     it("is named by the header's title, excluding its close button", async () => {
-      const page = render(Component, { ...baseProps, open: true });
+      const page = await render(Component, { ...baseProps, open: true });
       await expect
         .element(componentLocator(page))
         .toHaveAccessibleName(titleText);
     });
 
     it("is named by aria-label over the header's title", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         open: true,
         "aria-label": "Custom name",
@@ -123,7 +129,7 @@ describe("Modal component", () => {
   describe("Opening the Modal", () => {
     it("is opened when `showModal` on the dialog element is called", async () => {
       const props = withOpen();
-      const page = render(Component, props);
+      const page = await render(Component, props);
       await expect.element(componentLocator(page, true)).not.toBeVisible();
       expect(props.open).toBe(undefined);
 
@@ -136,7 +142,7 @@ describe("Modal component", () => {
 
     it("is opened by an invoker button", async () => {
       const props = withOpen({ id: "invoked-modal" });
-      const page = render(Component, props);
+      const page = await render(Component, props);
       await expect.element(componentLocator(page, true)).not.toBeVisible();
 
       const invoker = document.createElement("button");
@@ -154,7 +160,7 @@ describe("Modal component", () => {
 
     it("is opened by setting open to true", async () => {
       const props = withOpen();
-      const page = render(Component, props);
+      const page = await render(Component, props);
       await expect.element(componentLocator(page, true)).not.toBeVisible();
       expect(props.open).toBe(undefined);
 
@@ -166,7 +172,7 @@ describe("Modal component", () => {
 
     it("upgrades a server-rendered open dialog to a true modal on mount", async () => {
       const props = withOpen({ open: true });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       await expect.element(componentLocator(page)).toBeVisible();
       await expect.element(componentLocator(page)).toHaveAttribute("open");
@@ -178,7 +184,7 @@ describe("Modal component", () => {
     it("does not call onclose during upgrade to modal, but still calls on later real close", async () => {
       const onclose = vi.fn();
       const props = withOpen({ open: true, onclose });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       await expect.element(componentLocator(page)).toBeVisible();
       flushSync();
@@ -195,7 +201,7 @@ describe("Modal component", () => {
   describe("Closing the Modal", () => {
     it("is closed when `close` on the dialog element is called", async () => {
       const props = withOpen({ open: true });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       (componentLocator(page).element() as HTMLDialogElement).close();
       await expect.element(componentLocator(page, true)).not.toBeVisible();
@@ -211,7 +217,7 @@ describe("Modal component", () => {
       ["the header's close button", dismissButtonText],
     ])("is closed by %s", async (_, buttonText) => {
       const props = withOpen({ open: true });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       await page.getByRole("button", { name: buttonText }).click();
       await expect.element(componentLocator(page, true)).not.toBeVisible();
@@ -223,7 +229,7 @@ describe("Modal component", () => {
 
     it("is closed by clicking outside the modal when `closedby` is any", async () => {
       const props = withOpen({ open: true, closedby: "any" });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       await componentLocator(page).click({ position: { x: 0, y: -10 } });
       await expect.element(componentLocator(page, true)).not.toBeVisible();
@@ -237,7 +243,7 @@ describe("Modal component", () => {
       "is not closed by clicking outside the modal when `closedby` is %s",
       async (closedby) => {
         const props = withOpen({ open: true, closedby });
-        const page = render(Component, props);
+        const page = await render(Component, props);
 
         await componentLocator(page).click({ position: { x: 0, y: -10 } });
         await expect.element(componentLocator(page)).toBeVisible();
@@ -246,7 +252,7 @@ describe("Modal component", () => {
     );
 
     it("honours `closedby` changed after mount", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         open: true,
         closedby: "closerequest",
@@ -259,7 +265,7 @@ describe("Modal component", () => {
 
     it("is not closed by clicking the modal's own padding", async () => {
       const props = withOpen({ open: true, closedby: "any" });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       await componentLocator(page).click({ position: { x: 2, y: 2 } });
       await expect.element(componentLocator(page)).toBeVisible();
@@ -267,7 +273,7 @@ describe("Modal component", () => {
 
     it("is not closed when a press starts inside and ends outside the modal", async () => {
       const props = withOpen({ open: true, closedby: "any" });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       const dialogEl = componentLocator(page).element() as HTMLDialogElement;
       const rect = dialogEl.getBoundingClientRect();
@@ -288,7 +294,7 @@ describe("Modal component", () => {
     it("fires cancel before closing on outside click", async () => {
       const oncancel = vi.fn();
       const props = withOpen({ open: true, closedby: "any", oncancel });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       await componentLocator(page).click({ position: { x: 0, y: -10 } });
       await expect.poll(() => props.open).toBe(false);
@@ -301,7 +307,7 @@ describe("Modal component", () => {
         closedby: "any",
         oncancel: (e) => e.preventDefault(),
       });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       await componentLocator(page).click({ position: { x: 0, y: -10 } });
       await expect.element(componentLocator(page)).toBeVisible();
@@ -311,7 +317,7 @@ describe("Modal component", () => {
       "is closed by pressing Escape when `closedby` is %s",
       async (closedby) => {
         const props = withOpen({ open: true, closedby });
-        const page = render(Component, props);
+        const page = await render(Component, props);
 
         await userEvent.keyboard("{Escape}");
         await expect.element(componentLocator(page, true)).not.toBeVisible();
@@ -325,7 +331,7 @@ describe("Modal component", () => {
     it("is not closed by pressing Escape when `closedby` is none", async () => {
       const oncancel = vi.fn();
       const props = withOpen({ open: true, closedby: "none", oncancel });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       await userEvent.keyboard("{Escape}");
       await userEvent.keyboard("{Escape}");
@@ -335,7 +341,7 @@ describe("Modal component", () => {
 
     it("is closed by setting open to false", async () => {
       const props = withOpen({ open: true });
-      const page = render(Component, props);
+      const page = await render(Component, props);
 
       props.open = false;
       await expect.element(componentLocator(page, true)).not.toBeVisible();
@@ -350,7 +356,7 @@ describe("Modal component", () => {
       ["children", commandCloseButtonText],
       ["the header's close button", dismissButtonText],
     ])("passes close props to %s", async (_, buttonText) => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
       });
       const modalId = (
