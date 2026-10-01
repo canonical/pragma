@@ -4,10 +4,12 @@
  * only prepares the page for a full-viewport frame.
  */
 
-/* normalize.css zeroes this too, but inside `@layer normalize`, where any
- * unlayered author rule could override it. The shell's viewport discipline
- * (100dvh frame, the page never scrolls — A.06 §1.3) depends on a
- * zero-margin body, so the app asserts it unlayered. */
-body {
-  margin: 0;
+@layer app {
+  /* normalize.css zeroes this too, but inside `@layer normalize`, where any
+   * higher layer could override it. The shell's viewport discipline (100dvh
+   * frame, the page never scrolls) depends on a zero-margin body, so the app
+   * asserts it in `app`, above every design-system layer. */
+  body {
+    margin: 0;
+  }
 }

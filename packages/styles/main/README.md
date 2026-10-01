@@ -116,7 +116,8 @@ layers:
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
   ds.states, ds.components, ds.components.global, ds.components.sites,
-  ds.components.documentation, ds.components.stores, ds.components.apps;
+  ds.components.documentation, ds.components.stores, ds.components.apps,
+  lib, app;
 ```
 
 Read it from the bottom up — each position is an argument.
@@ -130,16 +131,19 @@ Read it from the bottom up — each position is an argument.
 | `ds.modifiers` | Theme, the typographic scale, the intent families (anticipation, criticality, emphasis, importance) and their shims, and the context and density classes. | Above typography, because a modifier's job is to shift what the layers below produced. |
 | `ds.surfaces` | The surface families: `surface`, `contrasted`, `modal`. | Above the modifiers, because a surface re-points colour channels the modifiers set. |
 | `ds.states` | The derived hover, active and disabled channels. | Above the surfaces, because a state is derived from whatever the surface resolved to. |
-| `ds.components` | Nothing, by rule. It is the parent of the tier layers below and holds no rule of its own. | Highest of the eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank every tier and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
+| `ds.components` | Nothing, by rule. It is the parent of the tier layers below and holds no rule of its own. | Highest of the design system's eight top-level layers, so a component is the final word on its own box. A rule written *directly* into a parent layer sits in that layer's implicit final sublayer, which is above every named sublayer — so such a rule would outrank every tier and no component package could override it by layer. Everything this package puts in `ds.components` therefore sits in a tier. |
 | `ds.components.global` | The stylesheets of the shared component packages, and this package's own layout presets. | The base of the tier tree: what every other tier refines. |
 | `ds.components.sites` | The stylesheets of the sites tier. | The four second-level tiers never appear on the same page, so their order among themselves decides nothing. It is fixed here anyway, so that it can never come to depend on which package a bundler emits first. |
 | `ds.components.documentation` | The stylesheets of the documentation tier. | As above. |
 | `ds.components.stores` | The stylesheets of the stores tier. | As above. |
 | `ds.components.apps` | The stylesheets of the shared applications tier; one application's own tier declares a layer of its own above it. | As above. |
+| `lib` | The stylesheets of libraries that are not part of the design system, such as documentation tooling (`@canonical/react-tokens`, `@canonical/storybook-helpers`). | Above the design system, so a tool's own rules win over the components it displays. |
+| `app` | The application's own CSS. | Highest, so the application has the last word on its page. |
 
-An order statement fixes the relative order of layers the first time they appear. A later statement
-may introduce new names but can never reorder the ones already fixed, so an application that needs to
-interleave a layer of its own puts its statement before this import.
+`lib` and `app` are the only layer names outside `normalize` and `ds.*`. An order statement fixes the
+relative order of layers the first time they appear, and a later statement can never reorder them, so
+an application imports this package first and writes its own CSS in `@layer app`, with no statement of
+its own.
 
 This section is the reference: what is in each layer, and where. The reasoning behind the order — how
 a browser decides, why a rule in no layer beats every layered one, why the confinement a mixed page
@@ -168,7 +172,7 @@ else.
 ```
 
 The order statement comes from the application loading `@canonical/styles` first (see
-[Usage](#usage)). A layer name is placed the moment the browser first meets it, so with the thirteen
+[Usage](#usage)). A layer name is placed the moment the browser first meets it, so with the fifteen
 names already fixed, `ds.components.apps-lxd`, being new, is appended after them inside
 `ds.components`, where it sorts above every tier. That is the tree's own rule — the more specific tier
 wins — and it means this stylesheet never has to know which applications exist.
@@ -245,7 +249,7 @@ it installs it; a page that does not never hears about it.
 
 | Guarantee | The check behind it |
 | --- | --- |
-| Every rule the package itself ships is in one of the thirteen declared layers, and the statement reaches the browser before any of them, through the import every entry opens with. The typographic engine it imports is in them too. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
+| Every rule the package itself ships is in one of the thirteen design-system layers, and the statement reaches the browser before any of them, through the import every entry opens with. The typographic engine it imports is in them too. | The order fixtures that arrive with the Vanilla adapter package read the statement out of the resolved stylesheet and check every layer name the package opens against it. A check inside this package — that the set of layers used equals the set declared — is being added separately. |
 | An application tier's rule for a component beats the global tier's rule for the same component, whichever of the two a bundler loads first. | The two sublayers are named in the statement, so their order is fixed there rather than at first appearance, and the same order fixture reads it back. The component packages move into them when their stylesheets are wrapped, which is a separate change; until then both sublayers are empty and the guarantee is vacuous. |
 | The package ships no `!important`. | The same fixture file. An important declaration inverts the layer order and cannot be arbitrated by layers at all, so one of them would undo the guarantee above. |
 | Under `prefers-reduced-motion: reduce`, every motion duration this package defines is `0s`. | `src/motion.css`, and the reduced-motion fixture arriving with the adapter package. Zeroing the token is the mechanism: a component reads the token, so nothing has to out-rank the component's own declaration. Whether a given component honours the tokens is that package's guarantee, not this one's. Sheets that still hard-code a duration, and so still animate under the preference, are being moved onto the tokens separately: in the form package the shared input chrome (`src/index.css`) and eight component sheets (`ChoicesField`, `RichChoicesField`, `CheckboxInput`, `RadioInput`, `ColorInput`, `ComboboxInput` and its list, `FileUploadInput`, `SwitchInput`); in the global package `Tooltip`, `ContextualMenu` and `Popover`, which set their own duration property; and one application-tier sheet, the launchpad diff viewer's file header. |
@@ -260,7 +264,7 @@ reaches a bare element outside such a region. `@canonical/styles-vanilla-adapter
 - **Unlayered application CSS beats every rule here.** That is how the cascade is defined: a rule in no
   layer outranks a rule in any layer. It is not a defect, and it is the escape hatch — but it also
   means an application that wants this package's layer order to hold for its own CSS has to put that
-  CSS in a layer too. See "Migrating" below.
+  CSS in `@layer app`. See "Migrating" below.
 - **`!important` in application or third-party CSS beats every rule here**, and for important
   declarations the layer order runs backwards, so the lowest layer wins. Nothing this package can do
   changes that.
@@ -304,15 +308,10 @@ to add to your root, and the reset applies exactly where it did before.
    specificity, and sometimes lost. They no longer can. If you were relying on a rule of ours to win,
    it will not any more.
 
-2. **Put your own CSS in a layer, or accept that it wins.** Either is a valid choice, and the second
-   needs no work. To take the first, wrap your application's stylesheet and name your layer after the
-   package's own:
+2. **Put your own CSS in `@layer app`.** Import this package first, then wrap your application's
+   stylesheet:
 
    ```css
-   @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers,
-     ds.surfaces, ds.states, ds.components, ds.components.global,
-     ds.components.sites, ds.components.documentation, ds.components.stores,
-     ds.components.apps, app;
    @import url("@canonical/styles");
 
    @layer app {
@@ -320,9 +319,8 @@ to add to your root, and the reset applies exactly where it did before.
    }
    ```
 
-   Your statement comes first and fixes `app` above every design-system layer, so your rules win by
-   layer rather than by accident of order — and a rule of yours that you later want overridden by a
-   component can simply be moved down.
+   The package's statement already names `app`, above every design-system layer, so your rules win by
+   layer rather than by accident of order, and you write no statement of your own.
 
 If you import a subpath rather than the package entry — `@canonical/styles/spacing.css` and the five
 other subpaths this package exports — note that a subpath carries no order statement, so the layers it

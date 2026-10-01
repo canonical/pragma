@@ -3,6 +3,7 @@
 This package includes a set of canonical debugging styles that can be used to quickly identify and debug issues in your
 code.
 They are not included in the base styles packages, but can be used in conjunction with them.
+They are deliberately unlayered: an overlay must win over every layered rule.
 
 ### Getting started
 

@@ -80,7 +80,7 @@ layer, and one statement fixing their order. Where the rules that select bare el
 question with its own answer, further down: not in pragma's stylesheet, but in the package written for
 the pages that need it.
 
-## One statement, thirteen names
+## One statement, fifteen names
 
 Layer order is settled by first appearance. A layer that first appears in whichever file a bundler
 happened to emit first takes a position nobody chose, and once a layer exists a later statement can add
@@ -94,7 +94,8 @@ the order is the thing least able to survive drifting. The order itself reads:
 ```css
 @layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces,
   ds.states, ds.components, ds.components.global, ds.components.sites,
-  ds.components.documentation, ds.components.stores, ds.components.apps;
+  ds.components.documentation, ds.components.stores, ds.components.apps,
+  lib, app;
 ```
 
 (The [README's layer table](../../packages/styles/main/README.md#cascade-layers) is the reference for
@@ -119,18 +120,20 @@ able to overrule this?"
   produced. **Surfaces above modifiers**, because a surface re-points colour channels a modifier set.
   **States above surfaces**, because a state is derived from whatever the surface resolved to. Each of
   those three is the input to the next, and the order is that pipeline written down.
-- **Components highest**, so that a component is the final word on its own box. Everything below it is
-  material it composes, and a component that has to escalate its selector to beat one of pragma's own
-  rules is reporting a layer that is in the wrong place.
-
-An application adds one more name above all of these for its own CSS. The migration guide shows the
-shape.
+- **Components highest of the design system's layers**, so that a component is the final word on
+  its own box. Everything below it is material it composes, and a component that has to escalate its
+  selector to beat one of pragma's own rules is reporting a layer that is in the wrong place.
+- **`lib` above the design system**, for a library that is not part of it — documentation tooling such
+  as the token tables and the Storybook helpers — so that its own rules win over what it displays.
+- **`app` highest**, for the application's own CSS, so that the application has the last word on its
+  page. `lib` and `app` are the only names outside `normalize` and `ds.*`; nothing else may open a
+  layer of its own.
 
 **Load `@canonical/styles` first**, in the application's entry, before anything that imports a
 component. It carries the order statement (the layer order statement). A layer takes its position the
 first time the browser sees it, so a component stylesheet that arrives first takes the first position,
-and the rest of the order follows from that accident. The application declares its own layers after
-the import:
+and the rest of the order follows from that accident. The application's own CSS then goes in
+`@layer app`, which the statement has already placed:
 
 ```ts
 import { App } from "./App.js"; import "./styles/index.css"; // wrong: a component's layer comes first
@@ -181,7 +184,7 @@ guarantees.
 The order statement is not the package's to load: it comes from the application loading
 `@canonical/styles` first, as above. The sub-tier name is not in pragma's statement, and does not need
 to be: a name the statement does not carry is placed where it first appears, so a name that first
-appears *after* the thirteen lands above them, which is where a sub-tier belongs. Nothing has to be
+appears *after* the fifteen lands above the tiers, which is where a sub-tier belongs. Nothing has to be
 reserved in advance, and pragma does not have to know which sub-tiers exist.
 
 **The names are flat, and the hyphen is load-bearing.** `ds.components.apps-lxd` is a sublayer of
@@ -213,7 +216,7 @@ third-party file that carries none.
 
 ## Where the confinement lives
 
-Three of pragma's thirteen layers select bare elements: `normalize`, `ds.reset` and `ds.typography`
+Three of the design system's layers select bare elements: `normalize`, `ds.reset` and `ds.typography`
 — the reset, the root's baseline and the typographic engine. On a page that is pragma's, that is exactly
 what you want. A paragraph is styled because it is a paragraph, wherever it sits and whoever wrote the
 markup, and nothing has to opt in.

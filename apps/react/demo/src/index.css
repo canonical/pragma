@@ -1,10 +1,12 @@
 @import url("@canonical/styles");
 
-/* Establish a 100% height context - needed for the controls and renderer to properly fill the page */
-html,
-body,
-#form-root,
-#storybook-root,
-#root {
-  height: 100%;
+@layer app {
+  /* Establish a 100% height context - needed for the controls and renderer to properly fill the page */
+  html,
+  body,
+  #form-root,
+  #storybook-root,
+  #root {
+    height: 100%;
+  }
 }

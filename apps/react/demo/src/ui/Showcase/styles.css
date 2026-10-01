@@ -1,16 +1,18 @@
-.ds.showcase {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+@layer app {
+  .ds.showcase {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 
-  & > .renderer {
-    flex: 1 1 auto;
-    overflow: auto;
-  }
+    & > .renderer {
+      flex: 1 1 auto;
+      overflow: auto;
+    }
 
-  & > .controls {
-    flex-shrink: 0;
-    /* Draw the controls over the baseline grid overlay, which has z-index 200. */
-    z-index: 201;
+    & > .controls {
+      flex-shrink: 0;
+      /* Draw the controls over the baseline grid overlay, which has z-index 200. */
+      z-index: 201;
+    }
   }
 }

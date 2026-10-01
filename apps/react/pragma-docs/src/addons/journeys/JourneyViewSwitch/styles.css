@@ -12,31 +12,33 @@
  * At-rules: none that reflow layout. The strip band never grows.
  */
 
-.ds.journeys-view-switch {
-  display: flex;
-  align-items: center;
-  gap: var(--space-050, 0.25rem);
-  margin: 0;
-  padding: 0;
-  border: 0;
-  min-inline-size: 0;
-}
+@layer app {
+  .ds.journeys-view-switch {
+    display: flex;
+    align-items: center;
+    gap: var(--space-050, 0.25rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
 
-.ds.journeys-view-switch .journeys-view-switch-option {
-  padding-block: var(--space-050, 0.25rem);
-  padding-inline: var(--space-150, 0.75rem);
-  border: 1px solid var(--color-border-muted, #ddd);
-  border-radius: var(--border-radius, 0.25rem);
-  background: var(--color-background, #fff);
-  color: var(--color-text, #111);
-  font: inherit;
-  font-size: 0.8125rem;
-  white-space: nowrap;
-  cursor: pointer;
-}
+  .ds.journeys-view-switch .journeys-view-switch-option {
+    padding-block: var(--space-050, 0.25rem);
+    padding-inline: var(--space-150, 0.75rem);
+    border: 1px solid var(--color-border-muted, #ddd);
+    border-radius: var(--border-radius, 0.25rem);
+    background: var(--color-background, #fff);
+    color: var(--color-text, #111);
+    font: inherit;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
 
-.ds.journeys-view-switch .journeys-view-switch-option[aria-pressed="true"] {
-  border-color: var(--color-brand-primary, #06c);
-  background: var(--color-background-layer2, #f4f4f4);
-  font-weight: 600;
+  .ds.journeys-view-switch .journeys-view-switch-option[aria-pressed="true"] {
+    border-color: var(--color-brand-primary, #06c);
+    background: var(--color-background-layer2, #f4f4f4);
+    font-weight: 600;
+  }
 }

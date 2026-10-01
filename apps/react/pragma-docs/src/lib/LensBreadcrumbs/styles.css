@@ -10,9 +10,11 @@
  * layout-capable at-rule app-wide, and it is the rail's collapse, not here.
  */
 
-.ds.lens-breadcrumbs > .list {
-  /* The `.p` typography class ships a block margin for prose; in the strip
-     the trail is a single centred row, so the margin would unbalance the
-     band's fixed height. */
-  margin-block: 0;
+@layer app {
+  .ds.lens-breadcrumbs > .list {
+    /* The `.p` typography class ships a block margin for prose; in the strip
+       the trail is a single centred row, so the margin would unbalance the
+       band's fixed height. */
+    margin-block: 0;
+  }
 }

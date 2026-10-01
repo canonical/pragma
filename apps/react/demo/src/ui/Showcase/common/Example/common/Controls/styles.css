@@ -1,33 +1,35 @@
-.ds.example-controls {
-  background-color: black;
-  width: 100%;
-  padding: var(--spacing-horizontal-small) var(--spacing-vertical-small);
-  display: flex;
-  flex-flow: row wrap;
-  align-items: center;
+@layer app {
+  .ds.example-controls {
+    background-color: black;
+    width: 100%;
+    padding: var(--spacing-horizontal-small) var(--spacing-vertical-small);
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
 
-  & > #active-example-name {
-    /* TODO we need a way to invert color themes so this is cleaner and can cascade to all color settings  */
-    color: white;
-    margin-bottom: var(--spacing-vertical-medium);
-  }
+    & > #active-example-name {
+      /* TODO we need a way to invert color themes so this is cleaner and can cascade to all color settings  */
+      color: white;
+      margin-bottom: var(--spacing-vertical-medium);
+    }
 
-  & > .end {
-    margin-left: auto;
-  }
+    & > .end {
+      margin-left: auto;
+    }
 
-  & #showcase-settings-drawer > .contents > .setting-category {
-    padding: var(--spacing-vertical-medium) 0;
-    border-top: 1px solid var(--color-text-default);
-    & > .fields {
-      display: grid;
-      --form-field-columns: span 1;
-      grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
-      grid-column-gap: var(--spacing-horizontal-large);
+    & #showcase-settings-drawer > .contents > .setting-category {
+      padding: var(--spacing-vertical-medium) 0;
+      border-top: 1px solid var(--color-text-default);
+      & > .fields {
+        display: grid;
+        --form-field-columns: span 1;
+        grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
+        grid-column-gap: var(--spacing-horizontal-large);
 
-      & .ds.form-field-description {
-        /** todo figure out why the form fields have huge bottom margins beneath their labels now */
-        margin-bottom: 0;
+        & .ds.form-field-description {
+          /** todo figure out why the form fields have huge bottom margins beneath their labels now */
+          margin-bottom: 0;
+        }
       }
     }
   }
