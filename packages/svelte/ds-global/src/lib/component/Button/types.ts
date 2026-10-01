@@ -47,9 +47,20 @@ export interface ButtonProps extends BaseProps {
   icon?: Snippet;
   /**
    * Whether the button is in a loading (busy) state. Overlays a Spinner,
-   * marks the button `aria-busy`, and disables interaction so the action
-   * cannot be triggered again while it is in flight.
-   * @default false
+   * marks the button `aria-busy` and `aria-disabled`, and blocks activation
+   * (clicks and form submission) so the action cannot be triggered again
+   * while it is in flight. The button stays focusable, so keyboard focus is
+   * not lost when loading starts.
+   *
+   * Passing `loading` (even as `false`) also renders a visually hidden
+   * `role="status"` region after the button that announces `loadingLabel`
+   * while loading. Pass it from the first render so the region exists before
+   * it is needed.
    */
   loading?: boolean;
+  /**
+   * Text announced by assistive technology when `loading` becomes true.
+   * @default "Loading"
+   */
+  loadingLabel?: string;
 }

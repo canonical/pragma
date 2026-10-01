@@ -109,13 +109,32 @@ describe("Button SSR", () => {
     expect(componentLocator(page).getAttribute("aria-busy")).toBe("true");
   });
 
-  it("disables the button when loading", () => {
+  it("marks the button aria-disabled, not natively disabled, when loading", () => {
     const page = render(Component, {
       props: { ...baseProps, loading: true } satisfies ComponentProps<
         typeof Component
       >,
     });
-    expect((componentLocator(page) as HTMLButtonElement).disabled).toBe(true);
+    const root = componentLocator(page);
+    expect(root.getAttribute("aria-disabled")).toBe("true");
+    expect(root.disabled).toBe(false);
+  });
+
+  it("renders the loading status region with the loading label", () => {
+    const page = render(Component, {
+      props: {
+        ...baseProps,
+        loading: true,
+        loadingLabel: "Saving changes",
+      } satisfies ComponentProps<typeof Component>,
+    });
+    const status = page.container.querySelector('[role="status"]');
+    expect(status?.textContent?.trim()).toBe("Saving changes");
+  });
+
+  it("renders no loading status region when loading is not set", () => {
+    const page = render(Component, { props: { ...baseProps } });
+    expect(page.container.querySelector('[role="status"]')).toBeNull();
   });
 });
 

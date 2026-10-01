@@ -87,10 +87,14 @@
        the density seat below subtracts one constant. (The previous
        width-multiplied toggle left the primary 2px shorter than the secondary
        and seated its label ~1px high.) */
+    /* 100% when the importance shows a border, 0% when it does not. Every
+       border colour (enabled, disabled, loading) is mixed with transparent by
+       this amount, so a borderless importance stays borderless in all states. */
+    --button-outline-mix: calc(var(--modifier-outline, 0) * 100%);
     border-color: color-mix(
       in srgb,
       var(--modifier-color-border, var(--button-color-border))
-        calc(var(--modifier-outline, 0) * 100%),
+        var(--button-outline-mix),
       transparent
     );
     border-style: solid;
@@ -124,14 +128,14 @@
 
     /* State fallbacks resolve to the default (primary) surface states when no
        importance modifier supplies `--modifier-surface-*`. */
-    &:hover:not(:disabled) {
+    &:hover:not(:disabled, .loading) {
       background-color: var(
         --modifier-surface-hover,
         var(--button-color-background-hover)
       );
     }
 
-    &:active:not(:disabled) {
+    &:active:not(:disabled, .loading) {
       background-color: var(
         --modifier-surface-active,
         var(--button-color-background-active)
@@ -159,9 +163,14 @@
         --modifier-surface-disabled,
         var(--button-color-background-disabled)
       );
-      border-color: var(
-        --modifier-color-border-disabled,
-        var(--color-border-highlighted-disabled)
+      border-color: color-mix(
+        in srgb,
+        var(
+            --modifier-color-border-disabled,
+            var(--color-border-highlighted-disabled)
+          )
+          var(--button-outline-mix),
+        transparent
       );
     }
   }
@@ -193,16 +202,22 @@
      Loading State
      ========================================================================== */
 
-  /* Loading replaces the label with a Spinner but keeps the button's width: the
-     icon and label stay in the DOM (hidden, so their box still reserves space)
-     and the Spinner is overlaid centred on top. A loading button is disabled (so
-     it can't be re-triggered), but it must not *read* as disabled — it is
-     working, not unavailable — so it keeps the enabled surface, text and border
-     colours, overriding the :disabled greying above. */
+  /* Loading overlays a Spinner on the icon and label but keeps the button's
+     width: the icon and label stay in the DOM (hidden, so their box still
+     reserves space) and the Spinner is centred on top. A loading button blocks
+     activation, but it must not *read* as disabled — it is working, not
+     unavailable — so it keeps the enabled surface, text and border colours,
+     overriding the :disabled greying above when both apply. */
   .ds.button.loading {
+    cursor: progress;
     color: var(--modifier-color-text, var(--button-color-text));
     background-color: var(--modifier-surface, var(--button-color-background));
-    border-color: var(--modifier-color-border, var(--button-color-border));
+    border-color: color-mix(
+      in srgb,
+      var(--modifier-color-border, var(--button-color-border))
+        var(--button-outline-mix),
+      transparent
+    );
 
     & > .icon,
     & > .label {
@@ -218,6 +233,20 @@
     }
   }
 
+  /* The status region announcing the loading label is visually hidden but
+     stays in the accessibility tree. */
+  .ds.button-loading-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* ==========================================================================
      Link Variant
      ========================================================================== */
@@ -231,7 +260,7 @@
     text-decoration: underline;
     text-underline-offset: var(--tmp-dimension-underline-offset-link, 0.075em);
 
-    &:hover:not(:disabled) {
+    &:hover:not(:disabled, .loading) {
       background-color: transparent;
       border-color: transparent;
       text-decoration-thickness: var(
@@ -240,7 +269,7 @@
       );
     }
 
-    &:active:not(:disabled) {
+    &:active:not(:disabled, .loading) {
       background-color: transparent;
       border-color: transparent;
     }

@@ -1,6 +1,6 @@
 import type { Locator } from "@vitest/browser/context";
 import type { ComponentProps } from "svelte";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
 import Component from "./Button.svelte";
@@ -242,13 +242,40 @@ describe("Button component", () => {
       expect(spinner).not.toBeNull();
     });
 
-    it("marks the button aria-busy and disabled", async () => {
+    it("marks the button aria-busy and aria-disabled", async () => {
       const page = await render(Component, { ...baseProps, loading: true });
-      const root = componentLocator(page).element() as HTMLButtonElement;
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("aria-busy", "true");
+      await expect
+        .element(componentLocator(page))
+        .toHaveAttribute("aria-disabled", "true");
+    });
+
+    it("does not natively disable the button while loading", async () => {
+      const page = await render(Component, { ...baseProps, loading: true });
+      const root = componentLocator(page).element() as HTMLButtonElement;
+      expect(root.disabled).toBe(false);
+    });
+
+    it("keeps keyboard focus when loading starts", async () => {
+      const page = await render(Component, { ...baseProps, loading: false });
+      const root = componentLocator(page).element() as HTMLButtonElement;
+      root.focus();
+      expect(document.activeElement).toBe(root);
+      await page.rerender({ loading: true });
+      expect(document.activeElement).toBe(root);
+    });
+
+    it("stays natively disabled, without aria-disabled, when also disabled", async () => {
+      const page = await render(Component, {
+        ...baseProps,
+        loading: true,
+        disabled: true,
+      });
+      const root = componentLocator(page).element() as HTMLButtonElement;
       expect(root.disabled).toBe(true);
+      expect(root.hasAttribute("aria-disabled")).toBe(false);
     });
 
     it("applies the loading class", async () => {
@@ -277,8 +304,188 @@ describe("Button component", () => {
       const page = await render(Component, { ...baseProps });
       const root = componentLocator(page).element() as HTMLButtonElement;
       expect(root.hasAttribute("aria-busy")).toBe(false);
+      expect(root.hasAttribute("aria-disabled")).toBe(false);
       expect(root.disabled).toBe(false);
     });
+  });
+
+  describe("loading status announcement", () => {
+    it("renders no status region when loading is not controlled", async () => {
+      const page = await render(Component, { ...baseProps });
+      expect(page.container.querySelector('[role="status"]')).toBeNull();
+    });
+
+    it("renders an empty status region when loading is false", async () => {
+      const page = await render(Component, { ...baseProps, loading: false });
+      const status = page.container.querySelector('[role="status"]');
+      expect(status).not.toBeNull();
+      expect(status?.textContent?.trim()).toBe("");
+    });
+
+    it("announces the default loading label when loading starts", async () => {
+      const page = await render(Component, { ...baseProps, loading: false });
+      await page.rerender({ loading: true });
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent("Loading");
+    });
+
+    it("announces a custom loading label", async () => {
+      const page = await render(Component, {
+        ...baseProps,
+        loading: true,
+        loadingLabel: "Saving changes",
+      });
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent("Saving changes");
+    });
+
+    it("clears the status region when loading ends", async () => {
+      const page = await render(Component, { ...baseProps, loading: true });
+      await page.rerender({ loading: false });
+      const status = page.container.querySelector('[role="status"]');
+      expect(status?.textContent?.trim()).toBe("");
+    });
+
+    it("renders the status region outside the button", async () => {
+      const page = await render(Component, { ...baseProps, loading: true });
+      const root = componentLocator(page).element();
+      expect(root.querySelector('[role="status"]')).toBeNull();
+    });
+  });
+
+  describe("activation", () => {
+    it("calls onclick when clicked", async () => {
+      const onclick = vi.fn();
+      const page = await render(Component, { ...baseProps, onclick });
+      await componentLocator(page).click();
+      expect(onclick).toHaveBeenCalledOnce();
+    });
+
+    it("does not call onclick while loading", async () => {
+      const onclick = vi.fn();
+      const page = await render(Component, {
+        ...baseProps,
+        onclick,
+        loading: true,
+      });
+      (componentLocator(page).element() as HTMLButtonElement).click();
+      expect(onclick).not.toHaveBeenCalled();
+    });
+
+    it("does not call onclick when disabled", async () => {
+      const onclick = vi.fn();
+      const page = await render(Component, {
+        ...baseProps,
+        onclick,
+        disabled: true,
+      });
+      (componentLocator(page).element() as HTMLButtonElement).click();
+      expect(onclick).not.toHaveBeenCalled();
+    });
+
+    it("calls onclick again once loading ends", async () => {
+      const onclick = vi.fn();
+      const page = await render(Component, {
+        ...baseProps,
+        onclick,
+        loading: true,
+      });
+      await page.rerender({ loading: false });
+      await componentLocator(page).click();
+      expect(onclick).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("form submission", () => {
+    // Renders the button inside a form and counts submissions, cancelling
+    // each so the test page does not navigate.
+    const renderInForm = async (
+      props: ComponentProps<typeof Component>,
+    ): Promise<{
+      page: RenderResult<typeof Component>;
+      onsubmit: ReturnType<typeof vi.fn>;
+    }> => {
+      const form = document.createElement("form");
+      const onsubmit = vi.fn((event: Event) => event.preventDefault());
+      form.addEventListener("submit", onsubmit);
+      document.body.append(form);
+      onTestFinished(() => form.remove());
+      const page = await render(Component, { props, target: form });
+      return { page, onsubmit };
+    };
+
+    it("submits its form by default (native type is submit)", async () => {
+      const { page, onsubmit } = await renderInForm({ ...baseProps });
+      await componentLocator(page).click();
+      expect(onsubmit).toHaveBeenCalledOnce();
+    });
+
+    it("does not submit its form with type button", async () => {
+      const { page, onsubmit } = await renderInForm({
+        ...baseProps,
+        type: "button",
+      });
+      await componentLocator(page).click();
+      expect(onsubmit).not.toHaveBeenCalled();
+    });
+
+    it("does not submit its form while loading", async () => {
+      const { page, onsubmit } = await renderInForm({
+        ...baseProps,
+        loading: true,
+      });
+      (componentLocator(page).element() as HTMLButtonElement).click();
+      expect(onsubmit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("border visibility", () => {
+    // A red border colour on every channel makes the outline flag the only
+    // thing deciding whether the border shows.
+    const redBorder =
+      "--modifier-color-border: rgb(255, 0, 0); --modifier-color-border-disabled: rgb(255, 0, 0);";
+
+    const borderAlpha = (page: RenderResult<typeof Component>): number => {
+      const probe = document.createElement("div");
+      probe.style.color = getComputedStyle(
+        componentLocator(page).element(),
+      ).borderTopColor;
+      document.body.append(probe);
+      const resolved = getComputedStyle(probe).color;
+      probe.remove();
+      const alpha = resolved.match(/[\d.]+(?=\)$)/)?.[0];
+      return resolved.includes("/") || resolved.startsWith("rgba")
+        ? Number(alpha)
+        : 1;
+    };
+
+    for (const state of ["enabled", "disabled", "loading"] as const) {
+      const stateProps = {
+        enabled: {},
+        disabled: { disabled: true },
+        loading: { loading: true },
+      }[state];
+
+      it(`hides the border when ${state} and the importance has no outline`, async () => {
+        const page = await render(Component, {
+          ...baseProps,
+          ...stateProps,
+          style: `${redBorder} --modifier-outline: 0;`,
+        });
+        expect(borderAlpha(page)).toBe(0);
+      });
+
+      it(`shows the border when ${state} and the importance has an outline`, async () => {
+        const page = await render(Component, {
+          ...baseProps,
+          ...stateProps,
+          style: `${redBorder} --modifier-outline: 1;`,
+        });
+        expect(borderAlpha(page)).toBe(1);
+      });
+    }
   });
 
   describe("HTML attributes", () => {
