@@ -8,7 +8,7 @@ export default defineConfig({
   plugins,
   test: {
     name: "client",
-    environment: "jsdom",
+    environment: "happy-dom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],

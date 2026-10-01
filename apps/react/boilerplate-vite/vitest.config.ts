@@ -8,7 +8,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       // Browser-like environment for component tests
-      environment: "jsdom",
+      environment: "happy-dom",
       // Vitest globals (describe/it/expect) without imports
       globals: true,
       // Extend matchers and clean up the DOM between tests

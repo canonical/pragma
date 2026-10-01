@@ -6,7 +6,7 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     test: {
-      environment: "jsdom",
+      environment: "happy-dom",
       globals: true,
       include: ["src/**/*.test.ts"],
       // Worker reuse across files; the per-file fork respawn is pure overhead.

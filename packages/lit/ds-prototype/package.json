@@ -108,7 +108,7 @@
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/web-components-vite": "^10.6.0",
     "@types/node": "^26.0.0",
-    "happy-dom": "^20.8.4",
+    "happy-dom": "20.8.9",
     "storybook": "^10.6.0",
     "typescript": "^7.0.2",
     "vite": "^8.0.1",

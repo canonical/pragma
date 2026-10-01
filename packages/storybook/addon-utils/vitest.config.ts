@@ -6,7 +6,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       // use JS DOM for browser-like test environment
-      environment: "jsdom",
+      environment: "happy-dom",
       // include vite globals for terser test code
       globals: true,
       // extend matchers and clean up the DOM after each test
