@@ -1,8 +1,8 @@
+import type { ComponentProps, FocusEventHandler } from "react";
 import type {
   CountryData,
   KnownCountryCode,
 } from "../../utils/countries/index.js";
-import type { BaseProps } from "../types.js";
 
 // The country dataset + codes live in `utils/countries`. Re-exported here so
 // existing PhoneInput consumers keep importing these from this module.
@@ -12,8 +12,7 @@ export type {
   KnownCountryCode,
 } from "../../utils/countries/index.js";
 
-/** Props for the presentational Phone input (controlled, no react-hook-form). */
-export type PhoneInputProps = BaseProps & {
+type OwnProps = {
   /**
    * Name for the national-number input. The field tier supplies this; it is what
    * gives the control a name in a plain HTML submission, so the entry is not
@@ -32,7 +31,7 @@ export type PhoneInputProps = BaseProps & {
    * this; without it react-hook-form never marks the field touched, so
    * `mode: "onTouched"` never validates it and a touched-gated error never shows.
    */
-  onBlur?: React.FocusEventHandler<HTMLInputElement>;
+  onBlur?: FocusEventHandler<HTMLInputElement>;
 
   /** Default country (a known ISO 3166-1 alpha-2 code from the dataset). */
   defaultCountry?: KnownCountryCode;
@@ -89,6 +88,11 @@ export type PhoneInputProps = BaseProps & {
   /** Whether the input is disabled. */
   disabled?: boolean;
 };
+
+/** Props for the presentational Phone input (controlled, no react-hook-form).
+ * Renders a `<div class="ds input phone chrome">` as its root. */
+export type PhoneInputProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;
 
 export type PhoneValue = {
   countryCode: string;

@@ -38,6 +38,7 @@ const MultipleCombobox = ({
   convertValueToItem = defaultConvertValueToItem,
   filterItems = defaultFilterItems,
   onInputValueChangeFactory,
+  ...rest
 }: ComboboxInputProps): React.ReactElement => {
   // State for selected items and filtered items
   const [selectedItems, setSelectedItems] = useState<Option[]>([]);
@@ -130,6 +131,7 @@ const MultipleCombobox = ({
 
   return (
     <div
+      {...rest}
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}

@@ -94,6 +94,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
       countryDisplay = "code",
       mask = false,
       disabled = false,
+      ...nativeProps
     },
     ref,
   ): React.ReactElement {
@@ -198,6 +199,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
 
     return (
       <div
+        {...nativeProps}
         id={id}
         style={style}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}

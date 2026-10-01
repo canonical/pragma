@@ -35,7 +35,6 @@ export type {
 // re-exported here (the Field pattern's type module) so consumers can import
 // them alongside `FieldProps`.
 export type {
-  BaseProps,
   NativeInputType,
   Option,
   OptionsProps,

@@ -1,6 +1,5 @@
-import type React from "react";
+import type { ComponentProps } from "react";
 
-type NativeCheckboxProps = React.InputHTMLAttributes<HTMLInputElement>;
-
-/** Props for the presentational Checkbox input (no react-hook-form). */
-export type CheckboxInputProps = NativeCheckboxProps;
+/** Props for the presentational Checkbox input (no react-hook-form). Renders an
+ * `<input type="checkbox">` as its root. */
+export type CheckboxInputProps = ComponentProps<"input">;

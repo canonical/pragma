@@ -38,7 +38,9 @@ export const RatingInput = ({
   onChange,
   disabled = false,
   formatStarLabel = defaultFormatStarLabel,
-  ...labelling
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  ...rest
 }: RatingInputProps): ReactElement => {
   const reactId = useId();
   const groupId = id ?? reactId;
@@ -54,18 +56,15 @@ export const RatingInput = ({
 
   return (
     <div
+      {...rest}
       id={groupId}
       style={style}
       className={[componentCssClassName, allowHalf && "half", className]
         .filter(Boolean)
         .join(" ")}
       role="radiogroup"
-      aria-label={
-        labelling["aria-labelledby"]
-          ? undefined
-          : (labelling["aria-label"] ?? "Rating")
-      }
-      aria-labelledby={labelling["aria-labelledby"]}
+      aria-label={ariaLabelledBy ? undefined : (ariaLabel ?? "Rating")}
+      aria-labelledby={ariaLabelledBy}
     >
       {stars.map((star) => (
         <span className="star" key={star}>

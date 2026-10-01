@@ -159,12 +159,12 @@ export const ColorInput = ({
   if (!hasSwatches) {
     return (
       <div
+        {...otherProps}
         id={id}
         style={style}
         className={[componentCssClassName, "inline", className]
           .filter(Boolean)
           .join(" ")}
-        {...otherProps}
       >
         {hexInputRow}
       </div>
@@ -174,6 +174,7 @@ export const ColorInput = ({
   // With swatches: trigger button opens a popover
   return (
     <div
+      {...otherProps}
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
@@ -183,7 +184,6 @@ export const ColorInput = ({
         className="color-trigger chrome"
         onClick={() => !disabled && setIsOpen((prev) => !prev)}
         disabled={disabled}
-        {...otherProps}
       >
         {showCurrentColor && (
           <span

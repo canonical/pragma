@@ -34,6 +34,12 @@ const Wrapper = <ComponentProps extends BaseInputProps>({
   nestedRegisterProps,
   unregisterOnUnmount,
 
+  // Toggle-wrapper props. Meaningless here (this wrapper stacks the label above
+  // the control), but destructured out all the same so they are not forwarded
+  // to the input and spread onto a DOM node as unknown attributes.
+  controlLabel: _controlLabel,
+  labelPosition: _labelPosition,
+
   mockLabel = false,
   ...otherProps
 }: WrapperProps<ComponentProps>): React.ReactElement => {
