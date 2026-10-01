@@ -154,7 +154,9 @@
     color: var(--color-text-muted, #666);
   }
 
-  .ds.journey-rail .journey-rail-job[aria-current="page"] .journey-rail-job-gist {
+  .ds.journey-rail
+    .journey-rail-job[aria-current="page"]
+    .journey-rail-job-gist {
     font-weight: 600;
   }
 

@@ -143,8 +143,9 @@
       display: flex;
       flex-shrink: 0;
       justify-content: space-between;
-      padding: var(--drawer-header-padding-top) var(--drawer-header-padding-right)
-        var(--drawer-header-padding-bottom) var(--drawer-header-padding-left);
+      padding: var(--drawer-header-padding-top)
+        var(--drawer-header-padding-right) var(--drawer-header-padding-bottom)
+        var(--drawer-header-padding-left);
 
       & > .title {
         flex: 0 1 auto;
