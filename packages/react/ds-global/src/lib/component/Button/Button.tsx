@@ -1,4 +1,5 @@
 import type React from "react";
+import { forwardRef } from "react";
 import { Spinner } from "../../subcomponent/Spinner/index.js";
 import { Icon } from "../Icon/index.js";
 import type Props from "./types.js";
@@ -15,19 +16,22 @@ const componentCssClassName = "ds button";
  *
  * @implements ds:global.component.button
  */
-const Button = ({
-  id,
-  className,
-  children,
-  style,
-  importance = "primary",
-  anticipation,
-  variant,
-  icon,
-  loading = false,
-  disabled,
-  ...props
-}: Props): React.ReactElement => {
+const Button = forwardRef<HTMLButtonElement, Props>(function Button(
+  {
+    id,
+    className,
+    children,
+    style,
+    importance = "primary",
+    anticipation,
+    variant,
+    icon,
+    loading = false,
+    disabled,
+    ...props
+  },
+  ref,
+): React.ReactElement {
   // Booleans and nullish children render nothing; everything else (including
   // the number 0) produces visible text that names the button.
   const hasVisibleChildren =
@@ -56,6 +60,7 @@ const Button = ({
 
   return (
     <button
+      ref={ref}
       id={id}
       className={[
         componentCssClassName,
@@ -68,10 +73,10 @@ const Button = ({
         .filter(Boolean)
         .join(" ")}
       style={style}
+      {...props}
       // A loading button is busy and must not be re-triggered mid-action.
       aria-busy={loading || undefined}
       disabled={disabled || loading}
-      {...props}
     >
       {/* The icon and label stay in the DOM while loading so the button keeps
           its width; CSS hides them (visibility:hidden) and the Spinner is
@@ -86,6 +91,8 @@ const Button = ({
       )}
     </button>
   );
-};
+});
+
+Button.displayName = "Button";
 
 export default Button;

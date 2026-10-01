@@ -22,6 +22,8 @@ export interface MenuContextValue
   > {
   /** Activate an item (run the consumer's onSelect and close the menu). */
   onSelectItem: (item: _Item<MenuItem>) => void;
+  /** Stable owner id shared by every portalled menu surface. */
+  ownerId: string;
 }
 
 const MenuContext = createContext<MenuContextValue | null>(null);

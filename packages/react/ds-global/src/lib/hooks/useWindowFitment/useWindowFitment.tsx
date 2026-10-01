@@ -1,7 +1,9 @@
+import { debounce } from "@canonical/ds-utils";
 import {
   type CSSProperties,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -19,6 +21,12 @@ import type {
   WindowFitmentPlacement,
   WindowFitmentSide,
 } from "./types.js";
+
+// `useLayoutEffect` logs a warning on the server, so fall back to `useEffect`
+// there. On the client we keep the pre-paint remeasure so a reopened popup
+// never paints at a stale coordinate.
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /** A resolved PHYSICAL placement — what the fitment core consumes internally. */
 type PhysicalPlacement = {
@@ -159,6 +167,7 @@ const useWindowFitment = <
   maxWidth = "350px",
   resizeDelay = 150,
   scrollDelay = 150,
+  isOpen,
   onBestPositionChange,
   autoFit = false,
   direction: directionProp,
@@ -173,8 +182,15 @@ const useWindowFitment = <
   // Bumped when the anchored element's `dir` flips with no layout change, so the
   // logical→physical resolution re-runs (see the MutationObserver effect below).
   const [dirVersion, setDirVersion] = useState(0);
+  const [positionVersion, setPositionVersion] = useState(0);
+  const positioningActive = isOpen ?? true;
 
-  const windowDimensions = useWindowDimensions({ resizeDelay, scrollDelay });
+  const windowDimensions = useWindowDimensions({
+    resizeDelay,
+    scrollDelay,
+    enabled: positioningActive,
+    listenToScroll: false,
+  });
   const targetSize = useResizeObserver(targetRef?.current);
   const popupSize = useResizeObserver(popupRef?.current);
 
@@ -330,6 +346,12 @@ const useWindowFitment = <
       if (isServer) return;
       let fallbackPosition: BestPosition | undefined;
       let fallbackScore = Number.POSITIVE_INFINITY;
+      const targetOutsideBounds =
+        !!bounds &&
+        (targetRect.bottom <= bounds.top ||
+          targetRect.top >= bounds.bottom ||
+          targetRect.right <= bounds.left ||
+          targetRect.left >= bounds.right);
 
       if (!placements.length) {
         throw new Error("Preferred directions must not be empty.");
@@ -359,7 +381,7 @@ const useWindowFitment = <
         // only as the fallback when no side fits naturally.
         const absolutePosition = { ...naturalPosition };
         const autoFitOffset = { top: 0, left: 0 };
-        if (autoFit && bounds) {
+        if (autoFit && bounds && !targetOutsideBounds) {
           if (absolutePosition.top < bounds.top) {
             autoFitOffset.top = bounds.top - absolutePosition.top;
             absolutePosition.top = bounds.top;
@@ -456,7 +478,36 @@ const useWindowFitment = <
     isServer,
     directionProp,
     dirVersion,
+    positionVersion,
   ]);
+
+  // Element scroll does not bubble, but a capture listener on window observes
+  // scrolling ancestors. Respect the public scrollDelay contract while
+  // coalescing a burst of nested/window/visual viewport events.
+  useEffect(() => {
+    if (isServer || !positioningActive) return;
+    const schedulePositionUpdate = debounce(
+      () => setPositionVersion((version) => version + 1),
+      scrollDelay,
+    );
+    window.addEventListener("scroll", schedulePositionUpdate, true);
+    const viewport = window.visualViewport;
+    viewport?.addEventListener("scroll", schedulePositionUpdate);
+    return () => {
+      window.removeEventListener("scroll", schedulePositionUpdate, true);
+      viewport?.removeEventListener("scroll", schedulePositionUpdate);
+      schedulePositionUpdate.cancel();
+    };
+  }, [isServer, positioningActive, scrollDelay]);
+
+  // Closed popups drop their scroll listeners, so a later open would otherwise
+  // reuse the last `bestPosition` until something else (scroll, resize) bumps
+  // geometry. Remeasure synchronously before paint so the popup never appears
+  // at the previous trigger's coordinates — or stays off-screen until scroll.
+  useIsomorphicLayoutEffect(() => {
+    if (isServer || !positioningActive) return;
+    setPositionVersion((version) => version + 1);
+  }, [isServer, positioningActive]);
 
   // Re-resolve when the document's <html dir> flips (a language toggle) with no
   // size/scroll change. A single observer on the root — the one source of truth.

@@ -1,11 +1,14 @@
 import type { _Item } from "@canonical/ds-types";
+import type { NavigationAction, NavigationState } from "@canonical/react-hooks";
 import {
   getMenuProps as getMenuAriaProps,
   getMenuItemProps,
+  NavigationActionType,
   useNavigationTree,
 } from "@canonical/react-hooks";
 import { useCallback, useEffect, useMemo } from "react";
 import { useDisclosure } from "../useDisclosure/index.js";
+import { getHighlightedMenuEntry } from "./getHighlightedMenuEntry.js";
 import isMenuSeparator from "./isMenuSeparator.js";
 import type {
   MenuEntry,
@@ -60,6 +63,9 @@ const useContextualMenu = ({
   root,
   wrap = false,
   typeAheadTimeout,
+  highlightFirstItem = true,
+  closeOnEscape = true,
+  closeOnOutsideClick = true,
   ...props
 }: UseContextualMenuProps): UseContextualMenuResult => {
   const {
@@ -74,17 +80,41 @@ const useContextualMenu = ({
     bestPosition,
     arrowOffset,
     getToggleProps: getDisclosureToggleProps,
-  } = useDisclosure({ ...props, mode: "click" });
+  } = useDisclosure({
+    ...props,
+    mode: "click",
+    // ContextualMenu owns Escape so a key event handled by a menu surface
+    // cannot race the disclosure's document listener and close twice.
+    closeOnEscape: false,
+    // ContextualMenu owns outside dismissal because nested surfaces are
+    // portalled outside the root popup ref.
+    closeOnOutsideClick: false,
+    // Outside pointer dismissal must not move focus away from its target.
+    // Keyboard dismissal and selection return focus explicitly below.
+    returnFocus: false,
+  });
 
   // Separators become presentational nodes BEFORE the tree annotates the root,
   // so useNavigationTree runs unmodified.
   const preparedRoot = useMemo(() => prepareEntry(root) as MenuItem, [root]);
+
+  const stateReducer = useCallback(
+    (
+      state: NavigationState<MenuEntry>,
+      action: NavigationAction<MenuEntry>,
+    ): NavigationState<MenuEntry> =>
+      !highlightFirstItem && action.type === NavigationActionType.OPEN
+        ? { ...state, highlightedItems: [] }
+        : state,
+    [highlightFirstItem],
+  );
 
   const nav = useNavigationTree<MenuEntry>({
     root: preparedRoot,
     focus: "roving",
     wrap,
     typeAheadTimeout,
+    stateReducer,
   });
 
   // The disclosure owns the open state (it drives positioning and dismissal);
@@ -110,16 +140,19 @@ const useContextualMenu = ({
     const menu = popupRef.current;
     if (!menu) return;
     const focusMenu = () => {
-      const firstItem = menu.querySelector<HTMLElement>(
-        '[role="menuitem"]:not([aria-disabled="true"])',
-      );
-      // Prefer the first enabled menuitem; fall back to the menu container,
-      // which carries the keyboard handler.
-      (firstItem ?? menu).focus();
+      // An attached dialog may have taken focus before the menu's second
+      // animation frame. Do not pull it back into roving menu navigation.
+      if (document.activeElement?.closest('[role="dialog"]')) return;
+      if (!highlightFirstItem) {
+        menu.focus();
+        return;
+      }
+      const focusTarget = getHighlightedMenuEntry(menu);
+      (focusTarget ?? menu).focus();
     };
     const id = requestAnimationFrame(() => requestAnimationFrame(focusMenu));
     return () => cancelAnimationFrame(id);
-  }, [isOpen, popupRef]);
+  }, [isOpen, popupRef, highlightFirstItem]);
 
   // Keep DOM focus on the currently-highlighted item as the keyboard highlight
   // moves. The tree only updates the roving `tabindex`; without moving focus too
@@ -137,12 +170,17 @@ const useContextualMenu = ({
       active instanceof HTMLElement && active.closest('[role="menu"]') !== null;
     if (!focusWithinMenu) return;
     const id = requestAnimationFrame(() => {
-      const item = document.querySelector<HTMLElement>(
-        '[role="menuitem"][tabindex="0"]',
-      );
+      // Focus may have moved into a separately portalled dialog since this
+      // frame was queued by a menu-item click.
+      const now = document.activeElement;
+      if (!(now instanceof HTMLElement) || !now.closest('[role="menu"]'))
+        return;
+      const item = getHighlightedMenuEntry(document);
       if (item && item !== document.activeElement) {
         item.focus();
-        item.scrollIntoView({ block: "nearest" });
+        if (typeof item.scrollIntoView === "function") {
+          item.scrollIntoView({ block: "nearest" });
+        }
       }
     });
     return () => cancelAnimationFrame(id);
@@ -151,27 +189,28 @@ const useContextualMenu = ({
   // The trigger must drive the DISCLOSURE (the source of truth for open) while
   // keeping the disclosure's click/keyboard handlers. The tree's toggle is not
   // used for open/close here.
-  const getTriggerProps = useCallback(
-    () => ({
+  const getTriggerProps = useCallback(() => {
+    const disclosureToggleProps = getDisclosureToggleProps();
+    return {
+      ...disclosureToggleProps,
       "aria-haspopup": "menu" as const,
       "aria-expanded": isOpen,
       "aria-controls": popupId,
-      ...getDisclosureToggleProps(),
-    }),
-    [isOpen, popupId, getDisclosureToggleProps],
-  );
+    };
+  }, [isOpen, popupId, getDisclosureToggleProps]);
 
   // Bridge the tree's keyboard handling to the disclosure, which owns the open
-  // state. Escape and Tab close the menu and return focus to the trigger (WCAG /
-  // WAI-ARIA menu pattern); every other key (arrows, Home/End, type-ahead,
-  // Enter) is delegated to the navigation tree.
+  // state. Escape and Tab close a command menu and return focus to the trigger.
   const handleMenuKeyDown = useCallback(
     (
       event: React.KeyboardEvent,
       treeKeyDown?: (e: React.KeyboardEvent) => void,
     ) => {
-      if (event.key === "Escape" || event.key === "Tab") {
-        // Tab must not move focus to the next control while the menu is open.
+      if (event.key === "Tab" || event.key === "Escape") {
+        // Consume Escape even when the menu stays open so the tree cannot map
+        // it to CLOSE and steal focus back to the trigger.
+        if (event.key === "Escape" && !closeOnEscape) return;
+        // Tab must not move focus to the next control while a command menu is open.
         if (event.key === "Tab") event.preventDefault();
         close();
         // @note Impure — returns focus to the trigger.
@@ -180,8 +219,41 @@ const useContextualMenu = ({
       }
       treeKeyDown?.(event);
     },
-    [close, targetRef],
+    [close, closeOnEscape, targetRef],
   );
+
+  // A ContextualMenu can own several portalled surfaces. Handle outside
+  // pointer-down once here instead of letting useDisclosure race its single
+  // popup ref against nested portals.
+  useEffect(() => {
+    if (!isOpen || !closeOnOutsideClick) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const node = event.target as Node | null;
+      if (!node || targetRef.current?.contains(node)) return;
+      const belongsToMenu = event
+        .composedPath()
+        .some(
+          (entry) =>
+            entry instanceof HTMLElement &&
+            entry.dataset.contextualMenuOwner === popupId,
+        );
+      if (!belongsToMenu) close();
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isOpen, closeOnOutsideClick, targetRef, popupId, close]);
+
+  useEffect(() => {
+    if (!isOpen || !closeOnEscape) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        close();
+        targetRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen, closeOnEscape, close, targetRef]);
 
   // Menu-role ARIA getters, composing the base navigation prop-getters (for
   // roving tabindex + refs) with the contextual-menu ARIA presets.

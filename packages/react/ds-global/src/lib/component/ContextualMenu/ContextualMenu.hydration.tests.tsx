@@ -53,4 +53,29 @@ describe("ContextualMenu (hydration)", () => {
     });
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it("hydrates a Button trigger from triggerProps with no recoverable error", () => {
+    const ui = (
+      <ContextualMenu
+        triggerProps={{ importance: "secondary", className: "ssr-trigger" }}
+        items={items}
+      >
+        Filters
+      </ContextualMenu>
+    );
+
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(ui);
+    document.body.appendChild(container);
+
+    const onRecoverableError = vi.fn();
+    act(() => {
+      hydrateRoot(container, ui, { onRecoverableError });
+    });
+
+    expect(onRecoverableError).not.toHaveBeenCalled();
+    expect(container.querySelector(".ssr-trigger")?.textContent).toBe(
+      "Filters",
+    );
+  });
 });

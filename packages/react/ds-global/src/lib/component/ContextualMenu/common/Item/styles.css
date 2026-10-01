@@ -81,6 +81,20 @@
       flex: 1 1 auto;
     }
 
+    > .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      inline-size: var(--dimension-200, 16px);
+      block-size: var(--dimension-300, 24px);
+
+      > svg {
+        inline-size: var(--dimension-200, 16px);
+        block-size: var(--dimension-200, 16px);
+      }
+    }
+
     /* The slot (badge / keyboard shortcut) sits right-aligned. */
     > .slot {
       flex: 0 0 auto;
@@ -88,7 +102,7 @@
       color: var(--contextual-menu-item-slot-color);
     }
 
-    /* The submenu caret sits on the trailing edge in a fixed icon box (Figma:
+    /* The submenu/dialog chevron sits on the trailing edge in a fixed icon box (Figma:
        16px chevron in a 24px-tall wrapper). It always follows the reading
        direction — chevron-right in LTR, mirrored to point left in RTL — rather
        than flipping per-item with the side the submenu opens on, so sibling carets

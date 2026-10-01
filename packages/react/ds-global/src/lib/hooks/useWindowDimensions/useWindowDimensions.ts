@@ -1,14 +1,19 @@
 import { debounce } from "@canonical/ds-utils";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import type {
   UseWindowDimensionProps,
   UseWindowDimensionsResult,
 } from "./types.js";
 
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 /**
  * Hook to get the window dimensions and scroll position.
  */
 export default function useWindowDimensions({
+  enabled = true,
+  listenToScroll = true,
   onResize,
   onScroll,
   resizeDelay = 100,
@@ -36,8 +41,17 @@ export default function useWindowDimensions({
     [windowWidth, windowHeight, scrollWidth, scrollHeight],
   );
 
+  // When a popup is closed, listeners are intentionally absent. Refresh the
+  // viewport synchronously on reopening so fitment does not use dimensions
+  // from before a resize for its first visible frame.
+  useIsomorphicLayoutEffect(() => {
+    if (isServer || !enabled) return;
+    setWindowWidth(window.innerWidth);
+    setWindowHeight(window.innerHeight);
+  }, [isServer, enabled]);
+
   useEffect(() => {
-    if (isServer) return;
+    if (isServer || !enabled) return;
     const handleResize = debounce(() => {
       setWindowWidth(window.innerWidth);
       setWindowHeight(window.innerHeight);
@@ -51,7 +65,7 @@ export default function useWindowDimensions({
     }, scrollDelay);
 
     window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll);
+    if (listenToScroll) window.addEventListener("scroll", handleScroll);
 
     // The visual viewport changes on pinch-zoom (and on-screen keyboards) WITHOUT
     // firing a window `resize`, so anything positioned from viewport bounds would
@@ -59,21 +73,30 @@ export default function useWindowDimensions({
     // page zoom already fires the window `resize` above, so it is covered too.)
     const viewport = window.visualViewport;
     viewport?.addEventListener("resize", handleResize);
-    viewport?.addEventListener("scroll", handleScroll);
+    if (listenToScroll) viewport?.addEventListener("scroll", handleScroll);
 
-    // Initial trigger in case the values need to be passed immediately after mount
-    void handleResize();
-    void handleScroll();
+    // The layout effect above performs the initial dimension refresh without
+    // waiting for the resize debounce. Scroll position remains event-driven.
+    if (listenToScroll) void handleScroll();
 
     return () => {
       handleResize.cancel();
       handleScroll.cancel();
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll);
+      if (listenToScroll) window.removeEventListener("scroll", handleScroll);
       viewport?.removeEventListener("resize", handleResize);
-      viewport?.removeEventListener("scroll", handleScroll);
+      if (listenToScroll) viewport?.removeEventListener("scroll", handleScroll);
     };
-  }, [onResize, onScroll, resizeDelay, scrollDelay, result, isServer]);
+  }, [
+    enabled,
+    listenToScroll,
+    onResize,
+    onScroll,
+    resizeDelay,
+    scrollDelay,
+    result,
+    isServer,
+  ]);
 
   return result;
 }

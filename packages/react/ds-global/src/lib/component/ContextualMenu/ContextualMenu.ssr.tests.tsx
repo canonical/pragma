@@ -32,4 +32,21 @@ describe("ContextualMenu SSR", () => {
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-hidden="true"');
   });
+
+  it("renders a Pragma Button trigger from triggerProps on the server", () => {
+    const html = renderToString(
+      <ContextualMenu
+        triggerProps={{ importance: "secondary", className: "ssr-trigger" }}
+        items={items}
+      >
+        Filters
+      </ContextualMenu>,
+    );
+
+    expect(html).toContain("ds button");
+    expect(html).toContain("secondary");
+    expect(html).toContain("ssr-trigger");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-hidden="true"');
+  });
 });

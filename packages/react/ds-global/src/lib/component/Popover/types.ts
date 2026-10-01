@@ -1,8 +1,10 @@
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, ReactNode, RefObject } from "react";
 import type {
   UseDisclosureProps,
+  WindowFitmentPlacement,
   WindowFitmentSide,
 } from "../../hooks/index.js";
+import type ButtonProps from "../Button/types.js";
 
 type OwnProps = Pick<
   UseDisclosureProps,
@@ -13,31 +15,53 @@ type OwnProps = Pick<
   | "closeOnEscape"
   | "closeOnOutsideClick"
 > & {
-  /**
-   * The trigger content, rendered inside the `<summary>`. Clicking it toggles
-   * the popover; with no JavaScript the native `<details>` handles the toggle.
-   */
-  trigger: ReactNode;
-  /** The popover body, revealed when open. */
+  /** Interactive dialog content. */
   children: ReactNode;
-  /**
-   * Controlled open state. When omitted, the popover is uncontrolled and the
-   * native `<details>` element owns its state until hydration.
-   */
+  /** Class for the root, or the dialog when externally anchored. */
+  className?: string;
+  /** Accessible name placed on the dialog itself. */
+  label?: string;
+  /** Focus target when opened. Defaults to the first enabled control. */
+  initialFocusRef?: RefObject<HTMLElement | null>;
+  /** Dialog attributes, including application-owned data attributes. */
+  dialogProps?: Omit<
+    ComponentProps<"div">,
+    "children" | "role" | "aria-modal" | "aria-hidden" | "ref"
+  > & { [key: `data-${string}`]: string | number | undefined };
+  /** Controlled open state. Uncontrolled by default. */
   open?: boolean;
   /** Called when the open state changes. */
   onOpenChange?: (open: boolean) => void;
-  /**
-   * Preferred placement of the popover relative to its trigger, as logical sides
-   * (`inline-*` mirrors in RTL). Defaults to the reading-direction order.
-   */
-  preferredDirections?: WindowFitmentSide[];
+  /** Ordered logical sides for the anchored surface. */
+  preferredDirections?: (WindowFitmentSide | WindowFitmentPlacement)[];
 };
 
-/**
- * Props for the Popover component. Extends its native `<details>` root, with
- * `onToggle` deliberately excluded: once hydrated the disclosure hook owns the
- * toggle, so consumers drive open state via `open`/`onOpenChange`.
- */
-export type PopoverProps = OwnProps &
-  Omit<ComponentProps<"details">, keyof OwnProps | "onToggle">;
+/** Native, no-JavaScript baseline using details/summary. */
+type DetailsPopoverProps = OwnProps & {
+  trigger: ReactNode;
+  triggerProps?: never;
+  anchorRef?: never;
+} & Omit<ComponentProps<"details">, keyof OwnProps | "onToggle" | "children">;
+
+/** Styled Pragma Button trigger. This variant requires JavaScript. */
+type ButtonPopoverProps = OwnProps & {
+  trigger: ReactNode;
+  triggerProps: Omit<ButtonProps, "children">;
+  anchorRef?: never;
+} & Omit<ComponentProps<"div">, keyof OwnProps | "children">;
+
+/** External launcher, such as a menu item, owns open state and ARIA wiring. */
+type AnchoredPopoverProps = OwnProps & {
+  anchorRef: RefObject<HTMLElement | null>;
+  trigger?: never;
+  triggerProps?: never;
+  label: string;
+  /** External launchers own the state because Popover renders no trigger. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+export type PopoverProps =
+  | DetailsPopoverProps
+  | ButtonPopoverProps
+  | AnchoredPopoverProps;

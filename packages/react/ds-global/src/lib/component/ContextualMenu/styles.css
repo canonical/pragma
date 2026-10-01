@@ -22,6 +22,15 @@
 
     > .trigger {
       cursor: pointer;
+
+      /* Native trigger only. A Pragma Button already owns its expanded/active
+         surface; painting over `.button` fights primary/secondary tokens. */
+      &:not(.button)[aria-expanded="true"] {
+        background-color: var(
+          --modifier-surface-active,
+          var(--color-foreground-ghost-active, transparent)
+        );
+      }
     }
   }
 
