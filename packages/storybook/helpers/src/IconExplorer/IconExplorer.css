@@ -17,7 +17,11 @@
     --icon-explorer-cell: calc(var(--icon-explorer-size) * 2 + 40px);
     --icon-explorer-radius: 0.25rem;
     --icon-explorer-line: color-mix(in srgb, currentColor 15%, transparent);
-    --icon-explorer-grid-line: color-mix(in srgb, currentColor 28%, transparent);
+    --icon-explorer-grid-line: color-mix(
+      in srgb,
+      currentColor 28%,
+      transparent
+    );
     --icon-explorer-surface: color-mix(in srgb, currentColor 5%, transparent);
     --icon-explorer-surface-hover: color-mix(
       in srgb,
