@@ -11,3 +11,4 @@ export * from "./group/index.js";
 export * from "./pattern/index.js";
 export * from "./subcomponent/index.js";
 export type * from "./types/index.js";
+export * from "./utils/index.js";
