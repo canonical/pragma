@@ -15,12 +15,6 @@ Import the main styles in your project's layout file (e.g. `routes/+layout.svelt
 ```svelte
 <script lang="ts">
 	import "@canonical/svelte-ds-app-launchpad/styles.css";
-
-	import "@canonical/launchpad-design-tokens/dist/css/dimension/responsive.css";
-	import "@canonical/launchpad-design-tokens/dist/css/typography/responsive.css";
-	import "@canonical/launchpad-design-tokens/dist/css/opacity/opacity.css";
-	import "@canonical/launchpad-design-tokens/dist/css/transition/preferred.css";
-	import "@canonical/launchpad-design-tokens/dist/css/color/light.css"; // dark.css or system.css
 </script>
 ```
 
