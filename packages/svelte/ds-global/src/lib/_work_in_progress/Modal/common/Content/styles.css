@@ -1,0 +1,19 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Modal.Content styles
+   * @implements ds:global.subcomponent.modal-content
+   */
+
+  .ds.modal-content {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    overflow: auto;
+
+    font-family: var(--typography-text-primary-font-family);
+    font-size: var(--typography-text-primary-font-size);
+    font-weight: var(--typography-text-primary-font-weight);
+    line-height: var(--typography-text-primary-line-height);
+  }
+}

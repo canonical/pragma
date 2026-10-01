@@ -1,0 +1,25 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Modal.Header styles
+   * @implements ds:global.subcomponent.modal-header
+   */
+
+  :root {
+    --modal-header-gap: var(--dimension-200);
+  }
+
+  .ds.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: var(--modal-header-gap);
+    text-wrap: balance;
+
+    font-family: var(--typography-heading-4-font-family);
+    font-size: var(--typography-heading-4-font-size);
+    font-weight: var(--typography-heading-4-font-weight);
+    line-height: var(--typography-heading-4-line-height);
+  }
+}

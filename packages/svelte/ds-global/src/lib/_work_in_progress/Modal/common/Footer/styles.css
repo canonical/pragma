@@ -1,0 +1,20 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Modal.Footer styles
+   * @implements ds:global.subcomponent.modal-footer
+   */
+
+  :root {
+    --modal-footer-gap: var(--dimension-200);
+  }
+
+  .ds.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--modal-footer-gap);
+  }
+}
