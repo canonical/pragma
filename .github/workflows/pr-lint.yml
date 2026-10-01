@@ -1,6 +1,6 @@
 # Applies PR linting checks
 # This should be separate from the `pr` workflow as we don't need to build/test the code every time PR metadata changes
-# Follows https://github.com/amannn/action-semantic-pull-request/blob/40166f00814508ec3201fc8595b393d451c8cd80/README.md
+# Follows https://github.com/amannn/action-semantic-pull-request/blob/48f256284bd46cdaab1048c3721360e808335d50/README.md
 name: "PR Lint"
 on:
   pull_request:
@@ -16,7 +16,57 @@ jobs:
   validate-pr-metadata:
     name: Validate PR metadata
     runs-on: ubuntu-latest
+    permissions:
+      # A job that declares any permission gets none of the others, so the read
+      # the checkout step needs has to be named here explicitly.
+      contents: read
+      pull-requests: read
     steps:
+      # The scope of a title is the name of a workspace package, so the allowed
+      # scopes are read from the tree at run time rather than kept in a list: a
+      # pull request that adds a package may use the new name, and nothing goes
+      # stale. The checkout lands on the PR's merge commit, like the one in
+      # `apply-type-label` below. On a `pull_request` event that is the same
+      # ref this workflow file is read from, so the tree is no less trusted
+      # than the workflow already is; the step below only reads `package.json`
+      # files with `jq` and executes nothing from the tree.
+      - name: Check out the workspace manifests
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 1
+
+      # Every `package.json` that the root `workspaces` globs match contributes
+      # its name without the `@canonical/` prefix. The action treats each entry
+      # as a regex wrapped in `^ $`, so `ke` does not admit `ke-graphql`; a `.`
+      # in a name is escaped so that it matches only itself. Four scopes name no
+      # package and are appended: `deps`, `monorepo`, `constitution` and `ci`.
+      - name: Compute the allowed scopes from the workspace packages
+        id: scopes
+        shell: bash
+        run: |
+          names="$(
+            jq -r '.workspaces[]' package.json |
+            while IFS= read -r glob; do
+              for manifest in $glob/package.json; do
+                if [ -f "$manifest" ]; then echo "$manifest"; fi
+              done
+            done |
+            xargs -r jq -r '.name // empty' |
+            sed -e 's#^@canonical/##' -e 's/\./\\./g' |
+            sort -u
+          )"
+          if [ -z "$names" ]; then
+            echo "::error::No workspace package names found; refusing to run the title lint without a scope list."
+            exit 1
+          fi
+          scopes="$(printf '%s\n' "$names" deps monorepo constitution ci)"
+          echo "$scopes"
+          {
+            echo "scopes<<SCOPES"
+            echo "$scopes"
+            echo "SCOPES"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Verify conventional commit-compliant PR title
         uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6
         env:
@@ -34,6 +84,11 @@ jobs:
             test
             ci
             revert
+          # The scope is required and is one of the names computed above. A title
+          # may carry several, comma-separated (`fix(ke, ke-graphql): …`): the
+          # action splits on the comma and checks each one on its own.
+          requireScope: true
+          scopes: ${{ steps.scopes.outputs.scopes }}
 
   apply-type-label:
     name: Apply type label

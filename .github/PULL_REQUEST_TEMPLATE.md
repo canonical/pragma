@@ -11,8 +11,10 @@ Fixes [list issues/bugs if needed]
 ### PR readiness check
 
 - [ ] PR title follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format, using one of the allowed types: `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `ci`, `revert`.
+  - The scope is required and is the package name without `@canonical/`, or `deps`, `monorepo`, `constitution` or `ci`; several comma-separated only when a change cannot be separated.
+  - The subject starts with a third-person present verb (`adds`, `fixes`, `removes`) and states in one glance what the change does — never a list, a noun fragment or an imperative; a change whose title cannot be one verb phrase has more than one concern and is split.
   - The matching type label is applied automatically from the title — there is no type label to add by hand.
-  - Breaking changes are marked with `!` in the title (e.g. `feat(router)!: …`), which adds the `breaking` label.
+  - Breaking changes are marked with `!` in the title (e.g. `feat(pragma-cli)!: …`), which adds the `breaking` label.
 - [ ] The code follows the appropriate [code standards](https://github.com/canonical/pragma-core/tree/main/packages/semantics/code-standards)
 - [ ] All packages define the required scripts in `package.json`:
   - [ ] All packages: `check`, `check:fix`, and `test`.
