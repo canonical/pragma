@@ -8,32 +8,34 @@
  * ComponentEntityPage/styles.css and INTRINSIC-GRID.md entry 6).
  */
 
-.ds.entity-aside {
-  flex: 0 1 var(--aside-w);
-  min-inline-size: 0;
-  align-self: flex-start;
-  padding: var(--space-200, 1rem);
-  border: 1px solid var(--color-border-muted, #ddd);
-  border-radius: 0.5rem;
-}
+@layer app {
+  .ds.entity-aside {
+    flex: 0 1 var(--aside-w);
+    min-inline-size: 0;
+    align-self: flex-start;
+    padding: var(--space-200, 1rem);
+    border: 1px solid var(--color-border-muted, #ddd);
+    border-radius: 0.5rem;
+  }
 
-.ds.entity-aside h2 {
-  margin-block: 0 var(--space-150, 0.75rem);
-  font-size: 1rem;
-}
+  .ds.entity-aside h2 {
+    margin-block: 0 var(--space-150, 0.75rem);
+    font-size: 1rem;
+  }
 
-.ds.entity-aside dl {
-  margin-block: 0;
-  display: grid;
-  gap: var(--space-100, 0.5rem);
-}
+  .ds.entity-aside dl {
+    margin-block: 0;
+    display: grid;
+    gap: var(--space-100, 0.5rem);
+  }
 
-.ds.entity-aside dt {
-  color: var(--color-text-muted, #666);
-  font-size: 0.875rem;
-}
+  .ds.entity-aside dt {
+    color: var(--color-text-muted, #666);
+    font-size: 0.875rem;
+  }
 
-.ds.entity-aside dd {
-  margin-inline-start: 0;
-  overflow-wrap: anywhere;
+  .ds.entity-aside dd {
+    margin-inline-start: 0;
+    overflow-wrap: anywhere;
+  }
 }

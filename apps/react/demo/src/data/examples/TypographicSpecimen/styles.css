@@ -1,245 +1,247 @@
-.shadow-container {
-  --hr-color: black;
-}
-
-.shadow-container h2,
-.shadow-container h4,
-.shadow-container h5 {
-  text-transform: uppercase;
-}
-
-/* Usually, headings would have negative top margin for nudges. However, we won't implement this yet. */
-.shadow-container h1,
-.shadow-container h2,
-.shadow-container h3,
-.shadow-container h4,
-.shadow-container h5,
-.shadow-container h6 {
-  font-weight: bold;
-  margin-top: 0;
-}
-
-.shadow-container h1 {
-  font-size: var(--h1-font-size);
-  padding-top: var(--h1-padding-top);
-  margin-bottom: var(--h1-margin-bottom);
-  line-height: var(--h1-line-height);
-}
-
-.shadow-container h2 {
-  font-size: var(--h2-font-size);
-  padding-top: var(--h2-padding-top);
-  margin-bottom: var(--h2-margin-bottom);
-  line-height: var(--h2-line-height);
-}
-
-.shadow-container h3 {
-  font-size: var(--h3-font-size);
-  padding-top: var(--h3-padding-top);
-  margin-bottom: var(--h3-margin-bottom);
-  line-height: var(--h3-line-height);
-}
-
-.shadow-container h4 {
-  font-size: var(--h4-font-size);
-  padding-top: var(--h4-padding-top);
-  margin-bottom: var(--h4-margin-bottom);
-  line-height: var(--h4-line-height);
-}
-
-.shadow-container h5 {
-  font-size: var(--h5-font-size);
-  padding-top: var(--h5-padding-top);
-  margin-bottom: var(--h5-margin-bottom);
-  line-height: var(--h5-line-height);
-}
-
-.shadow-container h6 {
-  font-size: var(--h6-font-size);
-  padding-top: var(--h6-padding-top);
-  margin-bottom: var(--h6-margin-bottom);
-  line-height: var(--h6-line-height);
-}
-
-.shadow-container p {
-  font-size: var(--p-font-size);
-  padding-top: var(--p-padding-top);
-  margin-top: var(--p-margin-top);
-  margin-bottom: var(--p-margin-bottom);
-  line-height: var(--p-line-height);
-}
-
-.shadow-container hr {
-  border: none;
-  width: 100%;
-  grid-column: 1 / -1;
-  background-color: var(--hr-color);
-  height: var(--hr-height);
-  margin-bottom: var(--hr-margin-bottom);
-  margin-top: var(--hr-margin-top);
-
-  &.highlighted {
-    --hr-height: 3px;
+@layer app {
+  .shadow-container {
+    --hr-color: black;
   }
-}
 
-.lorem-ipsum-block,
-.bottom-grid-container {
-  & h5 {
-    text-transform: none;
+  .shadow-container h2,
+  .shadow-container h4,
+  .shadow-container h5 {
+    text-transform: uppercase;
   }
-}
 
-.specimen-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-}
+  /* Usually, headings would have negative top margin for nudges. However, we won't implement this yet. */
+  .shadow-container h1,
+  .shadow-container h2,
+  .shadow-container h3,
+  .shadow-container h4,
+  .shadow-container h5,
+  .shadow-container h6 {
+    font-weight: bold;
+    margin-top: 0;
+  }
 
-.specimen-grid {
-  --specimen-num-cols: 1;
-  --specimen-gap: 0;
-  --specimen-padding-horizontal: 1.25rem;
+  .shadow-container h1 {
+    font-size: var(--h1-font-size);
+    padding-top: var(--h1-padding-top);
+    margin-bottom: var(--h1-margin-bottom);
+    line-height: var(--h1-line-height);
+  }
 
-  display: grid;
-  grid-template-columns: repeat(var(--specimen-num-cols), 1fr);
-  gap: var(--specimen-gap);
-  padding: 0 var(--specimen-padding-horizontal);
-  max-width: 1400px;
-  background-color: #fff;
-}
+  .shadow-container h2 {
+    font-size: var(--h2-font-size);
+    padding-top: var(--h2-padding-top);
+    margin-bottom: var(--h2-margin-bottom);
+    line-height: var(--h2-line-height);
+  }
 
-.top-section-wrapper {
-  --top-section-row: auto;
-  --top-section-num-cols: 1;
-  --top-section-gap: 1.5em 0;
+  .shadow-container h3 {
+    font-size: var(--h3-font-size);
+    padding-top: var(--h3-padding-top);
+    margin-bottom: var(--h3-margin-bottom);
+    line-height: var(--h3-line-height);
+  }
 
-  grid-column: 1 / -1;
-  grid-row: var(--top-section-row);
-  display: grid;
-  grid-template-columns: repeat(var(--top-section-num-cols), 1fr);
-  gap: var(--top-section-gap);
-}
+  .shadow-container h4 {
+    font-size: var(--h4-font-size);
+    padding-top: var(--h4-padding-top);
+    margin-bottom: var(--h4-margin-bottom);
+    line-height: var(--h4-line-height);
+  }
 
-.column {
-  --column-num-cols: 1;
-  --column-gap: 0;
+  .shadow-container h5 {
+    font-size: var(--h5-font-size);
+    padding-top: var(--h5-padding-top);
+    margin-bottom: var(--h5-margin-bottom);
+    line-height: var(--h5-line-height);
+  }
 
-  display: grid;
-  grid-template-columns: repeat(var(--column-num-cols), 1fr);
-  grid-column-gap: var(--column-gap);
-  align-content: start;
-}
+  .shadow-container h6 {
+    font-size: var(--h6-font-size);
+    padding-top: var(--h6-padding-top);
+    margin-bottom: var(--h6-margin-bottom);
+    line-height: var(--h6-line-height);
+  }
 
-.column > * {
-  grid-column: 1 / -1;
-}
+  .shadow-container p {
+    font-size: var(--p-font-size);
+    padding-top: var(--p-padding-top);
+    margin-top: var(--p-margin-top);
+    margin-bottom: var(--p-margin-bottom);
+    line-height: var(--p-line-height);
+  }
 
-.mid-section {
-  --mid-section-row: auto;
-  --mid-section-num-cols: 1;
-  --mid-section-gap: 1em 0;
-  --mid-section-margin-top: 1em;
-  --mid-section-margin-bottom: 1em;
+  .shadow-container hr {
+    border: none;
+    width: 100%;
+    grid-column: 1 / -1;
+    background-color: var(--hr-color);
+    height: var(--hr-height);
+    margin-bottom: var(--hr-margin-bottom);
+    margin-top: var(--hr-margin-top);
 
-  grid-column: 1 / -1;
-  grid-row: var(--mid-section-row);
-  display: grid;
-  grid-template-columns: repeat(var(--mid-section-num-cols), 1fr);
-  gap: var(--mid-section-gap);
-  align-items: start;
-  margin-top: var(--mid-section-margin-top);
-  margin-bottom: var(--mid-section-margin-bottom);
-}
+    &.highlighted {
+      --hr-height: 3px;
+    }
+  }
 
-.mid-section .grid-title {
-  --mid-title-col: 1 / -1;
-  grid-column: var(--mid-title-col);
-}
-
-.mid-section .lorem-ipsum-block {
-  --mid-lorem-col: 1 / -1;
-  grid-column: var(--mid-lorem-col);
-  display: grid;
-}
-
-.mid-section .mid-section-image {
-  --mid-image-col: 1 / -1;
-  grid-column: var(--mid-image-col);
-  height: auto;
-  justify-self: stretch;
-  width: 100%;
-}
-
-.bottom-grid-container {
-  --bottom-grid-row: auto;
-  --bottom-grid-num-cols: 1;
-  --bottom-grid-gap: 1.25rem;
-  --bottom-grid-margin-top: 1em;
-
-  grid-column: 1 / -1;
-  grid-row: var(--bottom-grid-row);
-  display: grid;
-  grid-template-columns: repeat(var(--bottom-grid-num-cols), 1fr);
-  gap: var(--bottom-grid-gap);
-  margin-top: var(--bottom-grid-margin-top);
-}
-
-.bottom-grid-container .grid-item {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
-  align-content: start;
-}
-
-@media (min-width: 600px) {
+  .lorem-ipsum-block,
   .bottom-grid-container {
-    --bottom-grid-num-cols: 2;
+    & h5 {
+      text-transform: none;
+    }
   }
-}
 
-@media (min-width: 900px) {
+  .specimen-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
   .specimen-grid {
-    --specimen-num-cols: 8;
-    --specimen-gap: 0 1.25rem;
-    --specimen-padding-horizontal: 1.875rem;
+    --specimen-num-cols: 1;
+    --specimen-gap: 0;
+    --specimen-padding-horizontal: 1.25rem;
+
+    display: grid;
+    grid-template-columns: repeat(var(--specimen-num-cols), 1fr);
+    gap: var(--specimen-gap);
+    padding: 0 var(--specimen-padding-horizontal);
+    max-width: 1400px;
+    background-color: #fff;
   }
 
   .top-section-wrapper {
-    --top-section-row: 2;
-    --top-section-num-cols: 2;
-    --top-section-gap: 0 1.25rem;
+    --top-section-row: auto;
+    --top-section-num-cols: 1;
+    --top-section-gap: 1.5em 0;
+
+    grid-column: 1 / -1;
+    grid-row: var(--top-section-row);
+    display: grid;
+    grid-template-columns: repeat(var(--top-section-num-cols), 1fr);
+    gap: var(--top-section-gap);
   }
 
   .column {
-    --column-num-cols: 4;
-    --column-gap: 1.25rem;
+    --column-num-cols: 1;
+    --column-gap: 0;
+
+    display: grid;
+    grid-template-columns: repeat(var(--column-num-cols), 1fr);
+    grid-column-gap: var(--column-gap);
+    align-content: start;
+  }
+
+  .column > * {
+    grid-column: 1 / -1;
   }
 
   .mid-section {
-    --mid-section-row: 4;
-    --mid-section-num-cols: 8;
-    --mid-section-gap: 0 1.25rem;
-    --mid-section-margin-top: 2em;
-    --mid-section-margin-bottom: 2em;
+    --mid-section-row: auto;
+    --mid-section-num-cols: 1;
+    --mid-section-gap: 1em 0;
+    --mid-section-margin-top: 1em;
+    --mid-section-margin-bottom: 1em;
+
+    grid-column: 1 / -1;
+    grid-row: var(--mid-section-row);
+    display: grid;
+    grid-template-columns: repeat(var(--mid-section-num-cols), 1fr);
+    gap: var(--mid-section-gap);
+    align-items: start;
+    margin-top: var(--mid-section-margin-top);
+    margin-bottom: var(--mid-section-margin-bottom);
   }
 
   .mid-section .grid-title {
-    --mid-title-col: 1 / span 2;
+    --mid-title-col: 1 / -1;
+    grid-column: var(--mid-title-col);
   }
 
   .mid-section .lorem-ipsum-block {
-    --mid-lorem-col: 3 / span 2;
+    --mid-lorem-col: 1 / -1;
+    grid-column: var(--mid-lorem-col);
+    display: grid;
   }
 
   .mid-section .mid-section-image {
-    --mid-image-col: 5 / -1;
+    --mid-image-col: 1 / -1;
+    grid-column: var(--mid-image-col);
+    height: auto;
+    justify-self: stretch;
+    width: 100%;
   }
 
   .bottom-grid-container {
-    --bottom-grid-row: 5;
-    --bottom-grid-num-cols: 4;
-    --bottom-grid-margin-top: 2em;
+    --bottom-grid-row: auto;
+    --bottom-grid-num-cols: 1;
+    --bottom-grid-gap: 1.25rem;
+    --bottom-grid-margin-top: 1em;
+
+    grid-column: 1 / -1;
+    grid-row: var(--bottom-grid-row);
+    display: grid;
+    grid-template-columns: repeat(var(--bottom-grid-num-cols), 1fr);
+    gap: var(--bottom-grid-gap);
+    margin-top: var(--bottom-grid-margin-top);
+  }
+
+  .bottom-grid-container .grid-item {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    align-content: start;
+  }
+
+  @media (min-width: 600px) {
+    .bottom-grid-container {
+      --bottom-grid-num-cols: 2;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .specimen-grid {
+      --specimen-num-cols: 8;
+      --specimen-gap: 0 1.25rem;
+      --specimen-padding-horizontal: 1.875rem;
+    }
+
+    .top-section-wrapper {
+      --top-section-row: 2;
+      --top-section-num-cols: 2;
+      --top-section-gap: 0 1.25rem;
+    }
+
+    .column {
+      --column-num-cols: 4;
+      --column-gap: 1.25rem;
+    }
+
+    .mid-section {
+      --mid-section-row: 4;
+      --mid-section-num-cols: 8;
+      --mid-section-gap: 0 1.25rem;
+      --mid-section-margin-top: 2em;
+      --mid-section-margin-bottom: 2em;
+    }
+
+    .mid-section .grid-title {
+      --mid-title-col: 1 / span 2;
+    }
+
+    .mid-section .lorem-ipsum-block {
+      --mid-lorem-col: 3 / span 2;
+    }
+
+    .mid-section .mid-section-image {
+      --mid-image-col: 5 / -1;
+    }
+
+    .bottom-grid-container {
+      --bottom-grid-row: 5;
+      --bottom-grid-num-cols: 4;
+      --bottom-grid-margin-top: 2em;
+    }
   }
 }

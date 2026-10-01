@@ -1,5 +1,7 @@
 @import url("@canonical/styles");
 
-:root {
-  color-scheme: light;
+@layer app {
+  :root {
+    color-scheme: light;
+  }
 }
