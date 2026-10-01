@@ -9,6 +9,8 @@ export default defineConfig({
     // NOTHING and the suite goes green with fewer tests, silently.
     include: ["src/**/*.test.ts"],
     environment: "node",
+    // Worker reuse across files; the per-file fork respawn is pure overhead.
+    isolate: false,
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],

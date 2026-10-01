@@ -12,6 +12,8 @@ export default mergeConfig(
       // extend matchers and clean up the DOM after each test
       setupFiles: ["./vitest.setup.ts"],
       include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
+      // Worker reuse across files; the per-file fork respawn is pure overhead.
+      isolate: false,
     },
   }),
 );
