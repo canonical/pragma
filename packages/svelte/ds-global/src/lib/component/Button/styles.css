@@ -203,8 +203,10 @@
      ========================================================================== */
 
   /* Loading overlays a Spinner on the icon and label but keeps the button's
-     width: the icon and label stay in the DOM (hidden, so their box still
-     reserves space) and the Spinner is centred on top. A loading button blocks
+     width: the icon and label stay in the DOM (transparent, so their box still
+     reserves space and the label still names the button; `visibility: hidden`
+     would remove it from the accessible name) and the Spinner is centred on
+     top. A loading button blocks
      activation, but it must not *read* as disabled — it is working, not
      unavailable — so it keeps the enabled surface, text and border colours,
      overriding the :disabled greying above when both apply. */
@@ -221,7 +223,7 @@
 
     & > .icon,
     & > .label {
-      visibility: hidden;
+      opacity: 0;
     }
 
     & > .loading-spinner {
@@ -361,7 +363,6 @@
     box-sizing: border-box;
     block-size: auto;
     align-items: flex-start;
-    justify-content: flex-start;
     line-height: var(--control-seat-line);
     padding-block: var(--seat-before) var(--seat-after);
   }

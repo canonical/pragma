@@ -278,6 +278,20 @@ describe("Button component", () => {
       expect(root.hasAttribute("aria-disabled")).toBe(false);
     });
 
+    it("keeps its accessible name from the label while loading", async () => {
+      const page = await render(Component, { ...baseProps, loading: true });
+      await expect
+        .element(page.getByRole("button", { name: buttonChildrenText }))
+        .toBeInTheDocument();
+    });
+
+    it("keeps its accessible name from the label while loading", async () => {
+      const page = await render(Component, { ...baseProps, loading: true });
+      await expect
+        .element(page.getByRole("button", { name: buttonChildrenText }))
+        .toBeInTheDocument();
+    });
+
     it("applies the loading class", async () => {
       const page = await render(Component, { ...baseProps, loading: true });
       await expect.element(componentLocator(page)).toHaveClass("loading");
@@ -438,6 +452,48 @@ describe("Button component", () => {
       });
       (componentLocator(page).element() as HTMLButtonElement).click();
       expect(onsubmit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("density context", () => {
+    it("keeps the label centred in a widened button", async () => {
+      const context = document.createElement("div");
+      context.className = "app";
+      document.body.append(context);
+      onTestFinished(() => context.remove());
+      const page = await render(Component, {
+        props: { ...baseProps, style: "width: 300px;" },
+        target: context,
+      });
+      const root = componentLocator(page).element().getBoundingClientRect();
+      const label = page.container
+        .querySelector(".label")
+        ?.getBoundingClientRect();
+      expect(label).toBeDefined();
+      const rootCentre = root.left + root.width / 2;
+      const labelCentre = (label?.left ?? 0) + (label?.width ?? 0) / 2;
+      expect(Math.abs(rootCentre - labelCentre)).toBeLessThan(1);
+    });
+  });
+
+  describe("density context", () => {
+    it("keeps the label centred in a widened button", async () => {
+      const context = document.createElement("div");
+      context.className = "app";
+      document.body.append(context);
+      onTestFinished(() => context.remove());
+      const page = await render(Component, {
+        props: { ...baseProps, style: "width: 300px;" },
+        target: context,
+      });
+      const root = componentLocator(page).element().getBoundingClientRect();
+      const label = page.container
+        .querySelector(".label")
+        ?.getBoundingClientRect();
+      expect(label).toBeDefined();
+      const rootCentre = root.left + root.width / 2;
+      const labelCentre = (label?.left ?? 0) + (label?.width ?? 0) / 2;
+      expect(Math.abs(rootCentre - labelCentre)).toBeLessThan(1);
     });
   });
 
