@@ -72,9 +72,11 @@
  *                  A package below a tier declares its own layer, flat beside
  *                  these (`@layer ds.components.apps-lxd;`), first in its own
  *                  entry; by appearing later than this statement it sorts
- *                  above the five, and still below `app`. Nothing is written
+ *                  above the five, and still below `lib`. Nothing is written
  *                  directly into `ds.components`: a rule there would sit in its
  *                  implicit final sublayer, above every tier
+ *   lib            a library outside the design system, such as documentation
+ *                  tooling
  *   app            the application's own pragma-era CSS, whatever its context class
  *
  * `vanilla` is the lowest layer a consumer writes into: in Vanilla territory
@@ -86,7 +88,7 @@
  * whole page, as a pragma-only page wants. `boundary` sits directly above
  * `vanilla` so that inside pragma territory every Vanilla declaration is
  * reverted before pragma's layers apply. Pragma's own statement, the same list
- * without `vanilla.escapes`, `vanilla`, `boundary`, `ds.adapter` and `app`,
+ * without `vanilla.escapes`, `vanilla`, `boundary` and `ds.adapter`,
  * arrives later at the
  * top of each of its entries and changes nothing: a later statement can add
  * names but never reorder the ones already fixed, and it adds none.
@@ -108,4 +110,5 @@
   ds.components.documentation,
   ds.components.stores,
   ds.components.apps,
+  lib,
   app;

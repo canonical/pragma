@@ -26,16 +26,17 @@ Three facts about the cascade carry the design. An unlayered rule beats every la
   ds.components.documentation,
   ds.components.stores,
   ds.components.apps,
+  lib,
   app;
 ```
 
-The five component layers follow the design system's tier tree, lowest first: `global`, `sites`, `documentation`, `stores`, `apps`. Naming them here means a higher tier's rule for a component beats a lower tier's by layer, whatever order your entry happens to load the component stylesheets in. A package below one of those tiers declares a layer of its own, such as `ds.components.apps-lxd`, after importing the order from `@canonical/styles/layers.css`. Because that name appears later than the statement, it sorts above the five and still below `app`. On a mixed page the extra import changes nothing, since the statement here has already fixed those names. No rule is written directly into `ds.components`, because a rule there would land in that layer's implicit final sublayer and outrank every tier.
+The five component layers follow the design system's tier tree, lowest first: `global`, `sites`, `documentation`, `stores`, `apps`. Naming them here means a higher tier's rule for a component beats a lower tier's by layer, whatever order your entry happens to load the component stylesheets in. A package below one of those tiers declares a layer of its own, such as `ds.components.apps-lxd`, after importing the order from `@canonical/styles/layers.css`. Because that name appears later than the statement, it sorts above the five and still below `lib` and `app`. On a mixed page the extra import changes nothing, since the statement here has already fixed those names. No rule is written directly into `ds.components`, because a rule there would land in that layer's implicit final sublayer and outrank every tier.
 
-The mode bridge writes into `ds.adapter`, which is a sublayer of `ds` rather than a top-level layer, and that matters. Sublayers sort inside their parent, and `ds` takes its place in the order where it is first mentioned, at `ds.tokens`. A top-level layer written between `ds.states` and `ds.components` would therefore not sit between them at all: it would sit above every pragma layer, component tiers included, and a component that sets its own `color-scheme` could never beat the bridge. We measured that: a modal asking for `dark` computed `light`. As a sublayer it sits above the mode modifiers and below the components, which is where the mode rules in the README and a component's own `color-scheme` both need it. The fixtures check all 153 pairs of the eighteen names by computed style rather than by reading the list, and check that a later sub-tier layer sorts where it should.
+The mode bridge writes into `ds.adapter`, which is a sublayer of `ds` rather than a top-level layer, and that matters. Sublayers sort inside their parent, and `ds` takes its place in the order where it is first mentioned, at `ds.tokens`. A top-level layer written between `ds.states` and `ds.components` would therefore not sit between them at all: it would sit above every pragma layer, component tiers included, and a component that sets its own `color-scheme` could never beat the bridge. We measured that: a modal asking for `dark` computed `light`. As a sublayer it sits above the mode modifiers and below the components, which is where the mode rules in the README and a component's own `color-scheme` both need it. The fixtures check all 171 pairs of the nineteen names by computed style rather than by reading the list, and check that a later sub-tier layer sorts where it should.
 
-Pragma's own statement, the same list without `vanilla.escapes`, `vanilla`, `boundary`, `ds.adapter` and `app`, arrives later through the entries this package imports. It changes nothing, because a later statement can add names but never reorder the ones already fixed, and it adds none.
+Pragma's own statement, the same list without `vanilla.escapes`, `vanilla`, `boundary` and `ds.adapter`, arrives later through the entries this package imports. It changes nothing, because a later statement can add names but never reorder the ones already fixed, and it adds none.
 
-`app` is the name of your own layer whatever context class the page carries. A site with `class="site …"` still writes `@layer app`.
+`app` is the name of your own layer whatever context class the page carries. A site with `class="site …"` still writes `@layer app`. `lib` sits below it, for a library outside the design system, such as documentation tooling.
 
 `adapter.css` starts with the order statement and its three imports, then fills the boundary with a single declaration. Inside pragma's territory every property Vanilla set is reverted to the browser default, and pragma's layers, all of them higher, apply on top exactly as they would on a pragma-only page:
 
@@ -126,7 +127,7 @@ It reads two things and compares them. On pragma's side it takes everything `pac
 
 It then strips the comments, walks the rules of both, and asks four questions. Are the layer names and their order the same? Does every rule on pragma's side have exactly one counterpart here? Does that counterpart carry the same declarations, in the same order, in the same position within its layer, under the same `@media` or `@supports` condition? And is its selector the mapping above, applied to the original?
 
-It also checks the other side of the split: that every entry point opens with pragma's thirteen-name statement, that `tokens.css` and `layout.css` bring no element rule with them, and that `tokens.css` carries the typographic scale.
+It also checks the other side of the split: that every entry point opens with pragma's fifteen-name statement, that `tokens.css` and `layout.css` bring no element rule with them, and that `tokens.css` carries the typographic scale.
 
 When pragma changes one of those files the test fails and names the rule that moved. Bring the copy up to date, apply the mapping, and run it again. Where a rule exists on one side only, the test lists it with the reason, and fails if that reason goes stale.
 

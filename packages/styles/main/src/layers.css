@@ -16,11 +16,15 @@
  *   … the rest of the package's sheets …
  *
  * The order statement comes from the application loading `@canonical/styles`
- * first. The thirteen names are then fixed, and the sub-tier's name, being new,
+ * first. The fifteen names are then fixed, and the sub-tier's name, being new,
  * is appended after them inside `ds.components`, where it sorts above every
  * tier — the tier tree's own rule, the more specific tier wins.
  *
  * A page that loads `@canonical/styles`, or the parts, does not need this file.
+ *
+ * `lib` and `app` are the only names outside `normalize` and `ds.*`: `lib` for
+ * a library outside the design system, such as documentation tooling, and
+ * `app` for an application's own CSS. Both sit above every design-system layer.
  */
 
 @layer normalize,
@@ -35,4 +39,6 @@
   ds.components.sites,
   ds.components.documentation,
   ds.components.stores,
-  ds.components.apps;
+  ds.components.apps,
+  lib,
+  app;
