@@ -15,7 +15,7 @@ describe("Button component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeInTheDocument();
     await expect.element(page.getByText("Button")).toBeVisible();
   });
@@ -25,7 +25,7 @@ describe("Button component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         [attribute]: expected,
       });
@@ -35,7 +35,7 @@ describe("Button component", () => {
     });
 
     it("applies classes", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         class: "test-class",
       });
@@ -45,7 +45,7 @@ describe("Button component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -57,12 +57,12 @@ describe("Button component", () => {
 
   describe("rendering", () => {
     it("renders as a button by default", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(page.getByRole("button")).toBeInTheDocument();
     });
 
     it("renders as an anchor when href is provided", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         href: "https://example.com",
       });
@@ -79,7 +79,7 @@ describe("Button component", () => {
       const iconRight: Snippet = createRawSnippet(() => ({
         render: () => `<span data-testid="icon-right">R</span>`,
       }));
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         iconLeft,
         iconRight,
@@ -91,12 +91,12 @@ describe("Button component", () => {
 
   describe("modifiers", () => {
     it("applies the default importance class", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(componentLocator(page)).toHaveClass("secondary");
     });
 
     it("applies importance class", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         importance: "primary",
       });
@@ -104,7 +104,7 @@ describe("Button component", () => {
     });
 
     it("applies anticipation class", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         anticipation: "destructive",
       });
@@ -112,7 +112,7 @@ describe("Button component", () => {
     });
 
     it("applies emphasis class", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         emphasis: "branded",
       });
@@ -120,7 +120,7 @@ describe("Button component", () => {
     });
 
     it("applies density class", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         density: "dense",
       });
@@ -130,7 +130,7 @@ describe("Button component", () => {
 
   describe("disabled state", () => {
     it("disables the button when disabled", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         disabled: true,
       });
@@ -141,7 +141,7 @@ describe("Button component", () => {
     });
 
     it("disables the button when loading", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         loading: true,
       });
@@ -150,7 +150,7 @@ describe("Button component", () => {
     });
 
     it("does not apply explicit-disabled class when loading", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         loading: true,
       });
@@ -163,7 +163,7 @@ describe("Button component", () => {
   describe("interactions", () => {
     it("handles click events", async () => {
       const onclick = vi.fn();
-      const page = render(Component, { ...baseProps, onclick });
+      const page = await render(Component, { ...baseProps, onclick });
       await page.getByRole("button").click();
       expect(onclick).toHaveBeenCalled();
     });

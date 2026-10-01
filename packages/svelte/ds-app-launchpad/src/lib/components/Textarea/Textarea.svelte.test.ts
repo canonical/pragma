@@ -10,7 +10,7 @@ describe("Textarea component", () => {
   const baseProps = {} satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps, value: "Textarea" });
+    const page = await render(Component, { ...baseProps, value: "Textarea" });
     await expect.element(componentLocator(page)).toBeVisible();
     await expect.element(componentLocator(page)).toHaveValue("Textarea");
   });
@@ -20,21 +20,27 @@ describe("Textarea component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
       await expect.element(componentLocator(page)).toHaveClass("ds");
       await expect.element(componentLocator(page)).toHaveClass("textarea");
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -50,7 +56,7 @@ describe("Textarea component", () => {
         value: "Textarea",
         rows: 3,
       }) satisfies TextareaProps;
-      const page = render(Component, props);
+      const page = await render(Component, props);
       const element = componentLocator(page);
       await expect.element(element).toHaveAttribute("rows", "3");
       props.value = "Textarea\nTextarea\nTextarea\nTextarea\nTextarea";
@@ -62,7 +68,7 @@ describe("Textarea component", () => {
         value: "",
         rows: 3,
       }) satisfies TextareaProps;
-      const page = render(Component, props);
+      const page = await render(Component, props);
       const element = componentLocator(page);
       await expect.element(element).toHaveAttribute("rows", "3");
     });
@@ -72,7 +78,7 @@ describe("Textarea component", () => {
         value: "Textarea",
         rows: [2, 5],
       }) satisfies TextareaProps;
-      const page = render(Component, props);
+      const page = await render(Component, props);
       const element = componentLocator(page);
       await expect.element(element).toHaveAttribute("rows", "2");
       props.value =
@@ -87,7 +93,7 @@ describe("Textarea component", () => {
         value: "Textarea",
         rows: [2, 5],
       }) satisfies TextareaProps;
-      const page = render(Component, props);
+      const page = await render(Component, props);
       const element = componentLocator(page);
       await expect.element(element).toHaveAttribute("rows", "2");
       const longText =

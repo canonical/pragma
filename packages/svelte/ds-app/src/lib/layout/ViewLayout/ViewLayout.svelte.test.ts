@@ -15,7 +15,7 @@ describe("ViewLayout component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders children in the content region", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(page.getByText("Test content")).toBeVisible();
     expect(
       componentRoot(page).querySelector(":scope > .content")?.textContent,
@@ -23,7 +23,7 @@ describe("ViewLayout component", () => {
   });
 
   it("applies the base and custom class to the root", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       class: "custom-class",
     });
@@ -34,7 +34,7 @@ describe("ViewLayout component", () => {
   });
 
   it("renders the aside slot in the aside region", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       aside: createRawSnippet(() => ({
         render: () => "<span>Detail panel</span>",
@@ -49,13 +49,13 @@ describe("ViewLayout component", () => {
   });
 
   it("omits the aside region when the slot is not provided", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentRoot(page)).toBeInTheDocument();
     expect(componentRoot(page).querySelector(":scope > .aside")).toBeNull();
   });
 
   it("passes through additional props", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       "data-testid": "test-component",
     });

@@ -31,7 +31,7 @@ describe("RelativeDateTime component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, baseProps);
+    const page = await render(Component, baseProps);
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
@@ -40,21 +40,30 @@ describe("RelativeDateTime component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, value) => {
-      const page = render(Component, { ...baseProps, [attribute]: value });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: value,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, value);
     });
 
     it("applies style", async () => {
-      const page = render(Component, { ...baseProps, style: "color: orange;" });
+      const page = await render(Component, {
+        ...baseProps,
+        style: "color: orange;",
+      });
       await expect
         .element(componentLocator(page))
         .toHaveStyle("color: orange;");
     });
 
     it("applies class", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       const element = componentLocator(page);
       await expect.element(element).toHaveClass("test-class");
     });
@@ -62,21 +71,21 @@ describe("RelativeDateTime component", () => {
 
   describe("datetime attribute", () => {
     it("applies correct datetime attribute for Date input", async () => {
-      const page = render(Component, baseProps);
+      const page = await render(Component, baseProps);
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("datetime", date.toISOString());
     });
 
     it("applies correct datetime attribute for timestamp input", async () => {
-      const page = render(Component, { ...baseProps, date: timestamp });
+      const page = await render(Component, { ...baseProps, date: timestamp });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("datetime", date.toISOString());
     });
 
     it("applies correct datetime attribute for date string input", async () => {
-      const page = render(Component, { ...baseProps, date: dateString });
+      const page = await render(Component, { ...baseProps, date: dateString });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("datetime", date.toISOString());
@@ -87,7 +96,7 @@ describe("RelativeDateTime component", () => {
     describe("now label", () => {
       it("renders nowLabel when within nowThreshold", async () => {
         const now = Date.now();
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           date: now,
           nowThreshold: 999999,
@@ -97,7 +106,7 @@ describe("RelativeDateTime component", () => {
 
       it("does not render nowLabel when outside nowThreshold", async () => {
         const now = Date.now();
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           date: now - 1000,
           nowThreshold: 10,
@@ -109,7 +118,7 @@ describe("RelativeDateTime component", () => {
 
       it("renders custom nowLabel when within nowThreshold", async () => {
         const now = Date.now();
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           date: now,
           nowThreshold: 999999,
@@ -124,7 +133,7 @@ describe("RelativeDateTime component", () => {
     describe("Relative time", () => {
       it("renders relative time when outside nowThreshold", async () => {
         const pastDate = new Date(Date.now() - 1000 * 60 * 60 * 3); // 3 hours ago
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           date: pastDate,
           nowThreshold: 0,
@@ -138,7 +147,7 @@ describe("RelativeDateTime component", () => {
       it("updates over time", async () => {
         vi.useFakeTimers();
         const pastDate = new Date(Date.now() - 1000 * 60 * 3); // 3 minutes ago
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           date: pastDate,
           nowThreshold: 0,
@@ -165,7 +174,7 @@ describe("RelativeDateTime component", () => {
 
   describe("title attribute", () => {
     it("applies formatted date as title", async () => {
-      const page = render(Component, baseProps);
+      const page = await render(Component, baseProps);
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("title", "1/1/24, 12:00 PM");

@@ -15,7 +15,7 @@ describe("HiddenEvents.Link component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, baseProps);
+    const page = await render(Component, baseProps);
     await expect.element(page.getByRole("link")).toBeInTheDocument();
     await expect.element(page.getByText("Show all")).toBeInTheDocument();
   });
@@ -25,21 +25,30 @@ describe("HiddenEvents.Link component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, value) => {
-      const page = render(Component, { ...baseProps, [attribute]: value });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: value,
+      });
       await expect
         .element(page.getByRole("link"))
         .toHaveAttribute(attribute, value);
     });
 
     it("applies href", async () => {
-      const page = render(Component, { ...baseProps, href: "/show-more" });
+      const page = await render(Component, {
+        ...baseProps,
+        href: "/show-more",
+      });
       await expect
         .element(page.getByRole("link"))
         .toHaveAttribute("href", "/show-more");
     });
 
     it("applies class", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       const element = page.getByRole("link");
       await expect.element(element).toHaveClass("ds");
       await expect.element(element).toHaveClass("timeline-hidden-events-link");
@@ -47,7 +56,7 @@ describe("HiddenEvents.Link component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });

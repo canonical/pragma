@@ -9,7 +9,7 @@ describe("InputPrimitive component", () => {
   const baseProps = {} satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, baseProps);
+    const page = await render(Component, baseProps);
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
@@ -18,14 +18,17 @@ describe("InputPrimitive component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, value) => {
-      const page = render(Component, { ...baseProps, [attribute]: value });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: value,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, value);
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -35,14 +38,17 @@ describe("InputPrimitive component", () => {
     });
 
     it("applies class", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       const element = componentLocator(page);
       await expect.element(element).toHaveClass("test-class");
     });
 
     describe("type", () => {
       it("defaults to text", async () => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
         await expect
           .element(componentLocator(page))
           .toHaveAttribute("type", "text");
@@ -51,7 +57,7 @@ describe("InputPrimitive component", () => {
       it.each(["text", "password", "email", "url", "tel"] as const)(
         "accepts %s",
         async (type) => {
-          const page = render(Component, { ...baseProps, type });
+          const page = await render(Component, { ...baseProps, type });
           await expect
             .element(componentLocator(page))
             .toHaveAttribute("type", type);
@@ -60,14 +66,14 @@ describe("InputPrimitive component", () => {
     });
 
     it("accepts search", async () => {
-      const page = render(Component, { ...baseProps, type: "search" });
+      const page = await render(Component, { ...baseProps, type: "search" });
       await expect
         .element(page.getByRole("searchbox"))
         .toHaveAttribute("type", "search");
     });
 
     it("applies value", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: "Test value",
       });
@@ -76,18 +82,18 @@ describe("InputPrimitive component", () => {
 
     describe("disabled", () => {
       it("isn't disabled by default", async () => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
         await expect.element(componentLocator(page)).not.toBeDisabled();
       });
 
       it("can be disabled", async () => {
-        const page = render(Component, { ...baseProps, disabled: true });
+        const page = await render(Component, { ...baseProps, disabled: true });
         await expect.element(componentLocator(page)).toBeDisabled();
       });
     });
 
     it("applies validation attributes", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         required: true,
       });

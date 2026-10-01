@@ -17,7 +17,7 @@ describe("SideNavigation component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, baseProps);
+    const page = await render(Component, baseProps);
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
@@ -26,7 +26,7 @@ describe("SideNavigation component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, value) => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         [attribute]: value,
       });
@@ -37,7 +37,7 @@ describe("SideNavigation component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -47,7 +47,7 @@ describe("SideNavigation component", () => {
     });
 
     it("applies class", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         class: "test-class",
       });
@@ -61,7 +61,7 @@ describe("SideNavigation component", () => {
   describe("contents", () => {
     describe("while expanded", () => {
       it("renders logo", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           expanded: true,
         });
@@ -71,7 +71,7 @@ describe("SideNavigation component", () => {
       });
 
       it("renders children", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           expanded: true,
         });
@@ -85,7 +85,7 @@ describe("SideNavigation component", () => {
       });
 
       it("renders expand toggle", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           expanded: true,
         });
@@ -105,7 +105,7 @@ describe("SideNavigation component", () => {
       });
 
       it("renders footer", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           expanded: true,
         });
@@ -120,7 +120,7 @@ describe("SideNavigation component", () => {
 
     describe("while collapsed", () => {
       it("renders logo", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           expanded: false,
         });
@@ -130,7 +130,7 @@ describe("SideNavigation component", () => {
       });
 
       it("renders expand toggle", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           expanded: false,
         });
@@ -149,7 +149,7 @@ describe("SideNavigation component", () => {
       });
 
       it("does not render children", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           expanded: false,
         });
@@ -159,7 +159,7 @@ describe("SideNavigation component", () => {
       });
 
       it("renders footer", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           expanded: false,
         });
@@ -175,7 +175,7 @@ describe("SideNavigation component", () => {
 
   it("toggles between expanded and collapsed states", async () => {
     const props = $state({ ...baseProps, expanded: false });
-    const page = render(Component, props);
+    const page = await render(Component, props);
 
     const expandToggle = page.getByRole("button", {
       name: "Expand navigation",

@@ -46,7 +46,7 @@ describe("Tooltip component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page, true)).toBeInTheDocument();
   });
 
@@ -55,14 +55,20 @@ describe("Tooltip component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page, true))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect
         .element(componentLocator(page, true))
         .toHaveClass("test-class");
@@ -71,7 +77,7 @@ describe("Tooltip component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -83,7 +89,7 @@ describe("Tooltip component", () => {
 
   describe("Applies aria-describedby to trigger", () => {
     it("if id not provided", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const button = page.getByRole("button", { name: "Tooltip trigger" });
       const tooltip = page.getByRole("tooltip", { includeHidden: true });
       await expect
@@ -95,7 +101,7 @@ describe("Tooltip component", () => {
     });
 
     it("if id is provided", async () => {
-      const page = render(Component, { id: "test-id", ...baseProps });
+      const page = await render(Component, { id: "test-id", ...baseProps });
       const button = page.getByRole("button", { name: "Tooltip trigger" });
       await expect
         .element(button)
@@ -106,7 +112,7 @@ describe("Tooltip component", () => {
   describe("Is shown", () => {
     // Seems like `button.hover()` is very flaky in firefox, so it needs some retries. If this is really bad, maybe we should skip hover tests in firefox altogether?
     it("on trigger hover", { retry: 3 }, async () => {
-      const page = render(Component, { ...baseProps, delay: 0 });
+      const page = await render(Component, { ...baseProps, delay: 0 });
       const button = page.getByRole("button", { name: "Tooltip trigger" });
       await expect
         .element(page.getByRole("tooltip", { includeHidden: true }))
@@ -120,7 +126,7 @@ describe("Tooltip component", () => {
     });
 
     it("on trigger focus", async () => {
-      const page = render(Component, { ...baseProps, delay: 0 });
+      const page = await render(Component, { ...baseProps, delay: 0 });
       const button = page.getByRole("button", { name: "Tooltip trigger" });
       await expect
         .element(page.getByRole("tooltip", { includeHidden: true }))
@@ -134,7 +140,7 @@ describe("Tooltip component", () => {
     });
 
     it("if mouse moves from trigger to tooltip", async () => {
-      const page = render(Component, { ...baseProps, delay: 0 });
+      const page = await render(Component, { ...baseProps, delay: 0 });
       const button = page.getByRole("button", { name: "Tooltip trigger" });
       const tooltip = page.getByRole("tooltip", { includeHidden: true });
       await expect.element(tooltip).not.toBeVisible();
@@ -148,7 +154,7 @@ describe("Tooltip component", () => {
 
     it("after delay", async () => {
       vi.useFakeTimers();
-      const page = render(Component, { ...baseProps, delay: 350 });
+      const page = await render(Component, { ...baseProps, delay: 350 });
       const button = page.getByRole("button", { name: "Tooltip trigger" });
       await expect
         .element(page.getByRole("tooltip", { includeHidden: true }))
@@ -165,7 +171,7 @@ describe("Tooltip component", () => {
 
     it("immediately if in chaining", async () => {
       vi.useFakeTimers();
-      const page = render(Component, { ...baseProps, delay: 350 });
+      const page = await render(Component, { ...baseProps, delay: 350 });
       const button = page.getByRole("button", { name: "Tooltip trigger" });
       await expect
         .element(page.getByRole("tooltip", { includeHidden: true }))
@@ -186,20 +192,20 @@ describe("Tooltip component", () => {
 
   describe("Renders", () => {
     it("trigger", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const button = page.getByRole("button", { name: "Tooltip trigger" });
       await expect.element(button).toBeInTheDocument();
     });
 
     it("tooltip", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const tooltip = componentLocator(page, true);
       await expect.element(tooltip).toBeInTheDocument();
       await expect.element(tooltip).toHaveTextContent("Tooltip content");
     });
 
     it("not visible by default", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const tooltip = componentLocator(page, true);
       await expect.element(tooltip).not.toBeVisible();
     });

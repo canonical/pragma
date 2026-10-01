@@ -7,13 +7,13 @@ describe("Spinner component", () => {
   const baseProps = {} satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(page.getByLabelText("Loading")).toBeInTheDocument();
   });
 
   describe("attributes", () => {
     it("applies classes", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         class: "test-class",
       });

@@ -6,7 +6,7 @@ import type { BreadcrumbItem } from "./types.js";
 
 describe("Breadcrumbs", () => {
   it("renders items", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       items: [
         { url: "/", label: "Home" },
         { url: "/products", label: "Products" },
@@ -17,7 +17,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("renders as nav element with aria-label", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       "data-testid": "nav",
       items: [{ url: "/", label: "Home" }],
     });
@@ -27,7 +27,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("allows custom aria-label", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       "aria-label": "Site navigation",
       "data-testid": "nav",
       items: [{ url: "/", label: "Home" }],
@@ -38,7 +38,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("applies ds breadcrumbs class", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       "data-testid": "nav",
       items: [{ url: "/", label: "Home" }],
     });
@@ -48,7 +48,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("renders Item with link", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       items: [{ url: "/test", label: "Test Link" }],
     });
     const link = page.getByText("Test Link");
@@ -57,7 +57,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("renders current Item without link", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       items: [{ key: "current", label: "Current Page", current: true }],
     });
     const current = page.getByText("Current Page");
@@ -66,7 +66,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("renders disabled Item as a non-navigable link marked aria-disabled", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       items: [{ url: "/unavailable", label: "Unavailable", disabled: true }],
     });
     const item = page.getByText("Unavailable");
@@ -81,7 +81,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("renders separator between items", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       items: [
         { url: "/", label: "Home" },
         { key: "page", label: "Page", current: true },
@@ -92,8 +92,8 @@ describe("Breadcrumbs", () => {
     await expect.element(separators[0]).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("uses custom separator", () => {
-    const page = render(Component, {
+  it("uses custom separator", async () => {
+    const page = await render(Component, {
       separator: "›",
       items: [
         { url: "/", label: "Home" },
@@ -103,8 +103,8 @@ describe("Breadcrumbs", () => {
     expect(page.getByText("›").all()).toHaveLength(2);
   });
 
-  it("maintains DOM order: link before separator", () => {
-    const page = render(Component, {
+  it("maintains DOM order: link before separator", async () => {
+    const page = await render(Component, {
       items: [{ url: "/", label: "Home", class: "test-item" }],
     });
     const item = page.container.querySelector(".test-item");
@@ -114,7 +114,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("forwards native anchor attributes from an item to its rendered link", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       items: [
         {
           url: "/",
@@ -135,7 +135,7 @@ describe("Breadcrumbs", () => {
     const customItem = createRawSnippet<[BreadcrumbItem]>((getItem) => ({
       render: () => `<li data-testid="custom-item">${getItem().label}</li>`,
     }));
-    const page = render(Component, {
+    const page = await render(Component, {
       items: [
         { url: "/", label: "Home" },
         { key: "custom", label: "Custom" },
@@ -148,7 +148,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("uses url as key, falls back to key prop", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       items: [
         { url: "/home", label: "Home" },
         { key: "no-url", label: "No URL" },
@@ -159,8 +159,8 @@ describe("Breadcrumbs", () => {
     await expect.element(page.getByText("No URL")).toBeInTheDocument();
   });
 
-  it("links are keyboard accessible via Tab navigation", () => {
-    const page = render(Component, {
+  it("links are keyboard accessible via Tab navigation", async () => {
+    const page = await render(Component, {
       items: [
         { url: "/", label: "Home" },
         { url: "/products", label: "Products" },

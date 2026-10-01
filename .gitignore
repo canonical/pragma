@@ -65,6 +65,7 @@ dist/
 storybook-static/
 coverage/
 .vite/
+.vitest/
 
 # [env] Local environment settings
 .docker-project
