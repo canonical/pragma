@@ -43,12 +43,7 @@ const MIXED_ORDER = [
   "app",
 ];
 
-const ADAPTER_ONLY = [
-  "vanilla.escapes",
-  "vanilla",
-  "boundary",
-  "ds.adapter",
-];
+const ADAPTER_ONLY = ["vanilla.escapes", "vanilla", "boundary", "ds.adapter"];
 
 /** Pragma's own order: the mixed order minus the adapter's four layers. */
 const PRAGMA_ORDER = MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name));
