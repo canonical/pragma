@@ -1,0 +1,17 @@
+name: PR scopes
+description: Lists the scopes a pull request title may carry, read from the workspace packages in the checked-out tree.
+outputs:
+  scopes:
+    description: The allowed scopes, one per line, for `amannn/action-semantic-pull-request`'s `scopes` input.
+    value: ${{ steps.scopes.outputs.scopes }}
+runs:
+  using: composite
+  steps:
+    # The logic sits in a sibling shell file rather than inline in this YAML,
+    # where it would have no syntax checking and nothing able to run it
+    # locally. The script needs only the checked-out tree, `jq` and `bash`,
+    # which every runner has, so no toolchain is installed first.
+    - name: List the workspace package names and the fixed scopes
+      id: scopes
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/pr-scopes.sh"
