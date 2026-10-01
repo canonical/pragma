@@ -1,0 +1,79 @@
+<script lang="ts">
+  import { Spinner } from "../../subcomponent/Spinner/index.js";
+  import type { ButtonProps } from "./types.js";
+  import "./styles.css";
+
+  const componentCssClassName = "ds button";
+
+  let {
+    class: className,
+    children,
+    importance = "primary",
+    anticipation,
+    variant,
+    icon,
+    loading = false,
+    disabled,
+    ...rest
+  }: ButtonProps = $props();
+
+  const hasVisibleChildren = $derived(children != null);
+</script>
+
+<!--
+  The icon and label stay in the DOM while loading so the button keeps its
+  width; CSS sets visibility:hidden on them and the Spinner is overlaid
+  centred on top. The label is wrapped so it can be hidden (a bare text
+  child is not an element and cannot be targeted by CSS).
+-->
+<button
+  class={[
+    componentCssClassName,
+    importance,
+    anticipation,
+    variant,
+    loading && "loading",
+    className,
+  ]}
+  aria-busy={loading || undefined}
+  disabled={disabled || loading}
+  {...rest}
+>
+  <!--
+    # TODO: Update Icon to use Svelte Icon
+    # currently blocked by: https://warthogs.atlassian.net/browse/WPE-430
+    # and https://github.com/canonical/pragma-web/pull/959
+  -->
+  {#if icon}
+    <span class="icon">
+      {@render icon()}
+    </span>
+  {/if}
+  {#if hasVisibleChildren}
+    <span class="label">
+      {@render children?.()}
+    </span>
+  {/if}
+  {#if loading}
+    <span class="loading-spinner" aria-hidden="true">
+      <Spinner />
+    </span>
+  {/if}
+</button>
+
+<!-- @component
+Buttons trigger actions within an interface, typically involving data
+transformation or manipulation. They provide clear visual indicators of
+the primary actions users can perform on a page or section.
+
+`import { Button } from "@canonical/svelte-ds-global";`
+
+## Example Usage
+```svelte
+<Button importance="primary" anticipation="constructive">
+  Save changes
+</Button>
+```
+
+@implements ds:global.component.button
+-->
