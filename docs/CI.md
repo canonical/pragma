@@ -20,7 +20,7 @@ npm publishing requires **no token secret**. It uses [OIDC trusted publishing](h
 
 ### Repository Settings
 
-- Branch protection requiring `build-gate` as status check
+- A `main` ruleset that requires a pull request with code-owner review and resolved threads, allows only squash merges, and blocks force pushes and deletion. It requires no status check, so `build-gate` does not block a merge
 - Actions permissions for creating tags and pushing version commits
 - Trusted publisher configured per package on npmjs.com (enables OIDC publishing)
 
@@ -92,7 +92,7 @@ Each matrix job performs three steps:
 2. `bun run check` runs Biome, TypeScript, and webarchitect checks
 3. `bun run test` runs Vitest for all packages
 
-A separate `build-gate` job waits for all matrix jobs to complete. This gate job is the required status check for branch protection; PRs cannot merge until all matrix combinations pass.
+A separate `build-gate` job waits for all matrix jobs to complete. It reports one status for all matrix combinations. The repository's ruleset requires no status check, so a PR can merge while `build-gate` is failing or pending.
 
 ### Tag Workflow (tag.yml)
 
@@ -106,7 +106,7 @@ The workflow has three jobs:
 2. **version** bumps version numbers, generates changelogs, commits, and creates a git tag
 3. **publish** checks out the tagged commit, builds all packages, and publishes them to npm via OIDC trusted publishing (`id-token: write`; no `NODE_AUTH_TOKEN`)
 
-The version job uses Lerna's conventional commit analysis to determine version bumps. A `feat:` commit triggers a minor bump, a `fix:` commit triggers a patch bump, and a `BREAKING CHANGE:` footer triggers a major bump.
+The version job uses Lerna's conventional commit analysis to determine version bumps. A `feat:` commit triggers a minor bump, a `fix:` commit triggers a patch bump, and a `BREAKING CHANGE:` footer or a `!` after the type triggers a major bump. Before 1.0, a breaking change bumps the minor instead (e.g., `0.43.0` → `0.44.0`).
 
 ### Chromatic Workflows
 
@@ -123,7 +123,7 @@ on:
 
 The path list includes both the package itself and its dependencies. Changes to `styles` packages trigger Chromatic for all component packages because style changes affect visual output.
 
-Chromatic workflows use a shared template (`.github/workflows/chromatic._template.yml`) that defines the publish step. Each package workflow passes its working directory and external dependencies to the template. The template does not run `check` or `test` — correctness is enforced by `pr.yml`'s `build-gate` status check, which is required by branch protection.
+Chromatic workflows use a shared template (`.github/workflows/chromatic._template.yml`) that defines the publish step. Each package workflow passes its working directory and external dependencies to the template. The template does not run `check` or `test` — correctness is reported by `pr.yml`'s `build-gate` status check, which the ruleset does not require.
 
 On pull requests, Chromatic requires manual approval for visual changes. On pushes to main, changes are automatically accepted as new baselines. This allows reviewing visual changes during PR review while keeping baselines current after merge.
 
@@ -191,25 +191,7 @@ For font issues, ensure Storybook loads fonts consistently. For animation issues
 
 This happens when a previous release attempt partially succeeded. The git tag was created and pushed, but publishing failed partway through. Some packages may have published while others did not.
 
-To recover:
-
-1. Delete the git tag locally and remotely:
-   ```bash
-   git tag -d v0.12.0
-   git push origin :refs/tags/v0.12.0
-   ```
-
-2. Reset the version commits:
-   ```bash
-   git reset --hard HEAD~1
-   git push --force-with-lease
-   ```
-
-3. Identify which packages did publish and manually bump their versions in package.json to avoid conflicts
-
-4. Re-run the release workflow
-
-For partial publish failures, consider publishing the remaining packages manually with `lerna publish from-package --yes --no-private` after fixing the underlying issue.
+To recover, fix the underlying issue if there is one, then re-run the **publish** job of the same workflow run. `lerna publish from-package` publishes each package whose version npm does not have yet and skips the ones already published. The tag and the version commit stay as they are; do not delete the tag or rewrite `main`.
 
 ### npm publish fails with E404 / authentication errors
 
