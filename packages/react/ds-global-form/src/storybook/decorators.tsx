@@ -3,6 +3,7 @@ import type React from "react";
 import type { ReactElement, ReactNode } from "react";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { Error as FieldError } from "../lib/subcomponent/Field/index.js";
 
 const formCssClassName = "ds form";
 
@@ -113,3 +114,44 @@ const SurfaceBand = ({
 export const surfaces = (
   renderAtLevel: (level: number) => ReactNode,
 ): ReactElement => <SurfaceBand level={0} renderAtLevel={renderAtLevel} />;
+
+/**
+ * Wraps a story in a `.grid.responsive` context (the design-system 4/8/12-column
+ * responsive grid). A `.ds.form` is a `subgrid`, so it only resolves real column
+ * tracks when nested in a parent `.grid` — column-based field layouts (e.g.
+ * ChoicesField's column layout / `--choices-span`) need this to demonstrate
+ * correctly. Compose after `form()`: `[grid(), form()]`.
+ */
+export const grid =
+  () =>
+  (Story: React.ElementType): React.ReactElement => (
+    <div className="grid responsive">
+      <Story />
+    </div>
+  );
+
+/**
+ * Renders a PRESENTATIONAL subcomponent (a bare input, no form / no Wrapper) in
+ * the error visual state.
+ *
+ * In real use the error styling is applied by the field Wrapper, which adds the
+ * `.danger` class to `.ds.field` when react-hook-form reports an error — the
+ * input chrome's red border/focus-ring keys off the `.danger > .payload …`
+ * ancestor selector (and Color/FileUpload re-implement it on their own surface).
+ * A subcomponent story has no Wrapper, so we reproduce that ancestor context
+ * here and append a `FieldError` message — showing the *visual* error layer the
+ * subcomponent owns, without faking react-hook-form state.
+ *
+ * For the functional, RHF-driven error state see the matching `*Field` story's
+ * `WithError` (built with {@link errorStory}).
+ */
+export const danger =
+  (message = "This field has an error") =>
+  (Story: React.ElementType): React.ReactElement => (
+    <div className="ds field danger">
+      <div className="payload">
+        <Story />
+        <FieldError>{message}</FieldError>
+      </div>
+    </div>
+  );
