@@ -12,3 +12,5 @@ Chromatic captures a screenshot of every Storybook story and compares it with an
 
 - **A green root gate does not cover visual review.** Passing `bun run check` and `bun run test` locally predicts the `pr.yml` result, not Chromatic's; a visual change still needs its Chromatic build reviewed and accepted.
 - **Add the `Chromatic: skip` label to a pull request that cannot change rendered UI**, such as a documentation, CI or toolchain change. `chromatic._template.yml` skips the build when the label is present, as it does on a draft pull request, which saves snapshot credits.
+- **A story that makes no network requests turns the MSW addon off** (`parameters: { msw: { disable: true } }`). Otherwise the addon's loading screen is what the story's test step sees.
+- **A Chromatic baseline on `main` goes stale when pushes do not touch the paths its workflow watches**, and the Chromatic workflows cannot be started by hand. When the snapshot quota runs out, the Chromatic checks stay at "Update your plan"; they are not required checks.
