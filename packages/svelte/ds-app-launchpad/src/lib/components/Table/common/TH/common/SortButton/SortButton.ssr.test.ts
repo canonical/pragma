@@ -2,33 +2,26 @@
 
 import type { RenderResult } from "@canonical/svelte-ssr-test";
 import { render } from "@canonical/svelte-ssr-test";
-import type { ComponentProps } from "svelte";
-import { describe, expect, it, vi } from "vitest";
-import type { THContext } from "../../types.js";
-import Component from "./SortButton.svelte";
-
-vi.mock("../../context.js", () => {
-  return {
-    getTHContext: (): THContext => ({
-      sortDirection: undefined,
-    }),
-  };
-});
+import { describe, expect, it } from "vitest";
+import Harness from "./test-harness.svelte";
+import type { SortButtonProps } from "./types.js";
 
 describe("SortButton SSR", () => {
   const baseProps = {
     "aria-label": "Sort",
-  } satisfies ComponentProps<typeof Component>;
+  } satisfies SortButtonProps;
 
   describe("basics", () => {
     it("doesn't throw", () => {
       expect(() => {
-        render(Component, { props: { ...baseProps } });
+        render(Harness, { props: { sortButton: { ...baseProps } } });
       }).not.toThrow();
     });
 
     it("renders", () => {
-      const page = render(Component, { props: { ...baseProps } });
+      const page = render(Harness, {
+        props: { sortButton: { ...baseProps } },
+      });
       expect(componentLocator(page)).toBeInstanceOf(
         page.window.HTMLButtonElement,
       );
@@ -37,22 +30,22 @@ describe("SortButton SSR", () => {
 
   describe("attributes", () => {
     it.each([["id", "test-id"]])("applies %s", (attribute, expected) => {
-      const page = render(Component, {
-        props: { ...baseProps, [attribute]: expected },
+      const page = render(Harness, {
+        props: { sortButton: { ...baseProps, [attribute]: expected } },
       });
       expect(componentLocator(page).getAttribute(attribute)).toBe(expected);
     });
 
     it("applies classes", () => {
-      const page = render(Component, {
-        props: { class: "test-class", ...baseProps },
+      const page = render(Harness, {
+        props: { sortButton: { ...baseProps, class: "test-class" } },
       });
       expect(componentLocator(page).classList).toContain("test-class");
     });
 
     it("applies style", () => {
-      const page = render(Component, {
-        props: { style: "color: orange;", ...baseProps },
+      const page = render(Harness, {
+        props: { sortButton: { ...baseProps, style: "color: orange;" } },
       });
       expect(componentLocator(page).style.color).toBe("orange");
     });

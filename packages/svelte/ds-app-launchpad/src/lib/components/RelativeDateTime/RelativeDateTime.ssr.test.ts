@@ -3,22 +3,9 @@
 import type { RenderResult } from "@canonical/svelte-ssr-test";
 import { render } from "@canonical/svelte-ssr-test";
 import type { ComponentProps } from "svelte";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import Component from "./RelativeDateTime.svelte";
-
-vi.mock("./utils/formatters.js", () => {
-  return {
-    dateTimeFormatter: new Intl.DateTimeFormat("en-US", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: "UTC",
-    }),
-    relativeTimeFormatter: new Intl.RelativeTimeFormat("en-US", {
-      numeric: "auto",
-      style: "long",
-    }),
-  };
-});
+import { dateTimeFormatter } from "./utils/formatters.js";
 
 const date = new Date("2024-01-01T12:00:00Z");
 const timestamp = date.getTime();
@@ -144,8 +131,10 @@ describe("RelativeDateTime SSR", () => {
     const page = render(Component, {
       props: { ...baseProps },
     });
+    // The suite pins TZ in the vite config, so the real formatter is
+    // deterministic; assert its output rather than a hard-coded string.
     expect(componentLocator(page).getAttribute("title")).toBe(
-      "1/1/24, 12:00 PM",
+      dateTimeFormatter.format(date),
     );
   });
 });

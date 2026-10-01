@@ -1,21 +1,11 @@
 /* @canonical/generator-ds 0.17.1 */
 
 import type { ComponentProps } from "svelte";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { Locator } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
 import Component from "./DateTime.svelte";
-
-vi.mock("./utils/formatters.js", () => {
-  return {
-    defaultDateTimeFormatter: new Intl.DateTimeFormat("en-US", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: "UTC",
-    }),
-  };
-});
 
 const date = new Date("2024-01-01T12:00:00Z");
 const timestamp = date.getTime();
