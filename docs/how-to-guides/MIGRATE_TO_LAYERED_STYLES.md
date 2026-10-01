@@ -33,9 +33,9 @@ That is `@canonical/styles` and the typographic engine it brings with it. The co
 stylesheets move into the two component tiers in a separate change; until that lands they are still
 unlayered, and they still meet your CSS on specificity and source order rather than on layers.
 
-So there is one decision to take and one thing to check.
+So there is one thing to change and one thing to check.
 
-## 1. Decide what your own CSS does
+## 1. Put your own CSS in a layer
 
 **Your unlayered CSS now beats every rule `@canonical/styles` ships.** That is the cascade working as
 defined — a rule in no layer outranks a rule in any layer, whatever the selectors on either side — and
@@ -44,20 +44,11 @@ your overrides sometimes lost. Against it they cannot lose any more. If you were
 rules to win a tie, it will not. (The component packages are the exception until their stylesheets are
 wrapped: those are still unlayered, so they still meet your CSS the old way.)
 
-Two answers are valid.
-
-**Accept it.** Your stylesheet wins, everywhere, and that needs no work at all. It is a reasonable
-choice for an application with a handful of overrides.
-
-**Or put your CSS in a layer**, so that its position is a decision rather than a side effect of
-whatever your bundler emits first. Write your own statement, naming your layer last, before the design
-system's import:
+**Put your CSS in `@layer app`**, so that its position is a decision rather than a side effect of
+whatever your bundler emits first. Import the design system first in your entry, then wrap your own
+rules:
 
 ```css
-@layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers,
-  ds.surfaces, ds.states, ds.components, ds.components.global,
-  ds.components.sites, ds.components.documentation, ds.components.stores,
-  ds.components.apps, app;
 @import url("@canonical/styles");
 
 @layer app {
@@ -65,18 +56,14 @@ system's import:
 }
 ```
 
-The order of those names is the design system's own, taken from
-[the README's cascade section](../../packages/styles/main/README.md#cascade-layers), with `app` added
-at the end. Naming them all is what makes the position of `app` yours: a layer's rank is fixed the
-first time it is named, and a statement that comes later may add names but can never reorder the ones
-already fixed. With `app` last, your rules beat every design-system layer *by layer* — and a rule of
-yours that you later want a component to override can simply be moved into a lower layer instead of
-being deleted or fought with a longer selector.
+The design system's order statement already names `app`, last, after every design-system layer (see
+[the README's cascade section](../../packages/styles/main/README.md#cascade-layers)), so you write no
+statement of your own. Your rules beat every design-system layer *by layer*, whatever the selectors
+on either side.
 
-Skipping the statement and writing only `@layer app { … }` is the one arrangement that bites: the
-position of `app` is then decided by whether your block or the design system's import reaches the
-browser first, and if it is yours, `app` sits *below* everything the design system ships. See the
-first troubleshooting entry.
+The import has to come first. A layer's rank is fixed the first time it is named, so if your
+`@layer app { … }` block reaches the browser before the design system's import, `app` sits *below*
+everything the design system ships. See the first troubleshooting entry.
 
 `!important` in your CSS still wins, and among important declarations the layer order runs backwards,
 so an important rule in the lowest layer is the strongest author rule on the page. Neither fact
@@ -103,7 +90,7 @@ What comes back depends on whether the build kept the statement. If it did, the 
 statement itself — every name, in the order it declared them — followed by one entry per layer block,
 in the order the browser read the files, which is not the declared order and does not need to be. If a
 minifier deleted the statement, the blocks themselves come back in the declared order. Either way the
-property to check is the same one: the **first** appearance of each name follows the order you
+property to check is the same one: the **first** appearance of each name follows the order the statement
 declared, and if you layered your own CSS in step 1, `app` never appears before a design-system name.
 A name that first appears too early is the bug — the first troubleshooting entry below.
 
@@ -141,7 +128,7 @@ ranks above them. The cascade contract has the recipe.
 Anything below an entry is a leaf stylesheet, and a leaf **carries no order statement**, because the
 order arrives through the entry that imports it. The layers such a file opens are ordered by wherever they first
 appear among your own rules, which is the accident the statement exists to remove. If you have a
-reason to reach past the entries, write the statement yourself, as in step 1.
+reason to reach past the entries, import `layers.css` before them.
 
 ## The browser floor
 
@@ -158,17 +145,15 @@ own styles while the text inside them falls back to the browser's.
 
 ### Your overrides stopped winning once you layered them
 
-Layering your CSS moved it from "beats everything" to "wherever its layer happens to rank" — and if
-you wrapped your rules in `@layer app { … }` without naming `app` in a statement of your own, its rank
-was decided by first appearance. When your stylesheet reaches the browser before the design system's
-entry, `app` is established first and every design-system layer is appended *above* it — so wherever
+Layering your CSS moved it from "beats everything" to "wherever its layer happens to rank" — and
+the rank of `app` is decided by first appearance. When your stylesheet reaches the browser before the
+design system's entry, `app` is established first and every design-system layer is appended *above* it — so wherever
 the design system also sets that property on that element, your rule now loses, however specific it
 is.
 
 Run the devtools snippet from step 2: if `app` comes back first in the list instead of last, that is
-this. The fix is the statement in step 1, written before the import — it fixes the rank of `app`
-whatever the load order, which is the whole reason to write one. Removing the `@layer app` wrapper is
-the other valid fix: unlayered, your CSS wins again.
+this. The fix is the order in step 1: import `@canonical/styles` first in your entry, so its statement
+places `app` above every design-system layer before your stylesheet arrives.
 
 ### The design system's text styles reached markup another framework owns
 

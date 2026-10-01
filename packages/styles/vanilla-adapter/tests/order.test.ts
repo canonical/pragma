@@ -39,18 +39,13 @@ const MIXED_ORDER = [
   "ds.components.documentation",
   "ds.components.stores",
   "ds.components.apps",
+  "lib",
   "app",
 ];
 
-const ADAPTER_ONLY = [
-  "vanilla.escapes",
-  "vanilla",
-  "boundary",
-  "ds.adapter",
-  "app",
-];
+const ADAPTER_ONLY = ["vanilla.escapes", "vanilla", "boundary", "ds.adapter"];
 
-/** Pragma's own order: the mixed order minus the adapter's five layers. */
+/** Pragma's own order: the mixed order minus the adapter's four layers. */
 const PRAGMA_ORDER = MIXED_ORDER.filter((name) => !ADAPTER_ONLY.includes(name));
 
 /** The layers elements.css carries, in pragma's order. */
@@ -107,7 +102,7 @@ const withoutImports = (css: string): string =>
   css.replace(/^\s*@import[^;]*;/gm, "");
 
 describe("the order contract", () => {
-  it("layers.css is a single statement naming the eighteen layers in order", () => {
+  it("layers.css is a single statement naming the nineteen layers in order", () => {
     const sheet = parse(layersCss);
     expect(sheet.cssRules.length).toBe(1);
     expect(sheet.cssRules[0]).toBeInstanceOf(CSSLayerStatementRule);
@@ -232,7 +227,7 @@ describe("the order contract", () => {
     ).toBe(SECOND_BOUNDARY.length);
   });
 
-  it("@canonical/styles and each of its entries open with pragma's own statement, the mixed order minus the adapter's five", () => {
+  it("@canonical/styles and each of its entries open with pragma's own statement, the mixed order minus the adapter's four", () => {
     // The mixed page sees the adapter's statement first and pragma's later, at
     // the top of each entry. A later statement can add layers but never
     // reorder the ones already fixed; this one adds none and lists them in the
@@ -248,7 +243,7 @@ describe("the order contract", () => {
     );
   });
 
-  it("sorts all 153 pairs of the eighteen names as written, by computed style", async () => {
+  it("sorts all 171 pairs of the nineteen names as written, by computed style", async () => {
     // The name list alone cannot show this: a top-level layer written between
     // two sublayers of `ds` sorts above all of `ds`, which is how a top-level
     // `adapter` sat above the component tiers until it became `ds.adapter`.
@@ -267,7 +262,7 @@ describe("the order contract", () => {
         css += `@layer ${MIXED_ORDER[j]} { #${id} { color: rgb(2, 2, 2) } } @layer ${MIXED_ORDER[i]} { #${id} { color: rgb(1, 1, 1) } }\n`;
         body += `<i id="${id}"></i>`;
       }
-    expect(pairs.length).toBe(153);
+    expect(pairs.length).toBe(171);
     const doc = await render({ root: "", styles: [layersCss, css], body });
     const parentWins = (i: number, j: number): boolean =>
       MIXED_ORDER[j]?.startsWith(`${MIXED_ORDER[i]}.`) ?? false;

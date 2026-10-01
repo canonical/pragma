@@ -36,7 +36,7 @@ const ELEMENT_LAYERS = ["normalize", "ds.reset", "ds.typography"];
 
 /** Pragma's own order statement, which each of its entries opens with. */
 const PRAGMA_ORDER =
-  "@layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces, ds.states, ds.components, ds.components.global, ds.components.sites, ds.components.documentation, ds.components.stores, ds.components.apps";
+  "@layer normalize, ds.tokens, ds.reset, ds.typography, ds.modifiers, ds.surfaces, ds.states, ds.components, ds.components.global, ds.components.sites, ds.components.documentation, ds.components.stores, ds.components.apps, lib, app";
 
 /** The scope prelude every confined block uses. The `to` limit is this
  * package's own addition, absent from pragma's plain source: it is what makes
@@ -716,7 +716,7 @@ describe("@canonical/styles exposes what a mixed page needs", () => {
   const tokens = entry("tokens.css");
   const layout = entry("layout.css");
 
-  it("declares one order, pragma's thirteen names, in one file, and every entry reads it first", () => {
+  it("declares one order, pragma's fifteen names, in one file, and every entry reads it first", () => {
     // The adapter's statement comes first on a mixed page; pragma's arrives
     // later, through its entries, and a later statement can add layers but
     // never reorder the ones already fixed. Pragma declares its order in
