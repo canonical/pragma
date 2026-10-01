@@ -36,36 +36,12 @@ jobs:
           fetch-depth: 1
 
       # Every `package.json` that the root `workspaces` globs match contributes
-      # its name without the `@canonical/` prefix. The action treats each entry
-      # as a regex wrapped in `^ $`, so `ke` does not admit `ke-graphql`; a `.`
-      # in a name is escaped so that it matches only itself. Four scopes name no
-      # package and are appended: `deps`, `monorepo`, `constitution` and `ci`.
+      # its name without the `@canonical/` prefix, and four scopes that name no
+      # package are appended: `deps`, `monorepo`, `constitution` and `ci`. The
+      # action's `pr-scopes.sh` holds the logic and prints the list in its log.
       - name: Compute the allowed scopes from the workspace packages
         id: scopes
-        shell: bash
-        run: |
-          names="$(
-            jq -r '.workspaces[]' package.json |
-            while IFS= read -r glob; do
-              for manifest in $glob/package.json; do
-                if [ -f "$manifest" ]; then echo "$manifest"; fi
-              done
-            done |
-            xargs -r jq -r '.name // empty' |
-            sed -e 's#^@canonical/##' -e 's/\./\\./g' |
-            sort -u
-          )"
-          if [ -z "$names" ]; then
-            echo "::error::No workspace package names found; refusing to run the title lint without a scope list."
-            exit 1
-          fi
-          scopes="$(printf '%s\n' "$names" deps monorepo constitution ci)"
-          echo "$scopes"
-          {
-            echo "scopes<<SCOPES"
-            echo "$scopes"
-            echo "SCOPES"
-          } >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/pr-scopes
 
       - name: Verify conventional commit-compliant PR title
         uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6
