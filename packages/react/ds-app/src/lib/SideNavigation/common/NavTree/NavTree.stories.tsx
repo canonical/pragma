@@ -1,8 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import {
-  flatRoot,
-  maasContentRoot,
-} from "../../../../storybook/navigation/fixtures.js";
+import * as fixtures from "../../../../storybook/navigation/fixtures.js";
 import {
   navDecorators,
   withNavigationRouterProps,
@@ -29,13 +26,13 @@ type Story = StoryObj<typeof NavTree>;
 /** Grouped tree: level-1 groups, each wrapping its level-2 items. */
 export const Grouped: Story = {
   args: {
-    root: maasContentRoot,
+    root: fixtures.maasContentRoot,
   },
 };
 
 /** A single unlabelled group — a flat list of items. */
 export const Flat: Story = {
   args: {
-    root: flatRoot,
+    root: fixtures.flatRoot,
   },
 };

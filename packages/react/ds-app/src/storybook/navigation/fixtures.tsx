@@ -1,11 +1,7 @@
+import { Badge } from "@canonical/react-ds-global";
 import type { ContextSwitcherItem } from "../../lib/SideNavigation/common/ContextSwitcher/types.js";
 import { createHelpItem } from "../../lib/SideNavigation/helpItem.js";
-import type {
-  FooterRoot,
-  LeafNavItem,
-  NavRoot,
-} from "../../lib/SideNavigation/types.js";
-import { MockBadge } from "./story-utils.js";
+import type { FooterRoot, NavRoot } from "../../lib/SideNavigation/types.js";
 
 /**
  * Story fixtures for SideNavigation. Story-only (this folder is excluded
@@ -16,11 +12,6 @@ import { MockBadge } from "./story-utils.js";
  * leaves, which may carry a leading `icon` and trailing `slot`. The MAAS
  * and LXD trees mirror those apps' real left-hand navigation.
  */
-
-/** A count badge used in fixtures via a leaf's `slot`. */
-const badge = (value: number | string): LeafNavItem["slot"] => (
-  <MockBadge>{value}</MockBadge>
-);
 
 // --- MAAS (Metal as a Service) -------------------------------------------
 // Mirrors maas-ui's grouped sidebar. Internal route paths; a real deployment
@@ -38,7 +29,7 @@ export const maasContentRoot: NavRoot = {
           url: "/machines",
           label: "Machines",
           icon: "machines",
-          slot: badge(42),
+          slot: <Badge value={42} criticality="warning" />,
         },
         { url: "/devices", label: "Devices", icon: "units" },
         { url: "/controllers", label: "Controllers", icon: "controllers" },
@@ -76,7 +67,6 @@ export const maasContentRoot: NavRoot = {
           url: "/network-discovery",
           label: "Network discovery",
           icon: "search",
-          slot: badge("new"),
         },
       ],
     },
@@ -175,7 +165,7 @@ export const lxdContentRoot: NavRoot = {
           url: "/ui/warnings?status=new",
           label: "Warnings",
           icon: "warning",
-          slot: badge(3),
+          slot: <Badge value={3} criticality="warning" />,
         },
         { url: "/ui/settings", label: "Settings", icon: "settings" },
       ],
@@ -317,7 +307,7 @@ export const lxdProjectContexts: ContextSwitcherItem[] = [
     name: "staging",
     url: "/ui/project/staging/instances",
     description: "Pre-production environment",
-    badge: badge(12),
+    badge: <Badge value={12} criticality="warning" />,
   },
   {
     key: "sandbox",
@@ -339,7 +329,12 @@ export const flatRoot: NavRoot = {
       key: "flat-group",
       items: [
         { url: "/one", label: "One", icon: "home" },
-        { url: "/two", label: "Two", icon: "book", slot: badge(7) },
+        {
+          url: "/two",
+          label: "Two",
+          icon: "book",
+          slot: <Badge value={7} criticality="warning" />,
+        },
         { url: "/three", label: "Three", icon: "tag" },
       ],
     },

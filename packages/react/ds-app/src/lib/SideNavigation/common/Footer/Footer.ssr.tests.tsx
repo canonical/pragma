@@ -15,11 +15,11 @@ describe("Footer SSR", () => {
       />,
     );
     expect(html).toContain("Log out");
-    expect(html).toContain("ds footer");
+    expect(html).toContain("ds side-navigation-footer");
   });
 
   it("renders an empty region with no data", () => {
     const html = renderToString(<Footer />);
-    expect(html).toContain("ds footer");
+    expect(html).toContain("ds side-navigation-footer");
   });
 });

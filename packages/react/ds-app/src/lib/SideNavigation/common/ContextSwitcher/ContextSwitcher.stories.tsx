@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { lxdProjectContexts } from "../../../../storybook/navigation/fixtures.js";
+import * as fixtures from "../../../../storybook/navigation/fixtures.js";
 import { withSideNavShell } from "../../../../storybook/navigation/story-utils.js";
 import ContextSwitcher from "./ContextSwitcher.js";
 
@@ -10,8 +10,8 @@ const meta: Meta<typeof ContextSwitcher> = {
   parameters: { layout: "fullscreen" },
   decorators: [withSideNavShell],
   args: {
-    currentContext: lxdProjectContexts[0],
-    contexts: lxdProjectContexts,
+    currentContext: fixtures.lxdProjectContexts[0],
+    contexts: fixtures.lxdProjectContexts,
     onContextChange: fn(),
   },
 };

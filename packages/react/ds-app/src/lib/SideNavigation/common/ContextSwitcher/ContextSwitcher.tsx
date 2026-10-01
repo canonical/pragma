@@ -62,9 +62,9 @@ const ContextItemContent = ({
  * full roving-focus keyboard navigation. `title`, when given, renders via
  * `SideNavigation.GroupHeader` as a sibling above the dropdown field.
  *
- * Not part of the `NavRoot`/`NavGroup` content-tree data model — its
- * position is content-defined: compose this component directly where
- * the consumer wants it. See SPEC.md's known issues.
+ * Not part of the `NavRoot`/`NavGroup` content-tree data model — it
+ * embeds via `SideNavigation`'s `contextSwitcher` prop slot, its region
+ * class owning the collapsed-rail hide.
  *
  * @implements ds:apps.subcomponent.side-navigation-context-switcher
  */

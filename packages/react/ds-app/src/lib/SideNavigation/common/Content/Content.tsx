@@ -3,7 +3,7 @@ import { NavTree } from "../NavTree/index.js";
 import type { ContentProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds content";
+const componentCssClassName = "ds side-navigation-content";
 
 /**
  * SideNavigation.Content — the component's main `<nav>` landmark, and the

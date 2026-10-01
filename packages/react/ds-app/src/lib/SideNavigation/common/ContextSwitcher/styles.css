@@ -75,7 +75,7 @@
         font-size: var(--typography-text-secondary-font-size);
       }
 
-      & .badge {
+      & > .badge {
         position: absolute;
         align-self: flex-end;
       }

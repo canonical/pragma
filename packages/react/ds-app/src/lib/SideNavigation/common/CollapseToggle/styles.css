@@ -6,8 +6,7 @@
     align-items: center;
     justify-content: center;
 
-    /* size matches collapse icons */
-    inline-size: calc(var(--dimension-400) + var(--dimension-050));
+    inline-size: var(--sidenav-collapse-toggle-inline-size);
     block-size: var(--dimension-400);
 
     border: none;

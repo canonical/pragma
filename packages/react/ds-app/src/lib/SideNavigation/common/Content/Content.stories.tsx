@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { maasContentRoot } from "../../../../storybook/navigation/fixtures.js";
+import * as fixtures from "../../../../storybook/navigation/fixtures.js";
 import {
   navDecorators,
   withNavigationRouterProps,
@@ -26,6 +26,6 @@ type Story = StoryObj<typeof Content>;
 /** Renders the main navigation tree from a WD405 root. */
 export const Default: Story = {
   args: {
-    root: maasContentRoot,
+    root: fixtures.maasContentRoot,
   },
 };
