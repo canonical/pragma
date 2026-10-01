@@ -21,7 +21,7 @@ describe("Event component", () => {
 
   describe("basics", () => {
     it("renders", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(componentLocator(page)).toBeInTheDocument();
     });
   });
@@ -31,14 +31,20 @@ describe("Event component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, value) => {
-      const page = render(Component, { ...baseProps, [attribute]: value });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: value,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, value);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       const element = componentLocator(page);
       await expect.element(element).toHaveClass("ds");
       await expect.element(element).toHaveClass("timeline-event");
@@ -46,7 +52,10 @@ describe("Event component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, { ...baseProps, style: "color: orange;" });
+      const page = await render(Component, {
+        ...baseProps,
+        style: "color: orange;",
+      });
       await expect
         .element(componentLocator(page))
         .toHaveStyle({ color: "orange" });
@@ -55,12 +64,12 @@ describe("Event component", () => {
 
   describe("Renders", () => {
     it("renders children", async () => {
-      const page = render(Component, { ...baseProps, children });
+      const page = await render(Component, { ...baseProps, children });
       await expect.element(page.getByText("Child Content")).toBeInTheDocument();
     });
 
     it("renders title row", async () => {
-      const page = render(Component, { ...baseProps, titleRow });
+      const page = await render(Component, { ...baseProps, titleRow });
       await expect
         .element(page.getByText("Title Row Content"))
         .toBeInTheDocument();
@@ -71,14 +80,14 @@ describe("Event component", () => {
 
     describe("Marker", () => {
       it("empty by default", async () => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
         const element = componentLocator(page);
         await expect.element(element).toHaveClass("marker-empty");
         expect(element.element().querySelector(".marker")).toBeInTheDocument();
       });
 
       it("small", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           marker: { userName: "John Doe" },
           markerSize: "small",
@@ -89,7 +98,7 @@ describe("Event component", () => {
       });
 
       it("large", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           marker: { userName: "John Doe" },
           markerSize: "large",

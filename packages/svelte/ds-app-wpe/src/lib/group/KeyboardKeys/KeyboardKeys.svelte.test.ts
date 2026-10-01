@@ -10,13 +10,13 @@ const children = createRawSnippet(() => ({
 
 describe("KeyboardKeys component", () => {
   it("renders children", async () => {
-    const page = render(Component, { children });
+    const page = await render(Component, { children });
     await expect.element(page.getByText("Test content")).toBeVisible();
   });
 
   describe("attributes", () => {
     it("passes through additional props", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         children,
         "data-testid": "test-component",
       });
@@ -26,7 +26,7 @@ describe("KeyboardKeys component", () => {
     });
 
     it("applies base and custom classes", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         children,
         class: "custom-class",
         "data-testid": "keyboard-keys",

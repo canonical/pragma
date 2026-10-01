@@ -9,7 +9,7 @@ describe("TextInput component", () => {
   const baseProps = {} satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeVisible();
   });
 
@@ -18,21 +18,27 @@ describe("TextInput component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
       await expect.element(componentLocator(page)).toHaveClass("ds");
       await expect.element(componentLocator(page)).toHaveClass("text-input");
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -45,7 +51,7 @@ describe("TextInput component", () => {
   describe("Input attributes", () => {
     describe("type", () => {
       it("defaults to text", async () => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
         await expect
           .element(componentLocator(page))
           .toHaveAttribute("type", "text");
@@ -54,7 +60,7 @@ describe("TextInput component", () => {
       it.each(["text", "password", "email", "url", "tel"] as const)(
         "accepts %s",
         async (type) => {
-          const page = render(Component, {
+          const page = await render(Component, {
             ...baseProps,
             type,
           });
@@ -65,7 +71,7 @@ describe("TextInput component", () => {
       );
 
       it("accepts search", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           type: "search",
         });
@@ -76,7 +82,7 @@ describe("TextInput component", () => {
     });
 
     it("applies value", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: "Test value",
       });
@@ -85,12 +91,12 @@ describe("TextInput component", () => {
 
     describe("Disabled state", () => {
       it("isn't disabled by default", async () => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
         await expect.element(componentLocator(page)).not.toBeDisabled();
       });
 
       it("can be disabled", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           disabled: true,
         });
@@ -101,7 +107,7 @@ describe("TextInput component", () => {
 
   describe("Validation attributes", () => {
     it("applies required", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         required: true,
       });
@@ -115,7 +121,7 @@ describe("TextInput component", () => {
     });
 
     it("minlength", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         minlength: 5,
       });

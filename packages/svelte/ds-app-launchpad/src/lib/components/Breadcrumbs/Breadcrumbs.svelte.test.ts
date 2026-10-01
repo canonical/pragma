@@ -21,7 +21,7 @@ describe("Breadcrumbs component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
@@ -30,7 +30,7 @@ describe("Breadcrumbs component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         [attribute]: expected,
       });
@@ -40,7 +40,7 @@ describe("Breadcrumbs component", () => {
     });
 
     it("applies classes", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         class: "test-class",
       });
@@ -50,7 +50,7 @@ describe("Breadcrumbs component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -62,7 +62,7 @@ describe("Breadcrumbs component", () => {
 
   describe("basic rendering", () => {
     it("renders breadcrumbs navigation", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect
         .element(page.getByRole("navigation", { name: "Breadcrumbs" }))
         .toBeInTheDocument();
@@ -70,7 +70,7 @@ describe("Breadcrumbs component", () => {
     });
 
     it("renders all segments", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       for (const segment of baseProps.segments) {
         if (segment.href) {
           const linkElement = page.getByRole("link", {
@@ -97,7 +97,7 @@ describe("Breadcrumbs component", () => {
         { label: "Category", href: "/category" },
         { label: "Current", href: "/current" },
       ];
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         segments,
       });
@@ -131,7 +131,7 @@ describe("Breadcrumbs component", () => {
     };
 
     it("has all segments visible if no collapse is applied", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...collapseProps,
         minNumExpanded: "all",
       });
@@ -144,7 +144,7 @@ describe("Breadcrumbs component", () => {
     });
 
     it("properly collapses if width is insufficient", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...collapseProps,
         minNumExpanded: 0,
       });
@@ -175,7 +175,7 @@ describe("Breadcrumbs component", () => {
 
     it("properly works with the numeric collapse value", async () => {
       const minNumExpanded = 3;
-      const page = render(Component, {
+      const page = await render(Component, {
         ...collapseProps,
         minNumExpanded,
       });
@@ -192,7 +192,7 @@ describe("Breadcrumbs component", () => {
 
     describe("edge cases", () => {
       it("works properly when minNumExpanded is greater than segments count", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...collapseProps,
           minNumExpanded: 1000,
         });
@@ -206,7 +206,7 @@ describe("Breadcrumbs component", () => {
       });
 
       it("works properly when minNumExpanded is set to negative value", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...collapseProps,
           minNumExpanded: -1,
         });
@@ -224,7 +224,7 @@ describe("Breadcrumbs component", () => {
   describe("accessibility", () => {
     describe("list structure", () => {
       it("uses proper flat list structure", async () => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
 
         await expect.element(page.getByRole("list")).toBeInTheDocument();
         expect(page.getByRole("listitem").elements()).toHaveLength(
@@ -244,7 +244,7 @@ describe("Breadcrumbs component", () => {
             href: "/level1/level2/level3/level4/current",
           },
         ];
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           segments,
           minNumExpanded: 1,
@@ -261,7 +261,7 @@ describe("Breadcrumbs component", () => {
 
     describe("focus management", () => {
       it("allows focusing links with tab key", async () => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
 
         const firstLink = page.getByRole("link", { name: "Home" });
         await expect.element(firstLink).toBeVisible();
@@ -281,7 +281,7 @@ describe("Breadcrumbs component", () => {
       });
 
       it("allows focusing links with tab key when segments are collapsed", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           minNumExpanded: 2,
         });
@@ -319,7 +319,7 @@ describe("Breadcrumbs component", () => {
 
   describe("segments", () => {
     it("segments with href are rendered as links", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         segments: [
           { label: "Linked Segment", href: "/linked" },
@@ -339,7 +339,7 @@ describe("Breadcrumbs component", () => {
     it("segments props are reactive", async () => {
       const segment = $state<Segment>({ label: "Initial", href: "/initial" });
 
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         segments: [segment],
       });

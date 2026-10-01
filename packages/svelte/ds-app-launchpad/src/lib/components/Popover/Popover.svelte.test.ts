@@ -23,13 +23,13 @@ describe("Popover component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(triggerLocator(page)).toBeInTheDocument();
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
   it("renders content", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect
       .element(componentLocator(page))
       .toHaveTextContent(childrenText);
@@ -40,21 +40,27 @@ describe("Popover component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
       await expect.element(componentLocator(page)).toHaveClass("ds");
       await expect.element(componentLocator(page)).toHaveClass("popover");
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -66,7 +72,7 @@ describe("Popover component", () => {
 
   describe("Declarative controls", () => {
     it("properly associates the trigger with the popover if no id is provided", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const popoverId = triggerLocator(page)
         .element()
         .getAttribute("popovertarget");
@@ -77,7 +83,7 @@ describe("Popover component", () => {
     });
 
     it("properly associates the trigger with the popover if an id is provided", async () => {
-      const page = render(Component, { ...baseProps, id: "custom-id" });
+      const page = await render(Component, { ...baseProps, id: "custom-id" });
       await expect
         .element(triggerLocator(page))
         .toHaveAttribute("popovertarget", "custom-id");
@@ -87,7 +93,7 @@ describe("Popover component", () => {
     });
 
     it("clicking the trigger toggles the popover", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(componentLocator(page)).not.toBeVisible();
       await triggerLocator(page).click();
       await expect.element(componentLocator(page)).toBeVisible();
@@ -100,7 +106,7 @@ describe("Popover component", () => {
 
     it("ontoggle is called on trigger click", async () => {
       const ontoggle = vi.fn();
-      const page = render(Component, { ...baseProps, ontoggle });
+      const page = await render(Component, { ...baseProps, ontoggle });
       await triggerLocator(page).click();
       expect(ontoggle).toHaveBeenCalledOnce();
       await triggerLocator(page, true).click();
@@ -109,7 +115,7 @@ describe("Popover component", () => {
 
     it("onbeforetoggle is called on trigger click", async () => {
       const onbeforetoggle = vi.fn();
-      const page = render(Component, { ...baseProps, onbeforetoggle });
+      const page = await render(Component, { ...baseProps, onbeforetoggle });
       await triggerLocator(page).click();
       expect(onbeforetoggle).toHaveBeenCalledOnce();
       await triggerLocator(page, true).click();
@@ -119,7 +125,7 @@ describe("Popover component", () => {
 
   describe("Imperative controls", () => {
     it("showPopover shows the popover", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const component = page.component as unknown as PopoverMethods;
       await expect.element(componentLocator(page)).not.toBeVisible();
       component.showPopover();
@@ -130,7 +136,7 @@ describe("Popover component", () => {
     });
 
     it("hidePopover hides the popover", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const component = page.component as unknown as PopoverMethods;
       component.showPopover();
       await expect.element(componentLocator(page)).toBeVisible();
@@ -142,7 +148,7 @@ describe("Popover component", () => {
     });
 
     it("togglePopover toggles the popover", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const component = page.component as unknown as PopoverMethods;
       await expect.element(componentLocator(page)).not.toBeVisible();
       component.togglePopover();

@@ -23,37 +23,40 @@ describe("Button component", () => {
 
   describe("rendering", () => {
     it("renders children", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect
         .element(page.getByText(buttonChildrenText))
         .toBeInTheDocument();
     });
 
     it("renders as a button element", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const root = componentLocator(page).element();
       expect(root.tagName).toBe("BUTTON");
     });
 
     it("applies base classes", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(componentLocator(page)).toHaveClass("ds", "button");
     });
 
     it("renders without children", async () => {
-      const page = render(Component, { "aria-label": "Empty button" });
+      const page = await render(Component, { "aria-label": "Empty button" });
       await expect.element(page.getByRole("button")).toBeInTheDocument();
     });
   });
 
   describe("class prop", () => {
     it("applies custom class", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
     });
 
     it("preserves base classes with custom class", async () => {
-      const page = render(Component, { ...baseProps, class: "custom" });
+      const page = await render(Component, { ...baseProps, class: "custom" });
       await expect
         .element(componentLocator(page))
         .toHaveClass("ds", "button", "custom");
@@ -62,24 +65,30 @@ describe("Button component", () => {
 
   describe("importance modifier", () => {
     it("applies primary importance class by default", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(componentLocator(page)).toHaveClass("primary");
     });
 
     it("applies secondary importance class", async () => {
-      const page = render(Component, { ...baseProps, importance: "secondary" });
+      const page = await render(Component, {
+        ...baseProps,
+        importance: "secondary",
+      });
       await expect.element(componentLocator(page)).toHaveClass("secondary");
     });
 
     it("applies tertiary importance class", async () => {
-      const page = render(Component, { ...baseProps, importance: "tertiary" });
+      const page = await render(Component, {
+        ...baseProps,
+        importance: "tertiary",
+      });
       await expect.element(componentLocator(page)).toHaveClass("tertiary");
     });
   });
 
   describe("anticipation modifier", () => {
     it("applies constructive anticipation class", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         anticipation: "constructive",
       });
@@ -87,7 +96,7 @@ describe("Button component", () => {
     });
 
     it("applies caution anticipation class", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         anticipation: "caution",
       });
@@ -95,7 +104,7 @@ describe("Button component", () => {
     });
 
     it("applies destructive anticipation class", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         anticipation: "destructive",
       });
@@ -105,7 +114,7 @@ describe("Button component", () => {
 
   describe("orthogonal modifiers", () => {
     it("applies both importance and anticipation classes", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         importance: "primary",
         anticipation: "destructive",
@@ -118,20 +127,20 @@ describe("Button component", () => {
 
   describe("variant prop", () => {
     it("applies link variant class", async () => {
-      const page = render(Component, { ...baseProps, variant: "link" });
+      const page = await render(Component, { ...baseProps, variant: "link" });
       await expect.element(componentLocator(page)).toHaveClass("link");
     });
   });
 
   describe("icon prop", () => {
     it("renders the icon slot when provided", async () => {
-      const page = render(Component, { ...baseProps, icon: buttonIcon });
+      const page = await render(Component, { ...baseProps, icon: buttonIcon });
       const iconSlot = page.container.querySelector(".icon");
       expect(iconSlot).not.toBeNull();
     });
 
     it("renders the icon before the label in DOM order", async () => {
-      const page = render(Component, { ...baseProps, icon: buttonIcon });
+      const page = await render(Component, { ...baseProps, icon: buttonIcon });
       const button = componentLocator(page).element();
       const children = Array.from(button.children);
       const iconSlotIndex = children.findIndex((el) =>
@@ -144,7 +153,7 @@ describe("Button component", () => {
     });
 
     it("wraps the icon in the icon slot class", async () => {
-      const page = render(Component, { ...baseProps, icon: buttonIcon });
+      const page = await render(Component, { ...baseProps, icon: buttonIcon });
       const iconWrapper = page.container.querySelector(
         `[data-testid='${iconTestId}']`,
       )?.parentElement;
@@ -152,7 +161,7 @@ describe("Button component", () => {
     });
 
     it("renders icon-only button", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         icon: buttonIcon,
         "aria-label": "Close",
       });
@@ -167,19 +176,19 @@ describe("Button component", () => {
 
   describe("accessibility", () => {
     it("derives its accessible name from children without aria-label", async () => {
-      const page = render(Component, { children: submitChildren });
+      const page = await render(Component, { children: submitChildren });
       const button = page.getByRole("button", { name: submitChildrenText });
       await expect.element(button).not.toHaveAttribute("aria-label");
     });
 
     it("derives its accessible name from snippet children content", async () => {
-      const page = render(Component, { children: complexChildren });
+      const page = await render(Component, { children: complexChildren });
       const button = page.getByRole("button", { name: complexChildrenText });
       await expect.element(button).not.toHaveAttribute("aria-label");
     });
 
     it("applies an explicit aria-label", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         "aria-label": "Submit form",
       });
@@ -191,13 +200,13 @@ describe("Button component", () => {
 
   describe("disabled state", () => {
     it("is not disabled by default", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const root = componentLocator(page).element() as HTMLButtonElement;
       expect(root.disabled).toBe(false);
     });
 
     it("can be disabled", async () => {
-      const page = render(Component, { ...baseProps, disabled: true });
+      const page = await render(Component, { ...baseProps, disabled: true });
       const root = componentLocator(page).element() as HTMLButtonElement;
       expect(root.disabled).toBe(true);
     });
@@ -205,7 +214,7 @@ describe("Button component", () => {
 
   describe("loading state", () => {
     it("overlays a Spinner while loading", async () => {
-      const page = render(Component, { ...baseProps, loading: true });
+      const page = await render(Component, { ...baseProps, loading: true });
       const spinner = page.container.querySelector(
         ".loading-spinner .ds.spinner",
       );
@@ -213,7 +222,7 @@ describe("Button component", () => {
     });
 
     it("marks the button aria-busy and disabled", async () => {
-      const page = render(Component, { ...baseProps, loading: true });
+      const page = await render(Component, { ...baseProps, loading: true });
       const root = componentLocator(page).element() as HTMLButtonElement;
       await expect
         .element(componentLocator(page))
@@ -222,19 +231,19 @@ describe("Button component", () => {
     });
 
     it("applies the loading class", async () => {
-      const page = render(Component, { ...baseProps, loading: true });
+      const page = await render(Component, { ...baseProps, loading: true });
       await expect.element(componentLocator(page)).toHaveClass("loading");
     });
 
     it("keeps the label in the DOM while loading (preserves width, no collapse)", async () => {
-      const page = render(Component, { ...baseProps, loading: true });
+      const page = await render(Component, { ...baseProps, loading: true });
       const label = page.container.querySelector(".label");
       expect(label).not.toBeNull();
       expect(label?.textContent).toContain(buttonChildrenText);
     });
 
     it("keeps the consumer icon in the DOM but adds the Spinner overlay", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         loading: true,
         icon: buttonIcon,
@@ -244,7 +253,7 @@ describe("Button component", () => {
     });
 
     it("is neither busy nor disabled when not loading", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const root = componentLocator(page).element() as HTMLButtonElement;
       expect(root.hasAttribute("aria-busy")).toBe(false);
       expect(root.disabled).toBe(false);
@@ -253,7 +262,7 @@ describe("Button component", () => {
 
   describe("HTML attributes", () => {
     it("passes through HTML button attributes", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         type: "submit",
         name: "submitBtn",
@@ -271,14 +280,17 @@ describe("Button component", () => {
     });
 
     it("applies id prop", async () => {
-      const page = render(Component, { ...baseProps, id: "my-button" });
+      const page = await render(Component, { ...baseProps, id: "my-button" });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("id", "my-button");
     });
 
     it("applies style prop", async () => {
-      const page = render(Component, { ...baseProps, style: "color: red;" });
+      const page = await render(Component, {
+        ...baseProps,
+        style: "color: red;",
+      });
       await expect
         .element(componentLocator(page))
         .toHaveStyle({ color: "rgb(255, 0, 0)" });

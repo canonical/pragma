@@ -15,46 +15,46 @@ describe("Section component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders content", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(page.getByText("Section content")).toBeInTheDocument();
   });
 
   it("renders as a section element", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     const root = componentLocator(page).element();
     expect(root.tagName).toBe("SECTION");
   });
 
   it("applies the ds section classes", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toHaveClass("ds", "section");
   });
 
   it("applies the bordered class when bordered", async () => {
-    const page = render(Component, { ...baseProps, bordered: true });
+    const page = await render(Component, { ...baseProps, bordered: true });
     await expect.element(componentLocator(page)).toHaveClass("bordered");
   });
 
   it("omits the bordered class by default", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     const root = componentLocator(page).element();
     expect(root.classList.contains("bordered")).toBe(false);
   });
 
   it("applies the spacing modifier class", async () => {
-    const page = render(Component, { ...baseProps, spacing: "hero" });
+    const page = await render(Component, { ...baseProps, spacing: "hero" });
     await expect.element(componentLocator(page)).toHaveClass("hero");
   });
 
   it("applies a custom class", async () => {
-    const page = render(Component, { ...baseProps, class: "test-class" });
+    const page = await render(Component, { ...baseProps, class: "test-class" });
     await expect
       .element(componentLocator(page))
       .toHaveClass("test-class", "ds", "section");
   });
 
   it("passes through additional props", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect
       .element(componentLocator(page))
       .toHaveAttribute("data-testid", "section");

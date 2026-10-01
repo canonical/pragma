@@ -22,14 +22,14 @@ describe("Log component", () => {
 
   describe("basics", () => {
     it("renders", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(componentLocator(page)).toBeInTheDocument();
     });
 
     it.each(["Line", "Timestamp", "Content"])(
       "renders column header %s",
       async (header) => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
         await expect
           .element(columnHeaderLocator(page, header))
           .toBeInTheDocument();
@@ -37,7 +37,7 @@ describe("Log component", () => {
     );
 
     it("doesn't render timestamp column when hideTimestamps is true", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         hideTimestamps: true,
       });
@@ -49,7 +49,7 @@ describe("Log component", () => {
 
   describe("attributes", () => {
     it.each([["id", "test-id"]])("applies %s", async (attribute, expected) => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         [attribute]: expected,
       });
@@ -59,7 +59,7 @@ describe("Log component", () => {
     });
 
     it("applies aria-label", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         "aria-label": "custom-aria-label",
       });
@@ -69,14 +69,17 @@ describe("Log component", () => {
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
       await expect.element(componentLocator(page)).toHaveClass("ds");
       await expect.element(componentLocator(page)).toHaveClass("log");
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -88,7 +91,7 @@ describe("Log component", () => {
 
   describe("rows", () => {
     it("renders log line", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         children: oneLog,
       });
@@ -114,7 +117,7 @@ describe("Log component", () => {
     });
 
     it("renders multiple log lines", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         children: logs,
       });
@@ -135,7 +138,7 @@ describe("Log component", () => {
     });
 
     it("doesn't render timestamps when hideTimestamps is true", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         children: logs,
         hideTimestamps: true,
@@ -152,8 +155,8 @@ describe("Log component", () => {
   });
 
   describe("wrapLines", () => {
-    it("is horizontally scrollable when wrapLines is false", () => {
-      const page = render(Component, {
+    it("is horizontally scrollable when wrapLines is false", async () => {
+      const page = await render(Component, {
         ...baseProps,
         children: longLog,
         hideTimestamps: true,
@@ -169,8 +172,8 @@ describe("Log component", () => {
       );
     });
 
-    it("is not horizontally scrollable when wrapLines is true", () => {
-      const page = render(Component, {
+    it("is not horizontally scrollable when wrapLines is true", async () => {
+      const page = await render(Component, {
         ...baseProps,
         children: longLog,
         hideTimestamps: true,
@@ -191,7 +194,7 @@ describe("Log component", () => {
     };
 
     it("uses custom formatter for timestamp text content", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         children: oneLog,
         timestampFormatter: customFormatter,
@@ -206,7 +209,7 @@ describe("Log component", () => {
     });
 
     it("still uses ISO format for datetime attribute", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         children: oneLog,
         timestampFormatter: customFormatter,
@@ -221,7 +224,7 @@ describe("Log component", () => {
     });
 
     it("uses custom formatter for all log lines", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         children: logs,
         timestampFormatter: customFormatter,

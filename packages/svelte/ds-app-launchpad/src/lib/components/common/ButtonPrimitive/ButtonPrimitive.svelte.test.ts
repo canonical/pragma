@@ -15,13 +15,13 @@ describe("ButtonPrimitive component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders as a button by default", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(page.getByRole("button")).toBeInTheDocument();
     await expect.element(page.getByText("Click me")).toBeVisible();
   });
 
   it("renders as an anchor when href is provided", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       href: "https://example.com",
     });
@@ -36,7 +36,7 @@ describe("ButtonPrimitive component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         [attribute]: expected,
       });
@@ -46,7 +46,7 @@ describe("ButtonPrimitive component", () => {
     });
 
     it("applies classes", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         class: "test-class",
       });
@@ -54,7 +54,7 @@ describe("ButtonPrimitive component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -66,12 +66,12 @@ describe("ButtonPrimitive component", () => {
 
   describe("disabled state", () => {
     it("disables the button", async () => {
-      const page = render(Component, { ...baseProps, disabled: true });
+      const page = await render(Component, { ...baseProps, disabled: true });
       await expect.element(page.getByRole("button")).toBeDisabled();
     });
 
     it("disables the anchor by removing href and setting aria-disabled", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         href: "https://example.com",
         disabled: true,
