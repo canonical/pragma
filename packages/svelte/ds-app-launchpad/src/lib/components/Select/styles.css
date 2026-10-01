@@ -21,7 +21,7 @@
     var(--color-border)
   );
   --color-outline-select-input: var(
-    --modifier-color-focusRing,
+    --modifier-color-focus-ring,
     var(--color-focusRing)
   );
 

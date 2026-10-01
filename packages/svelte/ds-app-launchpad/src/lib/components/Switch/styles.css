@@ -2,7 +2,6 @@
   appearance: none;
   position: relative;
   cursor: pointer;
-  outline-offset: 0;
 
   width: var(--dimension-400);
   height: var(--dimension-200);

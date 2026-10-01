@@ -1340,7 +1340,6 @@
       "version": "0.43.0",
       "dependencies": {
         "@canonical/design-tokens": "0.43.0",
-        "@canonical/launchpad-design-tokens": "^1.1.1",
         "@canonical/styles": "^0.43.0",
         "@canonical/svelte-icons": "^0.0.9",
         "@floating-ui/dom": "^1.7.6",
@@ -1571,8 +1570,6 @@
     "@canonical/ke": ["@canonical/ke@0.43.0", "", { "dependencies": { "oxigraph": "^0.5.0" } }, "sha512-9vrSoCd85J4XU8fWCXLh1xAlXTTlhxftN5ZzD7R7z0pT/5vNobUuMwlQ08NqJLkvDKFa3yHsL6YHODnD104KKQ=="],
 
     "@canonical/ke-graphql": ["@canonical/ke-graphql@0.43.0", "", { "dependencies": { "dataloader": "^2.2.3", "graphql": "17.0.0-rc.0" }, "peerDependencies": { "@canonical/ke": "^0.43.0-experimental.0" } }, "sha512-Pntyrs3eak+dLLQ1r8iQhHIVV17TZ39LOlUj1l0X8ErhI2GHsuUmNNETWlPICFSemfUPfBamHvT3lyZP4J37Og=="],
-
-    "@canonical/launchpad-design-tokens": ["@canonical/launchpad-design-tokens@1.1.1", "", {}, "sha512-rOrV4TxC9bOyA4DlgxNAwssFfsA/h5XHPqM0plmYbaODodd7EakntM3ZOSHnoNqViskxieVSc7TEbZY+JyFHoA=="],
 
     "@canonical/lit-demo": ["@canonical/lit-demo@workspace:apps/lit/demo"],
 

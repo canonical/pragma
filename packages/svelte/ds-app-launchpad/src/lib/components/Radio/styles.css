@@ -4,7 +4,6 @@
   appearance: none;
   flex-grow: 0;
   flex-shrink: 0;
-  outline-offset: 1px;
 
   width: var(--dimension-200);
   height: var(--dimension-200);

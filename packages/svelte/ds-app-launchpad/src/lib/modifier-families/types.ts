@@ -10,16 +10,16 @@ export type ModifierFamilyValues = {
  *
  * @example
  * ```ts
- * type Severity = ModifierFamily<'severity'>;
+ * type Severity = ModifierFamily<'criticality'>;
  * // =>
  * type Severity = {
- *  severity: 'neutral' | 'positive' | 'negative' | 'caution' | 'information'
+ *  criticality: 'success' | 'error' | 'warning' | 'information'
  * }
  *
- * type Modifiers = ModifierFamily<['severity', 'emphasis']>;
+ * type Modifiers = ModifierFamily<['criticality', 'emphasis']>;
  * // =>
  * type Modifiers = {
- *  severity: 'neutral' | 'positive' | 'negative' | 'caution' | 'information'
+ *  criticality: 'success' | 'error' | 'warning' | 'information'
  *  emphasis: 'neutral' | 'highlighted' | 'muted' | 'accented'
  * }
  * ```
