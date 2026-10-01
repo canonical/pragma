@@ -1,6 +1,6 @@
 # Preface
 
-What is specific to `canonical/pragma-web`: where its conventions are documented, how to load the contributor skills, and which topic files hold the rules that apply only here. Read this after the root `AGENTS.md`, before changing anything in this repository.
+What is specific to `canonical/pragma-web`: where its conventions are documented, and which topic files hold the rules that apply only here. Read this after the root `AGENTS.md`, before changing anything in this repository.
 
 Read the top-level `.kb/agents.md` file before continuing below.
 
@@ -8,11 +8,11 @@ Read the top-level `.kb/agents.md` file before continuing below.
 
 `canonical/pragma-web` holds the design-system packages that render: the React, Svelte and Lit component libraries, the stylesheets, the Storybook packages and configurations, the runtime packages (router, internationalisation, server-side rendering), the applications under `apps/`, and the documentation site (`packages/prism/*` and `apps/react/pragma-docs`). The toolchain it builds with comes from `canonical/pragma-core` through npm.
 
-Most conventions here are documented. Setup and the monorepo mechanics are in [`old/CONTRIBUTING.md`](../old/CONTRIBUTING.md); the architecture, the domains and the component folder structure are explained under [`docs/explanations/`](../docs/explanations/ARCHITECTURE.md), and the CI pipeline in [`docs/CI.md`](../docs/CI.md).
+Most conventions here are documented. The contributing guide both repositories share is [`CONTRIBUTING.md`](../CONTRIBUTING.md); the standard package scripts and `build:all` are in [`old/CONTRIBUTING.md`](../old/CONTRIBUTING.md); the architecture, the domains and the component folder structure are explained under [`docs/explanations/`](../docs/explanations/ARCHITECTURE.md), and the CI pipeline in [`docs/CI.md`](../docs/CI.md).
 
 # Important
 
-- Start every change with the `start-change` skill. The skills are maintained in `canonical/pragma-core`; this repository carries no copy. Install them as the [package README](https://github.com/canonical/pragma-core/tree/main/packages/skills/contribute#install) describes, or read [`start-change`](https://github.com/canonical/pragma-core/blob/main/packages/skills/contribute/skills/start-change/SKILL.md) directly.
+- Start every change with [`CONTRIBUTING.md`](../CONTRIBUTING.md) and the topic file under [`docs/contributing/`](../docs/contributing/) for the step you are on. They are copies of the originals in `canonical/pragma-core`: change those first.
 - Before writing or changing a React component's props type, read `.kb/react-props.md`: props extend the native props of the root element.
 - Before adding a dependency to a runtime or component package, read `.kb/documentation-site.md`: the documentation site depends on the runtime, never the reverse.
 - Before adding a dependency on a pragma-core package, or moving the pins after a pragma-core release, read `.kb/core-packages.md`: exact pins, peer ranges, and how a re-pin is done.
