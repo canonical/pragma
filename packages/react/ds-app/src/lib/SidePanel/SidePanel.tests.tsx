@@ -36,7 +36,7 @@ const getDialog = (container: HTMLElement): HTMLDialogElement => {
   return dialog;
 };
 
-/** Opens the panel through its handle, the only way it opens now. */
+/** Opens the panel through its handle, the uncontrolled panel's way in. */
 const openPanel = (handle: SidePanelHandle | null): void => {
   if (!handle) throw new Error("SidePanel exposed no handle");
   handle.open();
@@ -428,6 +428,186 @@ describe("SidePanel", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "Close panel" }));
       expect(getDialog(container)).not.toHaveAttribute("open");
+    });
+  });
+
+  describe("controlled (open prop)", () => {
+    it("renders what the prop says, without a ref", () => {
+      const open = render(
+        <SidePanel open>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      expect(getDialog(open.container)).toHaveAttribute("open");
+      open.unmount();
+
+      const closed = render(
+        <SidePanel open={false}>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      expect(getDialog(closed.container)).not.toHaveAttribute("open");
+    });
+
+    it("opens and closes when the prop flips", () => {
+      const { container, rerender } = render(
+        <SidePanel open={false}>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      expect(getDialog(container)).not.toHaveAttribute("open");
+
+      rerender(
+        <SidePanel open>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      expect(getDialog(container)).toHaveAttribute("open");
+
+      rerender(
+        <SidePanel open={false}>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      expect(getDialog(container)).not.toHaveAttribute("open");
+    });
+
+    it("answers Escape with onOpenChange and stays open until the prop changes", () => {
+      const onOpenChange = vi.fn();
+      const { container } = render(
+        <SidePanel open onOpenChange={onOpenChange}>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+
+      fireEvent.keyDown(getDialog(container), { key: "Escape" });
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(getDialog(container)).toHaveAttribute("open");
+    });
+
+    it("answers the header's close button with onOpenChange and stays open until the prop changes", () => {
+      const onOpenChange = vi.fn();
+      const { container } = render(
+        <SidePanel open onOpenChange={onOpenChange}>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Close panel" }));
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(getDialog(container)).toHaveAttribute("open");
+    });
+
+    it("routes the imperative handle through onOpenChange", () => {
+      const handle = createRef<SidePanelHandle>();
+      const onOpenChange = vi.fn();
+      const { container } = render(
+        <SidePanel ref={handle} open={false} onOpenChange={onOpenChange}>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+
+      handle.current?.open();
+      expect(onOpenChange).toHaveBeenCalledWith(true);
+      expect(getDialog(container)).not.toHaveAttribute("open");
+
+      onOpenChange.mockClear();
+      handle.current?.close();
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+
+      onOpenChange.mockClear();
+      handle.current?.toggle();
+      expect(onOpenChange).toHaveBeenCalledWith(true);
+    });
+
+    it("moves focus into the panel when the prop opens it", () => {
+      const { container, rerender } = render(
+        <SidePanel open={false}>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+
+      rerender(
+        <SidePanel open>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      expect(document.activeElement).toBe(getDialog(container));
+    });
+
+    it("does not steal focus when it mounts open", () => {
+      // Stands in for whatever the user was doing before the panel's page
+      // hydrated — the server painted the panel open, so no opening gesture
+      // exists to justify moving focus.
+      const trigger = document.createElement("button");
+      document.body.appendChild(trigger);
+      trigger.focus();
+
+      render(
+        <SidePanel open>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      expect(document.activeElement).toBe(trigger);
+
+      trigger.remove();
+    });
+
+    it("hands focus back when the prop closes it while focus is inside it", () => {
+      // Stands in for the trigger whose navigation opened the panel.
+      const trigger = document.createElement("button");
+      document.body.appendChild(trigger);
+      trigger.focus();
+
+      const { rerender } = render(
+        <SidePanel open={false}>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+
+      rerender(
+        <SidePanel open>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      expect(document.activeElement).not.toBe(trigger);
+
+      rerender(
+        <SidePanel open={false}>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+      expect(document.activeElement).toBe(trigger);
+
+      trigger.remove();
+    });
+
+    it("snaps back open when closed by a path the prop did not cause", () => {
+      const { container } = render(
+        <SidePanel open>
+          <SidePanel.Header>Panel title</SidePanel.Header>
+          <SidePanel.Content>Body</SidePanel.Content>
+        </SidePanel>,
+      );
+
+      // A `<form method="dialog">` submit closes the raw element — the prop
+      // still says open, so the panel reopens.
+      getDialog(container).close();
+      expect(getDialog(container)).toHaveAttribute("open");
     });
   });
 });

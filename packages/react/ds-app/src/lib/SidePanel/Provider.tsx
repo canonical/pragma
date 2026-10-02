@@ -20,11 +20,17 @@ const componentCssClassName = "ds side-panel";
  * It renders a **non-modal** `<dialog>` opened with `show()`, so the
  * application behind stays clickable and tabbable.
  *
- * The panel is controlled through its `ref`: `open()` shows it and moves focus
- * in, `close()` hides it and hands focus back, and `toggle()` switches between
- * those states. The ref is required, since the handle is the only way in — a
- * panel with no ref is a panel that can never open. The dialog's native open
- * state is the single source of truth — there is no `open` prop to mirror it.
+ * Uncontrolled by default, and controlled by an `open` prop:
+ *
+ * - Uncontrolled: the panel is driven through its `ref` — `open()` shows it
+ *   and moves focus in, `close()` hides it and hands focus back, `toggle()`
+ *   switches between those states. The dialog's native open state is the
+ *   single source of truth.
+ * - Controlled (`open` passed): the panel renders exactly what the prop
+ *   says and never opens or closes on its own; the header's close button and
+ *   Escape fire `onOpenChange(false)` for the owner to act on. This is the
+ *   server-renderable mode — hold the state in a URL search parameter and
+ *   pass it here, and the server paints the panel open on first response.
  *
  * The panel forwards the native dialog `onClose`: pass your own to hear about
  * every close, whatever caused it — the handle's `close()`, Escape, or anything else.
@@ -42,7 +48,9 @@ const componentCssClassName = "ds side-panel";
  * the panel it returns is the same on every render. If the panel must show
  * data from the parent — for example a different machine's details depending
  * on which machine is selected — compose `SidePanel` directly and drive it
- * through its `ref`. Otherwise, use `withSidePanel`.
+ * through its `ref`, or through an `open` prop when the state lives outside
+ * the component (a URL search parameter, a parent's selection). Otherwise,
+ * use `withSidePanel`.
  *
  * The panel is always named by its header's title, so the header is required
  * — a panel composed without one gets a development warning. Note the title
@@ -75,6 +83,7 @@ const Provider = ({
     close,
     dialogProps,
     dialogRef,
+    initiallyOpen,
     handleKeyDown,
     handleClose,
   } = useSidePanelDialog(props);
@@ -104,6 +113,11 @@ const Provider = ({
       <dialog
         ref={dialogRef}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        // The first render's `open`, frozen for the panel's life: it paints
+        // a controlled panel open in server-rendered markup, and afterwards
+        // the dialog's state is written only through `show()`/`close()`, so
+        // re-renders never fight the imperative state.
+        open={initiallyOpen || undefined}
         // The panel is always named by its header's title — the header is
         // required, so this always points at a live element (the development
         // warning above catches panels composed without one). A consumer

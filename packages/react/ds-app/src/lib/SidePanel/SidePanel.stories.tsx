@@ -1,8 +1,13 @@
 import { Button, withTooltip } from "@canonical/react-ds-global";
 import { Field, Form } from "@canonical/react-ds-global-form";
+import { useRouter, useSearchParam } from "@canonical/router-react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useRef, useState } from "react";
 import { ubuntuStory } from "../../storybook/sidePanel/fixtures.js";
+import {
+  STORY_PANEL_NAME,
+  withSidePanelHashRouter,
+} from "../../storybook/sidePanel/story-utils.js";
 import Component from "./Provider.js";
 import type { SidePanelHandle } from "./types.js";
 
@@ -394,6 +399,104 @@ useEffect(() => {
     <SidePanel.Content>…selected entity's details…</SidePanel.Content>
   </SidePanel>
 </>
+        `,
+      },
+    },
+  },
+};
+
+/**
+ * A controlled panel with its state held in the URL — the pattern an
+ * application uses for server-renderable, deep-linkable panels. The `open`
+ * prop is a view of a search parameter: this story's hash router (the
+ * storybook stand-in for the app's router) carries `?panel=…`, the trigger
+ * toggles it via the router's `setSearchParams`, and the panel renders
+ * exactly what the URL says — never opening or closing on its own. Dismissal
+ * gestures (the header's close button, Escape) fire `onOpenChange(false)`,
+ * which navigates the parameter away.
+ *
+ * Because the state is navigation, the browser's Back button closes an open
+ * panel, and refresh keeps it open — try both. In a server-rendered app the
+ * same URL paints the panel open in the first response.
+ */
+export const Controlled: Story = {
+  decorators: [withSidePanelHashRouter],
+  render: () => {
+    const router = useRouter();
+    const panel = useSearchParam("panel");
+    const isOpen = panel === STORY_PANEL_NAME;
+
+    return (
+      <>
+        <style>
+          {`
+            /* Disable animations for visual testing */
+            :root {
+              --side-panel-transition-duration: 0ms;
+            }
+          `}
+        </style>
+        <Button
+          onClick={() =>
+            router.setSearchParams({ panel: isOpen ? null : STORY_PANEL_NAME })
+          }
+        >
+          Toggle panel
+        </Button>
+        <Component
+          open={isOpen}
+          onOpenChange={() => router.setSearchParams({ panel: null })}
+        >
+          <Component.Header>Ubuntu Pro</Component.Header>
+          <Component.Content>
+            <p>
+              Security and compliance coverage for your instances, including
+              extended support for the packages you care about.
+            </p>
+          </Component.Content>
+          <Component.Footer>
+            <Button onClick={() => router.setSearchParams({ panel: null })}>
+              Cancel
+            </Button>
+            <Button importance="primary">Done</Button>
+          </Component.Footer>
+        </Component>
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+// The URL is the state holder: the route declares a \`panel\` search
+// parameter, and the panel is a view of it.
+const router = useRouter();
+const panel = useSearchParam("panel");
+const isOpen = panel === "ubuntu-pro";
+
+<Button
+  onClick={() =>
+    router.setSearchParams({ panel: isOpen ? null : "ubuntu-pro" })
+  }
+>
+  Toggle panel
+</Button>
+
+<SidePanel
+  open={isOpen}
+  onOpenChange={() => router.setSearchParams({ panel: null })}
+>
+  <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
+  <SidePanel.Content>
+    <p>Security and compliance coverage for your instances.</p>
+  </SidePanel.Content>
+  <SidePanel.Footer>
+    <Button onClick={() => router.setSearchParams({ panel: null })}>
+      Cancel
+    </Button>
+    <Button importance="primary">Done</Button>
+  </SidePanel.Footer>
+</SidePanel>
         `,
       },
     },

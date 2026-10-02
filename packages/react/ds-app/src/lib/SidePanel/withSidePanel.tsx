@@ -38,8 +38,8 @@ import type {
  * consumer sees the real panel, not an options bag. **One duty comes with
  * that freedom: the factory must attach the `ref` it receives to the
  * `<SidePanel>`** (`<SidePanel ref={ref}>`). The trigger toggles the panel
- * through that ref — and `SidePanel` requires its `ref`, so a factory that
- * forgets it fails to compile.
+ * through that ref — a factory that forgets it renders a trigger that
+ * toggles nothing.
  *
  * **How it closes:** the trigger toggles it; the header's X button and
  * Escape dismiss it too — the HOC has no state to be told about, the
@@ -85,8 +85,9 @@ const withSidePanel = <TProps extends WithSidePanelTriggerProps>(
     const panelRef = useRef<SidePanelHandle>(null);
 
     // The contract: the HOC hands the factory its own ref, and the factory
-    // sets it on the `<SidePanel>` it returns. `SidePanel` requires its
-    // `ref`, so a factory that forgets `ref={ref}` fails to compile.
+    // sets it on the `<SidePanel>` it returns. The trigger toggles the panel
+    // through that ref — a factory that forgets `ref={ref}` renders a
+    // trigger that toggles nothing.
     const panelElement = panel({
       close: () => panelRef.current?.close(),
       ref: panelRef,

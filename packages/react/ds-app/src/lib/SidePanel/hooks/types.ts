@@ -10,8 +10,8 @@ export type UseSidePanelDialogProps = Omit<SidePanelProviderProps, "children">;
 
 /**
  * What the dialog hook hands back. Helpers and plumbing only — the hook holds
- * no open state, so there is no state object to return; the dialog's native
- * state is the only source of truth.
+ * no open state of its own; the source of truth is the dialog's native state
+ * on an uncontrolled panel and the `open` prop on a controlled one.
  */
 export type UseSidePanelDialogResult = {
   /** The consumer's class name, for the provider to merge with its own. */
@@ -21,10 +21,17 @@ export type UseSidePanelDialogResult = {
   /** Every remaining native dialog attribute, spread onto the element. */
   dialogProps: Omit<
     UseSidePanelDialogProps,
-    "onKeyDown" | "onClose" | "ref" | "className"
+    "onKeyDown" | "onClose" | "ref" | "className" | "open" | "onOpenChange"
   >;
   /** The dialog the provider renders; open/close run through it. */
   dialogRef: RefObject<HTMLDialogElement | null>;
+  /**
+   * The value of the `open` attribute the provider renders, captured from
+   * the first render: it paints a controlled panel open in server-rendered
+   * markup and never changes afterwards — post-mount the dialog's state is
+   * written only through `show()`/`close()`.
+   */
+  initiallyOpen: boolean;
   /** Keydown wiring: consumer handler first, then Escape dismissal. */
   handleKeyDown: (event: React.KeyboardEvent<HTMLDialogElement>) => void;
   /** The dialog's `close` event funnels here, whatever caused it. */
