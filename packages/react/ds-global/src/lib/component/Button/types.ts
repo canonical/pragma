@@ -44,12 +44,23 @@ type OwnProps = {
    */
   icon?: IconName;
   /**
-   * Whether the button is in a loading (busy) state. Replaces the leading icon
-   * with a Spinner, marks the button `aria-busy`, and disables interaction so
-   * the action cannot be triggered again while it is in flight.
-   * @default false
+   * Whether the button is in a loading (busy) state. Overlays a Spinner,
+   * marks the button `aria-busy` and `aria-disabled`, and blocks activation
+   * (clicks and form submission) so the action cannot be triggered again
+   * while it is in flight. The button stays focusable, so keyboard focus is
+   * not lost when loading starts.
+   *
+   * Passing `loading` (even as `false`) also renders a visually hidden
+   * `role="status"` region after the button that announces `loadingLabel`
+   * while loading. Pass it from the first render so the region exists before
+   * it is needed.
    */
   loading?: boolean;
+  /**
+   * Text announced by assistive technology when `loading` becomes true.
+   * @default "Loading"
+   */
+  loadingLabel?: string;
 };
 
 type Props = OwnProps & Omit<ComponentProps<"button">, keyof OwnProps>;
