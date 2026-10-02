@@ -37,6 +37,16 @@
   {/snippet}
 </Story>
 
+<!-- For heading semantics, wrap the title in a heading of the level that fits the page. -->
+
+<Story name="With a heading">
+  {#snippet template({ children: _, closeButton: __, ...args })}
+    <Modal.Header {...args}>
+      <h2>Modal title</h2>
+    </Modal.Header>
+  {/snippet}
+</Story>
+
 <!-- Pass a snippet to `closeButton` to render your own close button or to customize the default `Modal.Header.CloseButton` -->
 
 <Story name="With a custom close button">

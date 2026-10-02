@@ -30,11 +30,17 @@
 <!-- @component
 `Modal.Header` carries the modal title and a close button. The title names the dialog through `aria-labelledby`.
 
+Heading semantics are up to the caller — to add them, wrap the title in a heading of the right level.
+
 By default the close button is a `Modal.Header.CloseButton`, already wired to close the Modal. Set `closeButton` to `false` to drop it, or to a snippet to render your own.
 
 ## Example Usage
 ```svelte
 <Modal.Header>Discard pending review?</Modal.Header>
+
+<Modal.Header>
+  <h2>Discard pending review?</h2>
+</Modal.Header>
 ```
 
 @implements ds:global.subcomponent.modal-header

@@ -5,6 +5,7 @@ import { default as ModalRoot } from "./Modal.svelte";
 const Modal = ModalRoot as typeof ModalRoot & {
   /**
    * `Modal.Header` carries the modal title and a close button, wired to close the Modal by default.
+   * For heading semantics, wrap the title in a heading of the right level.
    *
    * @example
    * ```svelte

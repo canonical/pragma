@@ -13,7 +13,7 @@
    *
    * It renders a native `<dialog>` opened as a modal. Open and close it declaratively with the [Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) — a button with `commandfor` set to the modal's `id` and `command` set to `"show-modal"` or `"close"` — or programmatically through the bindable `open` prop.
    *
-   * Compose the sections with `Modal.Header`, `Modal.Content` and `Modal.Footer`. The header's title names the dialog; a modal without a header must carry its own `aria-label`.
+   * Compose the sections with `Modal.Header`, `Modal.Content` and `Modal.Footer`. The header's title names the dialog; a modal without a header must carry its own `aria-label`. For heading semantics, wrap the title in a heading of the level that fits the page.
    */
   const { Story } = defineMeta({
     title: "_work_in_progress/pattern/Modal",
@@ -92,6 +92,31 @@
           </button>
         </Modal.Footer>
       {/snippet}
+    </Modal>
+  {/snippet}
+</Story>
+
+<!-- For heading semantics, wrap the title in a heading of the level that fits the page. -->
+
+<Story name="With a heading">
+  {#snippet template({ children: _, ...args })}
+    <button
+      commandfor="modal-heading"
+      command="show-modal"
+      aria-haspopup="dialog"
+    >
+      Show modal
+    </button>
+    <Modal {...args} id="modal-heading">
+      <Modal.Header>
+        <h2>Keyboard shortcuts</h2>
+      </Modal.Header>
+      <Modal.Content>
+        <h3>Navigation</h3>
+        <p>Press <kbd>j</kbd> and <kbd>k</kbd> to move between comments.</p>
+        <h3>Review</h3>
+        <p>Press <kbd>r</kbd> to reply to the focused comment.</p>
+      </Modal.Content>
     </Modal>
   {/snippet}
 </Story>

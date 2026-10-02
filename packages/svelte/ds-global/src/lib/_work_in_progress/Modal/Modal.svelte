@@ -104,7 +104,7 @@ Modal is declaratively controlled by default through the [Invoker Commands API](
 
 For cases where opening or closing must be orchestrated in code, Modal can be controlled through the bindable `open` prop. With `bind:open` it stays in sync with the modal in both directions: setting it opens or closes the modal, and it updates to reflect changes made by invoker commands, `Escape`, or an outside click. Setting `open` during SSR renders the dialog open on page load without client-side JS, and it is upgraded to a true modal once hydrated.
 
-The sections are composed by the consumer: render `Modal.Header`, `Modal.Content` and `Modal.Footer` as children. The header's title names the dialog; a modal composed without a header must carry its own `aria-label`.
+The sections are composed by the consumer: render `Modal.Header`, `Modal.Content` and `Modal.Footer` as children. The header's title names the dialog; a modal composed without a header must carry its own `aria-label`. For heading semantics, wrap the title in a heading of the level that fits the page.
 
 `import { Modal } from "@canonical/svelte-ds-global";`
 
