@@ -163,13 +163,15 @@ export const DisabledIconMatrix: Story = {
 };
 
 /**
- * A loading button shows a Spinner in the leading icon slot, is marked
- * `aria-busy`, and is disabled so the action cannot be triggered again while
- * it is in flight.
+ * A loading button shows a Spinner, is marked `aria-busy` and `aria-disabled`,
+ * and blocks activation so the action cannot be triggered again while it is
+ * in flight. It stays focusable, and a visually hidden status region announces
+ * `loadingLabel`.
  */
 export const Loading: Story = {
   args: {
     children: "Saving",
     loading: true,
+    loadingLabel: "Saving changes",
   },
 };

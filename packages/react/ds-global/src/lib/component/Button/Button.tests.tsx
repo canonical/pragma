@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Component from "./Button.js";
 
@@ -201,16 +201,46 @@ describe("Button component", () => {
       expect(spinner).toBeInTheDocument();
     });
 
-    it("marks the button aria-busy and disabled", () => {
+    it("marks the button aria-busy and aria-disabled", () => {
       render(<Component loading>Saving</Component>);
       const button = screen.getByRole("button");
       expect(button).toHaveAttribute("aria-busy", "true");
+      expect(button).toHaveAttribute("aria-disabled", "true");
+    });
+
+    it("does not natively disable the button while loading", () => {
+      render(<Component loading>Saving</Component>);
+      expect(screen.getByRole("button")).toBeEnabled();
+    });
+
+    it("applies the loading class", () => {
+      render(<Component loading>Saving</Component>);
+      expect(screen.getByRole("button")).toHaveClass("loading");
+    });
+
+    it("keeps keyboard focus when loading starts", () => {
+      const view = render(<Component loading={false}>Saving</Component>);
+      const button = screen.getByRole("button");
+      button.focus();
+      expect(document.activeElement).toBe(button);
+      view.rerender(<Component loading>Saving</Component>);
+      expect(document.activeElement).toBe(button);
+    });
+
+    it("stays natively disabled, without aria-disabled, when also disabled", () => {
+      render(
+        <Component loading disabled>
+          Saving
+        </Component>,
+      );
+      const button = screen.getByRole("button");
       expect(button).toBeDisabled();
+      expect(button).not.toHaveAttribute("aria-disabled");
     });
 
     it("keeps the label in the DOM while loading (preserves width, no collapse)", () => {
       const { container } = render(<Component loading>Saving</Component>);
-      // The label stays rendered (hidden via CSS) so the button keeps its width.
+      // The label stays rendered so the button keeps its width.
       const label = container.querySelector(".label");
       expect(label).toHaveTextContent("Saving");
     });
@@ -221,10 +251,17 @@ describe("Button component", () => {
           Saving
         </Component>,
       );
-      // The icon remains (hidden via CSS), and the Spinner is overlaid on top.
+      // The icon remains and the Spinner is overlaid on top.
       expect(container.querySelector(".icon svg.ds.icon")).toBeInTheDocument();
       expect(
         container.querySelector(".loading-spinner .ds.spinner"),
+      ).toBeInTheDocument();
+    });
+
+    it("keeps its accessible name from the label while loading", () => {
+      render(<Component loading>Saving</Component>);
+      expect(
+        screen.getByRole("button", { name: "Saving" }),
       ).toBeInTheDocument();
     });
 
@@ -232,7 +269,94 @@ describe("Button component", () => {
       render(<Component>Idle</Component>);
       const button = screen.getByRole("button");
       expect(button).not.toHaveAttribute("aria-busy");
-      expect(button).not.toBeDisabled();
+      expect(button).not.toHaveAttribute("aria-disabled");
+      expect(button).toBeEnabled();
+    });
+  });
+
+  describe("loading status announcement", () => {
+    it("renders no status region when loading is not controlled", () => {
+      const { container } = render(<Component>Save</Component>);
+      expect(container.querySelector('[role="status"]')).toBeNull();
+    });
+
+    it("renders an empty status region when loading is false", () => {
+      const { container } = render(<Component loading={false}>Save</Component>);
+      const status = container.querySelector('[role="status"]');
+      expect(status).not.toBeNull();
+      expect(status?.textContent?.trim()).toBe("");
+    });
+
+    it("announces the default loading label when loading starts", () => {
+      const view = render(<Component loading={false}>Save</Component>);
+      view.rerender(<Component loading>Save</Component>);
+      expect(screen.getByRole("status")).toHaveTextContent("Loading");
+    });
+
+    it("announces a custom loading label", () => {
+      render(
+        <Component loading loadingLabel="Saving changes">
+          Save changes
+        </Component>,
+      );
+      expect(screen.getByRole("status")).toHaveTextContent("Saving changes");
+    });
+  });
+
+  describe("activation", () => {
+    it("calls onClick when clicked", () => {
+      const onClick = vi.fn();
+      render(<Component onClick={onClick}>Save</Component>);
+      fireEvent.click(screen.getByRole("button"));
+      expect(onClick).toHaveBeenCalledOnce();
+    });
+
+    it("does not call onClick while loading", () => {
+      const onClick = vi.fn();
+      render(
+        <Component loading onClick={onClick}>
+          Save
+        </Component>,
+      );
+      fireEvent.click(screen.getByRole("button"));
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it("blocks the default action while loading (no form submission)", () => {
+      render(
+        <Component loading type="submit">
+          Save
+        </Component>,
+      );
+      // fireEvent returns false when the event's default was prevented.
+      expect(fireEvent.click(screen.getByRole("button"))).toBe(false);
+    });
+
+    it("does not call onClick when disabled", () => {
+      const onClick = vi.fn();
+      render(
+        <Component disabled onClick={onClick}>
+          Save
+        </Component>,
+      );
+      fireEvent.click(screen.getByRole("button"));
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it("calls onClick again once loading ends", () => {
+      const onClick = vi.fn();
+      const view = render(
+        <Component loading onClick={onClick}>
+          Save
+        </Component>,
+      );
+      view.rerender(
+        <Component loading={false} onClick={onClick}>
+          Save
+        </Component>,
+      );
+      fireEvent.click(screen.getByRole("button"));
+      expect(onClick).toHaveBeenCalledOnce();
     });
   });
 
