@@ -14,6 +14,8 @@
    * It renders a native `<dialog>` opened as a modal. Open and close it declaratively with the [Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) — a button with `commandfor` set to the modal's `id` and `command` set to `"show-modal"` or `"close"` — or programmatically through the bindable `open` prop.
    *
    * Compose the sections with `Modal.Header`, `Modal.Content` and `Modal.Footer`. The header's title names the dialog; a modal without a header must carry its own `aria-label`. For heading semantics, wrap the title in a heading of the level that fits the page.
+   *
+   * On open, the browser focuses the first focusable element in the modal — usually the header's close button, which is the recommended target when nothing needs more immediate interaction. Add [`autofocus`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/autofocus) to the element the user is expected to interact with first, such as the first field of a form.
    */
   const { Story } = defineMeta({
     title: "_work_in_progress/pattern/Modal",
@@ -89,6 +91,42 @@
             }}
           >
             Discard review
+          </button>
+        </Modal.Footer>
+      {/snippet}
+    </Modal>
+  {/snippet}
+</Story>
+
+<!-- Add `autofocus` to the element the user is expected to interact with first. -->
+
+<Story name="With autofocus">
+  {#snippet template({ children: _, ...args })}
+    <button
+      commandfor="modal-autofocus"
+      command="show-modal"
+      aria-haspopup="dialog"
+    >
+      Show modal
+    </button>
+    <Modal {...args} id="modal-autofocus">
+      {#snippet children(closeProps, close)}
+        <Modal.Header>Rename branch</Modal.Header>
+        <Modal.Content>
+          <label>
+            New name
+            <input value="feature/modal" autofocus />
+          </label>
+        </Modal.Content>
+        <Modal.Footer>
+          <button {...closeProps}>Cancel</button>
+          <button
+            onclick={() => {
+              // rename();
+              close();
+            }}
+          >
+            Rename
           </button>
         </Modal.Footer>
       {/snippet}

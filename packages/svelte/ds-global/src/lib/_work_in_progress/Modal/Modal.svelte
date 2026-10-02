@@ -106,6 +106,8 @@ For cases where opening or closing must be orchestrated in code, Modal can be co
 
 The sections are composed by the consumer: render `Modal.Header`, `Modal.Content` and `Modal.Footer` as children. The header's title names the dialog; a modal composed without a header must carry its own `aria-label`. For heading semantics, wrap the title in a heading of the level that fits the page.
 
+On open, the browser focuses the first focusable element in the modal — usually the header's close button, which is the recommended target when nothing needs more immediate interaction. Add [`autofocus`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/autofocus) to the element the user is expected to interact with first, such as the first field of a form, or to the modal itself when the user is expected to activate it to dismiss it.
+
 `import { Modal } from "@canonical/svelte-ds-global";`
 
 ## Example Usage
