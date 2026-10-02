@@ -1341,6 +1341,7 @@
       "dependencies": {
         "@canonical/design-tokens": "0.43.0",
         "@canonical/styles": "^0.43.0",
+        "@canonical/svelte-ds-global": "^0.43.0",
         "@canonical/svelte-icons": "^0.0.9",
         "@floating-ui/dom": "^1.7.6",
       },

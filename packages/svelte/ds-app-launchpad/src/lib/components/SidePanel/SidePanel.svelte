@@ -10,6 +10,7 @@
   let {
     class: className,
     open = $bindable(),
+    closedby = "any",
     ...rest
   }: SidePanelProps = $props();
 </script>
@@ -17,7 +18,8 @@
 <Modal
   bind:open
   class={[componentCssClassName, className]}
-  --modal-backdrop-color="transparent"
+  {closedby}
+  --modal-color-backdrop="transparent"
   {...rest}
 />
 

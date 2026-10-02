@@ -1,4 +1,5 @@
 /* TODO: when the only import here is @canonical/styles delete this file. The consumer should import @canonical/styles directly. */
+@import "@canonical/styles/layers.css";
 @import "./styles/ds-tokens.css";
 @import "./styles/ds-shim.css";
 @import "./styles/index.css";

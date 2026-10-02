@@ -19,6 +19,7 @@
 @import "@canonical/design-tokens/dist/states.css";
 @import "@canonical/design-tokens/dist/sets.semantic.css";
 @import "@canonical/styles/spacing.css";
+@import "@canonical/styles/motion.css";
 @import "@canonical/styles/modifiers.density.css";
 
 /* Verbatim :root shim from packages/styles/typography/src/mapper.css

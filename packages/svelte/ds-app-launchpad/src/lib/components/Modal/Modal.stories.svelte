@@ -43,30 +43,25 @@
       {#snippet trigger(triggerProps)}
         <Button {...triggerProps}>Show modal</Button>
       {/snippet}
-      {#snippet children(commandfor, close)}
+      {#snippet children(closeProps, close)}
+        <Modal.Header>Discard pending review?</Modal.Header>
         <Modal.Content>
-          <Modal.Content.Header>
-            Discard pending review?
-            <Modal.Content.Header.CloseButton {commandfor} command="close" />
-          </Modal.Content.Header>
-          <Modal.Content.Body>
-            You have added 4 comments. Discarding the pending review will
-            permanently delete them. Are you sure you want to continue?
-          </Modal.Content.Body>
-          <Modal.Content.Footer>
-            <Button {commandfor} command="close">Keep review</Button>
-            <Button
-              onclick={() => {
-                // doSomething();
-                close();
-              }}
-              importance="primary"
-              anticipation="destructive"
-            >
-              Discard review
-            </Button>
-          </Modal.Content.Footer>
+          You have added 4 comments. Discarding the pending review will
+          permanently delete them. Are you sure you want to continue?
         </Modal.Content>
+        <Modal.Footer>
+          <Button {...closeProps}>Keep review</Button>
+          <Button
+            onclick={() => {
+              // doSomething();
+              close();
+            }}
+            importance="primary"
+            anticipation="destructive"
+          >
+            Discard review
+          </Button>
+        </Modal.Footer>
       {/snippet}
     </Modal>
   {/snippet}
@@ -115,11 +110,9 @@
       }}
       {...args}
     >
+      <Modal.Header>Timed Modal</Modal.Header>
       <Modal.Content>
-        <Modal.Content.Header>Timed Modal</Modal.Content.Header>
-        <Modal.Content.Body>
-          The modal will close automatically in {timeLeft} seconds.
-        </Modal.Content.Body>
+        The modal will close automatically in {timeLeft} seconds.
       </Modal.Content>
     </Modal>
   {/snippet}

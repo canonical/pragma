@@ -43,19 +43,11 @@
       {#snippet trigger(triggerProps)}
         <Button {...triggerProps}>Open side panel</Button>
       {/snippet}
-      {#snippet children(commandfor)}
+      {#snippet children()}
+        <SidePanel.Header>Job details</SidePanel.Header>
         <SidePanel.Content>
-          <SidePanel.Content.Header>
-            Job details
-            <SidePanel.Content.Header.CloseButton
-              {commandfor}
-              command="close"
-            />
-          </SidePanel.Content.Header>
-          <SidePanel.Content.Body>
-            Inspect run history, owner, and retry policy without navigating away
-            from the jobs list.
-          </SidePanel.Content.Body>
+          Inspect run history, owner, and retry policy without navigating away
+          from the jobs list.
         </SidePanel.Content>
       {/snippet}
     </SidePanel>
@@ -64,7 +56,7 @@
 
 <Story
   name="Controlled via bindable open prop"
-  args={{ closedby: "closerequest" }}
+  args={{ closedby: "none" }}
   argTypes={{ open: { control: false } }}
 >
   {#snippet template({ children: _, trigger: __, open: ___, ...args })}
@@ -105,11 +97,9 @@
       }}
       {...args}
     >
+      <SidePanel.Header closeButton={false}>Timed Side Panel</SidePanel.Header>
       <SidePanel.Content>
-        <SidePanel.Content.Header>Timed Side Panel</SidePanel.Content.Header>
-        <SidePanel.Content.Body>
-          This side panel closes automatically in {timeLeft} seconds.
-        </SidePanel.Content.Body>
+        This side panel closes automatically in {timeLeft} seconds.
       </SidePanel.Content>
     </SidePanel>
   {/snippet}

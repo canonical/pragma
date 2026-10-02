@@ -1,0 +1,10 @@
+.ds.side-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dimension-200);
+  padding-block: var(--dimension-200);
+  padding-inline: var(--dimension-300);
+  font: var(--ds-typography-heading-4);
+  text-wrap: balance;
+}

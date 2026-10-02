@@ -11,6 +11,7 @@ import {
   children,
   closeButtonText,
   contentText,
+  titleText,
   trigger,
   triggerText,
 } from "./test.fixtures.svelte";
@@ -128,6 +129,12 @@ describe("SidePanel component", () => {
   });
 
   describe("Opening the SidePanel", () => {
+    it("is named by the header's title, excluding its close button", async () => {
+      const page = await render(Component, { ...baseProps, open: true });
+      await expect
+        .element(componentLocator(page))
+        .toHaveAccessibleName(titleText);
+    });
     it("is opened when `showModal` on the dialog element is called", async () => {
       const props = withOpen();
       const page = await render(Component, props);
@@ -180,6 +187,14 @@ describe("SidePanel component", () => {
   });
 
   describe("Closing the SidePanel", () => {
+    it("is closed by the header's close button", async () => {
+      const props = withOpen({ open: true });
+      const page = await render(Component, props);
+
+      await page.getByRole("button", { name: "Close" }).click();
+      await expect.element(componentLocator(page, true)).not.toBeVisible();
+      await expect.poll(() => props.open).toBe(false);
+    });
     it("is closed when `close` on the dialog element is called", async () => {
       const props = withOpen();
       const page = await render(Component, props);

@@ -1,13 +1,14 @@
-.ds.ds.side-panel {
+.ds.side-panel {
   /* TODO: Replace with a token */
-  --dimension-width-modal: 33.5rem;
+  --modal-inline-size: 33.5rem;
+  --modal-padding-block: 0;
+  --modal-padding-inline: 0;
+  --modal-gap: 0;
 
   margin: 0 0 0 auto;
   opacity: 1;
-  height: 100vh;
-
-  /* User-agent styles reset */
-  max-height: unset;
+  block-size: 100vh;
+  max-block-size: none;
   border: none;
 
   box-shadow: 0 0 32px 0 rgba(0, 0, 0, 0.2);
@@ -32,9 +33,5 @@
 
   &::backdrop {
     background-color: transparent;
-  }
-
-  .ds.dialog-content {
-    min-height: 100%;
   }
 }
