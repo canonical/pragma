@@ -98,7 +98,7 @@
 <!-- @component
 A modal is a focused container that sits on top of the main view, requiring users to interact with it before returning to that view. The main use case is asking the user to confirm a decision they have already taken — for instance, sending a delete request.
 
-It renders a native `<dialog>` opened as a modal, so the backdrop, focus trap, page inertness and Escape handling come from the platform.
+It renders a native `<dialog>` opened as a modal, so the backdrop, focus management, page inertness and Escape handling come from the platform.
 
 Modal is declaratively controlled by default through the [Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API): point a button's `commandfor` at the modal's `id` and set `command` to `"show-modal"` or `"close"`. Buttons inside the modal can spread the `closeProps` passed to the `children` snippet instead. See [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog) for more information.
 
