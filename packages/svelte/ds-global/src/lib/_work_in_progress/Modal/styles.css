@@ -1,0 +1,89 @@
+/* Layer: ds.components.global (@canonical/styles README, "Cascade layers"). */
+
+@layer ds.components.global {
+  /**
+   * Modal styles
+   * @implements ds:global.pattern.modal
+   */
+
+  :root {
+    --modal-color-backdrop: var(--color-backdrop);
+    --modal-padding-block: var(--dimension-300);
+    --modal-padding-inline: var(--dimension-300);
+    --modal-gap: var(--dimension-200);
+    --modal-inline-size: 38rem;
+    --modal-max-block-size: 80vh;
+    /* Only applies to the non-modal (server-rendered open) state; a modal dialog sits in the top layer. */
+    --modal-z-index: var(--z-index-overlay, 100);
+  }
+
+  .ds.modal {
+    inline-size: min(100vw, var(--modal-inline-size));
+    max-block-size: var(--modal-max-block-size);
+    margin: auto;
+
+    flex-direction: column;
+    gap: var(--modal-gap);
+    padding-block: var(--modal-padding-block);
+    padding-inline: var(--modal-padding-inline);
+
+    background-color: var(--surface-color-background);
+    border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+
+    &,
+    &::backdrop {
+      opacity: 0;
+      transition-behavior: allow-discrete;
+      transition-property: display, opacity, overlay;
+      transition-duration: var(--motion-duration-fast);
+    }
+
+    &::backdrop {
+      background-color: var(--modal-color-backdrop);
+    }
+
+    &.no-transition {
+      &,
+      &::backdrop {
+        transition: none;
+      }
+    }
+
+    &:open {
+      display: flex;
+
+      &,
+      &::backdrop {
+        opacity: 1;
+      }
+    }
+
+    /* Starting styles only for modal dialogs, so the SSR opened shows up immediately */
+    &:modal {
+      @starting-style {
+        &,
+        &::backdrop {
+          opacity: 0;
+        }
+      }
+    }
+
+    &:not(:modal) {
+      position: fixed;
+      inset: 0;
+      z-index: var(--modal-z-index);
+    }
+  }
+
+  .ds.modal-non-modal-backdrop {
+    display: none;
+
+    &:has(+ .ds.modal:open:not(:modal)) {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: var(--modal-z-index);
+      background-color: var(--modal-color-backdrop);
+    }
+  }
+}
