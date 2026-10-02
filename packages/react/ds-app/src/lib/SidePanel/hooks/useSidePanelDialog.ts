@@ -1,5 +1,11 @@
 import type React from "react";
-import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import type { SidePanelHandle } from "../types.js";
 import type {
   UseSidePanelDialogProps,
@@ -9,14 +15,16 @@ import type {
 /**
  * The dialog behaviour of the SidePanel provider: open/close bookkeeping,
  * focus handoff, Escape, and the imperative handle. It holds no open state —
- * the dialog's native state is the only source of truth — and returns only
- * the plumbing the provider needs: the element ref, the `close` action, the
- * consumer's class name, the remaining native attributes, and the event
- * wiring.
+ * the source of truth is the dialog's native state on an uncontrolled panel
+ * and the `open` prop on a controlled one — and returns only the plumbing
+ * the provider needs: the element ref, the `close` action, the consumer's
+ * class name, the remaining native attributes, and the event wiring.
  */
 const useSidePanelDialog = ({
   onKeyDown,
   onClose,
+  onOpenChange,
+  open,
   ref,
   className,
   ...dialogProps
@@ -31,12 +39,32 @@ const useSidePanelDialog = ({
    * when it died?".
    */
   const openRef = useRef(false);
+  /**
+   * The `open` attribute of the first render, frozen for the panel's whole
+   * life. It paints a controlled panel open in server-rendered markup (and in
+   * a controlled panel that mounts open); after mount it never changes — the
+   * dialog's state is written only through `show()`/`close()`, so React
+   * re-renders cannot fight the imperative state.
+   */
+  const [initiallyOpen] = useState(() => open === true);
 
   const close = useCallback(() => {
+    // A controlled panel closes through its prop: ask the owner, and the
+    // panel only actually closes when `open` flips.
+    if (open !== undefined) {
+      onOpenChange?.(false);
+      return;
+    }
     dialogRef.current?.close();
-  }, []);
+  }, [open, onOpenChange]);
 
   const openPanel = useCallback(() => {
+    // A controlled panel opens through its prop the same way it closes.
+    if (open !== undefined) {
+      onOpenChange?.(true);
+      return;
+    }
+
     const dialog = dialogRef.current;
     if (!dialog || dialog.open) return;
 
@@ -50,12 +78,16 @@ const useSidePanelDialog = ({
     dialog.show();
     openRef.current = true;
     dialog.focus();
-  }, []);
+  }, [open, onOpenChange]);
 
   const toggle = useCallback(() => {
+    if (open !== undefined) {
+      onOpenChange?.(!open);
+      return;
+    }
     if (dialogRef.current?.open) close();
     else openPanel();
-  }, [close, openPanel]);
+  }, [open, onOpenChange, close, openPanel]);
 
   // The provider keeps its own dialog ref (show()/close() run through it)
   // and exposes the imperative handle — not the raw element — to a consumer
@@ -70,6 +102,34 @@ const useSidePanelDialog = ({
     }),
     [openPanel, close, toggle],
   );
+
+  // Controlled panels: the prop writes the dialog's state. The effect is the
+  // only post-mount writer — the `open` attribute is frozen at first render.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || open === undefined) return;
+
+    // Already in the requested state. That includes the open attribute of
+    // the first render — server-rendered markup or a controlled panel that
+    // mounted open: keep the mirror fresh, but do not re-run `show()`'s
+    // bookkeeping, so hydrating an open panel never steals focus.
+    if (dialog.open === open) {
+      openRef.current = open;
+      return;
+    }
+
+    if (open) {
+      previouslyFocusedRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      dialog.show();
+      openRef.current = true;
+      dialog.focus();
+    } else {
+      dialog.close();
+    }
+  }, [open]);
 
   // Hand focus back if the panel disappears while still open.
   //
@@ -137,6 +197,13 @@ const useSidePanelDialog = ({
       // A consumer may synchronously reopen from onClose: openPanel has then already re-recorded the
       // open state and focus origin, so leave its bookkeeping untouched.
       if (dialogRef.current?.open) return;
+      // A controlled panel is closed only by its prop: a close the prop did
+      // not cause (a `<form method="dialog">` submit inside the content)
+      // snaps straight back to the prop's truth.
+      if (open) {
+        dialogRef.current?.show();
+        return;
+      }
       openRef.current = false;
       const dialog = dialogRef.current;
       // Hand focus back only if it is still inside the panel; the user may
@@ -147,7 +214,7 @@ const useSidePanelDialog = ({
       }
       previouslyFocusedRef.current = null;
     },
-    [onClose],
+    [onClose, open],
   );
 
   return {
@@ -155,6 +222,7 @@ const useSidePanelDialog = ({
     close,
     dialogProps,
     dialogRef,
+    initiallyOpen,
     handleKeyDown,
     handleClose,
   };

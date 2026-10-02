@@ -34,7 +34,7 @@ function Toolbar() {
 }
 ```
 
-> **The ref must always be attached.** Every factory must set the `ref` it receives on the `<SidePanel>` it returns — `<SidePanel ref={ref}>`. The trigger toggles the panel through that ref. `SidePanel` requires its `ref`, so a factory that forgets it fails to compile.
+> **The ref must always be attached.** Every factory must set the `ref` it receives on the `<SidePanel>` it returns — `<SidePanel ref={ref}>`. The trigger toggles the panel through that ref; a factory that forgets it renders a trigger that toggles nothing.
 
 <Canvas of={Stories.StaticInfo} />
 
@@ -60,7 +60,7 @@ function Bar() {
 }
 ```
 
-`withSidePanel` is meant for static content: the call belongs at module scope, where the function it is handed can only see module-level values, so the panel it returns is the same on every render. If the panel must show data from the parent — for example a different machine depending on which row is selected — compose [`SidePanel`](?path=/docs/components-sidepanel--docs) directly and drive it through its `ref`.
+`withSidePanel` is meant for static content: the call belongs at module scope, where the function it is handed can only see module-level values, so the panel it returns is the same on every render. If the panel must show data from the parent — for example a different machine depending on which row is selected — compose [`SidePanel`](?path=/docs/components-sidepanel--docs) directly and drive it through its `ref`, or through an `open` prop when the state lives outside the component — a URL search parameter, for instance.
 
 ## Signature
 
@@ -93,7 +93,7 @@ function withSidePanel<TProps extends WithSidePanelTriggerProps>(
         the trigger, with a props object — <code>&#123; close, ref &#125;</code>.
         <ul>
           <li>
-            <strong>Always attach the ref:</strong> <code>&lt;SidePanel ref=&#123;ref&#125;&gt;</code> — the trigger toggles the panel through it. <code>SidePanel</code> requires its <code>ref</code>, so forgetting it fails to compile.
+            <strong>Always attach the ref:</strong> <code>&lt;SidePanel ref=&#123;ref&#125;&gt;</code> — the trigger toggles the panel through it. Forget it and the trigger toggles nothing.
           </li>
           <li>
             A footer button needs to close the panel → also take <code>&#123; close &#125;</code> and wire it: <code>onClick=&#123;close&#125;</code>.
@@ -109,6 +109,35 @@ The returned component's `displayName` is `` `withSidePanel(${Trigger.displayNam
 ## How it closes
 
 The trigger toggles the panel; the header's X button and Escape always close it. **Footer buttons can only close the panel** — that is the one and only action this HOC provides, through the `close` it hands your function. If an action needs to do more — save data, open another panel, close conditionally — compose `SidePanel` directly and drive it through its `ref`.
+
+## Controlled panels, and holding the state in the URL
+
+`withSidePanel` is uncontrolled: the dialog's native open state is the only one. When the panel's open state must live outside the component — so a server can render it open, so it is deep-linkable, or so the browser's Back button closes it — compose `SidePanel` directly with an `open` prop and `onOpenChange`:
+
+```tsx
+// The URL is the state holder: /machines?panel=noble-vm-01 opens the panel.
+const router = useRouter();
+const panel = useSearchParam("panel");
+const isOpen = panel === machine.name;
+
+<Button
+  onClick={() =>
+    router.setSearchParams({ panel: isOpen ? null : machine.name })
+  }
+>
+  {machine.name}
+</Button>
+
+<SidePanel
+  open={isOpen}
+  onOpenChange={() => router.setSearchParams({ panel: null })}
+>
+  <SidePanel.Header>{machine.name}</SidePanel.Header>
+  <SidePanel.Content>…</SidePanel.Content>
+</SidePanel>
+```
+
+The panel renders exactly what `open` says — on the server too, so a URL that should arrive with the panel open does. Dismissal gestures (the header's X, Escape) fire `onOpenChange(false)`; the owner updates the URL, the prop flips, and the panel closes. The component never owns the state, so there is nothing to desync.
 
 ## When to reach for it
 
@@ -130,7 +159,11 @@ There are two ways to use a side panel, and they differ by what the panel must s
       <td>Content from parent state (per-row panels), other open/close paths, or a need to know whether the panel is open</td>
       <td>SidePanel composed directly, driven through its <code>ref</code></td>
     </tr>
+    <tr>
+      <td>The state must survive or precede the client — server rendering, deep links, shareable URLs</td>
+      <td>SidePanel composed directly, driven through its <code>open</code> prop from a URL search parameter</td>
+    </tr>
   </tbody>
 </table>
 
-`withSidePanel` keeps no state you can read — no `onOpenChange`, no "is it open?" to mirror on a pressed-state trigger. The dialog's native open state is the only one, and it stays hidden behind the HOC. The moment anything else must open the panel, close it, or react to it, that is the cue to compose `SidePanel` directly.
+`withSidePanel` keeps no state you can read — no "is it open?" to mirror on a pressed-state trigger. The dialog's native open state is the only one, and it stays hidden behind the HOC. The moment anything else must open the panel, close it, or react to it, that is the cue to compose `SidePanel` directly.

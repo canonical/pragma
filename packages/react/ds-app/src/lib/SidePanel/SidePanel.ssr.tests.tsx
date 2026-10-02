@@ -28,7 +28,7 @@ describe("SidePanel SSR", () => {
     expect(html).toContain("Actions");
   });
 
-  it("never paints an open dialog on the server", () => {
+  it("never paints an open dialog on the server when uncontrolled", () => {
     const html = renderToString(
       <SidePanel ref={createRef<SidePanelHandle>()}>
         <SidePanel.Header>Panel title</SidePanel.Header>
@@ -43,6 +43,36 @@ describe("SidePanel SSR", () => {
       would pass just as happily if `open` were emitted after another
       attribute.
     */
+    const dialogTag = html.match(/<dialog[^>]*>/)?.[0];
+    expect(dialogTag).toBeDefined();
+    expect(dialogTag).not.toMatch(/\sopen[=\s>]/);
+  });
+
+  it("paints the panel open on the server when open={true}", () => {
+    /*
+      A server can never call the handle's `show()`, but it can render the
+      `open` prop — so a URL that should arrive with the panel open does, and
+      the client hydrates onto markup that already shows it.
+    */
+    const html = renderToString(
+      <SidePanel open>
+        <SidePanel.Header>Panel title</SidePanel.Header>
+        <SidePanel.Content>Test content</SidePanel.Content>
+      </SidePanel>,
+    );
+    const dialogTag = html.match(/<dialog[^>]*>/)?.[0];
+    expect(dialogTag).toBeDefined();
+    expect(dialogTag).toMatch(/\sopen[=\s>]/);
+    expect(html).toContain("Test content");
+  });
+
+  it("paints it closed on the server when open={false}", () => {
+    const html = renderToString(
+      <SidePanel open={false}>
+        <SidePanel.Header>Panel title</SidePanel.Header>
+        <SidePanel.Content>Test content</SidePanel.Content>
+      </SidePanel>,
+    );
     const dialogTag = html.match(/<dialog[^>]*>/)?.[0];
     expect(dialogTag).toBeDefined();
     expect(dialogTag).not.toMatch(/\sopen[=\s>]/);

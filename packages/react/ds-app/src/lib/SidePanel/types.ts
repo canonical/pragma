@@ -18,9 +18,13 @@ export interface SidePanelContextValue {
 /**
  * The imperative handle a SidePanel exposes through its `ref`.
  *
- * The panel is controlled through this handle rather than an `open` prop: the
- * `<dialog>` element's own open state is the only source of truth, and the
- * handle drives it directly — nothing to mirror, nothing to desync.
+ * On an uncontrolled panel — no `open` prop — the handle is how the panel
+ * opens and closes: the `<dialog>` element's own open state is the only
+ * source of truth, and the handle drives it directly. On a controlled panel
+ * — an `open` prop is passed — the prop is the source of truth instead, and
+ * the handle routes through `onOpenChange`: `open()` asks to open,
+ * `close()` asks to close, and the panel only actually changes when the
+ * prop does.
  */
 export interface SidePanelHandle {
   /** Open the panel and move focus into it. A no-op while already open. */
@@ -45,20 +49,48 @@ type OwnProps = {
    */
   children: ReactNode;
   /**
-   * The panel's imperative handle, and the only way the panel opens:
-   * `ref.current?.open()`, with `ref.current?.close()` closing it, and
-   * `ref.current?.toggle()` switching it between those states.
+   * The panel's imperative handle. On an uncontrolled panel it is the only
+   * way the panel opens: `ref.current?.open()`, with `ref.current?.close()`
+   * closing it, and `ref.current?.toggle()` switching it between those
+   * states. On a controlled panel — an `open` prop is passed — the handle is
+   * optional and routes through `onOpenChange` instead of driving the dialog
+   * directly.
    */
-  ref: Ref<SidePanelHandle>;
+  ref?: Ref<SidePanelHandle>;
+  /**
+   * Open the panel from outside: pass it and the panel becomes controlled —
+   * it renders exactly what the prop says and never opens or closes on its
+   * own. Every dismissal gesture (the header's close button, Escape) fires
+   * `onOpenChange(false)` and waits for the prop to change.
+   *
+   * This is the prop that makes the panel server-renderable: a server can
+   * never call the handle's `show()`, but it can render `open={true}`, so a
+   * URL that should arrive with the panel open does. Hold the state in the
+   * URL — a search parameter read with the router's hooks — and pass it
+   * here, so the server and the client render the same truth.
+   */
+  open?: boolean;
+  /**
+   * A dismissal gesture happened — the header's close button or Escape — and
+   * the panel is asking to close. Fired only while the panel is controlled;
+   * the panel itself stays open until `open` changes. Wire it to whatever
+   * owns the state — with URL-held state, navigate the search parameter
+   * away. Fired before the dialog changes, so the consumer can decline.
+   */
+  onOpenChange?: (open: boolean) => void;
 };
 
 /**
  * Props for the SidePanel provider.
  *
- * The panel is opened and closed through the imperative `ref` handle, not an
- * `open` prop: the dialog's native open state is the single source of truth.
- * Do not set the native `open` attribute — it is omitted from the surface
- * precisely so the panel's bookkeeping (focus handoff) cannot be bypassed.
+ * Uncontrolled by default: the panel opens and closes through the imperative
+ * `ref` handle, and the dialog's native open state is the single source of
+ * truth. Pass an `open` prop to make it controlled instead — the panel then
+ * renders exactly what the prop says, and dismissal gestures fire
+ * `onOpenChange` for the owner to act on (see those props). The native
+ * `open` attribute is not part of the surface in either mode: uncontrolled
+ * so the panel's bookkeeping (focus handoff) cannot be bypassed, controlled
+ * so the prop's sync effect stays the only writer.
  *
  * Props extend the native props of the `<dialog>` root, so every attribute it
  * accepts reaches the DOM. That includes the dialog's own `onClose`: pass your
@@ -68,7 +100,7 @@ type OwnProps = {
  * a `SidePanel.Header` — the provider warns in development when it does not.
  */
 export type SidePanelProviderProps = OwnProps &
-  Omit<ComponentProps<"dialog">, keyof OwnProps | "open">;
+  Omit<ComponentProps<"dialog">, keyof OwnProps>;
 
 /**
  * The one requirement {@link withSidePanel} places on the component it wraps:
@@ -90,16 +122,16 @@ export type WithSidePanelRenderProps = {
   close: () => void;
   /**
    * The handle on the panel the trigger toggles. The factory MUST set it on
-   * the `<SidePanel>` it returns — `<SidePanel ref={ref}>`. `SidePanel`
-   * requires its `ref`, so a factory that forgets it fails to compile.
+   * the `<SidePanel>` it returns — `<SidePanel ref={ref}>` — without it the
+   * trigger toggles nothing.
    */
   ref: RefObject<SidePanelHandle | null>;
 };
 
 /**
  * **Every factory must attach the `ref` it receives to the `<SidePanel>` it
- * returns.** The trigger toggles the panel through that ref. `SidePanel`
- * requires its `ref`, so a factory that forgets it fails to compile:
+ * returns.** The trigger toggles the panel through that ref — without it the
+ * trigger toggles nothing:
  *
  * `({ ref }) => <SidePanel ref={ref}>…</SidePanel>`
  *

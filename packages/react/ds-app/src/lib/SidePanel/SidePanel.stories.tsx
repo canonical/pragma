@@ -1,8 +1,13 @@
 import { Button, withTooltip } from "@canonical/react-ds-global";
 import { Field, Form } from "@canonical/react-ds-global-form";
+import { useRouter, useSearchParam } from "@canonical/router-react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useRef, useState } from "react";
 import { ubuntuStory } from "../../storybook/sidePanel/fixtures.js";
+import {
+  STORY_PANEL_NAME,
+  withSidePanelHashRouter,
+} from "../../storybook/sidePanel/story-utils.js";
 import Component from "./Provider.js";
 import type { SidePanelHandle } from "./types.js";
 
@@ -394,6 +399,202 @@ useEffect(() => {
     <SidePanel.Content>…selected entity's details…</SidePanel.Content>
   </SidePanel>
 </>
+        `,
+      },
+    },
+  },
+};
+
+/**
+ * A controlled panel with its state held in the URL — the pattern an
+ * application uses for server-renderable, deep-linkable panels. The `open`
+ * prop is a view of a search parameter: this story's hash router (the
+ * storybook stand-in for the app's router) carries `?panel=…`, the trigger
+ * toggles it via the router's `setSearchParams`, and the panel renders
+ * exactly what the URL says — never opening or closing on its own. Dismissal
+ * gestures (the header's close button, Escape) fire `onOpenChange(false)`,
+ * which navigates the parameter away.
+ *
+ * Because the state is navigation, the browser's Back button closes an open
+ * panel, and refresh keeps it open — try both. In a server-rendered app the
+ * same URL paints the panel open in the first response.
+ */
+export const Controlled: Story = {
+  decorators: [withSidePanelHashRouter],
+  render: () => {
+    const router = useRouter();
+    const panel = useSearchParam("panel");
+    const isOpen = panel === STORY_PANEL_NAME;
+
+    return (
+      <>
+        <style>
+          {`
+            /* Disable animations for visual testing */
+            :root {
+              --side-panel-transition-duration: 0ms;
+            }
+          `}
+        </style>
+        <Button
+          onClick={() =>
+            router.setSearchParams({ panel: isOpen ? null : STORY_PANEL_NAME })
+          }
+        >
+          Toggle panel
+        </Button>
+        <Component
+          open={isOpen}
+          onOpenChange={() => router.setSearchParams({ panel: null })}
+        >
+          <Component.Header>Ubuntu Pro</Component.Header>
+          <Component.Content>
+            <p>
+              Security and compliance coverage for your instances, including
+              extended support for the packages you care about.
+            </p>
+          </Component.Content>
+          <Component.Footer>
+            <Button onClick={() => router.setSearchParams({ panel: null })}>
+              Cancel
+            </Button>
+            <Button importance="primary">Done</Button>
+          </Component.Footer>
+        </Component>
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+// The URL is the state holder: the route declares a \`panel\` search
+// parameter, and the panel is a view of it.
+const router = useRouter();
+const panel = useSearchParam("panel");
+const isOpen = panel === "ubuntu-pro";
+
+<Button
+  onClick={() =>
+    router.setSearchParams({ panel: isOpen ? null : "ubuntu-pro" })
+  }
+>
+  Toggle panel
+</Button>
+
+<SidePanel
+  open={isOpen}
+  onOpenChange={() => router.setSearchParams({ panel: null })}
+>
+  <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
+  <SidePanel.Content>
+    <p>Security and compliance coverage for your instances.</p>
+  </SidePanel.Content>
+  <SidePanel.Footer>
+    <Button onClick={() => router.setSearchParams({ panel: null })}>
+      Cancel
+    </Button>
+    <Button importance="primary">Done</Button>
+  </SidePanel.Footer>
+</SidePanel>
+        `,
+      },
+    },
+  },
+};
+
+/**
+ * The controlled panel against a `<form method="dialog">` submit — the one
+ * close path the component does not drive. Submitting such a form makes the
+ * **browser itself** close the enclosing dialog, with no React code in the
+ * loop. In controlled mode the `open` prop still says open, so the panel
+ * snaps straight back: the owner never agreed to the close, and the prop is
+ * the single source of truth.
+ *
+ * Try it: open the panel and press **Submit** — the dialog blinks and
+ * reopens. To let a form submit really close a controlled panel, wire the
+ * owner too: flip the search parameter in the submit handler, so the prop
+ * reaches `false` and the snap-back stands down.
+ */
+export const DialogFormSnapBack: Story = {
+  decorators: [withSidePanelHashRouter],
+  render: () => {
+    const router = useRouter();
+    const panel = useSearchParam("panel");
+    const isOpen = panel === STORY_PANEL_NAME;
+    // Counts the platform closes the form triggers, so the invisible
+    // snap-back becomes visible: every submit closed the dialog and the
+    // panel reopened it.
+    const [closeAttempts, setCloseAttempts] = useState(0);
+
+    return (
+      <>
+        <style>
+          {`
+            /* Disable animations for visual testing */
+            :root {
+              --side-panel-transition-duration: 0ms;
+            }
+          `}
+        </style>
+        <Button
+          onClick={() =>
+            router.setSearchParams({ panel: isOpen ? null : STORY_PANEL_NAME })
+          }
+        >
+          Toggle panel
+        </Button>
+        <p>
+          Submit-triggered closes the panel snapped back from:{" "}
+          <strong>{closeAttempts}</strong>
+        </p>
+        <Component
+          open={isOpen}
+          onOpenChange={() => router.setSearchParams({ panel: null })}
+        >
+          <Component.Header>Ubuntu Pro</Component.Header>
+          <Component.Content>
+            <p>
+              This form closes dialogs the platform way:{" "}
+              <code>method="dialog"</code>. Submitting it makes the browser
+              close the panel behind the component's back — but the{" "}
+              <code>open</code> prop still says open, so the panel snaps back.
+              Press <strong>Submit</strong> to see it.
+            </p>
+            <form
+              method="dialog"
+              onSubmit={() => setCloseAttempts((attempts) => attempts + 1)}
+            >
+              <button type="submit">Submit (method="dialog")</button>
+            </form>
+          </Component.Content>
+        </Component>
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+const router = useRouter();
+const panel = useSearchParam("panel");
+const isOpen = panel === "ubuntu-pro";
+
+<SidePanel
+  open={isOpen}
+  onOpenChange={() => router.setSearchParams({ panel: null })}
+>
+  <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
+  <SidePanel.Content>
+    {/* Submitting this form closes the dialog the platform way — the
+        component never hears about it. The prop still says open, so the
+        panel snaps back. To let a submit really close a controlled panel,
+        flip the prop in the submit handler too. */}
+    <form method="dialog">
+      <button type="submit">Submit</button>
+    </form>
+  </SidePanel.Content>
+</SidePanel>
         `,
       },
     },
