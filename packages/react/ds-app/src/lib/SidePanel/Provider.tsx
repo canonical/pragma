@@ -42,15 +42,21 @@ const componentCssClassName = "ds side-panel";
  * opening the panel still focuses the panel itself, so from there Tab reaches
  * the close button, then the content, then the footer's actions.
  *
- * There are two consumption patterns, `withSidePanel` and `SidePanel`.
- * `withSidePanel` is meant for static content: the call belongs at module
- * scope, where the function it is handed can only see module-level values, so
- * the panel it returns is the same on every render. If the panel must show
- * data from the parent — for example a different machine's details depending
- * on which machine is selected — compose `SidePanel` directly and drive it
- * through its `ref`, or through an `open` prop when the state lives outside
- * the component (a URL search parameter, a parent's selection). Otherwise,
- * use `withSidePanel`.
+ * There are three ways to consume a panel, and they differ by who drives
+ * it:
+ *
+ * - `withSidePanel` — static content, same every time: one trigger owns the
+ *   panel and its exit paths are self-contained.
+ * - `SidePanel` driven through its `ref` — content from parent state (a
+ *   different machine's details depending on which machine is selected), or
+ *   other open/close paths; the panel stays uncontrolled.
+ * - `SidePanel` driven through an `open` prop — the state lives outside the
+ *   component: a URL search parameter (server-renderable, deep-linkable), or
+ *   a parent's selection.
+ *
+ * The `withSidePanel` call belongs at module scope, where the function it is
+ * handed can only see module-level values, so the panel it returns is the
+ * same on every render. Otherwise, compose `SidePanel` directly.
  *
  * The panel is always named by its header's title, so the header is required
  * — a panel composed without one gets a development warning. Note the title

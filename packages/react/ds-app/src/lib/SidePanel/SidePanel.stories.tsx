@@ -504,6 +504,104 @@ const isOpen = panel === "ubuntu-pro";
 };
 
 /**
+ * The controlled panel against a `<form method="dialog">` submit — the one
+ * close path the component does not drive. Submitting such a form makes the
+ * **browser itself** close the enclosing dialog, with no React code in the
+ * loop. In controlled mode the `open` prop still says open, so the panel
+ * snaps straight back: the owner never agreed to the close, and the prop is
+ * the single source of truth.
+ *
+ * Try it: open the panel and press **Submit** — the dialog blinks and
+ * reopens. To let a form submit really close a controlled panel, wire the
+ * owner too: flip the search parameter in the submit handler, so the prop
+ * reaches `false` and the snap-back stands down.
+ */
+export const DialogFormSnapBack: Story = {
+  decorators: [withSidePanelHashRouter],
+  render: () => {
+    const router = useRouter();
+    const panel = useSearchParam("panel");
+    const isOpen = panel === STORY_PANEL_NAME;
+    // Counts the platform closes the form triggers, so the invisible
+    // snap-back becomes visible: every submit closed the dialog and the
+    // panel reopened it.
+    const [closeAttempts, setCloseAttempts] = useState(0);
+
+    return (
+      <>
+        <style>
+          {`
+            /* Disable animations for visual testing */
+            :root {
+              --side-panel-transition-duration: 0ms;
+            }
+          `}
+        </style>
+        <Button
+          onClick={() =>
+            router.setSearchParams({ panel: isOpen ? null : STORY_PANEL_NAME })
+          }
+        >
+          Toggle panel
+        </Button>
+        <p>
+          Submit-triggered closes the panel snapped back from:{" "}
+          <strong>{closeAttempts}</strong>
+        </p>
+        <Component
+          open={isOpen}
+          onOpenChange={() => router.setSearchParams({ panel: null })}
+        >
+          <Component.Header>Ubuntu Pro</Component.Header>
+          <Component.Content>
+            <p>
+              This form closes dialogs the platform way:{" "}
+              <code>method="dialog"</code>. Submitting it makes the browser
+              close the panel behind the component's back — but the{" "}
+              <code>open</code> prop still says open, so the panel snaps back.
+              Press <strong>Submit</strong> to see it.
+            </p>
+            <form
+              method="dialog"
+              onSubmit={() => setCloseAttempts((attempts) => attempts + 1)}
+            >
+              <button type="submit">Submit (method="dialog")</button>
+            </form>
+          </Component.Content>
+        </Component>
+      </>
+    );
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `
+const router = useRouter();
+const panel = useSearchParam("panel");
+const isOpen = panel === "ubuntu-pro";
+
+<SidePanel
+  open={isOpen}
+  onOpenChange={() => router.setSearchParams({ panel: null })}
+>
+  <SidePanel.Header>Ubuntu Pro</SidePanel.Header>
+  <SidePanel.Content>
+    {/* Submitting this form closes the dialog the platform way — the
+        component never hears about it. The prop still says open, so the
+        panel snaps back. To let a submit really close a controlled panel,
+        flip the prop in the submit handler too. */}
+    <form method="dialog">
+      <button type="submit">Submit</button>
+    </form>
+  </SidePanel.Content>
+</SidePanel>
+        `,
+      },
+    },
+  },
+};
+
+/**
  * The panel in a right-to-left context: no prop, nothing to opt into — the
  * panel docks to the inline-end edge, which in RTL is the left. The
  * `dir="rtl"` wrapper stands in for the application's own directionality,
