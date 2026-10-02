@@ -8,13 +8,15 @@ export default mergeConfig(
   defineConfig({
     test: {
       // Browser-like environment for component tests
-      environment: "jsdom",
+      environment: "happy-dom",
       // Vitest globals (describe/it/expect) without imports
       globals: true,
       // Extend matchers and clean up the DOM between tests
       setupFiles: ["./vitest.setup.ts"],
       // Unit and component tests are colocated and named *.test.ts(x)
       include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+      // Worker reuse across files; the per-file fork respawn is pure overhead.
+      isolate: false,
       coverage: {
         provider: "v8",
         // Thresholds start at 0 — coverage is reported but does not gate.

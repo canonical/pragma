@@ -1,36 +1,26 @@
 /* @canonical/generator-ds 0.10.0-experimental.5 */
 
-import type { ComponentProps } from "svelte";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { Locator } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
-import type { THContext } from "../../types.js";
-import Component from "./SortButton.svelte";
-
-vi.mock("../../context.js", () => {
-  return {
-    getTHContext: (): THContext => ({
-      sortDirection: undefined,
-    }),
-  };
-});
+import Harness from "./test-harness.svelte";
+import type { SortButtonProps } from "./types.js";
 
 describe("SortButton component", () => {
   const baseProps = {
     "aria-label": "Sort",
-  } satisfies ComponentProps<typeof Component>;
+  } satisfies SortButtonProps;
 
   it("renders", async () => {
-    const page = await render(Component, { ...baseProps });
+    const page = await render(Harness, { sortButton: { ...baseProps } });
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
   describe("attributes", () => {
     it.each([["id", "test-id"]])("applies %s", async (attribute, expected) => {
-      const page = await render(Component, {
-        ...baseProps,
-        [attribute]: expected,
+      const page = await render(Harness, {
+        sortButton: { ...baseProps, [attribute]: expected },
       });
       await expect
         .element(componentLocator(page))
@@ -38,17 +28,15 @@ describe("SortButton component", () => {
     });
 
     it("applies classes", async () => {
-      const page = await render(Component, {
-        ...baseProps,
-        class: "test-class",
+      const page = await render(Harness, {
+        sortButton: { ...baseProps, class: "test-class" },
       });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
     });
 
     it("applies style", async () => {
-      const page = await render(Component, {
-        ...baseProps,
-        style: "color: orange;",
+      const page = await render(Harness, {
+        sortButton: { ...baseProps, style: "color: orange;" },
       });
       await expect
         .element(componentLocator(page))
@@ -57,9 +45,11 @@ describe("SortButton component", () => {
   });
 
   it("renders as link when href is provided", async () => {
-    const page = await render(Component, {
-      ...baseProps,
-      href: "https://example.com",
+    const page = await render(Harness, {
+      sortButton: {
+        ...baseProps,
+        href: "https://example.com",
+      },
     });
     await expect
       .element(page.getByRole("link", { name: "Sort" }))
@@ -67,6 +57,6 @@ describe("SortButton component", () => {
   });
 });
 
-function componentLocator(page: RenderResult<typeof Component>): Locator {
+function componentLocator(page: RenderResult<typeof Harness>): Locator {
   return page.getByRole("button", { name: "Sort" });
 }

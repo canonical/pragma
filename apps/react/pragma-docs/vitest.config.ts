@@ -7,14 +7,16 @@ export default mergeConfig(
   viteConfig({ command: "serve", mode: "test" }),
   defineConfig({
     test: {
-      // Browser-like environment for component tests
-      environment: "jsdom",
+      // happy-dom by default; jsdom per file via `// @vitest-environment jsdom`.
+      environment: "happy-dom",
       // Vitest globals (describe/it/expect) without imports
       globals: true,
       // Extend matchers and clean up the DOM between tests
       setupFiles: ["./vitest.setup.ts"],
       // Repo convention: test files are named *.tests.ts(x)
       include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
+      // Worker reuse across files; the per-file fork respawn is pure overhead.
+      isolate: false,
       coverage: {
         provider: "v8",
         // The denominator is the SOURCE TREE, not the import graph. Without

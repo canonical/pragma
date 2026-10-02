@@ -7,6 +7,8 @@ export default mergeConfig(
     test: {
       environment: "node",
       include: ["src/**/*.tests.ts"],
+      // Worker reuse across files; the per-file fork respawn is pure overhead.
+      isolate: false,
     },
   }),
 );

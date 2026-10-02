@@ -8,6 +8,12 @@ export default defineConfig({
   plugins: [svelte({})],
   test: {
     environment: "node",
+    // Worker + iframe reuse across files; the setup files unmount between
+    // tests, and fileParallelism:false caps each project's RAM peak. The
+    // suites no longer mock source modules, which is what the shared
+    // registry cannot host.
+    isolate: false,
+    fileParallelism: false,
     env: {
       TZ: TIME_ZONE,
     },

@@ -7,37 +7,13 @@ import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
 import Component from "./Tooltip.svelte";
 import { children, trigger } from "./test.fixtures.svelte";
-import { ChainingManager } from "./utils/ChainingManager.js";
-
-vi.mock("./utils/ChainingManager.js", async (importActual) => {
-  const { ChainingManager: OriginalChainingManager } = await importActual<{
-    ChainingManager: typeof ChainingManager;
-  }>();
-
-  class Mock extends OriginalChainingManager {
-    static lastInstance: Mock | null = null;
-    constructor() {
-      super(350);
-      Mock.lastInstance = this;
-    }
-
-    static resetChaining() {
-      if (Mock.lastInstance) {
-        Mock.lastInstance.chaining = false;
-      }
-    }
-  }
-
-  return {
-    ChainingManager: Mock,
-  };
-});
+import { chainingManager } from "./utils/sharedChainingManager.js";
 
 describe("Tooltip component", () => {
   beforeEach(() => {
-    (
-      ChainingManager as unknown as { resetChaining: () => void }
-    ).resetChaining();
+    // The grace period is module state shared by every tooltip; reset it so
+    // each test starts with the full delay.
+    chainingManager.chaining = false;
   });
 
   const baseProps = {

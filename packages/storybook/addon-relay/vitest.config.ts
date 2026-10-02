@@ -8,10 +8,12 @@ export default defineConfig({
   plugins,
   test: {
     name: "client",
-    environment: "jsdom",
+    environment: "happy-dom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    // Worker reuse across files; the per-file fork respawn is pure overhead.
+    isolate: false,
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],

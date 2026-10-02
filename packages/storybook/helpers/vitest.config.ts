@@ -6,10 +6,12 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     test: {
-      environment: "jsdom",
+      environment: "happy-dom",
       globals: true,
       setupFiles: ["./vitest.setup.ts"],
       include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
+      // Worker reuse across files; the per-file fork respawn is pure overhead.
+      isolate: false,
     },
   }),
 );

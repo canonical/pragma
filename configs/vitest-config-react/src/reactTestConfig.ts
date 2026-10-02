@@ -45,15 +45,12 @@ export interface ReactTestConfigOptions {
    */
   glob: TestGlob | TestGlob[];
   /**
-   * Test environment. `"jsdom"` (default) for DOM component tests, `"node"`
-   * for framework-agnostic / SSR-only packages.
-   *
-   * @note jsdom is the interim environment. The forward path is Vitest browser
-   * mode with Playwright (see the svelte-ds-global migration); this factory
-   * will gain a `browser` option to drive that per-package flip without a
-   * config rewrite.
+   * Test environment. `"happy-dom"` (default) for DOM component tests,
+   * `"node"` for SSR-only packages, `"jsdom"` for the rare suite needing
+   * jsdom's fuller API surface. Files that strictly need jsdom override per
+   * file with exactly `// @vitest-environment jsdom` on their first line.
    */
-  environment?: "jsdom" | "node";
+  environment?: "happy-dom" | "jsdom" | "node";
   /**
    * When true, adds a second `node`-environment project that runs
    * `**\/*.ssr.<glob>.tsx` files (client project excludes them). Mirrors the
@@ -68,6 +65,12 @@ export interface ReactTestConfigOptions {
    * threshold.
    */
   coverage?: CoverageOption;
+  /**
+   * Per-file worker isolation. Defaults to `false` (worker reuse); pass
+   * `true` for a package whose files leak DOM or module state into
+   * whichever file the shared worker runs next.
+   */
+  isolate?: boolean;
   /** Setup files (e.g. `["./vitest.setup.ts"]`); omitted when empty. */
   setupFiles?: string[];
   /**
@@ -131,7 +134,7 @@ const buildCoverage = (
  *
  * `import { reactTestConfig } from "@canonical/vitest-config-react";`
  *
- * @example jsdom component package (ds-app family)
+ * @example happy-dom component package (ds-app family)
  * ```ts
  * test: reactTestConfig({ glob: "tests", setupFiles: ["./vitest.setup.ts"] })
  * ```
@@ -146,9 +149,10 @@ const buildCoverage = (
  */
 export const reactTestConfig = ({
   glob,
-  environment = "jsdom",
+  environment = "happy-dom",
   ssr = false,
   coverage = false,
+  isolate = false,
   setupFiles,
   plugins,
 }: ReactTestConfigOptions): TestConfig => {
@@ -163,6 +167,9 @@ export const reactTestConfig = ({
     name: "client",
     environment,
     globals: true,
+    // Worker reuse across test files unless the package opts back into
+    // per-file isolation (see the `isolate` option).
+    isolate,
     ...(hasSetup ? { setupFiles } : {}),
     include: globs.flatMap((g) => [`src/**/*.${g}.ts`, `src/**/*.${g}.tsx`]),
     ...(ssr ? { exclude: globs.map((g) => `src/**/*.ssr.${g}.tsx`) } : {}),
@@ -184,6 +191,8 @@ export const reactTestConfig = ({
   const ssrTest: TestConfig = {
     name: "ssr",
     environment: "node",
+    // Worker reuse, as in the client project above.
+    isolate,
     include: globs.map((g) => `src/**/*.ssr.${g}.tsx`),
   };
 

@@ -42,6 +42,9 @@ export default defineConfig({
     reporters: ["verbose"],
     // Media emulation is page-wide and files share the page, so they run one
     // at a time: an emulation set by one file cannot reach another's tests.
+    // The fixtures build their own iframes, so the shared runner iframe
+    // (isolate:false) changes nothing for them.
+    isolate: false,
     fileParallelism: false,
     projects: [
       {
