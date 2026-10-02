@@ -1,8 +1,9 @@
 <script lang="ts" module>
   import { Content, Footer, Header } from "./common/index.js";
-  import type { ModalCloseProps } from "./types.js";
+  import type { ModalCloseProps, ModalTriggerProps } from "./types.js";
 
   // TODO(button): Replace the native buttons with the DS Button once available.
+  const triggerText = "Open modal";
   const titleText = "Modal title";
   const contentText = "This is the modal content.";
   const dismissButtonText = "Close";
@@ -16,8 +17,14 @@
     contentText,
     dismissButtonText,
     titleText,
+    trigger,
+    triggerText,
   };
 </script>
+
+{#snippet trigger(triggerProps: ModalTriggerProps)}
+  <button {...triggerProps}>{triggerText}</button>
+{/snippet}
 
 {#snippet children(closeProps: ModalCloseProps, close: () => void)}
   <Header>{titleText}</Header>

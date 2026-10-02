@@ -11,7 +11,7 @@
   /**
    * A modal is a focused container that sits on top of the main view, requiring users to interact with it before returning to that view.
    *
-   * It renders a native `<dialog>` opened as a modal. Open and close it declaratively with the [Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) — a button with `commandfor` set to the modal's `id` and `command` set to `"show-modal"` or `"close"` — or programmatically through the bindable `open` prop.
+   * It renders a native `<dialog>` opened as a modal. Open and close it declaratively with the [Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) — a button with `commandfor` set to the modal's `id` and `command` set to `"show-modal"` or `"close"` — or programmatically through the bindable `open` prop. The `trigger` and `children` snippets pass these attributes ready to spread, as `triggerProps` and `closeProps`.
    *
    * Compose the sections with `Modal.Header`, `Modal.Content` and `Modal.Footer`. The header's title names the dialog; a modal without a header must carry its own `aria-label`.
    */
@@ -20,6 +20,9 @@
     tags: ["autodocs"],
     component: Modal,
     argTypes: {
+      trigger: {
+        control: false,
+      },
       children: {
         control: false,
       },
@@ -48,6 +51,9 @@
     }, 1000);
   };
 
+  // "Ways to open" story state
+  let waysToOpenOpen = $state(false);
+
   const storyOfUbuntu = [
     "Ubuntu is an ancient African word meaning 'humanity to others'. It is often described as reminding us that 'I am what I am because of who we all are'. We bring the spirit of Ubuntu to the world of computers and software.",
     "Linux was already established in 2004, but it was fragmented into proprietary and unsupported community editions, and free software was not a part of everyday life for most computer users. That's when Mark Shuttleworth gathered a small team of Debian developers who together founded Canonical and set out to create an easy-to-use Linux desktop called Ubuntu.",
@@ -66,14 +72,10 @@
 
 <Story name="Default">
   {#snippet template({ children: _, ...args })}
-    <button
-      commandfor="modal-default"
-      command="show-modal"
-      aria-haspopup="dialog"
-    >
-      Show modal
-    </button>
-    <Modal {...args} id="modal-default">
+    <Modal {...args}>
+      {#snippet trigger(triggerProps)}
+        <button {...triggerProps}>Show modal</button>
+      {/snippet}
       {#snippet children(closeProps, close)}
         <Modal.Header>Discard pending review?</Modal.Header>
         <Modal.Content>
@@ -93,6 +95,40 @@
         </Modal.Footer>
       {/snippet}
     </Modal>
+  {/snippet}
+</Story>
+
+<!-- The same modal opened three ways: its `trigger` snippet, any button pointing `commandfor` at its `id`, and the bindable `open` prop. -->
+
+<Story
+  name="Ways to open"
+  argTypes={{ id: { control: false }, open: { control: false } }}
+>
+  {#snippet template({ children: _, open: __, ...args })}
+    <Modal {...args} id="modal-ways-to-open" bind:open={waysToOpenOpen}>
+      {#snippet trigger(triggerProps)}
+        <button {...triggerProps}>Open with the trigger snippet</button>
+      {/snippet}
+      {#snippet children(closeProps)}
+        <Modal.Header>Unsaved changes</Modal.Header>
+        <Modal.Content>
+          Your changes are kept locally until you publish them.
+        </Modal.Content>
+        <Modal.Footer>
+          <button {...closeProps}>Got it</button>
+        </Modal.Footer>
+      {/snippet}
+    </Modal>
+    <button
+      commandfor="modal-ways-to-open"
+      command="show-modal"
+      aria-haspopup="dialog"
+    >
+      Open with an invoker command
+    </button>
+    <button onclick={() => (waysToOpenOpen = true)}>
+      Open by setting `open`
+    </button>
   {/snippet}
 </Story>
 
@@ -150,14 +186,10 @@
 
 <Story name="Closed by an outside click" args={{ closedby: "any" }}>
   {#snippet template({ children: _, ...args })}
-    <button
-      commandfor="modal-outside-click"
-      command="show-modal"
-      aria-haspopup="dialog"
-    >
-      Show modal
-    </button>
-    <Modal {...args} id="modal-outside-click">
+    <Modal {...args}>
+      {#snippet trigger(triggerProps)}
+        <button {...triggerProps}>Show modal</button>
+      {/snippet}
       <Modal.Header>Keyboard shortcuts</Modal.Header>
       <Modal.Content>
         Press <kbd>?</kbd> anywhere to show this list again.
@@ -170,14 +202,10 @@
 
 <Story name="Long content">
   {#snippet template({ children: _, ...args })}
-    <button
-      commandfor="modal-long-content"
-      command="show-modal"
-      aria-haspopup="dialog"
-    >
-      Show modal
-    </button>
-    <Modal {...args} id="modal-long-content">
+    <Modal {...args}>
+      {#snippet trigger(triggerProps)}
+        <button {...triggerProps}>Show modal</button>
+      {/snippet}
       {#snippet children(closeProps)}
         <Modal.Header>The story of Ubuntu</Modal.Header>
         <Modal.Content>
@@ -197,14 +225,10 @@
 
 <Story name="Without a header">
   {#snippet template({ children: _, ...args })}
-    <button
-      commandfor="modal-without-header"
-      command="show-modal"
-      aria-haspopup="dialog"
-    >
-      Show modal
-    </button>
-    <Modal {...args} id="modal-without-header" aria-label="Maintenance notice">
+    <Modal {...args} aria-label="Maintenance notice">
+      {#snippet trigger(triggerProps)}
+        <button {...triggerProps}>Show modal</button>
+      {/snippet}
       {#snippet children(closeProps)}
         <Modal.Content>The service will restart at 02:00 UTC.</Modal.Content>
         <Modal.Footer>
