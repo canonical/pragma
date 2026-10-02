@@ -7,9 +7,7 @@ export default mergeConfig(
   viteConfig({ command: "serve", mode: "test" }),
   defineConfig({
     test: {
-      // Browser-like environment for component tests
-      // happy-dom boots and runs materially lighter than jsdom; files
-      // that need jsdom's fuller API start with `// @vitest-environment jsdom`.
+      // happy-dom by default; jsdom per file via `// @vitest-environment jsdom`.
       environment: "happy-dom",
       // Vitest globals (describe/it/expect) without imports
       globals: true,
@@ -19,9 +17,6 @@ export default mergeConfig(
       include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
       // Worker reuse across files; the per-file fork respawn is pure overhead.
       isolate: false,
-      // ~15 DOM workers was a multi-GB peak on a 16-core host; half the cores
-      // bounds it without costing this suite its wall clock.
-      maxWorkers: "50%",
       coverage: {
         provider: "v8",
         // The denominator is the SOURCE TREE, not the import graph. Without

@@ -46,18 +46,9 @@ export interface ReactTestConfigOptions {
   glob: TestGlob | TestGlob[];
   /**
    * Test environment. `"happy-dom"` (default) for DOM component tests,
-   * `"node"` for framework-agnostic / SSR-only packages, `"jsdom"` for the
-   * rare suite that needs jsdom's fuller API surface.
-   *
-   * Files that need jsdom's API surface while the package runs happy-dom
-   * start with exactly `// @vitest-environment jsdom` — a per-file override,
-   * not a package-wide posture. happy-dom boots and runs materially lighter
-   * than jsdom; jsdom stays the per-file exception, not the default.
-   *
-   * @note happy-dom is the interim environment. The forward path is Vitest
-   * browser mode with Playwright (see the svelte-ds-global migration); this
-   * factory will gain a `browser` option to drive that per-package flip
-   * without a config rewrite.
+   * `"node"` for SSR-only packages, `"jsdom"` for the rare suite needing
+   * jsdom's fuller API surface. Files that strictly need jsdom override per
+   * file with exactly `// @vitest-environment jsdom` on their first line.
    */
   environment?: "happy-dom" | "jsdom" | "node";
   /**
@@ -179,9 +170,6 @@ export const reactTestConfig = ({
     // Worker reuse across test files unless the package opts back into
     // per-file isolation (see the `isolate` option).
     isolate,
-    // ~15 jsdom workers on a 16-core host ≈ 5 GB peak; half the cores
-    // bounds it without costing these small suites their wall clock.
-    maxWorkers: "50%",
     ...(hasSetup ? { setupFiles } : {}),
     include: globs.flatMap((g) => [`src/**/*.${g}.ts`, `src/**/*.${g}.tsx`]),
     ...(ssr ? { exclude: globs.map((g) => `src/**/*.ssr.${g}.tsx`) } : {}),
@@ -205,7 +193,6 @@ export const reactTestConfig = ({
     environment: "node",
     // Worker reuse, as in the client project above.
     isolate,
-    maxWorkers: "50%",
     include: globs.map((g) => `src/**/*.ssr.${g}.tsx`),
   };
 
