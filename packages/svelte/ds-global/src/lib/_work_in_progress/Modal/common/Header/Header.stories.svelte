@@ -12,7 +12,7 @@
         control: { disable: true },
       },
       closeButton: {
-        control: { disable: true },
+        control: { type: "boolean" },
       },
     },
   });
@@ -26,21 +26,21 @@
 </script>
 
 <Story name="Default">
-  {#snippet template({ children: _, closeButton: __, ...args })}
+  {#snippet template({ children: _, ...args })}
     <Modal.Header {...args}>Modal title</Modal.Header>
   {/snippet}
 </Story>
 
-<Story name="Without a close button">
-  {#snippet template({ children: _, closeButton: __, ...args })}
-    <Modal.Header {...args} closeButton={false}>Modal title</Modal.Header>
+<Story name="Without a close button" args={{ closeButton: false }}>
+  {#snippet template({ children: _, ...args })}
+    <Modal.Header {...args}>Modal title</Modal.Header>
   {/snippet}
 </Story>
 
 <!-- For heading semantics, wrap the title in a heading of the level that fits the page. -->
 
 <Story name="With a heading">
-  {#snippet template({ children: _, closeButton: __, ...args })}
+  {#snippet template({ children: _, ...args })}
     <Modal.Header {...args}>
       <h2>Modal title</h2>
     </Modal.Header>
@@ -49,7 +49,10 @@
 
 <!-- Pass a snippet to `closeButton` to render your own close button or to customize the default `Modal.Header.CloseButton` -->
 
-<Story name="With a custom close button">
+<Story
+  name="With a custom close button"
+  argTypes={{ closeButton: { disabled: true } }}
+>
   {#snippet template({ children: _, closeButton: __, ...args })}
     <Modal.Header {...args}>
       Modal title
