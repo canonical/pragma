@@ -21,5 +21,11 @@
     font-size: var(--typography-heading-4-font-size);
     font-weight: var(--typography-heading-4-font-weight);
     line-height: var(--typography-heading-4-line-height);
+
+    > .title :is(h1, h2, h3, h4, h5, h6) {
+      margin: 0;
+      font: inherit;
+      letter-spacing: inherit;
+    }
   }
 }
