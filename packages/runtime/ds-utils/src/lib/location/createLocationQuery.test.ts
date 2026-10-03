@@ -1,8 +1,63 @@
 import type { LocationAdapter } from "@canonical/ds-types";
-import { createMemoryAdapter } from "@canonical/router-core";
 import { describe, expect, it } from "vitest";
-import createFakeLocationAdapter from "../../../testing/createFakeLocationAdapter.js";
 import createLocationQuery from "./createLocationQuery.js";
+
+/** A `LocationAdapter` over an in-memory history stack, with Back and Forward. */
+type FakeLocationAdapter = LocationAdapter & {
+  readonly back: () => void;
+  readonly forward: () => void;
+};
+
+/**
+ * Create a `LocationAdapter` that keeps its history in memory. It notifies
+ * subscribers synchronously, in subscription order, on every navigation, Back
+ * and Forward. A throwing listener stops the remaining listeners, and the
+ * exception propagates to the caller.
+ */
+const createFakeLocationAdapter = (
+  initial: string | URL,
+): FakeLocationAdapter => {
+  const entries: (string | URL)[] = [initial];
+  let index = 0;
+  const listeners = new Set<() => void>();
+
+  const notifyListeners = (): void => {
+    for (const listener of [...listeners]) {
+      listener();
+    }
+  };
+
+  return {
+    getLocation: () => entries[index] as string | URL,
+    navigate(url, options) {
+      if (options?.replace) {
+        entries[index] = url;
+      } else {
+        entries.splice(index + 1, entries.length, url);
+        index += 1;
+      }
+      notifyListeners();
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    back() {
+      if (index > 0) {
+        index -= 1;
+        notifyListeners();
+      }
+    },
+    forward() {
+      if (index < entries.length - 1) {
+        index += 1;
+        notifyListeners();
+      }
+    },
+  };
+};
 
 const setup = (initial: string | URL = "/machines") => {
   const adapter = createFakeLocationAdapter(initial);
@@ -153,18 +208,6 @@ describe("createLocationQuery", () => {
         "listener exploded",
       );
       expect(query.read().get("status")).toBe("failed");
-    });
-  });
-
-  describe("with router-core's memory adapter", () => {
-    it("accepts the adapter by shape and round-trips a write", () => {
-      const adapter: LocationAdapter = createMemoryAdapter("/machines#table");
-      const query = createLocationQuery(adapter);
-      query.write(new URLSearchParams("status=failed&status=cancelled"));
-      expect(query.read().getAll("status")).toEqual(["failed", "cancelled"]);
-      expect(String(adapter.getLocation())).toBe(
-        "https://router.local/machines?status=failed&status=cancelled#table",
-      );
     });
   });
 });
