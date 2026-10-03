@@ -1,6 +1,6 @@
 # @canonical/ds-utils
 
-Framework-agnostic helpers for the Pragma design system. These are the utilities the design system's own components are built on — navigation-tree logic, rate limiting and number formatting — shared by the React and Svelte implementations alike.
+Framework-agnostic helpers for the Pragma design system. These are the utilities the design system's own components are built on — navigation-tree logic, a port for the URL's query, rate limiting and number formatting — shared by the React and Svelte implementations alike.
 
 For generic string and assertion helpers with no design-system meaning (`casing`, `invariant`, `indent`, `join`), see [`@canonical/utils`](https://github.com/canonical/pragma-core/blob/main/packages/shared/utils/README.md).
 
@@ -35,6 +35,44 @@ slot, so the later entry wins and the earlier becomes unreachable from lookups
 (it can never be marked current). `prepareIndex` warns in development builds
 when it detects such a collision; production is silent and keeps the same
 last-write-wins behaviour.
+
+### location
+
+`createLocationQuery` gives a component one way to read and write the URL's query, whatever router owns the URL. It takes a `LocationAdapter` (`getLocation`, `navigate` and `subscribe`) and returns a `LocationQuery` (`read`, `write` and `subscribe`). The types come from `@canonical/ds-types`. Repeated parameters survive reads and writes.
+
+```typescript
+import { createLocationQuery } from "@canonical/ds-utils";
+import { createBrowserAdapter } from "@canonical/router-core";
+
+// router-core's adapters fit by shape.
+const query = createLocationQuery(createBrowserAdapter());
+
+const params = query.read(); // a fresh URLSearchParams
+params.set("page", "2");
+query.write(params); // replaces the current history entry
+query.write(params, { history: "push" }); // appends an entry instead
+const unsubscribe = query.subscribe(() => render(query.read()));
+```
+
+Another router fits by wrapping its own three functions:
+
+```typescript
+const query = createLocationQuery({
+  getLocation: () => router.currentHref,
+  navigate: (url, options) => router.go(url, { replace: options?.replace }),
+  subscribe: (listener) => router.onChange(listener),
+});
+```
+
+On the server, router-core's `createServerAdapter` serves reads for one request. `write` throws there, because the server adapter cannot navigate.
+
+```typescript
+import { createServerAdapter } from "@canonical/router-core";
+
+const query = createLocationQuery(createServerAdapter(request.url));
+```
+
+Create the port once per adapter, not on every render, because each call returns new functions. `write` serialises with `URLSearchParams.toString()`, so spaces become `+`. `read` decodes, so the encoding does not reach consumers.
 
 ### debounce
 
