@@ -1,6 +1,7 @@
 /**
  * `@canonical/ds-utils` — framework-agnostic design system helpers: navigation
- * tree annotation, indexing and reducers, rate limiting (`debounce`,
+ * tree annotation, indexing and reducers, a router-neutral port for reading
+ * and writing the URL's query, rate limiting (`debounce`,
  * `throttle`), and human-readable number and word formatting, shared by the
  * React and Svelte implementations alike.
  *
