@@ -87,7 +87,7 @@ describe("createLocationQuery", () => {
       expect(query.read().get("status")).toBe("failed");
     });
 
-    it("resolves a path-relative href", () => {
+    it("resolves a root-relative href", () => {
       const { query } = setup("/machines?status=failed");
       expect(query.read().get("status")).toBe("failed");
     });
@@ -134,6 +134,33 @@ describe("createLocationQuery", () => {
       expect(adapter.getLocation()).toBe("/machines?status=failed#table");
     });
 
+    it("drops the origin of an absolute URL string", () => {
+      const { adapter, query } = setup(
+        "http://localhost/machines?page=3#table",
+      );
+      query.write(new URLSearchParams("status=failed"));
+      expect(adapter.getLocation()).toBe("/machines?status=failed#table");
+    });
+
+    it("drops the origin of a URL object", () => {
+      const { adapter, query } = setup(
+        new URL("/machines?page=3#table", "https://example.com"),
+      );
+      query.write(new URLSearchParams("status=failed"));
+      expect(adapter.getLocation()).toBe("/machines?status=failed#table");
+    });
+
+    it("writes the parameters in the order given", () => {
+      const { adapter, query } = setup();
+      query.write(new URLSearchParams("sort=b&status=a&q=a+b%26c"));
+      expect(adapter.getLocation()).toBe("/machines?sort=b&status=a&q=a+b%26c");
+      expect([...query.read()]).toEqual([
+        ["sort", "b"],
+        ["status", "a"],
+        ["q", "a b&c"],
+      ]);
+    });
+
     it("writes an empty query without a question mark", () => {
       const { adapter, query } = setup();
       query.write(new URLSearchParams("status=failed"));
@@ -150,6 +177,18 @@ describe("createLocationQuery", () => {
       adapter.back();
       // All three writes replaced the first entry, so Back has nowhere to go.
       expect(query.read().getAll("status")).toEqual(["deployed"]);
+    });
+
+    it("replaces the current entry when the history behavior is replace", () => {
+      const { adapter, query } = setup();
+      query.write(new URLSearchParams("status=failed"), { history: "push" });
+      query.write(new URLSearchParams("status=cancelled"), {
+        history: "replace",
+      });
+      adapter.back();
+      expect(query.read().getAll("status")).toEqual([]);
+      adapter.forward();
+      expect(query.read().getAll("status")).toEqual(["cancelled"]);
     });
 
     it("appends an entry when the history behavior is push", () => {
@@ -196,6 +235,37 @@ describe("createLocationQuery", () => {
       });
       unsubscribe();
       query.write(new URLSearchParams("status=failed"));
+      expect(notifications).toBe(0);
+    });
+
+    it("notifies the listener without arguments for Back, Forward and outside navigations", () => {
+      const { adapter, query } = setup();
+      query.write(new URLSearchParams("status=failed"), { history: "push" });
+      const calls: unknown[][] = [];
+      const seen: string[] = [];
+      query.subscribe((...args: unknown[]) => {
+        calls.push(args);
+        seen.push(query.read().toString());
+      });
+      adapter.back();
+      adapter.forward();
+      adapter.navigate("/x?a=1");
+      expect(calls).toEqual([[], [], []]);
+      expect(seen).toEqual(["", "status=failed", "a=1"]);
+    });
+
+    it("stops at a throwing listener, so later listeners miss the change", () => {
+      const { query } = setup();
+      let notifications = 0;
+      query.subscribe(() => {
+        throw new Error("listener exploded");
+      });
+      query.subscribe(() => {
+        notifications += 1;
+      });
+      expect(() => query.write(new URLSearchParams("status=failed"))).toThrow(
+        "listener exploded",
+      );
       expect(notifications).toBe(0);
     });
 
