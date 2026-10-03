@@ -1,22 +1,11 @@
-import type {
-  HistoryBehavior,
-  LocationAdapter,
-  LocationQuery,
-} from "@canonical/ds-types";
+import type { LocationAdapter, LocationQuery } from "@canonical/ds-types";
 
 /**
  * Parse a location into a fresh `URL`. A path-relative href resolves against
  * a placeholder origin, because only its path, query and hash are read.
  */
-const resolveUrl = (location: string | URL): URL => {
-  if (location instanceof URL) {
-    return new URL(location.href);
-  }
-  if (location.startsWith("http://") || location.startsWith("https://")) {
-    return new URL(location);
-  }
-  return new URL(location, "http://localhost/");
-};
+const resolveUrl = (location: string | URL): URL =>
+  new URL(location, "http://localhost/");
 
 /**
  * Create a {@link LocationQuery} over a {@link LocationAdapter}.
@@ -38,26 +27,14 @@ export default function createLocationQuery(
   adapter: LocationAdapter,
 ): LocationQuery {
   return {
-    read(): URLSearchParams {
-      return new URLSearchParams(resolveUrl(adapter.getLocation()).search);
-    },
-    write(
-      next: URLSearchParams,
-      options?: { readonly history?: HistoryBehavior },
-    ): void {
-      const current = resolveUrl(adapter.getLocation());
-      const search = next.toString();
-      const query = search === "" ? "" : `?${search}`;
-      adapter.navigate(`${current.pathname}${query}${current.hash}`, {
-        // Replace by default, so continuous input does not flood history;
-        // only an explicit push appends an entry.
+    read: () => new URLSearchParams(resolveUrl(adapter.getLocation()).search),
+    write: (next, options) => {
+      const url = resolveUrl(adapter.getLocation());
+      url.search = next.toString();
+      adapter.navigate(url.pathname + url.search + url.hash, {
         replace: options?.history !== "push",
       });
     },
-    subscribe(listener: () => void): () => void {
-      return adapter.subscribe(() => {
-        listener();
-      });
-    },
+    subscribe: (listener) => adapter.subscribe(listener),
   };
 }

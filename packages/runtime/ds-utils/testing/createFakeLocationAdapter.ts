@@ -17,11 +17,11 @@ export default function createFakeLocationAdapter(
 ): FakeLocationAdapter {
   const entries: (string | URL)[] = [initial];
   let index = 0;
-  const listeners = new Set<(location: string | URL) => void>();
+  const listeners = new Set<() => void>();
 
   const notifyListeners = (): void => {
     for (const listener of [...listeners]) {
-      listener(entries[index] ?? initial);
+      listener();
     }
   };
 

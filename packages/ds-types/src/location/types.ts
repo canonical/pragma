@@ -134,7 +134,5 @@ export type LocationAdapter = {
    * Call `listener` with the new location on every change. The return value
    * unsubscribes.
    */
-  readonly subscribe: (
-    listener: (location: string | URL) => void,
-  ) => () => void;
+  readonly subscribe: (listener: () => void) => () => void;
 };
