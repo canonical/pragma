@@ -11,7 +11,8 @@ type FakeLocationAdapter = LocationAdapter & {
 /**
  * Create a `LocationAdapter` that keeps its history in memory. It notifies
  * subscribers synchronously, in subscription order, on every navigation, Back
- * and Forward. A throwing listener stops the remaining listeners, and the
+ * and Forward. Like router-core's adapters, it passes the location to each
+ * listener. A throwing listener stops the remaining listeners, and the
  * exception propagates to the caller.
  */
 const createFakeLocationAdapter = (
@@ -19,11 +20,11 @@ const createFakeLocationAdapter = (
 ): FakeLocationAdapter => {
   const entries: (string | URL)[] = [initial];
   let index = 0;
-  const listeners = new Set<() => void>();
+  const listeners = new Set<(location: string | URL) => void>();
 
   const notifyListeners = (): void => {
     for (const listener of [...listeners]) {
-      listener();
+      listener(entries[index] as string | URL);
     }
   };
 

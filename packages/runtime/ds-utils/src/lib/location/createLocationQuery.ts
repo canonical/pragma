@@ -35,6 +35,6 @@ export default function createLocationQuery(
         replace: options?.history !== "push",
       });
     },
-    subscribe: (listener) => adapter.subscribe(listener),
+    subscribe: (listener) => adapter.subscribe(() => listener()),
   };
 }
