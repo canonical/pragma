@@ -1,7 +1,6 @@
 /**
- * The location query port. A component reads and writes the URL's query
- * through `LocationQuery`, and a router or host provides `LocationAdapter`.
- * The types sit together because each describes one side of the same seam.
+ * These types sit together because they describe the two sides of one seam:
+ * the URL's query as a component sees it and as a router provides it.
  */
 
 /**
@@ -35,8 +34,9 @@ export type LocationNavigateOptions = {
 /**
  * The query string of the current URL, read and written as a whole.
  *
- * A component that keeps state in the URL goes through this port instead of
- * `window.location` or a particular router. Repeated parameters
+ * A component that keeps state in the URL reads and writes it through this
+ * port instead of `window.location` or a particular router. A router or host
+ * provides the {@link LocationAdapter} underneath. Repeated parameters
  * (`status=failed&status=cancelled`) survive reads and writes.
  *
  * @experimental Names may change until the first consumers adopt this surface.
@@ -51,8 +51,7 @@ export type LocationQuery = {
    * Replace the whole query with `next`, keeping the path and the hash.
    * `next` is serialised with `URLSearchParams.toString()`, which uses form
    * encoding (spaces as `+`). `read()` decodes, so encoding differences do not
-   * reach consumers. Throws when the adapter cannot navigate, as with
-   * router-core's `createServerAdapter`.
+   * reach consumers. Throws when the adapter cannot navigate.
    *
    * @note Impure: navigates the underlying adapter.
    */
@@ -81,9 +80,9 @@ export type LocationQuery = {
  * - notify at most once per write;
  * - land writes in the order they were made;
  * - never reorder or re-encode the parameters it is given;
- * - never drop a write silently, but notify where the location then stands,
- *   or throw.
+ * - never drop a write silently.
  *
+ * A write that does not land either notifies the current location or throws.
  * A write may land after `navigate` returns, as long as the notification
  * follows it.
  *
@@ -92,8 +91,8 @@ export type LocationQuery = {
 export type LocationAdapter = {
   /**
    * The current location: an absolute URL, or a root-relative href starting
-   * with `/` such as `/machines?status=failed`. A value not starting with `/`
-   * is resolved against `/`.
+   * with `/` such as `/machines?status=failed`. Any other relative value is
+   * resolved against `/`.
    */
   readonly getLocation: () => string | URL;
   /**
