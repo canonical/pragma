@@ -69,9 +69,15 @@ export type TimelineFilterState = {
   eventType?: string;
 };
 
+/** Timeline state carried in URL query params. */
+export type TimelineUrlState = {
+  filters: TimelineFilterState;
+  sortOrder?: TimelineSortOrder;
+};
+
 export type TimelineExpansion = {
   method?: TimelineCollapsingMethod;
-  /** Default 8. */
+  /** Events visible on load. Default 60. */
   initialVisible?: number;
   /** Events revealed per "Show more". Default 4. */
   step?: number;
