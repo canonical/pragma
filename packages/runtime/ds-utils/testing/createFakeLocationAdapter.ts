@@ -1,4 +1,4 @@
-import type { LocationAdapter } from "../src/lib/location/index.js";
+import type { LocationAdapter } from "@canonical/ds-types";
 
 /** A `LocationAdapter` over an in-memory history stack, with Back and Forward. */
 type FakeLocationAdapter = LocationAdapter & {

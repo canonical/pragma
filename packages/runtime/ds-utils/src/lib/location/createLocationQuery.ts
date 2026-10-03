@@ -2,7 +2,7 @@ import type {
   HistoryBehavior,
   LocationAdapter,
   LocationQuery,
-} from "./types.js";
+} from "@canonical/ds-types";
 
 /**
  * Parse a location into a fresh `URL`. A path-relative href resolves against

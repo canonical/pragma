@@ -19,6 +19,28 @@
 export type HistoryBehavior = "push" | "replace";
 
 /**
+ * Options for {@link LocationQuery.write}.
+ *
+ * @experimental The location query surface settles once its first consumers
+ * adopt it, and this name may change until then.
+ */
+export type LocationWriteOptions = {
+  /** How the write enters history. Defaults to `"replace"`. */
+  readonly history?: HistoryBehavior;
+};
+
+/**
+ * Options for {@link LocationAdapter.navigate}.
+ *
+ * @experimental The location query surface settles once its first consumers
+ * adopt it, and this name may change until then.
+ */
+export type LocationNavigateOptions = {
+  /** Replace the current history entry instead of appending one. */
+  readonly replace?: boolean;
+};
+
+/**
  * The query string of the current URL, read and written as a whole.
  *
  * This is the one seam between a component that keeps state in the URL and
@@ -74,7 +96,7 @@ export type LocationQuery = {
    */
   readonly write: (
     next: URLSearchParams,
-    options?: { readonly history?: HistoryBehavior },
+    options?: LocationWriteOptions,
   ) => void;
   /**
    * Call `listener` on every change of the URL. The return value
@@ -107,10 +129,7 @@ export type LocationAdapter = {
    * Navigate to `url`, a path-relative href. `replace: true` respells the
    * current history entry instead of appending one.
    */
-  readonly navigate: (
-    url: string,
-    options?: { readonly replace?: boolean },
-  ) => void;
+  readonly navigate: (url: string, options?: LocationNavigateOptions) => void;
   /**
    * Call `listener` with the new location on every change. The return value
    * unsubscribes.

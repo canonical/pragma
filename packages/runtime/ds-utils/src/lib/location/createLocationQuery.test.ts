@@ -1,8 +1,8 @@
+import type { LocationAdapter } from "@canonical/ds-types";
 import { createMemoryAdapter } from "@canonical/router-core";
 import { describe, expect, it } from "vitest";
 import createFakeLocationAdapter from "../../../testing/createFakeLocationAdapter.js";
 import createLocationQuery from "./createLocationQuery.js";
-import type { LocationAdapter } from "./types.js";
 
 const setup = (initial: string | URL = "/machines") => {
   const adapter = createFakeLocationAdapter(initial);
