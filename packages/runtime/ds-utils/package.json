@@ -1,6 +1,6 @@
 {
   "name": "@canonical/ds-utils",
-  "description": "Framework-agnostic design system helpers: navigation trees, debounce, throttle, humanizeNumber, pluralize",
+  "description": "Framework-agnostic design system helpers: navigation trees, a URL query port, debounce, throttle, humanizeNumber, pluralize",
   "version": "0.43.0",
   "type": "module",
   "module": "dist/esm/index.js",
@@ -50,6 +50,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
     "@canonical/biome-config": "0.43.0",
+    "@canonical/router-core": "0.43.0",
     "@canonical/typescript-config": "0.43.0",
     "@canonical/webarchitect": "0.43.0",
     "@types/node": "^26.0.0",
