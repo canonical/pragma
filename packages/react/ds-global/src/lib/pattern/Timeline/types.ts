@@ -75,9 +75,6 @@ export type TimelineUrlState = {
   sortOrder?: TimelineSortOrder;
 };
 
-/** How a URL write enters the history stack. */
-export type TimelineUrlWriteMode = "replace" | "push";
-
 export type TimelineExpansion = {
   method?: TimelineCollapsingMethod;
   /** Default 8. */
