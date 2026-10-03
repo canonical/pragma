@@ -7,6 +7,7 @@ function createFakeHashWindow(initialHash = "#/") {
     location: {
       hash: initialHash,
       href: `https://example.com/${initialHash}`,
+      replace: vi.fn<(url: string) => void>(),
     },
     addEventListener(_type: "hashchange", listener: () => void) {
       hashChangeListener = listener;
@@ -72,6 +73,29 @@ describe("createHashAdapter", () => {
     adapter.navigate("/about");
 
     expect(browserWindow.location.hash).toBe("#/about");
+  });
+
+  it("assigns the hash on a push navigation", () => {
+    const browserWindow = createFakeHashWindow("#/");
+    const adapter = createHashAdapter(browserWindow);
+
+    adapter.navigate("/about", { replace: false });
+
+    expect(browserWindow.location.hash).toBe("#/about");
+    expect(browserWindow.location.replace).not.toHaveBeenCalled();
+  });
+
+  it("replaces the current entry on a replace navigation", () => {
+    const browserWindow = createFakeHashWindow("#/");
+    const adapter = createHashAdapter(browserWindow);
+
+    adapter.navigate("/search?q=router", { replace: true });
+
+    expect(browserWindow.location.replace).toHaveBeenCalledTimes(1);
+    expect(browserWindow.location.replace).toHaveBeenCalledWith(
+      "https://example.com/#/search?q=router",
+    );
+    expect(browserWindow.location.hash).toBe("#/");
   });
 
   it("notifies subscribers on navigate", () => {
