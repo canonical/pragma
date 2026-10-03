@@ -2,7 +2,11 @@ import { ROUTER_LOCAL_BASE } from "./constants.js";
 import type { PlatformAdapter, PlatformNavigateOptions } from "./types.js";
 
 interface HashWindowLike {
-  readonly location: { hash: string; href: string };
+  readonly location: {
+    hash: string;
+    href: string;
+    replace(url: string): void;
+  };
   addEventListener(type: "hashchange", listener: () => void): void;
   removeEventListener(type: "hashchange", listener: () => void): void;
 }
@@ -56,13 +60,23 @@ export default function createHashAdapter(
     getLocation() {
       return getLocation();
     },
-    navigate(url, _navigationOptions?: PlatformNavigateOptions) {
+    navigate(url, navigationOptions?: PlatformNavigateOptions) {
       const parsed =
         url.startsWith("http://") || url.startsWith("https://")
           ? new URL(url)
           : new URL(url, ROUTER_LOCAL_BASE);
+      const hash = `#${parsed.pathname}${parsed.search}${parsed.hash}`;
 
-      browserWindow.location.hash = `#${parsed.pathname}${parsed.search}${parsed.hash}`;
+      if (navigationOptions?.replace) {
+        // A fragment-only replace swaps the current entry and still fires hashchange.
+        const [base] = browserWindow.location.href.split("#");
+
+        browserWindow.location.replace(`${base}${hash}`);
+
+        return;
+      }
+
+      browserWindow.location.hash = hash;
     },
     subscribe(callback) {
       const shouldAttachListener = subscribers.size === 0;
