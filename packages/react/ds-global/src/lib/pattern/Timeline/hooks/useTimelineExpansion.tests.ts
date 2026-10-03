@@ -15,6 +15,15 @@ describe("useTimelineExpansion", () => {
     });
   });
 
+  it("shows 60 events on load by default", () => {
+    const { result } = renderHook(() => useTimelineExpansion({ count: 100 }));
+    expect(result.current).toMatchObject({
+      bottomCount: 60,
+      hiddenCount: 40,
+      indicatorPosition: "bottom",
+    });
+  });
+
   it("collapses from the bottom by default", () => {
     const { result } = renderHook(() =>
       useTimelineExpansion({ count: 100, initialVisible: 60, step: 20 }),

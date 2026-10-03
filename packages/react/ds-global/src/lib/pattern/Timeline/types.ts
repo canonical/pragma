@@ -77,7 +77,7 @@ export type TimelineUrlState = {
 
 export type TimelineExpansion = {
   method?: TimelineCollapsingMethod;
-  /** Default 8. */
+  /** Events visible on load. Default 60. */
   initialVisible?: number;
   /** Events revealed per "Show more". Default 4. */
   step?: number;

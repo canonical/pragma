@@ -5,7 +5,7 @@ type UseTimelineExpansionProps = {
   /** Total number of events in the (filtered, sorted) list. */
   count: number;
   method?: TimelineCollapsingMethod;
-  /** Events visible on load. Default 8. */
+  /** Events visible on load. Default 60. */
   initialVisible?: number;
   /** Events revealed per "Show more". Default 4. */
   step?: number;
@@ -32,7 +32,7 @@ type UseTimelineExpansionResult = {
 export default function useTimelineExpansion({
   count,
   method = "bottom",
-  initialVisible = 8,
+  initialVisible = 60,
   step = 4,
 }: UseTimelineExpansionProps): UseTimelineExpansionResult {
   const [revealed, setRevealed] = useState(0);
