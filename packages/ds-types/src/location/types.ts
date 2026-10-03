@@ -71,9 +71,9 @@ export type LocationQuery = {
 
 /**
  * The three functions a router or host provides so a {@link LocationQuery}
- * can run over it. The platform adapters of `@canonical/router-core` fit by
- * shape. Another router fits by wrapping its location getter, navigate
- * function and change listener.
+ * can run over it. A router's own adapters may fit by shape. Another router
+ * fits by wrapping its location getter, navigate function and change
+ * listener.
  *
  * An implementation must:
  *

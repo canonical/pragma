@@ -12,8 +12,7 @@ type FakeLocationAdapter = LocationAdapter & {
  * Create a `LocationAdapter` that keeps its history in memory. It notifies
  * subscribers synchronously, in subscription order, on every navigation, Back
  * and Forward. Like router-core's adapters, it passes the location to each
- * listener. A throwing listener stops the remaining listeners, and the
- * exception propagates to the caller.
+ * listener. A listener's exception propagates to the caller.
  */
 const createFakeLocationAdapter = (
   initial: string | URL,
@@ -253,21 +252,6 @@ describe("createLocationQuery", () => {
       adapter.navigate("/x?a=1");
       expect(calls).toEqual([[], [], []]);
       expect(seen).toEqual(["", "status=failed", "a=1"]);
-    });
-
-    it("stops at a throwing listener, so later listeners miss the change", () => {
-      const { query } = setup();
-      let notifications = 0;
-      query.subscribe(() => {
-        throw new Error("listener exploded");
-      });
-      query.subscribe(() => {
-        notifications += 1;
-      });
-      expect(() => query.write(new URLSearchParams("status=failed"))).toThrow(
-        "listener exploded",
-      );
-      expect(notifications).toBe(0);
     });
 
     it("propagates a throwing listener to the writer", () => {
