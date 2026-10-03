@@ -1,28 +1,21 @@
 /**
- * The location query port: how a component reads and writes the URL's query
- * string without touching `window` or a particular router.
- *
- * `LocationAdapter` is the surface a router or host provides, `LocationQuery`
- * is the surface a component consumes, and `HistoryBehavior` is how a write
- * enters history. `createLocationQuery` bridges the first to the second. Reads
- * and writes preserve repeated parameters (`status=failed&status=cancelled`):
- * nothing in the port flattens a parameter to a single value.
+ * The location query port. A component reads and writes the URL's query
+ * through `LocationQuery`, and a router or host provides `LocationAdapter`.
+ * The types sit together because each describes one side of the same seam.
  */
 
 /**
- * How a write enters a history-backed location: `push` appends an entry the
- * Back button returns to, `replace` respells the current one.
+ * How a write enters history: `push` appends an entry the Back button returns
+ * to, `replace` overwrites the current one.
  *
- * @experimental The location query surface settles once its first consumers
- * adopt it, and this name may change until then.
+ * @experimental Names may change until the first consumers adopt this surface.
  */
 export type HistoryBehavior = "push" | "replace";
 
 /**
  * Options for {@link LocationQuery.write}.
  *
- * @experimental The location query surface settles once its first consumers
- * adopt it, and this name may change until then.
+ * @experimental Names may change until the first consumers adopt this surface.
  */
 export type LocationWriteOptions = {
   /** How the write enters history. Defaults to `"replace"`. */
@@ -32,8 +25,7 @@ export type LocationWriteOptions = {
 /**
  * Options for {@link LocationAdapter.navigate}.
  *
- * @experimental The location query surface settles once its first consumers
- * adopt it, and this name may change until then.
+ * @experimental Names may change until the first consumers adopt this surface.
  */
 export type LocationNavigateOptions = {
   /** Replace the current history entry instead of appending one. */
@@ -43,96 +35,75 @@ export type LocationNavigateOptions = {
 /**
  * The query string of the current URL, read and written as a whole.
  *
- * This is the one seam between a component that keeps state in the URL and
- * whatever owns the URL. The component never reads the browser's location or
- * touches its history itself, so it renders on the server and works under any
- * router. `createLocationQuery` builds one over a {@link LocationAdapter}.
+ * A component that keeps state in the URL goes through this port instead of
+ * `window.location` or a particular router. Repeated parameters
+ * (`status=failed&status=cancelled`) survive reads and writes.
  *
- * What an implementation provides:
- *
- * - `read()` returns the current query string, repeated parameters intact.
- * - `write(next, { history })` replaces the URL's query string with the given
- *   parameters, keeps the path and the hash, and enters history in the
- *   behavior asked for. The consumer decides the behavior per write; the
- *   implementation carries it out.
- * - `subscribe(listener)` calls the listener whenever the URL changes,
- *   whatever moved it: a write through this port, Back or Forward, or a
- *   navigation the router made itself. The listener takes no payload and
- *   calls `read()`.
- *
- * What an implementation guarantees, so a consumer can tell its own writes
- * from other moves:
- *
- * - A write through the port is observed by the port's own subscribers at
- *   most once. It is observed once, when the write lands, or not at all if
- *   the router notifies only of navigations it did not make. A consumer
- *   recognises the echo of its write by the spelling it wrote, and tolerates
- *   the echo's absence. It must never see one write as two moves.
- * - A write may land after `write` returns, as with a router that applies the
- *   navigation later, provided the router notifies as each write lands.
- * - A write lands as it was spelled: its parameters in the order and encoding
- *   given. A consumer may respell a query that arrives out of its canonical
- *   spelling. An implementation that reorders or re-encodes what it is given
- *   would therefore be respelled and rewritten without end.
- * - Writes land in the order they were made. A consumer reads a write that
- *   lands after one made later as somebody else's move.
- * - A router must not drop a write silently. When it skips or abandons one,
- *   it notifies subscribers of where the location then stands, or it throws.
- *
- * @experimental The location query surface settles once its first consumers
- * adopt it, and this name may change until then.
+ * @experimental Names may change until the first consumers adopt this surface.
  */
 export type LocationQuery = {
   /**
-   * The current query parameters as a fresh `URLSearchParams` on every call.
-   * Callers may mutate the returned object, because the location's own state
-   * never aliases it.
+   * The current query parameters, decoded, as a fresh `URLSearchParams` on
+   * every call. Callers may mutate the result.
    */
   readonly read: () => URLSearchParams;
   /**
-   * Replace the whole query string with `next`, keeping the path and the hash.
-   * `history` says whether the write appends a history entry or respells the
-   * current one, and defaults to `"replace"`.
+   * Replace the whole query with `next`, keeping the path and the hash.
+   * `next` is serialised with `URLSearchParams.toString()`, which uses form
+   * encoding (spaces as `+`). `read()` decodes, so encoding differences do not
+   * reach consumers. Throws when the adapter cannot navigate, as with
+   * router-core's `createServerAdapter`.
+   *
+   * @note Impure: navigates the underlying adapter.
    */
   readonly write: (
     next: URLSearchParams,
     options?: LocationWriteOptions,
   ) => void;
   /**
-   * Call `listener` on every change of the URL. The return value
-   * unsubscribes. A throwing listener aborts the notification, and the
-   * exception propagates to whoever made the change.
+   * Call `listener` with no arguments on every change of the URL, whatever
+   * caused it. Returns a function that unsubscribes. A listener's exception
+   * reaches the caller of `write` only when the adapter notifies
+   * synchronously. Otherwise it surfaces wherever the adapter dispatches, for
+   * example on Back or Forward.
    */
   readonly subscribe: (listener: () => void) => () => void;
 };
 
 /**
  * The three functions a router or host provides so a {@link LocationQuery}
- * can run over it.
+ * can run over it. The platform adapters of `@canonical/router-core` fit by
+ * shape. Another router fits by wrapping its location getter, navigate
+ * function and change listener.
  *
- * The members match the read, navigate and subscribe members of
- * `@canonical/router-core`'s platform adapters, so every adapter that package
- * creates (browser, memory, server and the rest) is a `LocationAdapter` by
- * shape, with no dependency between the packages. Any other router fits by
- * wrapping its own location getter, navigate function and change listener.
+ * An implementation must:
  *
- * @experimental The location query surface settles once its first consumers
- * adopt it, and this name may change until then.
+ * - notify at most once per write;
+ * - land writes in the order they were made;
+ * - never reorder or re-encode the parameters it is given;
+ * - never drop a write silently, but notify where the location then stands,
+ *   or throw.
+ *
+ * A write may land after `navigate` returns, as long as the notification
+ * follows it.
+ *
+ * @experimental Names may change until the first consumers adopt this surface.
  */
 export type LocationAdapter = {
   /**
-   * The current location, as an absolute URL string, a path-relative href
-   * such as `/machines?status=failed`, or a `URL` object.
+   * The current location: an absolute URL, or a root-relative href starting
+   * with `/` such as `/machines?status=failed`. A value not starting with `/`
+   * is resolved against `/`.
    */
   readonly getLocation: () => string | URL;
   /**
-   * Navigate to `url`, a path-relative href. `replace: true` respells the
-   * current history entry instead of appending one.
+   * Navigate to `url`, a root-relative href. An adapter that cannot navigate
+   * throws.
    */
   readonly navigate: (url: string, options?: LocationNavigateOptions) => void;
   /**
-   * Call `listener` with the new location on every change. The return value
-   * unsubscribes.
+   * Call `listener` on every change of the location, including Back, Forward
+   * and navigations made elsewhere. Returns a function that unsubscribes.
    */
   readonly subscribe: (listener: () => void) => () => void;
 };
